@@ -14,6 +14,8 @@
   let mediaRecorder = null;
   let mediaStream = null;
   let mediaChunks = [];
+  let recordingConversationId = '';
+  let discardVoiceRecording = false;
 
   MAIN_NAV['study-rooms'] = STUDY_SUBNAV;
   MAIN_NAV.chat = CHAT_SUBNAV;
@@ -101,8 +103,9 @@
   const previousWorkspace = workspace;
   workspace = function(current){
     if(activeTimer){ clearInterval(activeTimer); activeTimer=null; }
-    previousWorkspace(current);
     const parts=current.split('/');
+    if(parts[0]!=='chat') cancelVoiceRecording();
+    previousWorkspace(current);
     if(parts[0]==='study-rooms') bindStudyRooms();
     if(parts[0]==='chat') bindChat();
   };
@@ -376,6 +379,7 @@
     });
     document.getElementById('chat-new')?.addEventListener('click',()=>openNewConversationSheet(kind));
     const selected=value.conversations.find(c=>c.id===value.selected[kind]&&c.kind===kind)||value.conversations.find(c=>c.kind===kind);
+    if(mediaRecorder&&mediaRecorder.state==='recording'&&recordingConversationId&&selected?.id!==recordingConversationId) cancelVoiceRecording();
     if(!selected)return;
     bindMessageActions(selected,value);
     document.getElementById('chat-report')?.addEventListener('click',()=>{
@@ -424,6 +428,14 @@
   }
   function fileToDataUrl(file){ return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=reject;r.readAsDataURL(file);}); }
 
+  function cancelVoiceRecording(){
+    if(!mediaRecorder&& !mediaStream) return;
+    discardVoiceRecording=true;
+    try { if(mediaRecorder&&mediaRecorder.state==='recording') mediaRecorder.stop(); } catch {}
+    mediaStream?.getTracks().forEach(track=>track.stop());
+    mediaStream=null;
+  }
+
   async function toggleVoiceRecording(conversation){
     const button=document.getElementById('chat-voice');
     if(mediaRecorder&&mediaRecorder.state==='recording'){
@@ -431,10 +443,12 @@
     }
     if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){showToast('Voice recording is not supported in this browser');return;}
     try{
-      mediaStream=await navigator.mediaDevices.getUserMedia({audio:true}); mediaChunks=[]; mediaRecorder=new MediaRecorder(mediaStream);
+      mediaStream=await navigator.mediaDevices.getUserMedia({audio:true}); mediaChunks=[]; discardVoiceRecording=false; recordingConversationId=conversation.id; mediaRecorder=new MediaRecorder(mediaStream);
       mediaRecorder.ondataavailable=e=>{if(e.data.size)mediaChunks.push(e.data);};
       mediaRecorder.onstop=async()=>{
-        const blob=new Blob(mediaChunks,{type:mediaRecorder.mimeType||'audio/webm'}); mediaStream?.getTracks().forEach(t=>t.stop()); mediaStream=null; mediaRecorder=null;
+        const recorder=mediaRecorder;
+        const blob=new Blob(mediaChunks,{type:recorder?.mimeType||'audio/webm'}); mediaStream?.getTracks().forEach(t=>t.stop()); mediaStream=null; mediaRecorder=null; recordingConversationId='';
+        if(discardVoiceRecording){discardVoiceRecording=false;mediaChunks=[];return;}
         if(blob.size>MAX_VOICE_BYTES){showToast('Voice note is too long for local storage');return;}
         const data=await fileToDataUrl(blob); appendMessage(conversation,{type:'voice',data});
       };
