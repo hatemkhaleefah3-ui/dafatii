@@ -1,0 +1,10 @@
+.academic-dropdown-source{display:none!important}
+.academic-subject-select,.academic-multiselect-dropdown>summary{width:100%;min-height:48px;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:14px;padding:0 13px;font:inherit;outline:none}
+.academic-subject-select:focus,.academic-multiselect-dropdown>summary:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.academic-multiselect-dropdown{position:relative;width:100%}
+.academic-multiselect-dropdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none}
+.academic-multiselect-dropdown>summary::-webkit-details-marker{display:none}
+.academic-multiselect-dropdown>summary::after{content:'⌄';font-size:1rem;color:var(--muted);transition:transform .15s ease}
+.academic-multiselect-dropdown[open]>summary::after{transform:rotate(180deg)}
+.academic-multiselect-dropdown>.lecture-multiselect{position:absolute;z-index:40;top:calc(100% + 6px);left:0;right:0;display:grid;gap:8px;max-height:240px;overflow:auto;padding:8px;border:1px solid var(--line);background:var(--surface);border-radius:14px;box-shadow:var(--shadow-soft)}
+.academic-multiselect-dropdown:not([open])>.lecture-multiselect{display:none}
