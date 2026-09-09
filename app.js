@@ -2,14 +2,9 @@ const app = document.getElementById('app');
 
 const state = {
   joined: localStorage.getItem('dafatii:joined') === '1',
-  theme: localStorage.getItem('dafatii:theme') || 'dark',
-  language: localStorage.getItem('dafatii:language') || 'English',
-  course: localStorage.getItem('dafatii:course') || 'General Studies',
   sidebar: false,
   authMode: 'signup',
 };
-
-document.documentElement.dataset.theme = state.theme;
 
 const MAIN_NAV = {
   dashboard: ['Overview', 'Recent materials', 'Progress'],
@@ -19,15 +14,10 @@ const MAIN_NAV = {
   chat: ['Messages', 'Groups', 'Requests'],
 };
 
-const EXTRA_PAGES = [
-  'settings', 'profile', 'change-course', 'change-language', 'dark-mode',
-  'apply-work', 'apply-scholarship', 'volunteer', 'donate-us'
-];
-
 const LABELS = {
   dashboard: 'Dashboard', subjects: 'Subjects', calendar: 'Calendar',
   'study-rooms': 'Study Rooms', chat: 'Chat', settings: 'Settings', profile: 'Profile',
-  'change-course': 'Change Course', 'change-language': 'Change Language', 'dark-mode': 'Dark Mode',
+  'change-course': 'Change Course', 'change-language': 'Change Language', 'dark-mode': 'Change Dark Mode',
   'apply-work': 'Apply Work', 'apply-scholarship': 'Apply Scholarship', volunteer: 'Volunteer', 'donate-us': 'Donate Us'
 };
 
@@ -145,8 +135,7 @@ function workspace(current){
     </div></header>
 
     <div class="settings-nav ${state.sidebar?'hidden':''}"><div class="settings-inner">
-      ${settingAction('settings','Settings')}${settingAction('profile','Profile')}${settingAction('change-course',state.course)}${settingAction('change-language',state.language)}
-      <button class="settings-action" id="theme-toggle">${state.theme==='dark'?'Light mode':'Dark mode'}</button>
+      ${settingAction('settings','Settings')}${settingAction('profile','Profile')}${settingAction('change-course','Change Course')}${settingAction('change-language','Change Language')}${settingAction('dark-mode','Change Dark Mode')}
       <button class="settings-action sidebar-trigger" id="sidebar-open">Sidebar ☰</button>
     </div></div>
 
@@ -155,8 +144,7 @@ function workspace(current){
     <aside class="sidebar ${state.sidebar?'open':''}">
       <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close">×</button></div>
       <div class="sidebar-label">Settings</div>
-      ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}
-      <button class="side-action" id="side-theme"><span class="side-dot"></span>${state.theme==='dark'?'Light mode':'Dark mode'}</button>
+      ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
       <div class="sidebar-section"><div class="sidebar-label">Opportunities</div>
         ${sideAction('apply-work','Apply Work')}${sideAction('apply-scholarship','Apply Scholarship')}${sideAction('volunteer','Volunteer')}${sideAction('donate-us','Donate Us')}
       </div>
@@ -176,13 +164,6 @@ function subnav(main,sub){
 function prettify(v){ return v.split('-').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' '); }
 function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
-function toggleTheme(){
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('dafatii:theme',state.theme);
-  document.documentElement.dataset.theme=state.theme;
-  render();
-}
-
 function bindCommon(){ document.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>setHash(el.dataset.go)); }
 function bindWorkspace(){
   document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setHash(`${b.dataset.page}/${encodeURIComponent(MAIN_NAV[b.dataset.page][0])}`));
@@ -191,12 +172,10 @@ function bindWorkspace(){
   const open=document.getElementById('sidebar-open'), close=document.getElementById('sidebar-close');
   if(open) open.onclick=()=>{state.sidebar=true;render();};
   if(close) close.onclick=()=>{state.sidebar=false;render();};
-  document.getElementById('theme-toggle')?.addEventListener('click',toggleTheme);
-  document.getElementById('side-theme')?.addEventListener('click',toggleTheme);
 }
 
 function render(){
-  let r=route();
+  const r=route();
   if(r==='landing'){ landing(); return; }
   if(r==='join'){ join(); return; }
   if(!state.joined){ setHash('join'); return; }
