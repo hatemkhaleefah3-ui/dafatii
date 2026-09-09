@@ -107,6 +107,7 @@ function join(){
           ${isSignup ? `<div class="field"><label>I study as</label><select name="studentType"><option>School student</option><option>University student</option><option>Independent student</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
+        <button class="btn btn-ghost auth-submit" id="access-site" type="button">Access website without account →</button>
         <div class="auth-note">Prototype authentication: this interface currently stores session state locally and does not send credentials to a server.</div>
       </div>
     </section>
@@ -114,6 +115,10 @@ function join(){
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
   document.getElementById('auth-form').onsubmit = e=>{
     e.preventDefault();
+    state.joined = true; localStorage.setItem('dafatii:joined','1');
+    setHash('dashboard/overview');
+  };
+  document.getElementById('access-site').onclick = ()=>{
     state.joined = true; localStorage.setItem('dafatii:joined','1');
     setHash('dashboard/overview');
   };
