@@ -1,0 +1,29 @@
+/* Subject detail navigation + lecture management */
+.subject-back{margin-right:6px;color:var(--text);background:var(--surface);outline:1px solid var(--line)}
+.lectures-page .subjects-head{align-items:flex-end}
+.lecture-card .subject-card-copy p{display:flex;align-items:center;gap:6px}
+.entity-sheet-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.48);display:grid;place-items:center;padding:20px;backdrop-filter:blur(8px)}
+.entity-sheet{width:min(520px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:var(--shadow)}
+.entity-sheet-handle{display:none;width:48px;height:5px;border-radius:99px;background:var(--surface-3);margin:0 auto 16px}
+.entity-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}
+.entity-sheet-head h2{font:800 1.8rem "Manrope";letter-spacing:-.04em;margin:5px 0 0}
+.entity-icon-label{font-size:.84rem;font-weight:700;margin:4px 0 10px}
+.entity-icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:20px}
+.entity-icon-choice{aspect-ratio:1;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:13px;display:grid;place-items:center;font-size:1.05rem;font-weight:800;transition:.18s ease}
+.entity-icon-choice:hover{border-color:rgba(200,255,77,.5)}
+.entity-icon-choice.active{background:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:0 7px 18px rgba(200,255,77,.18)}
+.entity-submit{width:100%;height:50px}
+.field-optional{color:var(--muted);font-weight:500;margin-left:6px}
+.toast{display:flex;align-items:center;gap:14px}
+.toast button{border:0;background:transparent;color:inherit;font-weight:900;text-decoration:underline;text-underline-offset:3px;padding:0}
+
+@media(max-width:720px){
+  .entity-sheet-overlay{place-items:end center;padding:0;background:rgba(0,0,0,.44)}
+  .entity-sheet{width:100%;max-height:82vh;border-radius:24px 24px 0 0;border-bottom:0;padding:14px 18px max(22px,env(safe-area-inset-bottom));animation:sheet-up .22s ease}
+  .entity-sheet-handle{display:block}
+  .entity-icon-grid{grid-template-columns:repeat(8,1fr);gap:6px}
+  .entity-icon-choice{border-radius:11px;font-size:.95rem}
+  .subject-back{position:sticky;left:0;z-index:2}
+}
+@media(max-width:420px){.entity-icon-grid{grid-template-columns:repeat(6,1fr)}}
+@keyframes sheet-up{from{transform:translateY(18px);opacity:.6}to{transform:translateY(0);opacity:1}}
