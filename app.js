@@ -1,9 +1,27 @@
 const app = document.getElementById('app');
 
+const DEFAULT_SUBJECTS = [
+  { id: 'mathematics', name: 'Mathematics', icon: '∑' },
+  { id: 'physics', name: 'Physics', icon: '⚛' },
+  { id: 'english', name: 'English', icon: 'Aa' },
+];
+
+const SUBJECT_ICONS = ['∑','⚛','Aa','🧬','🧪','🌍','📚','✎','⌘','🎨','♫','🏛','⚽','🧠','💼','🔬'];
+
+function loadSubjects(){
+  try {
+    const stored = JSON.parse(localStorage.getItem('dafatii:subjects') || 'null');
+    return Array.isArray(stored) ? stored : DEFAULT_SUBJECTS;
+  } catch {
+    return DEFAULT_SUBJECTS;
+  }
+}
+
 const state = {
   joined: localStorage.getItem('dafatii:joined') === '1',
   sidebar: false,
   authMode: 'signup',
+  subjects: loadSubjects(),
 };
 
 const MAIN_NAV = {
@@ -31,6 +49,7 @@ function icon(name){
 
 function setHash(hash){ location.hash = hash; }
 function route(){ return location.hash.replace(/^#\/?/,'') || 'landing'; }
+function saveSubjects(){ localStorage.setItem('dafatii:subjects', JSON.stringify(state.subjects)); }
 
 function landing(){
   app.innerHTML = `
@@ -124,12 +143,76 @@ function join(){
   };
 }
 
+function subjectListView(){
+  const cards = state.subjects.length ? state.subjects.map(subjectCard).join('') : `
+    <div class="subjects-empty">
+      <div class="subjects-empty-icon">＋</div>
+      <h2>No subjects yet</h2>
+      <p>Add your first subject to start organizing materials.</p>
+      <button class="btn btn-primary" id="subjects-empty-add">Add subject</button>
+    </div>`;
+  return `
+    <section class="subjects-page">
+      <div class="subjects-head">
+        <div>
+          <div class="eyebrow">Subjects</div>
+          <h1>My subjects</h1>
+          <p>Open a subject, swipe left to edit, or swipe right to delete.</p>
+        </div>
+        <button class="subject-add" id="subject-add" aria-label="Add subject"><span>＋</span><strong>Add subject</strong></button>
+      </div>
+      <div class="subjects-grid">${cards}</div>
+    </section>`;
+}
+
+function subjectCard(subject){
+  return `
+    <div class="subject-swipe" data-subject-id="${escapeHtml(subject.id)}">
+      <div class="subject-action subject-action-delete">Delete</div>
+      <div class="subject-action subject-action-edit">Edit</div>
+      <article class="subject-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(subject.name)}">
+        <div class="subject-card-top">
+          <div class="subject-icon">${escapeHtml(subject.icon)}</div>
+          <div class="subject-desktop-actions">
+            <button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">✎</button>
+            <button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">×</button>
+          </div>
+        </div>
+        <div class="subject-card-copy">
+          <h2>${escapeHtml(subject.name)}</h2>
+          <p>Open subject →</p>
+        </div>
+      </article>
+    </div>`;
+}
+
+function subjectDetailView(subject){
+  return `<section class="empty-state subject-detail">
+    <div class="empty-icon">${escapeHtml(subject.icon)}</div>
+    <h1>${escapeHtml(subject.name)}</h1>
+    <p>Coming soon…</p>
+  </section>`;
+}
+
+function workspaceContent(page, parts, title){
+  if(page === 'subjects'){
+    if(parts[1] === 'subject'){
+      const subject = state.subjects.find(s=>s.id===decodeURIComponent(parts[2] || ''));
+      return subject ? subjectDetailView(subject) : subjectListView();
+    }
+    const sub = decodeURIComponent(parts.slice(1).join('/'));
+    if(!sub || sub.toLowerCase() === 'all subjects') return subjectListView();
+  }
+  return `<section class="empty-state"><div class="empty-icon">${icon(page)}</div><h1>${escapeHtml(title)}</h1><p>Coming soon…</p></section>`;
+}
+
 function workspace(current){
   const parts = current.split('/');
   const page = parts[0];
-  const sub = decodeURIComponent(parts.slice(1).join('/'));
+  const sub = parts[1] === 'subject' ? '' : decodeURIComponent(parts.slice(1).join('/'));
   const mainActive = MAIN_NAV[page] ? page : '';
-  const title = sub || LABELS[page] || prettify(page);
+  const subject = page === 'subjects' && parts[1] === 'subject' ? state.subjects.find(s=>s.id===decodeURIComponent(parts[2] || '')) : null;
+  const title = subject?.name || sub || LABELS[page] || prettify(page);
   const sidebarClass = state.sidebar ? ' sidebar-open' : '';
   app.innerHTML = `
   <div class="app-shell workspace${sidebarClass}">
@@ -155,9 +238,11 @@ function workspace(current){
       </div>
     </aside>
 
-    <main class="workspace-main"><section class="empty-state"><div class="empty-icon">${icon(page)}</div><h1>${escapeHtml(title)}</h1><p>Coming soon…</p></section></main>
+    <main class="workspace-main ${page==='subjects' ? 'workspace-main-subjects' : ''}">${workspaceContent(page,parts,title)}</main>
+    <div id="overlay-root"></div>
   </div>`;
   bindWorkspace();
+  if(page === 'subjects' && (!parts[1] || decodeURIComponent(parts.slice(1).join('/')).toLowerCase() === 'all subjects')) bindSubjects();
 }
 
 function settingAction(key,label){return `<button class="settings-action" data-extra="${key}">${escapeHtml(label)}</button>`;}
@@ -177,6 +262,133 @@ function bindWorkspace(){
   const open=document.getElementById('sidebar-open'), close=document.getElementById('sidebar-close');
   if(open) open.onclick=()=>{state.sidebar=true;render();};
   if(close) close.onclick=()=>{state.sidebar=false;render();};
+}
+
+function bindSubjects(){
+  document.getElementById('subject-add')?.addEventListener('click',()=>openSubjectSheet('add'));
+  document.getElementById('subjects-empty-add')?.addEventListener('click',()=>openSubjectSheet('add'));
+  document.querySelectorAll('[data-edit-subject]').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation(); openSubjectSheet('edit',btn.dataset.editSubject);
+  }));
+  document.querySelectorAll('[data-delete-subject]').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation(); deleteSubject(btn.dataset.deleteSubject);
+  }));
+
+  document.querySelectorAll('.subject-swipe').forEach(shell=>{
+    const card = shell.querySelector('.subject-card');
+    const id = shell.dataset.subjectId;
+    let startX = 0, deltaX = 0, dragging = false, moved = false;
+
+    card.addEventListener('click',()=>{ if(!moved) setHash(`subjects/subject/${encodeURIComponent(id)}`); });
+    card.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();setHash(`subjects/subject/${encodeURIComponent(id)}`);} });
+    card.addEventListener('pointerdown',e=>{
+      if(e.target.closest('button')) return;
+      startX=e.clientX; deltaX=0; dragging=true; moved=false;
+      card.setPointerCapture?.(e.pointerId);
+    });
+    card.addEventListener('pointermove',e=>{
+      if(!dragging) return;
+      deltaX=Math.max(-116,Math.min(116,e.clientX-startX));
+      if(Math.abs(deltaX)>6) moved=true;
+      card.style.transform=`translateX(${deltaX}px)`;
+    });
+    const endSwipe = ()=>{
+      if(!dragging) return;
+      dragging=false;
+      card.style.transform='';
+      if(deltaX <= -72) openSubjectSheet('edit',id);
+      else if(deltaX >= 72) deleteSubject(id);
+      setTimeout(()=>{moved=false;},0);
+    };
+    card.addEventListener('pointerup',endSwipe);
+    card.addEventListener('pointercancel',endSwipe);
+  });
+}
+
+function openSubjectSheet(mode,id){
+  const existing = mode === 'edit' ? state.subjects.find(s=>s.id===id) : null;
+  if(mode === 'edit' && !existing) return;
+  const selectedIcon = existing?.icon || SUBJECT_ICONS[0];
+  const root = document.getElementById('overlay-root');
+  if(!root) return;
+  root.innerHTML = `
+    <div class="sheet-backdrop" id="subject-sheet-backdrop"></div>
+    <section class="subject-sheet" role="dialog" aria-modal="true" aria-labelledby="subject-sheet-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div><div class="eyebrow">${mode==='edit'?'Edit subject':'New subject'}</div><h2 id="subject-sheet-title">${mode==='edit'?'Edit subject':'Add a subject'}</h2></div>
+        <button class="icon-btn" id="subject-sheet-close" aria-label="Close">×</button>
+      </div>
+      <form id="subject-form">
+        <div class="field">
+          <label for="subject-name">Subject name</label>
+          <input id="subject-name" name="name" maxlength="48" autocomplete="off" placeholder="e.g. Mathematics" value="${escapeHtml(existing?.name || '')}" required>
+        </div>
+        <div class="icon-picker-label">Choose an icon</div>
+        <div class="subject-icon-picker">
+          ${SUBJECT_ICONS.map(i=>`<button class="subject-icon-option ${i===selectedIcon?'selected':''}" type="button" data-icon="${escapeHtml(i)}" aria-label="Choose ${escapeHtml(i)}">${escapeHtml(i)}</button>`).join('')}
+        </div>
+        <input type="hidden" name="icon" value="${escapeHtml(selectedIcon)}">
+        <div class="sheet-actions">
+          <button class="btn btn-ghost" type="button" id="subject-cancel">Cancel</button>
+          <button class="btn btn-primary" type="submit">${mode==='edit'?'Save changes':'Add subject'}</button>
+        </div>
+      </form>
+    </section>`;
+
+  const close=()=>{root.innerHTML='';};
+  document.getElementById('subject-sheet-close').onclick=close;
+  document.getElementById('subject-cancel').onclick=close;
+  document.getElementById('subject-sheet-backdrop').onclick=close;
+  document.querySelectorAll('.subject-icon-option').forEach(btn=>btn.onclick=()=>{
+    document.querySelectorAll('.subject-icon-option').forEach(x=>x.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.querySelector('#subject-form [name="icon"]').value=btn.dataset.icon;
+  });
+  const input=document.getElementById('subject-name');
+  setTimeout(()=>input?.focus(),50);
+  document.getElementById('subject-form').onsubmit=e=>{
+    e.preventDefault();
+    const data=new FormData(e.currentTarget);
+    const name=String(data.get('name')||'').trim();
+    const icon=String(data.get('icon')||SUBJECT_ICONS[0]);
+    if(!name) return;
+    if(mode==='edit'){
+      state.subjects=state.subjects.map(s=>s.id===id?{...s,name,icon}:s);
+    }else{
+      const newId=`subject-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+      state.subjects=[...state.subjects,{id:newId,name,icon}];
+    }
+    saveSubjects();
+    close();
+    render();
+  };
+}
+
+function deleteSubject(id){
+  const subject=state.subjects.find(s=>s.id===id);
+  if(!subject) return;
+  const index=state.subjects.findIndex(s=>s.id===id);
+  state.subjects=state.subjects.filter(s=>s.id!==id);
+  saveSubjects();
+  render();
+  showToast(`${subject.name} deleted`, 'Undo', ()=>{
+    const next=[...state.subjects];
+    next.splice(Math.min(index,next.length),0,subject);
+    state.subjects=next;
+    saveSubjects();
+    render();
+  });
+}
+
+function showToast(message,actionLabel,action){
+  document.querySelector('.toast')?.remove();
+  const toast=document.createElement('div');
+  toast.className='toast';
+  toast.innerHTML=`<span>${escapeHtml(message)}</span>${actionLabel?`<button type="button">${escapeHtml(actionLabel)}</button>`:''}`;
+  document.body.appendChild(toast);
+  let timer=setTimeout(()=>toast.remove(),4200);
+  if(actionLabel){toast.querySelector('button').onclick=()=>{clearTimeout(timer);toast.remove();action?.();};}
 }
 
 function render(){
