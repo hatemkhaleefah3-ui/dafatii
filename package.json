@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node tests/data-client.test.js"
+    "test": "node tests/data-client.test.js && node tests/security-contracts.test.js",
+    "check": "node --check data-client.js && node --check backend-adapter.js && node --check auth-client.js && node --check file-client.js && node --check auth-ui-bridge.js && node --check material-files.js && node --check functions/_lib/crypto.js && node --check functions/_lib/http.js && node --check functions/_lib/auth.js && node --check functions/_lib/gcs.js && node --check 'functions/api/v1/[[path]].js'"
   }
 }
