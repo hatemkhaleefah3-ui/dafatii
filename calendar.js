@@ -12,11 +12,8 @@
 
   MAIN_NAV.calendar = ['Schedule', 'Exams'];
 
-  function read(key, fallback){
-    try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return v ?? fallback; }
-    catch { return fallback; }
-  }
-  function write(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+  function read(key, fallback){ return window.DafatiiData.readJSON(key, fallback); }
+  function write(key, value){ return window.DafatiiData.writeJSON(key, value); }
   function esc(v){ return escapeHtml(v ?? ''); }
   function id(){ return `cal-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`; }
   function kindKey(kind){ return kind === 'schedule' ? SCHEDULE_KEY : EXAMS_KEY; }
