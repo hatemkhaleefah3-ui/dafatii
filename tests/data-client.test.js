@@ -36,6 +36,7 @@ async function run() {
   await data.connect({
     load: async ({ localRecords }) => {
       assert.equal(localRecords.length, 2);
+      assert.equal(localRecords.find(record => record.key === 'dafatii:joined').format, 'string');
       return { records: [{ key: 'dafatii:examSchedule', format: 'json', value: [{ id: 'exam-1' }] }] };
     },
     save: async record => saved.push(record)
