@@ -132,20 +132,26 @@ function join(){
         <form id="auth-form">
           ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
           <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
-          <div class="field"><label>Password</label><input type="password" name="password" minlength="6" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••" required></div>
+          <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
           ${isSignup ? `<div class="field"><label>I study as</label><select name="studentType"><option>School student</option><option>University student</option><option>Independent student</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
         <button class="btn btn-ghost auth-submit" id="access-site" type="button">Access website without account →</button>
-        <div class="auth-note">Prototype authentication: this interface currently stores session state locally and does not send credentials to a server.</div>
+        <div class="auth-note" id="auth-status">Credentials are verified by Dafatii's server. Guest access remains local-only and does not synchronize.</div>
       </div>
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
-  document.getElementById('auth-form').onsubmit = e=>{
+  document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
-    state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
-    setHash('dashboard/overview');
+    const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
+    submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
+    try{
+      const values=new FormData(form);
+      if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name')});
+      else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
+      state.joined = true; window.DafatiiData.writeString('dafatii:joined','1'); setHash('dashboard/overview');
+    }catch(error){status.textContent=error.message||'Authentication failed.';submit.disabled=false;}
   };
   document.getElementById('access-site').onclick = ()=>{
     state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
