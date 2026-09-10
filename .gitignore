@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*service-account*.json
+.wrangler/
+node_modules/
+.DS_Store

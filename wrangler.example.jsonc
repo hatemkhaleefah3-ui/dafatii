@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "dafatii",
+  "pages_build_output_dir": ".",
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "dafatii-production",
+    "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+  }],
+  "vars": {
+    "APP_ORIGINS": "http://localhost:8788,https://REPLACE_WITH_PRODUCTION_ORIGIN",
+    "MAX_UPLOAD_BYTES": "536870912"
+  }
+}
