@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dafatii",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-09-10",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dafatii-production",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "APP_ORIGINS": "https://REPLACE_WITH_PRODUCTION_ORIGIN",
+    "MAX_UPLOAD_BYTES": "536870912",
+    "AUTH_ATTEMPT_LIMIT": "10",
+    "UPLOAD_INIT_LIMIT": "60",
+    "USER_STORAGE_QUOTA_BYTES": "10737418240"
+  }
+}
