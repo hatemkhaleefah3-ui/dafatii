@@ -61,11 +61,8 @@
     blocked:[]
   };
 
-  function read(key,fallback){
-    try { const value=JSON.parse(localStorage.getItem(key)||'null'); return value ?? fallback; }
-    catch { return fallback; }
-  }
-  function write(key,value){ localStorage.setItem(key,JSON.stringify(value)); }
+  function read(key,fallback){ return window.DafatiiData.readJSON(key,fallback); }
+  function write(key,value){ return window.DafatiiData.writeJSON(key,value); }
   function safeWrite(key,value){
     try { write(key,value); return true; }
     catch(err){ showToast('Storage is full. Remove large media and try again.'); return false; }
