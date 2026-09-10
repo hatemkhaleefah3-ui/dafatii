@@ -1,0 +1,6 @@
+/* Preserve the existing sidebar contract after the navigation reposition. */
+.settings-nav.hidden{
+  transform:translateY(-12px)!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
