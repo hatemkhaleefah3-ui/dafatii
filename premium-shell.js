@@ -14,6 +14,7 @@
     'change-course': svg('<path d="M3.5 8.5 12 4l8.5 4.5L12 13 3.5 8.5Z"/><path d="M6.5 10.2V15c0 1.8 2.5 3.3 5.5 3.3s5.5-1.5 5.5-3.3v-4.8M20.5 8.5V14"/>'),
     'change-language': svg('<circle cx="12" cy="12" r="9"/><path d="M3.5 12h17M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
     'dark-mode': svg('<path d="M20 15.2A8.2 8.2 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"/>'),
+    sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.5 4.5l1.4 1.4M18.1 18.1l1.4 1.4M2.5 12h2M19.5 12h2M4.5 19.5l1.4-1.4M18.1 5.9l1.4-1.4"/>'),
     sidebar: svg('<rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16M6.2 8h.01M6.2 11h.01"/>')
   };
 
@@ -41,10 +42,16 @@
   function enhanceSettingsNav(){
     document.querySelectorAll('.settings-nav .settings-action[data-extra]').forEach(button => {
       const key = button.dataset.extra;
-      const label = button.textContent.trim();
+      const originalLabel = button.dataset.premiumLabel || button.textContent.trim();
+      button.dataset.premiumLabel = originalLabel;
+      const isTheme = key === 'dark-mode';
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const label = isTheme ? (isDark ? 'Light Mode' : 'Dark Mode') : originalLabel;
+      const glyph = isTheme && isDark ? icons.sun : (icons[key] || icons.settings);
       button.classList.add('premium-settings-action');
       button.classList.toggle('is-active', typeof route === 'function' && route() === key);
-      button.innerHTML = `<span class="settings-motion-icon">${icons[key] || icons.settings}</span><span class="settings-text">${label}</span>`;
+      button.setAttribute('aria-label',label);
+      button.innerHTML = `<span class="settings-motion-icon">${glyph}</span><span class="settings-text">${label}</span>`;
     });
     const sidebar = document.getElementById('sidebar-open');
     if(sidebar){
