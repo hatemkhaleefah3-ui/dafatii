@@ -1,0 +1,21 @@
+[
+  {
+    "origin": [
+      "https://REPLACE_WITH_PRODUCTION_ORIGIN",
+      "https://REPLACE_WITH_EXACT_PREVIEW_ORIGIN.pages.dev",
+      "http://localhost:8788"
+    ],
+    "method": ["GET", "HEAD", "PUT"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Range",
+      "Accept-Ranges",
+      "ETag",
+      "x-goog-generation",
+      "x-goog-meta-dafatii-file-id"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
