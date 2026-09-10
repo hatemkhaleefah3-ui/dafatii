@@ -18,9 +18,16 @@
     sidebar: svg('<rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16M6.2 8h.01M6.2 11h.01"/>')
   };
 
+  function syncThemeChrome(){
+    const dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark ? '#07111f' : '#f5f8ff');
+  }
+
   function applyStoredTheme(){
     const stored = localStorage.getItem(THEME_KEY);
     if(stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
+    syncThemeChrome();
   }
 
   function mainLabel(key){
@@ -91,13 +98,14 @@
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     localStorage.setItem(THEME_KEY,next);
+    syncThemeChrome();
     if(typeof showToast === 'function') showToast(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled`);
     requestAnimationFrame(enhancePremiumShell);
   }
 
   function ripple(event){
     if(reducedMotion) return;
-    const host = event.target.closest?.('.btn,.nav-link,.settings-action,.sub-link,.subject-add,.icon-btn');
+    const host = event.target.closest?.('.btn,.settings-action,.sub-link,.subject-add,.icon-btn');
     if(!host) return;
     const rect = host.getBoundingClientRect();
     const dot = document.createElement('span');
@@ -122,4 +130,5 @@
   }
 
   window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(enhancePremiumShell),{once:true});
+  window.addEventListener('hashchange',()=>requestAnimationFrame(enhancePremiumShell));
 })();
