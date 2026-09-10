@@ -25,7 +25,7 @@
   }
 
   function applyStoredTheme(){
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = window.DafatiiData.readString(THEME_KEY);
     if(stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
     syncThemeChrome();
   }
@@ -97,7 +97,7 @@
     event.stopImmediatePropagation?.();
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
-    localStorage.setItem(THEME_KEY,next);
+    window.DafatiiData.writeString(THEME_KEY,next);
     syncThemeChrome();
     if(typeof showToast === 'function') showToast(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled`);
     requestAnimationFrame(enhancePremiumShell);

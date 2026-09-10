@@ -11,12 +11,7 @@ const LECTURE_ICONS = ['▶','📖','📝','🎓','🧠','🔬','🧪','📐','�
 const SUBJECT_TABS = ['Lectures', 'Degrees', 'Analysis'];
 
 function loadJSON(key, fallback){
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || 'null');
-    return value ?? fallback;
-  } catch {
-    return fallback;
-  }
+  return window.DafatiiData.readJSON(key, fallback);
 }
 
 function loadSubjects(){
@@ -30,7 +25,7 @@ function loadLectures(){
 }
 
 const state = {
-  joined: localStorage.getItem('dafatii:joined') === '1',
+  joined: window.DafatiiData.readString('dafatii:joined') === '1',
   sidebar: false,
   authMode: 'signup',
   subjects: loadSubjects(),
@@ -62,8 +57,8 @@ function icon(name){
 
 function setHash(hash){ location.hash = hash; }
 function route(){ return location.hash.replace(/^#\/?/,'') || 'landing'; }
-function saveSubjects(){ localStorage.setItem('dafatii:subjects', JSON.stringify(state.subjects)); }
-function saveLectures(){ localStorage.setItem('dafatii:lectures', JSON.stringify(state.lectures)); }
+function saveSubjects(){ window.DafatiiData.writeJSON('dafatii:subjects', state.subjects); }
+function saveLectures(){ window.DafatiiData.writeJSON('dafatii:lectures', state.lectures); }
 function subjectLectures(subjectId){ return Array.isArray(state.lectures[subjectId]) ? state.lectures[subjectId] : []; }
 
 function landing(){
@@ -149,11 +144,11 @@ function join(){
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
   document.getElementById('auth-form').onsubmit = e=>{
     e.preventDefault();
-    state.joined = true; localStorage.setItem('dafatii:joined','1');
+    state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
     setHash('dashboard/overview');
   };
   document.getElementById('access-site').onclick = ()=>{
-    state.joined = true; localStorage.setItem('dafatii:joined','1');
+    state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
     setHash('dashboard/overview');
   };
 }
@@ -523,4 +518,10 @@ function render(){
 }
 
 window.addEventListener('hashchange',render);
+window.addEventListener('dafatii:datahydrated',()=>{
+  state.joined = window.DafatiiData.readString('dafatii:joined') === '1';
+  state.subjects = loadSubjects();
+  state.lectures = loadLectures();
+  render();
+});
 window.addEventListener('DOMContentLoaded',()=>{ if(!location.hash) location.hash='landing'; else render(); });
