@@ -2,6 +2,6 @@
   "private": true,
   "scripts": {
     "test": "node tests/data-client.test.js && node tests/backend-security.test.mjs && node tests/static-boundary.test.js",
-    "check": "node --check data-client.js && node --check api-client.js && node --check auth-client.js && node --check backend-adapter.js && node --check file-client.js && node --check pdf-viewer.js && node --check media-viewer.js && node --check material-files.js"
+    "check": "node --check data-client.js && node --check api-client.js && node --check auth-client.js && node --check backend-adapter.js && node --check file-client.js && node --check pdf-viewer.js && node --check media-viewer.js && node --check material-files.js && node --check functions/_lib/*.mjs && node --input-type=module --check < 'functions/api/v1/[[path]].js'"
   }
 }
