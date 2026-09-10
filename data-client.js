@@ -3,12 +3,31 @@
 
   const DATA_PREFIX = 'dafatii:';
   const LOCAL_ONLY_KEYS = new Set(['dafatii:theme', 'dafatii:direction']);
+  const LEGACY_STRING_KEYS = new Set(['dafatii:joined']);
+  const FORMAT_KEY = '__dafatii:data-formats:v1';
   const listeners = new Set();
   const pending = new Map();
   let adapter = null;
   let flushPromise = Promise.resolve();
 
   const isSyncedKey = key => String(key).startsWith(DATA_PREFIX) && !LOCAL_ONLY_KEYS.has(String(key));
+
+  function formats() {
+    try { return JSON.parse(localStorage.getItem(FORMAT_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function rememberFormat(key, format) {
+    const value = formats();
+    value[key] = format;
+    localStorage.setItem(FORMAT_KEY, JSON.stringify(value));
+  }
+
+  function forgetFormat(key) {
+    const value = formats();
+    delete value[key];
+    localStorage.setItem(FORMAT_KEY, JSON.stringify(value));
+  }
 
   function emit(type, detail = {}) {
     const event = { type, ...detail };
@@ -38,6 +57,7 @@
 
   function writeString(key, value) {
     localStorage.setItem(key, String(value));
+    rememberFormat(key, 'string');
     const record = { key, format: 'string', value: String(value), updatedAt: Date.now() };
     emit('datachange', { record, source: 'local' });
     enqueue(record);
@@ -46,6 +66,7 @@
 
   function writeJSON(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+    rememberFormat(key, 'json');
     const record = { key, format: 'json', value, updatedAt: Date.now() };
     emit('datachange', { record, source: 'local' });
     enqueue(record);
@@ -54,6 +75,7 @@
 
   function remove(key) {
     localStorage.removeItem(key);
+    forgetFormat(key);
     const record = { key, format: 'json', value: null, deleted: true, updatedAt: Date.now() };
     emit('datachange', { record, source: 'local' });
     enqueue(record);
@@ -61,10 +83,16 @@
 
   function localSnapshot() {
     const records = [];
+    const knownFormats = formats();
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
       if (!isSyncedKey(key)) continue;
       const raw = localStorage.getItem(key);
+      const format = knownFormats[key] || (LEGACY_STRING_KEYS.has(key) ? 'string' : null);
+      if (format === 'string') {
+        records.push({ key, format: 'string', value: raw, updatedAt: null });
+        continue;
+      }
       try {
         records.push({ key, format: 'json', value: JSON.parse(raw), updatedAt: null });
       } catch {
@@ -83,9 +111,13 @@
 
   function applyRemoteRecord(record) {
     if (!record || !isSyncedKey(record.key) || pending.has(record.key)) return;
-    if (record.deleted || record.value === null) localStorage.removeItem(record.key);
+    if (record.deleted || record.value === null) {
+      localStorage.removeItem(record.key);
+      forgetFormat(record.key);
+    }
     else if (record.format === 'string') localStorage.setItem(record.key, String(record.value));
     else localStorage.setItem(record.key, JSON.stringify(record.value));
+    if (!record.deleted && record.value !== null) rememberFormat(record.key, record.format === 'string' ? 'string' : 'json');
     emit('datachange', { record, source: 'remote' });
   }
 
