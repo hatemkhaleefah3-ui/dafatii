@@ -117,6 +117,7 @@ function feature(num,title,text){ return `<article class="feature-card"><div cla
 
 function join(){
   const isSignup = state.authMode === 'signup';
+  const authOffline = window.DafatiiAuth?.availability === 'offline';
   app.innerHTML = `
   <div class="join-page">
     <section class="join-panel">
@@ -129,15 +130,15 @@ function join(){
         <div class="auth-tabs"><button class="auth-tab ${!isSignup?'active':''}" data-auth="signin">Sign in</button><button class="auth-tab ${isSignup?'active':''}" data-auth="signup">Sign up</button></div>
         <h2>${isSignup ? 'Create your account' : 'Welcome back'}</h2>
         <p>${isSignup ? 'Set up your Dafatii workspace in a few seconds.' : 'Sign in to continue to your workspace.'}</p>
-        <form id="auth-form">
+        <form id="auth-form" ${authOffline ? 'aria-disabled="true"' : ''}>
           ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
           <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
           <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
           ${isSignup ? `<div class="field"><label>I study as</label><select name="studentType"><option>School student</option><option>University student</option><option>Independent student</option></select></div>` : ''}
-          <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
+          <button class="btn btn-primary auth-submit" type="submit" ${authOffline ? 'disabled' : ''}>${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
         <button class="btn btn-ghost auth-submit" id="access-site" type="button">Access website without account →</button>
-        <div class="auth-note" id="auth-status">Credentials are verified by Dafatii's server. Guest access remains local-only and does not synchronize.</div>
+        <div class="auth-note" id="auth-status">${authOffline ? 'Cloud accounts are temporarily unavailable. Continue without an account; your workspace will remain on this device.' : 'Credentials are verified by Dafatii’s server. Guest access remains local-only and does not synchronize.'}</div>
       </div>
     </section>
   </div>`;
@@ -524,6 +525,7 @@ function render(){
 }
 
 window.addEventListener('hashchange',render);
+window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
 window.addEventListener('dafatii:datahydrated',()=>{
   state.joined = window.DafatiiData.readString('dafatii:joined') === '1';
   state.subjects = loadSubjects();

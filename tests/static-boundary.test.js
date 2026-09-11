@@ -20,5 +20,5 @@ const router = fs.readFileSync(path.join('functions', 'api', 'v1', '[[path]].js'
 assert.match(router, /WHERE id = \? AND user_id = \?/);
 assert.match(router, /INSERT OR IGNORE INTO records/);
 assert.match(router, /status = 'available'/);
+assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg\+xml"/);
 console.log('static boundary tests passed');
-

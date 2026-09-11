@@ -3,12 +3,12 @@ import { generateKeyPairSync, verify as verifySignature, webcrypto } from 'node:
 import { readFileSync } from 'node:fs';
 
 globalThis.crypto ||= webcrypto;
-const { requireUser, clearSessionCookie, sessionCookie } = await import('../functions/_lib/auth.mjs');
+const { requireUser, clearSessionCookie, enforceAuthRateLimit, sessionCookie } = await import('../functions/_lib/auth.mjs');
 const { hashPassword, verifyPassword } = await import('../functions/_lib/crypto.mjs');
 const { ownedFile } = await import('../functions/_lib/access.mjs');
 const { canonicalQuery, completionDisposition, signV4, verifyCompletedObject, verifyMagicBytes } = await import('../functions/_lib/gcs.mjs');
 const { encodePath } = await import('../functions/_lib/encoding.mjs');
-const { objectKey, sanitizeFilename, validateRecord, validateUpload } = await import('../functions/_lib/policy.mjs');
+const { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } = await import('../functions/_lib/policy.mjs');
 
 function statement(firstValue) {
   return { bind(...values) { this.values = values; return this; }, async first() { return typeof firstValue === 'function' ? firstValue(this.values) : firstValue; }, async run() { return { meta: { changes: 1 } }; } };
@@ -28,10 +28,15 @@ await assert.rejects(() => ownedFile(db, 'user-b', 'file-a'), error => error.sta
 
 assert.throws(() => validateUpload({ filename: 'large.pdf', contentType: 'application/pdf', size: 101 }, { MAX_UPLOAD_BYTES: 100 }), error => error.code === 'FILE_TOO_LARGE');
 assert.throws(() => validateUpload({ filename: 'attack.svg', contentType: 'image/svg+xml', size: 20 }), error => error.code === 'FILE_TYPE_NOT_ALLOWED');
+assert.throws(() => validateUpload({ filename: 'large.pdf', contentType: 'application/pdf', size: 101 }, { MAX_UPLOAD_BYTES: 'not-a-number' }), error => error.code === 'CONFIGURATION_ERROR');
+assert.throws(() => positiveIntegerSetting('0', 10), error => error.code === 'CONFIGURATION_ERROR');
 assert.equal(sanitizeFilename('../ lecture\u0000.pdf'), '.._ lecture_.pdf');
 assert.throws(() => objectKey('../../victim', crypto.randomUUID()));
 const uid = crypto.randomUUID(), fid = crypto.randomUUID();
+assert.equal(isUuid(uid), true);
+assert.equal(isUuid('------------------------------------'), false);
 assert.equal(objectKey(uid, fid), `users/${uid}/${fid}/object`);
+await assert.rejects(() => enforceAuthRateLimit({}, new Request('https://dafatii.example/api/v1/auth/login'), 'user@example.com', {}), error => error.code === 'CONFIGURATION_ERROR');
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
@@ -67,4 +72,7 @@ assert.match(migration, /PRIMARY KEY \(user_id, record_key\)/);
 assert.match(migration, /last_mutation_id TEXT/);
 assert.match(migration, /object_key TEXT NOT NULL UNIQUE/);
 assert.match(migration, /REFERENCES users\(id\) ON DELETE CASCADE/g);
+const headers = readFileSync(new URL('../_headers', import.meta.url), 'utf8');
+assert.match(headers, /Content-Security-Policy:/);
+assert.match(headers, /frame-ancestors 'none'/);
 console.log('backend security tests passed');

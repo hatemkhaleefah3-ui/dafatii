@@ -2,6 +2,7 @@ import { hashPassword, randomToken, sha256, verifyPassword } from './crypto.mjs'
 import { HttpError, logEvent } from './http.mjs';
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
+const DUMMY_PASSWORD_HASH = 'pbkdf2-sha256$600000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const normalizeEmail = value => String(value || '').trim().normalize('NFKC').toLowerCase();
 export function validateAccountInput(input, signup = false) {
   const email = normalizeEmail(input?.email);
@@ -23,14 +24,18 @@ export function sessionCookie(request, token, maxAge = SESSION_SECONDS) {
 export const clearSessionCookie = request => sessionCookie(request, '', 0);
 
 async function rateKey(request, email, env) {
+  const pepper = String(env.RATE_LIMIT_PEPPER || '');
+  if (pepper.length < 32) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Authentication configuration is unavailable.');
   const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  return sha256(`${env.RATE_LIMIT_PEPPER || env.SESSION_SECRET || 'local'}\0${ip}\0${email}`);
+  return sha256(`${pepper}\0${ip}\0${email}`);
 }
 export async function enforceAuthRateLimit(db, request, email, env, now = Date.now()) {
+  const attemptLimit = env.AUTH_ATTEMPT_LIMIT === undefined || env.AUTH_ATTEMPT_LIMIT === '' ? 10 : Number(env.AUTH_ATTEMPT_LIMIT);
+  if (!Number.isSafeInteger(attemptLimit) || attemptLimit < 1 || attemptLimit > 1000) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Authentication configuration is unavailable.');
   const fingerprint = await rateKey(request, email, env);
   const windowStart = now - 15 * 60 * 1000;
   const count = await db.prepare('SELECT COUNT(*) AS count FROM auth_attempts WHERE fingerprint = ? AND created_at > ?').bind(fingerprint, windowStart).first();
-  if (Number(count?.count || 0) >= Number(env.AUTH_ATTEMPT_LIMIT || 10)) throw new HttpError(429, 'RATE_LIMITED', 'Too many attempts. Try again later.');
+  if (Number(count?.count || 0) >= attemptLimit) throw new HttpError(429, 'RATE_LIMITED', 'Too many attempts. Try again later.');
   await db.prepare('INSERT INTO auth_attempts (id, fingerprint, created_at) VALUES (?, ?, ?)').bind(crypto.randomUUID(), fingerprint, now).run();
   if (crypto.getRandomValues(new Uint8Array(1))[0] < 3) await db.prepare('DELETE FROM auth_attempts WHERE created_at < ?').bind(now - 86400000).run();
   return fingerprint;
@@ -49,7 +54,8 @@ export async function createUser(db, input, now = Date.now()) {
 }
 export async function authenticateUser(db, email, password) {
   const user = await db.prepare('SELECT id, email_normalized, password_hash, display_name, status FROM users WHERE email_normalized = ?').bind(normalizeEmail(email)).first();
-  const valid = user && user.status === 'active' && await verifyPassword(String(password || ''), user.password_hash);
+  const passwordValid = await verifyPassword(String(password || ''), user?.password_hash || DUMMY_PASSWORD_HASH);
+  const valid = Boolean(user && user.status === 'active' && passwordValid);
   if (!valid) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is invalid.');
   return { id: user.id, email: user.email_normalized, displayName: user.display_name };
 }

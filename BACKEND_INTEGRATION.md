@@ -8,6 +8,8 @@ Dafatii's UI is intentionally independent of any backend framework or API shape.
 - A connected adapter receives every later synced-data write through `save(record)`.
 - `load({ localRecords })` can reconcile existing browser data with server data and return the records that should hydrate the UI.
 - Server hydration never overwrites a key with an unsent local write from the current session.
+- Failed authenticated writes are retained in a browser outbox scoped to the server user ID and replayed only for that same account. Reloading, signing out, or signing into a different account cannot transfer that outbox to another user.
+- Login and restored sessions replace the synchronized browser cache with that account's authoritative server records. Only successful signup imports an existing guest workspace, preventing shared-browser data from leaking into an unrelated account.
 - `dafatii:theme` and `dafatii:direction` are device preferences and are intentionally not synchronized.
 - The adapter is the policy boundary for authorization, validation, conflict resolution, retry/backoff, idempotency, and API-version translation.
 
@@ -213,6 +215,8 @@ Set encrypted secrets:
 
 - `GCS_PRIVATE_KEY`: PKCS#8 service-account private key; escaped `\\n` or literal newlines are accepted
 - `RATE_LIMIT_PEPPER`: independent random 32-byte value
+
+Authentication fails closed with `CONFIGURATION_ERROR` when `RATE_LIMIT_PEPPER` is absent or shorter than 32 characters, or when numeric security limits are invalid. If D1 is unavailable, the frontend disables cloud-account submission and keeps explicit device-local guest access available instead of presenting a form that cannot succeed.
 
 The implementation uses browser-compatible WebCrypto and no Node Google SDK. The V4 signer follows Google XML API canonical URI, sorted RFC 3986 query, normalized/sorted signed headers, `UNSIGNED-PAYLOAD`, `GOOG4-RSA-SHA256`, credential scope, SHA-256 canonical hash, and RSA PKCS#1 v1.5 signature rules. Tests cryptographically verify the output signature and reserved/Unicode paths.
 

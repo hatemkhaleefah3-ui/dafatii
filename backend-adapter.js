@@ -2,12 +2,13 @@
   'use strict';
   const revisions = new Map();
   let connecting = null;
-  function adapter() {
+  function adapter(userId, importLocal) {
     return {
+      scope: `user:${userId}`,
       async load({ localRecords }) {
-        const result = await window.DafatiiApi.request('/sync/hydrate', { method: 'POST', body: { localRecords }, idempotent: true });
+        const result = await window.DafatiiApi.request('/sync/hydrate', { method: 'POST', body: { localRecords: importLocal ? localRecords : [] }, idempotent: true });
         result.records.forEach(record => revisions.set(record.key, record.revision));
-        return result;
+        return { ...result, replaceLocal: true };
       },
       async save(record) {
         const mutationId = crypto.randomUUID();
@@ -25,13 +26,13 @@
       }
     };
   }
-  async function connect() {
+  async function connect({ importLocal = false } = {}) {
     if (connecting) return connecting;
     connecting = (async () => {
       const user = window.DafatiiAuth.user || await window.DafatiiAuth.current();
       if (!user) return false;
       revisions.clear();
-      await window.DafatiiData.connect(adapter());
+      await window.DafatiiData.connect(adapter(user.id, importLocal));
       return true;
     })().finally(() => { connecting = null; });
     return connecting;
@@ -39,4 +40,3 @@
   window.DafatiiRemoteData = Object.freeze({ connect });
   window.addEventListener('DOMContentLoaded', () => { void connect().catch(error => console.warn('Dafatii synchronization is offline.', error.code || error.message)); });
 })();
-

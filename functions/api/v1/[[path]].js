@@ -2,7 +2,7 @@ import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession
 import { ownedFile, publicFileDto } from '../../_lib/access.mjs';
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
-import { objectKey, validateRecord, validateUpload } from '../../_lib/policy.mjs';
+import { isUuid, objectKey, positiveIntegerSetting, validateRecord, validateUpload } from '../../_lib/policy.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
@@ -63,7 +63,7 @@ async function hydrate(context, user) {
 async function mutate(context, user) {
   const input = await readJson(context.request, 300000);
   const mutationId = String(input.mutationId || '');
-  if (!/^[0-9a-f-]{36}$/i.test(mutationId)) throw new HttpError(400, 'INVALID_MUTATION_ID', 'Mutation ID must be a UUID.');
+  if (!isUuid(mutationId)) throw new HttpError(400, 'INVALID_MUTATION_ID', 'Mutation ID must be a UUID.');
   const previous = await context.env.DB.prepare('SELECT response_json FROM record_mutations WHERE user_id = ? AND mutation_id = ?').bind(user.id, mutationId).first();
   if (previous) return ok(JSON.parse(previous.response_json));
   const record = validateRecord(input.record);
@@ -95,11 +95,12 @@ async function mutate(context, user) {
 
 async function uploadInit(context, user) {
   const input = validateUpload(await readJson(context.request, 32768), context.env);
+  const uploadLimit = positiveIntegerSetting(context.env.UPLOAD_INIT_LIMIT, 60, { maximum: 10000 });
+  const quota = positiveIntegerSetting(context.env.USER_STORAGE_QUOTA_BYTES, 10737418240);
   const now = Date.now();
   const recent = await context.env.DB.prepare("SELECT COUNT(*) AS count FROM files WHERE user_id = ? AND created_at > ?").bind(user.id, now - 3600000).first();
-  if (Number(recent?.count || 0) >= Number(context.env.UPLOAD_INIT_LIMIT || 60)) throw new HttpError(429, 'UPLOAD_RATE_LIMITED', 'Upload initialization limit reached.');
+  if (Number(recent?.count || 0) >= uploadLimit) throw new HttpError(429, 'UPLOAD_RATE_LIMITED', 'Upload initialization limit reached.');
   const usage = await context.env.DB.prepare("SELECT COALESCE(SUM(CASE WHEN status = 'pending' THEN expected_size ELSE actual_size END), 0) AS bytes FROM files WHERE user_id = ? AND status IN ('pending', 'available', 'quarantined', 'delete_failed')").bind(user.id).first();
-  const quota = Number(context.env.USER_STORAGE_QUOTA_BYTES || 10737418240);
   if (Number(usage?.bytes || 0) + input.size > quota) throw new HttpError(413, 'STORAGE_QUOTA_EXCEEDED', 'Account storage quota would be exceeded.');
   const fileId = crypto.randomUUID();
   const key = objectKey(user.id, fileId);
@@ -144,7 +145,9 @@ async function fileMetadata(context, user, fileId) { return ok(publicFileDto(awa
 
 async function listFiles(context, user) {
   const url = new URL(context.request.url);
-  const limit = Math.min(Math.max(Number(url.searchParams.get('limit') || 50), 1), 100);
+  const requestedLimit = Number(url.searchParams.get('limit') || 50);
+  if (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1) throw new HttpError(400, 'INVALID_LIMIT', 'File list limit is invalid.');
+  const limit = Math.min(requestedLimit, 100);
   const result = await context.env.DB.prepare("SELECT * FROM files WHERE user_id = ? AND status != 'deleted' ORDER BY created_at DESC LIMIT ?").bind(user.id, limit).all();
   return ok({ files: result.results.map(publicFileDto) });
 }

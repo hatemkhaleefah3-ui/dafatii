@@ -13,9 +13,15 @@ export function sanitizeFilename(value) {
   const cleaned = String(value || 'file').normalize('NFC').replace(/[\u0000-\u001F\u007F/\\]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 180);
   return cleaned && cleaned !== '.' && cleaned !== '..' ? cleaned : 'file';
 }
+export function positiveIntegerSetting(value, fallback, { maximum = Number.MAX_SAFE_INTEGER } = {}) {
+  const parsed = value === undefined || value === '' ? fallback : Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Server limits are misconfigured.');
+  return Math.min(parsed, maximum);
+}
+export const isUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
 export function validateUpload(input, env = {}) {
   const size = Number(input?.size);
-  const maxSize = Math.min(Number(env.MAX_UPLOAD_BYTES || 536870912), 5368709120);
+  const maxSize = positiveIntegerSetting(env.MAX_UPLOAD_BYTES, 536870912, { maximum: 5368709120 });
   const contentType = String(input?.contentType || '').toLowerCase().split(';')[0].trim();
   if (!Number.isSafeInteger(size) || size <= 0) throw new HttpError(400, 'INVALID_FILE_SIZE', 'File size must be a positive integer.');
   if (size > maxSize) throw new HttpError(413, 'FILE_TOO_LARGE', `File exceeds the ${maxSize}-byte limit.`);
@@ -25,7 +31,7 @@ export function validateUpload(input, env = {}) {
   return { size, contentType, filename: sanitizeFilename(input.filename) };
 }
 export function objectKey(userId, fileId) {
-  if (!/^[0-9a-f-]{36}$/i.test(userId) || !/^[0-9a-f-]{36}$/i.test(fileId)) throw new TypeError('Invalid internal identifier.');
+  if (!isUuid(userId) || !isUuid(fileId)) throw new TypeError('Invalid internal identifier.');
   return `users/${userId}/${fileId}/object`;
 }
 export function validateRecord(record) {

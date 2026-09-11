@@ -5,9 +5,11 @@
   const LOCAL_ONLY_KEYS = new Set(['dafatii:theme', 'dafatii:direction']);
   const LEGACY_STRING_KEYS = new Set(['dafatii:joined']);
   const FORMAT_KEY = '__dafatii:data-formats:v1';
+  const OUTBOX_KEY = '__dafatii:sync-outbox:v1';
   const listeners = new Set();
   const pending = new Map();
   let adapter = null;
+  let adapterScope = null;
   let flushPromise = Promise.resolve();
 
   const isSyncedKey = key => String(key).startsWith(DATA_PREFIX) && !LOCAL_ONLY_KEYS.has(String(key));
@@ -27,6 +29,39 @@
     const value = formats();
     delete value[key];
     localStorage.setItem(FORMAT_KEY, JSON.stringify(value));
+  }
+
+  function storedOutbox() {
+    try {
+      const value = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
+      return Array.isArray(value) ? value.filter(item => item && typeof item.scope === 'string' && item.record?.key) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function loadPending(scope) {
+    pending.clear();
+    storedOutbox().filter(item => item.scope === scope).forEach(item => {
+      const record = item.record;
+      pending.set(record.key, record);
+      if (record.deleted || record.value === null) {
+        localStorage.removeItem(record.key);
+        forgetFormat(record.key);
+      } else {
+        localStorage.setItem(record.key, record.format === 'string' ? String(record.value) : JSON.stringify(record.value));
+        rememberFormat(record.key, record.format === 'string' ? 'string' : 'json');
+      }
+    });
+  }
+
+  function persistPending() {
+    if (!adapterScope) return;
+    const retained = storedOutbox().filter(item => item.scope !== adapterScope);
+    const current = [...pending.values()].map(record => ({ scope: adapterScope, record }));
+    const combined = [...retained, ...current];
+    if (combined.length) localStorage.setItem(OUTBOX_KEY, JSON.stringify(combined));
+    else localStorage.removeItem(OUTBOX_KEY);
   }
 
   function emit(type, detail = {}) {
@@ -52,6 +87,7 @@
   function enqueue(record) {
     if (!adapter?.save || !isSyncedKey(record.key)) return;
     pending.set(record.key, record);
+    persistPending();
     void flush();
   }
 
@@ -121,15 +157,28 @@
     emit('datachange', { record, source: 'remote' });
   }
 
+  function clearSyncedLocal({ preservePending = false } = {}) {
+    const keys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (isSyncedKey(key) && (!preservePending || !pending.has(key))) keys.push(key);
+    }
+    keys.forEach(key => { localStorage.removeItem(key); forgetFormat(key); });
+    emit('datahydrated', {});
+  }
+
   async function connect(nextAdapter) {
     if (!nextAdapter || (typeof nextAdapter.load !== 'function' && typeof nextAdapter.save !== 'function')) {
       throw new TypeError('A Dafatii data adapter must implement load(), save(), or both.');
     }
     adapter = nextAdapter;
+    adapterScope = String(nextAdapter.scope || 'default');
+    loadPending(adapterScope);
     emit('syncstatus', { status: 'connecting' });
     try {
       if (adapter.load) {
         const payload = await adapter.load({ localRecords: localSnapshot() });
+        if (payload?.replaceLocal) clearSyncedLocal({ preservePending: true });
         normalizeRecords(payload).forEach(applyRemoteRecord);
       }
       emit('datahydrated', {});
@@ -145,6 +194,7 @@
   function disconnect() {
     adapter = null;
     pending.clear();
+    adapterScope = null;
     emit('syncstatus', { status: 'local' });
   }
 
@@ -155,7 +205,7 @@
         const [key, record] = pending.entries().next().value;
         try {
           await adapter.save(record);
-          if (pending.get(key) === record) pending.delete(key);
+          if (pending.get(key) === record) { pending.delete(key); persistPending(); }
           emit('datasynced', { record });
         } catch (error) {
           emit('syncerror', { operation: 'save', record, error });
@@ -183,6 +233,7 @@
     disconnect,
     flush,
     subscribe,
+    clearSyncedLocal,
     isSyncedKey
   });
 })();
