@@ -1,0 +1,11 @@
+.dev.vars
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json
+.wrangler/
+node_modules/
+coverage/
+
