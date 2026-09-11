@@ -56,7 +56,9 @@ async function run() {
   assert.match(context.localStorage.getItem('__dafatii:sync-outbox:v1'), /user:a/);
 
   data.disconnect();
+  const hydrationEventsBeforeSwitch = events.filter(event => event.type === 'dafatii:datahydrated').length;
   await data.connect({ scope: 'user:b', load: async () => ({ records: [{ key: 'dafatii:subjects', format: 'json', value: [{ id: 'biology' }] }], replaceLocal: true }), save: async () => {} });
+  assert.equal(events.filter(event => event.type === 'dafatii:datahydrated').length, hydrationEventsBeforeSwitch + 1, 'account replacement must hydrate atomically');
   assert.equal(data.readJSON('dafatii:notes', null), null, 'another account must not receive user A local records');
   assert.equal(data.readJSON('dafatii:subjects', [])[0].id, 'biology');
 

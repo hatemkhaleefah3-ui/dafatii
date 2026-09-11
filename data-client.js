@@ -157,14 +157,14 @@
     emit('datachange', { record, source: 'remote' });
   }
 
-  function clearSyncedLocal({ preservePending = false } = {}) {
+  function clearSyncedLocal({ preservePending = false, notify = true } = {}) {
     const keys = [];
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
       if (isSyncedKey(key) && (!preservePending || !pending.has(key))) keys.push(key);
     }
     keys.forEach(key => { localStorage.removeItem(key); forgetFormat(key); });
-    emit('datahydrated', {});
+    if (notify) emit('datahydrated', {});
   }
 
   async function connect(nextAdapter) {
@@ -178,7 +178,7 @@
     try {
       if (adapter.load) {
         const payload = await adapter.load({ localRecords: localSnapshot() });
-        if (payload?.replaceLocal) clearSyncedLocal({ preservePending: true });
+        if (payload?.replaceLocal) clearSyncedLocal({ preservePending: true, notify: false });
         normalizeRecords(payload).forEach(applyRemoteRecord);
       }
       emit('datahydrated', {});
