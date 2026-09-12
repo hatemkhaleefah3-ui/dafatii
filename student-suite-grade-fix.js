@@ -5,7 +5,7 @@
     .filter(exam => Number.isFinite(exam.numericDegree));
 
   function syncGradeMetrics(){
-    const value = window.DafatiiData.readJSON('dafatii:examSchedule', []);
+    const value = window.DafatiiCourses.readJSON('dafatii:examSchedule', []);
     const raw = Array.isArray(value) ? value : [];
     const graded = validGrades(raw);
     const average = graded.length ? graded.reduce((sum,exam)=>sum+exam.numericDegree,0)/graded.length : null;

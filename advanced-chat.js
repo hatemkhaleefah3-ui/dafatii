@@ -9,8 +9,8 @@
   let voiceRecorder=null,voiceStream=null,voiceChunks=[],voiceConversationId='';
   const ui={filter:'all',query:'',info:false,search:false,searchQuery:'',menuMessage:'',replyTo:'',editing:'',attach:false,emoji:false,sticker:false,mobileThread:false};
 
-  function read(key,fallback){return window.DafatiiData.readJSON(key,fallback);}
-  function write(key,value){try{window.DafatiiData.writeJSON(key,value);return true;}catch{showToast('Browser storage is full. Remove large chat media and try again.');return false;}}
+  function read(key,fallback){return window.DafatiiCourses.readJSON(key,fallback);}
+  function write(key,value){try{window.DafatiiCourses.writeJSON(key,value);return true;}catch{showToast('Browser storage is full. Remove large chat media and try again.');return false;}}
   function clone(v){return JSON.parse(JSON.stringify(v));}
   function chatState(){
     const raw=read(CHAT_KEY,{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});

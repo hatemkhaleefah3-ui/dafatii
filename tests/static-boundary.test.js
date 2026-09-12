@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js'];
+const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js'];
 for (const file of featureFiles) {
   const source = fs.readFileSync(file, 'utf8');
   assert.doesNotMatch(source, /fetch\s*\(\s*['"`]\/api\//, `${file} must not call backend endpoints directly`);
@@ -21,4 +21,6 @@ assert.match(router, /WHERE id = \? AND user_id = \?/);
 assert.match(router, /INSERT OR IGNORE INTO records/);
 assert.match(router, /status = 'available'/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg\+xml"/);
+assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
+assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 console.log('static boundary tests passed');
