@@ -11,7 +11,7 @@ const LECTURE_ICONS = ['▶','📖','📝','🎓','🧠','🔬','🧪','📐','�
 const SUBJECT_TABS = ['Lectures', 'Degrees', 'Analysis'];
 
 function loadJSON(key, fallback){
-  return window.DafatiiData.readJSON(key, fallback);
+  return window.DafatiiCourses.readJSON(key, fallback);
 }
 
 function loadSubjects(){
@@ -57,8 +57,8 @@ function icon(name){
 
 function setHash(hash){ location.hash = hash; }
 function route(){ return location.hash.replace(/^#\/?/,'') || 'landing'; }
-function saveSubjects(){ window.DafatiiData.writeJSON('dafatii:subjects', state.subjects); }
-function saveLectures(){ window.DafatiiData.writeJSON('dafatii:lectures', state.lectures); }
+function saveSubjects(){ window.DafatiiCourses.writeJSON('dafatii:subjects', state.subjects); }
+function saveLectures(){ window.DafatiiCourses.writeJSON('dafatii:lectures', state.lectures); }
 function subjectLectures(subjectId){ return Array.isArray(state.lectures[subjectId]) ? state.lectures[subjectId] : []; }
 
 function landing(){
@@ -528,6 +528,11 @@ window.addEventListener('hashchange',render);
 window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
 window.addEventListener('dafatii:datahydrated',()=>{
   state.joined = window.DafatiiData.readString('dafatii:joined') === '1';
+  state.subjects = loadSubjects();
+  state.lectures = loadLectures();
+  render();
+});
+window.addEventListener('dafatii:coursechanged',()=>{
   state.subjects = loadSubjects();
   state.lectures = loadLectures();
   render();

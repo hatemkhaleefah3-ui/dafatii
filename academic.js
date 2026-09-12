@@ -4,8 +4,8 @@
   const DEFAULT_COLUMNS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const DEFAULT_ROWS = ['7:00 AM','8:45 AM','10:30 AM','12:15 PM','2:00 PM','3:45 PM','5:30 PM','7:15 PM','9:00 PM'];
 
-  function read(key, fallback){ return window.DafatiiData.readJSON(key, fallback); }
-  function write(key, value){ return window.DafatiiData.writeJSON(key, value); }
+  function read(key, fallback){ return window.DafatiiCourses.readJSON(key, fallback); }
+  function write(key, value){ return window.DafatiiCourses.writeJSON(key, value); }
   function esc(v){ return escapeHtml(v ?? ''); }
   function uid(prefix){ return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`; }
   function allExams(){ const v = read(EXAMS_KEY, []); return Array.isArray(v) ? v : []; }

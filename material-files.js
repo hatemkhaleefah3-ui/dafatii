@@ -2,8 +2,8 @@
   'use strict';
   const KEY = 'dafatii:materialFiles:v1';
   let rendering = false;
-  const all = () => window.DafatiiData.readJSON(KEY, []);
-  const save = records => window.DafatiiData.writeJSON(KEY, records);
+  const all = () => window.DafatiiCourses.readJSON(KEY, []);
+  const save = records => window.DafatiiCourses.writeJSON(KEY, records);
   function context() {
     const parts = location.hash.replace(/^#\/?/, '').split('/');
     return parts[0] === 'subjects' && parts[1] === 'subject' && parts[3] === 'lectures' ? decodeURIComponent(parts[2] || '') : null;
@@ -47,4 +47,3 @@
   new MutationObserver(render).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('hashchange', render); window.addEventListener('dafatii:datahydrated', render);
 })();
-

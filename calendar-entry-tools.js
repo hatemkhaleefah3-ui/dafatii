@@ -9,8 +9,8 @@
   const DEFAULT_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const DEFAULT_PERIODS = ['7:00 AM','8:45 AM','10:30 AM','12:15 PM','2:00 PM','3:45 PM','5:30 PM','7:15 PM','9:00 PM'];
 
-  const read = (key, fallback) => window.DafatiiData.readJSON(key, fallback);
-  const write = (key, value) => window.DafatiiData.writeJSON(key, value);
+  const read = (key, fallback) => window.DafatiiCourses.readJSON(key, fallback);
+  const write = (key, value) => window.DafatiiCourses.writeJSON(key, value);
   const esc = value => escapeHtml(value ?? '');
   const keyFor = kind => kind === 'schedule' ? SCHEDULE_KEY : EXAMS_KEY;
   const axisValues = (kind, type) => {

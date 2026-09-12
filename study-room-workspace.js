@@ -18,8 +18,8 @@
   const esc = value => escapeHtml(value ?? '');
   let roomTimerInterval = null;
 
-  function read(key,fallback){ return window.DafatiiData.readJSON(key,fallback); }
-  function write(key,value){ return window.DafatiiData.writeJSON(key,value); }
+  function read(key,fallback){ return window.DafatiiCourses.readJSON(key,fallback); }
+  function write(key,value){ return window.DafatiiCourses.writeJSON(key,value); }
   function safeWrite(key,value){
     try { write(key,value); return true; }
     catch { showToast('Browser storage is full. Remove a material and try again.'); return false; }
@@ -34,7 +34,7 @@
     };
   }
   function saveRoomState(value){ return safeWrite(ROOM_KEY,value); }
-  function allRooms(){ return [...ROOM_SEEDS,...roomState().customRooms]; }
+  function allRooms(){ return [...window.DafatiiCourses.roomSeeds(),...roomState().customRooms]; }
   function findRoom(id){ return allRooms().find(room=>room.id===id); }
 
   function workspaceState(){
