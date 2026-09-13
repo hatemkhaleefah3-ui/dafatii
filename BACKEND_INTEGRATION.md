@@ -91,7 +91,7 @@ flowchart TD
 - `logout()` revokes the server session and disconnects remote synchronization
 - read-only `user` property contains the cached current user
 
-Passwords are 12–256 characters. The server stores PBKDF2-HMAC-SHA-256 hashes with a random 128-bit salt and 600,000 iterations. Sessions use 256-bit random bearer tokens; only SHA-256 token hashes are stored in D1. Production cookies use the `__Host-` prefix, `HttpOnly`, `Secure`, `SameSite=Lax`, and `Path=/`. Unsafe API methods also require an allowed `Origin`, providing a second CSRF control. Login/signup attempts are rate-limited using a peppered IP/email fingerprint and generic login failures avoid account enumeration.
+Passwords are 12–256 characters. The server stores PBKDF2-HMAC-SHA-256 hashes with a random 128-bit salt, Cloudflare Workers' 100,000-iteration maximum, and a server-only pepper derived from `RATE_LIMIT_PEPPER`; the hash format records whether peppering is enabled. Sessions use 256-bit random bearer tokens; only SHA-256 token hashes are stored in D1. Production cookies use the `__Host-` prefix, `HttpOnly`, `Secure`, `SameSite=Lax`, and `Path=/`. Unsafe API methods also require an allowed `Origin`, providing a second CSRF control. Login/signup attempts are rate-limited using a domain-separated peppered IP/email fingerprint and generic login failures avoid account enumeration. A managed authentication service or a runtime supporting a stronger password KDF is preferred if resistance to a combined database-and-secret compromise is a primary requirement.
 
 ### `window.DafatiiFiles`
 

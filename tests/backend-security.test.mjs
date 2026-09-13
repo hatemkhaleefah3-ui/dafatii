@@ -20,6 +20,11 @@ await assert.rejects(() => requireUser(context(new Request('https://dafatii.exam
 const passwordHash = await hashPassword('correct horse battery staple', 100000);
 assert.equal(await verifyPassword('correct horse battery staple', passwordHash), true);
 assert.equal(await verifyPassword('wrong password', passwordHash), false);
+await assert.rejects(() => hashPassword('correct horse battery staple', 600000), /100000/);
+const passwordPepper = 'preview-pepper-that-is-at-least-32-characters';
+const pepperedHash = await hashPassword('correct horse battery staple', 100000, passwordPepper);
+assert.equal(await verifyPassword('correct horse battery staple', pepperedHash, passwordPepper), true);
+assert.equal(await verifyPassword('correct horse battery staple', pepperedHash, 'different-pepper-that-is-at-least-32-characters'), false);
 
 const files = new Map([['file-a:user-a', { id: 'file-a', user_id: 'user-a', status: 'available' }]]);
 const db = { prepare: () => statement(values => files.get(`${values[0]}:${values[1]}`) || null) };

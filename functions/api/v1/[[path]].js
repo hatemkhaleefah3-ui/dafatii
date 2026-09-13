@@ -15,7 +15,7 @@ async function signup(context) {
   const candidate = validateAccountInput(input, true);
   const fingerprint = await enforceAuthRateLimit(context.env.DB, context.request, candidate.email, context.env);
   try {
-    const user = await createUser(context.env.DB, candidate);
+    const user = await createUser(context.env.DB, candidate, context.env);
     const session = await createSession(context.env.DB, user.id, context.request);
     await clearAuthRateLimit(context.env.DB, fingerprint);
     logEvent('info', 'auth.signup', { userId: user.id });
@@ -29,7 +29,7 @@ async function login(context) {
   const candidate = validateAccountInput(input, false);
   const fingerprint = await enforceAuthRateLimit(context.env.DB, context.request, candidate.email, context.env);
   try {
-    const user = await authenticateUser(context.env.DB, candidate.email, candidate.password);
+    const user = await authenticateUser(context.env.DB, candidate.email, candidate.password, context.env);
     const session = await createSession(context.env.DB, user.id, context.request);
     await clearAuthRateLimit(context.env.DB, fingerprint);
     logEvent('info', 'auth.login', { userId: user.id });
