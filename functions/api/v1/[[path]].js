@@ -1,4 +1,4 @@
-import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession, createUser, enforceAuthRateLimit, normalizeEmail, requireUser, revokeCurrentSession, validateAccountInput } from '../../_lib/auth.mjs';
+import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession, createUser, enforceAuthRateLimit, normalizeEmail, requireUser, revokeCurrentSession, sessionCookie, validateAccountInput } from '../../_lib/auth.mjs';
 import { accessibleFile, ownedFile, publicFileDto } from '../../_lib/access.mjs';
 import { dispatchCourseRoute } from '../../_lib/course-routes.mjs';
 import { actorFor, publicActor, requireCourseView, requirePermission } from '../../_lib/courses.mjs';
