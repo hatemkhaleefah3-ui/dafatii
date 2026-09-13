@@ -93,7 +93,7 @@
   const runtime={actor:null,courses:[],activeId:localStorage.getItem('__dafatii:active-course')||'',revisions:new Map(),queues:new Map(),ready:false};
   const fallbackCourse={id:'',name:'No active course',institution:'',stage:'university',membership:null,color:'#64748b',icon:'◇'};
   const cacheKey=(key,courseId)=>`__dafatii:course-cache:${courseId}:${key}`;
-  const cacheRead=(key,fallback,courseId=runtime.activeId)=>{try{const value=localStorage.getItem(cacheKey(key,courseId));return value===null?fallback:JSON.parse(value);}catch{return fallback;}};
+  const cacheRead=(key,fallback,courseId=runtime.activeId)=>{try{const value=localStorage.getItem(cacheKey(key,courseId));return value===null?fallback:(JSON.parse(value)??fallback);}catch{return fallback;}};
   const cacheWrite=(key,value,courseId=runtime.activeId)=>{localStorage.setItem(cacheKey(key,courseId),JSON.stringify(value));return value;};
 
   function active(){return runtime.courses.find(course=>course.id===runtime.activeId)||runtime.courses.find(course=>course.membership?.status==='active')||fallbackCourse;}
