@@ -1,60 +1,30 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const { webcrypto } = require('node:crypto');
 
 const source = fs.readFileSync('course-context.js', 'utf8');
+const values = new Map(), events = [], requests = [];
+const localStorage = { getItem:key=>values.has(key)?values.get(key):null, setItem:(key,value)=>values.set(key,String(value)), removeItem:key=>values.delete(key) };
+const course = { id:'11111111-1111-4111-8111-111111111111', enrollmentCode:'COURSE1', name:'Computer Science', institution:'Academy', stage:'university', pricing:'free', visibility:'public', joinPolicy:'direct', membership:{ role:'owner', status:'active', permissions:{} } };
+const window = {
+  localStorage, DafatiiAuth:{ user:{ id:'22222222-2222-4222-8222-222222222222', accountType:'representer', platformRole:'student' } },
+  DafatiiData:{ readJSON:(_key,fallback)=>fallback, writeJSON:(_key,value)=>value, remove(){} },
+  DafatiiApi:{ async request(path,options={}) { requests.push([path,options]); if(path.startsWith('/courses?'))return {actor:window.DafatiiAuth.user,courses:[course]};if(path.endsWith('/content')&&(!options.method||options.method==='GET'))return {records:[{key:'dafatii:subjects',value:[{id:'programming',name:'Programming'}],revision:1,deleted:false}]};if(path.endsWith('/content'))return {revision:2};throw new Error(`Unexpected ${path}`); } },
+  dispatchEvent:event=>events.push(event)
+};
+const context=vm.createContext({window,localStorage,CustomEvent:class{constructor(type,init={}){this.type=type;this.detail=init.detail;}},Date,Math,JSON,Set,String,Map,Promise,crypto:webcrypto});
+vm.runInContext(source,context);
 
-function environment(initial = {}) {
-  const values = new Map(Object.entries(initial));
-  const events = [];
-  const window = {
-    DafatiiData: {
-      readJSON(key, fallback) { return values.has(key) ? JSON.parse(JSON.stringify(values.get(key))) : fallback; },
-      writeJSON(key, value) { values.set(key, JSON.parse(JSON.stringify(value))); return value; },
-      remove(key) { values.delete(key); }
-    },
-    dispatchEvent(event) { events.push(event); }
-  };
-  const context = vm.createContext({ window, CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } }, Date, Math, JSON, Set, String });
-  vm.runInContext(source, context);
-  return { api: window.DafatiiCourses, values, events };
-}
-
-{
-  const { api, events } = environment();
-  assert.equal(api.list().length, 3);
-  assert.equal(api.active().name, 'Computer Science');
-  assert.deepEqual(Array.from(api.readJSON('dafatii:subjects', []).map(item => item.name)), ['Programming', 'Data Structures', 'Databases']);
-  api.writeJSON('dafatii:subjects', [{ id: 'custom-cs', name: 'Custom CS' }]);
-  const medicine = api.list().find(course => course.name === 'Medicine');
-  assert.equal(api.switchCourse(medicine.id), true);
-  assert.deepEqual(Array.from(api.readJSON('dafatii:subjects', []).map(item => item.name)), ['Anatomy', 'Physiology', 'Pharmacology']);
-  api.writeJSON('dafatii:subjects', [{ id: 'custom-med', name: 'Custom Medicine' }]);
-  api.switchCourse('starter-computer-science');
-  assert.equal(api.readJSON('dafatii:subjects', [])[0].name, 'Custom CS', 'course writes must remain isolated');
-  assert.equal(events.filter(event => event.type === 'dafatii:coursechanged').length, 2);
-}
-
-{
-  const legacySubjects = [{ id: 'legacy-math', name: 'Mathematics', icon: '∑' }];
-  const { api, values } = environment({
-    'dafatii:subjects': legacySubjects,
-    'dafatii:studentSuite:v1': { profile: { course: 'Architecture', school: 'Design School', semester: 'Year 1' }, notes: [] }
-  });
-  assert.equal(api.list().length, 1);
-  assert.equal(api.active().name, 'Architecture');
-  assert.equal(api.readJSON('dafatii:subjects', [])[0].id, 'legacy-math');
-  assert(values.has(api.scopedKey('dafatii:subjects')), 'legacy data must be copied into the initial course workspace');
-}
-
-{
-  const { api } = environment();
-  const created = api.createCourse({ name: 'Software Engineering — Year 2', templateName: 'Engineering', institution: 'Tech University', term: 'Fall' });
-  assert.equal(api.active().id, created.id);
-  assert.equal(api.active().template, 'Engineering');
-  assert.equal(api.readJSON('dafatii:subjects', [])[0].name, 'Calculus');
-  assert.equal(api.readJSON('dafatii:studentSuite:v1', {}).profile.course, 'Software Engineering — Year 2');
-  assert.equal(api.roomSeeds()[0].subject, 'Mechanics');
-}
-
-console.log('course context tests passed');
+(async()=>{
+  const api=window.DafatiiCourses;
+  assert.equal(api.active().id,'');
+  await api.refresh();
+  assert.equal(api.active().name,'Computer Science');
+  assert.equal(api.readJSON('dafatii:subjects',[])[0].name,'Programming');
+  api.writeJSON('dafatii:subjects',[{id:'databases',name:'Databases'}]);
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(requests.some(([path,options])=>path.endsWith('/content')&&options.method==='PUT'),true);
+  assert.equal(events.some(event=>event.type==='dafatii:coursesloaded'),true);
+  console.log('course context tests passed');
+})().catch(error=>{console.error(error);process.exitCode=1;});

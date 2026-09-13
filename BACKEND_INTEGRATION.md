@@ -174,7 +174,7 @@ The PDF viewer uses Mozilla PDF.js display APIs (pinned to stable `6.3.289`) and
 
 ## D1 schema and migrations
 
-`migrations/0001_production_backend.sql` creates:
+`migrations/0001_production_backend.sql` creates the authentication, account-sync and file foundation:
 
 - `users`: normalized unique email, password KDF, status, timestamps
 - `sessions`: token hash, explicit user owner, expiry/revocation/last-seen timestamps
@@ -182,6 +182,15 @@ The PDF viewer uses Mozilla PDF.js display APIs (pinned to stable `6.3.289`) and
 - `records`: `(user_id, record_key)` primary key, tombstone, revision, timestamps
 - `record_mutations`: per-user idempotency keys and saved responses
 - `files`: owner, opaque key, safe display metadata, lifecycle state, generation, scan hook
+
+`migrations/0002_course_rbac.sql` adds the production course model:
+
+- `account_profiles`: student/representer account type, school/university/independent stage, and platform-admin role
+- `courses`: owner, public/private access, hashed access code, free/paid state, and direct/approval enrollment policy
+- `course_memberships`: owner/representer/student role, enrollment state, and seven independently delegated representer advantages
+- `course_content_records` and mutation receipts: revisioned, idempotent content scoped to one course
+- `course_audit_log`: security-relevant course and member actions
+- `files.course_id`: materials shared with active course members under course permissions
 
 Foreign keys, ownership indexes, unique object keys/token hashes, checks, and revision metadata are explicit. Apply migrations before deploying code:
 
@@ -205,6 +214,7 @@ Keep GitHub `main` as the Pages production source, build output at the repositor
 Set non-secret variables:
 
 - `APP_ORIGINS`: comma-separated exact production/additional origins; the request's own origin is always accepted for same-origin previews
+- `ADMIN_EMAILS`: comma-separated normalized emails that bootstrap platform-administrator access; keep at least one verified operator address configured
 - `MAX_UPLOAD_BYTES`: default `536870912` (512 MiB), hard code ceiling 5 GiB
 - `AUTH_ATTEMPT_LIMIT`: default `10` per 15-minute IP/email fingerprint
 - `UPLOAD_INIT_LIMIT`: default `60` initialized uploads per authenticated account per hour
@@ -216,7 +226,9 @@ Set encrypted secrets:
 - `GCS_PRIVATE_KEY`: PKCS#8 service-account private key; escaped `\\n` or literal newlines are accepted
 - `RATE_LIMIT_PEPPER`: independent random 32-byte value
 
-Authentication fails closed with `CONFIGURATION_ERROR` when `RATE_LIMIT_PEPPER` is absent or shorter than 32 characters, or when numeric security limits are invalid. If D1 is unavailable, the frontend disables cloud-account submission and keeps explicit device-local guest access available instead of presenting a form that cannot succeed.
+Authentication fails closed with `CONFIGURATION_ERROR` when `RATE_LIMIT_PEPPER` is absent or shorter than 32 characters, or when numeric security limits are invalid. If D1 is unavailable, the frontend disables cloud-account submission. There is no guest bypass: course membership and permissions always come from D1.
+
+Paid courses currently use a manual verification workflow: enrollment enters `payment_pending`, then a representer with application-review permission or an administrator confirms or rejects it. This is real durable enrollment state, not payment collection. Connect a payment processor and verified webhook before accepting money automatically.
 
 The implementation uses browser-compatible WebCrypto and no Node Google SDK. The V4 signer follows Google XML API canonical URI, sorted RFC 3986 query, normalized/sorted signed headers, `UNSIGNED-PAYLOAD`, `GOOG4-RSA-SHA256`, credential scope, SHA-256 canonical hash, and RSA PKCS#1 v1.5 signature rules. Tests cryptographically verify the output signature and reserved/Unicode paths.
 
@@ -239,7 +251,7 @@ CORS permits exact origins and only GET/HEAD/PUT, including headers needed for s
 
 ## Security and observability
 
-All file reads/deletes query `(id, authenticated user_id)` and return the same 404 for missing or foreign objects, preventing IDOR discovery. Client-supplied owners and object paths do not exist in the contract. API responses use no-store, nosniff, no-referrer, and deny framing/default content. Display names and filenames are length-bounded and filenames cannot traverse paths. Sensitive operations emit one-line structured JSON events for auth failures, hydration, conflicts, upload initialization/completion, signing failures, and deletion failures. The logger removes fields whose names resemble passwords, tokens, private keys, secrets, or signed URLs.
+Personal file reads/deletes query `(id, authenticated user_id)`. Course-file reads require active course membership, and deletion requires the course content-removal advantage; failures return the same 404 used for missing files, preventing IDOR discovery. Client-supplied owners and object paths do not exist in the contract. API responses use no-store, nosniff, no-referrer, and deny framing/default content. Display names and filenames are length-bounded and filenames cannot traverse paths. Sensitive operations emit one-line structured JSON events for auth failures, hydration, conflicts, upload initialization/completion, signing failures, deletion failures, course creation, enrollment and content changes. The logger removes fields whose names resemble passwords, tokens, private keys, secrets, or signed URLs.
 
 Route logs should be retained with access restricted to operators. Alert on sustained `auth.login_failed`, any `gcs.signing_failed`, elevated `sync.conflict`, `file.deletion_failed`, D1 errors, and 5xx rates. Never enable request logging that captures query strings on signed GCS URLs.
 
@@ -268,7 +280,7 @@ Primary costs are D1 reads/writes/storage, Pages Function invocations/CPU, GCS s
 ## Deployment checklist
 
 1. Run `npm test` and `npm run check`.
-2. Create/apply D1 migration and configure `DB` for preview first.
+2. Create/apply every pending D1 migration and configure `DB` for preview first. Apply `0002_course_rbac.sql` before deploying code that writes account profiles.
 3. Create the private GCS bucket, least-privilege signer, CORS, and encrypted settings.
 4. Deploy the branch preview; test signup/login/logout, two-account IDOR cases, sync conflict, PDF/media Range playback, upload expiry, and deletion retry.
 5. Inspect structured logs and verify no signed URL query strings or credentials appear.

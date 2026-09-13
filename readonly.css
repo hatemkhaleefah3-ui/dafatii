@@ -1,0 +1,12 @@
+.course-readonly [id^="suite-add-"],
+.course-readonly [id^="suite-empty-"],
+.course-readonly [data-resource-edit],
+.course-readonly [data-resource-favorite],
+.course-readonly [data-assignment-edit],
+.course-readonly [data-assignment-toggle],
+.course-readonly [data-save-degree],
+.course-readonly .cal-add-axis,
+.course-readonly .material-upload,
+.course-readonly .material-delete {
+  display: none !important;
+}

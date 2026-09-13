@@ -16,7 +16,7 @@ function loadJSON(key, fallback){
 
 function loadSubjects(){
   const stored = loadJSON('dafatii:subjects', null);
-  return Array.isArray(stored) ? stored : DEFAULT_SUBJECTS;
+  return Array.isArray(stored) ? stored : [];
 }
 
 function loadLectures(){
@@ -25,7 +25,8 @@ function loadLectures(){
 }
 
 const state = {
-  joined: window.DafatiiData.readString('dafatii:joined') === '1',
+  joined: Boolean(window.DafatiiAuth?.user),
+  authReady: false,
   sidebar: false,
   authMode: 'signup',
   subjects: loadSubjects(),
@@ -134,11 +135,10 @@ function join(){
           ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
           <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
           <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
-          ${isSignup ? `<div class="field"><label>I study as</label><select name="studentType"><option>School student</option><option>University student</option><option>Independent student</option></select></div>` : ''}
+          ${isSignup ? `<div class="field"><label>Account type</label><select name="accountType"><option value="student">Student</option><option value="representer">Course representer</option></select></div><div class="field"><label>Student stage</label><select name="studentStage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit" ${authOffline ? 'disabled' : ''}>${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
-        <button class="btn btn-ghost auth-submit" id="access-site" type="button">Access website without account →</button>
-        <div class="auth-note" id="auth-status">${authOffline ? 'Cloud accounts are temporarily unavailable. Continue without an account; your workspace will remain on this device.' : 'Credentials are verified by Dafatii’s server. Guest access remains local-only and does not synchronize.'}</div>
+        <div class="auth-note" id="auth-status">${authOffline ? 'Cloud accounts are temporarily unavailable. Sign in and enrollment require the server.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
       </div>
     </section>
   </div>`;
@@ -149,14 +149,10 @@ function join(){
     submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
     try{
       const values=new FormData(form);
-      if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name')});
+      if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
       else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
-      state.joined = true; window.DafatiiData.writeString('dafatii:joined','1'); setHash('dashboard/overview');
+      state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
     }catch(error){status.textContent=error.message||'Authentication failed.';submit.disabled=false;}
-  };
-  document.getElementById('access-site').onclick = ()=>{
-    state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
-    setHash('dashboard/overview');
   };
 }
 
@@ -286,7 +282,7 @@ function workspace(current){
     <header class="main-nav"><div class="inner">
       ${brand()}
       <nav class="nav-center">${Object.keys(MAIN_NAV).map(k=>`<button class="nav-link ${mainActive===k?'active':''}" data-page="${k}">${LABELS[k]}</button>`).join('')}</nav>
-      <div class="user-chip"><span class="avatar">D</span><span>Student</span></div>
+      <div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth?.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth?.user?.displayName||'Account')}</span></div>
     </div></header>
 
     <div class="settings-nav ${state.sidebar?'hidden':''}"><div class="settings-inner">
@@ -300,6 +296,8 @@ function workspace(current){
       <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close">×</button></div>
       <div class="sidebar-label">Settings</div>
       ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
+      ${window.DafatiiAuth?.user?.platformRole==='admin'?sideAction('admin','Admin Panel'):''}
+      ${['owner','representer'].includes(window.DafatiiCourses.active().membership?.role)?sideAction('representer','Representer Panel'):''}
       <div class="sidebar-section"><div class="sidebar-label">Opportunities</div>
         ${sideAction('apply-work','Apply Work')}${sideAction('apply-scholarship','Apply Scholarship')}${sideAction('volunteer','Volunteer')}${sideAction('donate-us','Donate Us')}
       </div>
@@ -520,14 +518,15 @@ function render(){
   const r=route();
   if(r==='landing'){ landing(); return; }
   if(r==='join'){ join(); return; }
+  if(!state.authReady){ app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Checking your session…</h2><p>Your secure workspace is loading.</p></div></section></div>'; return; }
   if(!state.joined){ setHash('join'); return; }
+  if(!window.DafatiiCourses.active().id&&r!=='change-course'&&r!=='admin'){setHash('change-course');return;}
   workspace(r);
 }
 
 window.addEventListener('hashchange',render);
 window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
 window.addEventListener('dafatii:datahydrated',()=>{
-  state.joined = window.DafatiiData.readString('dafatii:joined') === '1';
   state.subjects = loadSubjects();
   state.lectures = loadLectures();
   render();
@@ -537,4 +536,10 @@ window.addEventListener('dafatii:coursechanged',()=>{
   state.lectures = loadLectures();
   render();
 });
+window.addEventListener('dafatii:auth:changed',async event=>{
+  state.joined=Boolean(event.detail.user);state.authReady=true;
+  if(state.joined){try{await window.DafatiiCourses.refresh();}catch(error){console.warn('Course access unavailable.',error.code||error.message);}}
+  render();
+});
+window.addEventListener('dafatii:coursewriteerror',event=>{showToast(event.detail.error?.message||'Course change was not saved.');state.subjects=loadSubjects();state.lectures=loadLectures();render();});
 window.addEventListener('DOMContentLoaded',()=>{ if(!location.hash) location.hash='landing'; else render(); });

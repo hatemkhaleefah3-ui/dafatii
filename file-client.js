@@ -2,7 +2,7 @@
   'use strict';
   async function upload(file, options = {}) {
     if (!(file instanceof File)) throw new TypeError('upload() requires a File.');
-    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType: file.type || 'application/octet-stream', size: file.size } });
+    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType: file.type || 'application/octet-stream', size: file.size, courseId: options.courseId || null } });
     let response;
     try { response = await fetch(initialized.upload.url, { method: initialized.upload.method, headers: initialized.upload.headers, body: file, signal: options.signal }); }
     catch (error) { void remove(initialized.fileId).catch(() => {}); throw error; }

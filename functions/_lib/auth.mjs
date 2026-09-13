@@ -1,4 +1,5 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from './crypto.mjs';
+import { validateProfileInput } from './courses.mjs';
 import { HttpError, logEvent } from './http.mjs';
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
@@ -11,7 +12,8 @@ export function validateAccountInput(input, signup = false) {
   if (password.length < 12 || password.length > 256) throw new HttpError(400, 'INVALID_CREDENTIALS', signup ? 'Password must be 12–256 characters.' : 'Email or password is invalid.');
   const displayName = String(input?.displayName || input?.name || '').trim().normalize('NFC').slice(0, 100);
   if (signup && !displayName) throw new HttpError(400, 'INVALID_DISPLAY_NAME', 'Display name is required.');
-  return { email, password, displayName };
+  const profile = signup ? validateProfileInput(input) : null;
+  return { email, password, displayName, ...(profile || {}) };
 }
 function cookieName(request) { return new URL(request.url).protocol === 'https:' ? '__Host-dafatii_session' : 'dafatii_session'; }
 function parseCookies(request) {
@@ -43,14 +45,18 @@ export async function enforceAuthRateLimit(db, request, email, env, now = Date.n
 export async function clearAuthRateLimit(db, fingerprint) { await db.prepare('DELETE FROM auth_attempts WHERE fingerprint = ?').bind(fingerprint).run(); }
 
 export async function createUser(db, input, now = Date.now()) {
-  const { email, password, displayName } = validateAccountInput(input, true);
+  const { email, password, displayName, accountType, studentStage } = validateAccountInput(input, true);
   const existing = await db.prepare('SELECT id FROM users WHERE email_normalized = ?').bind(email).first();
   if (existing) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.');
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
-  try { await db.prepare('INSERT INTO users (id, email_normalized, password_hash, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, email, passwordHash, displayName, 'active', now, now).run(); }
+  try {
+    const userInsert = db.prepare('INSERT INTO users (id, email_normalized, password_hash, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, email, passwordHash, displayName, 'active', now, now);
+    const profileInsert = db.prepare('INSERT INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, accountType, studentStage, 'student', now, now);
+    await db.batch([userInsert, profileInsert]);
+  }
   catch (error) { if (/unique|constraint/i.test(String(error))) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.'); throw error; }
-  return { id, email, displayName };
+  return { id, email, displayName, accountType, studentStage, platformRole: 'student' };
 }
 export async function authenticateUser(db, email, password) {
   const user = await db.prepare('SELECT id, email_normalized, password_hash, display_name, status FROM users WHERE email_normalized = ?').bind(normalizeEmail(email)).first();
