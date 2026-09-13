@@ -7,6 +7,7 @@ const { requireUser, clearSessionCookie, enforceAuthRateLimit, sessionCookie } =
 const { hashPassword, verifyPassword } = await import('../functions/_lib/crypto.mjs');
 const { ownedFile } = await import('../functions/_lib/access.mjs');
 const { canonicalQuery, completionDisposition, signV4, verifyCompletedObject, verifyMagicBytes } = await import('../functions/_lib/gcs.mjs');
+const { driveObjectId, isDriveObject, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } = await import('../functions/_lib/drive.mjs');
 const { encodePath } = await import('../functions/_lib/encoding.mjs');
 const { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } = await import('../functions/_lib/policy.mjs');
 
@@ -66,6 +67,34 @@ assert.throws(() => verifyMagicBytes('application/pdf', new TextEncoder().encode
 assert.equal(completionDisposition('available'), 'already_complete');
 assert.equal(completionDisposition('pending'), 'verify');
 assert.throws(() => completionDisposition('upload_failed'), error => error.status === 409);
+
+const driveEnv = { GOOGLE_DRIVE_CLIENT_ID: 'client-id', GOOGLE_DRIVE_CLIENT_SECRET: 'client-secret', GOOGLE_DRIVE_REFRESH_TOKEN: 'refresh-token', GOOGLE_DRIVE_FOLDER_ID: 'folder-1234567890' };
+const driveDbFile = { id: fid, user_id: uid, course_id: null, object_key: `drive/pending/${fid}`, original_filename: 'lecture.pdf', content_type: 'application/pdf', expected_size: 42 };
+const originalFetch = globalThis.fetch;
+let driveCalls = [];
+globalThis.fetch = async (url, init = {}) => {
+  driveCalls.push({ url: String(url), init });
+  if (String(url).includes('oauth2.googleapis.com')) return new Response(JSON.stringify({ access_token: 'short-lived-access', expires_in: 3600 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  if (String(url).includes('/upload/drive/v3/files')) return new Response(null, { status: 200, headers: { Location: 'https://www.googleapis.com/upload/session-safe-id' } });
+  if (String(url).includes('alt=media')) return new Response(new TextEncoder().encode('%PDF-1.7'), { status: 206, headers: { 'Content-Range': 'bytes 0-7/42', 'Content-Length': '8' } });
+  throw new Error(`Unexpected Drive test request: ${url}`);
+};
+const driveUploadUrl = await startDriveUpload(driveEnv, driveDbFile, uid);
+assert.equal(driveUploadUrl, 'https://www.googleapis.com/upload/session-safe-id');
+assert.equal(driveCalls[1].init.headers.get('Authorization'), 'Bearer short-lived-access');
+assert.ok(!driveCalls[1].init.body.includes('client-secret'));
+const driveMetadata = { id: 'drive-file-1234567890', size: '42', mimeType: 'application/pdf', parents: [driveEnv.GOOGLE_DRIVE_FOLDER_ID], trashed: false, appProperties: { dafatiiFileId: fid, dafatiiUserId: uid, dafatiiCourseId: '' } };
+assert.equal(verifyDriveMetadata(driveEnv, driveDbFile, driveMetadata, uid).size, 42);
+assert.throws(() => verifyDriveMetadata(driveEnv, driveDbFile, { ...driveMetadata, parents: ['another-folder'] }, uid), error => error.code === 'UPLOAD_MISMATCH');
+assert.equal(isDriveObject('drive/drive-file-1234567890'), true);
+assert.equal(driveObjectId('drive/drive-file-1234567890'), 'drive-file-1234567890');
+assert.equal(driveObjectId(`drive/pending/${fid}`), null);
+assert.equal(validDriveId('drive-file-1234567890'), true);
+const streamed = await streamDriveFile(driveEnv, { ...driveDbFile, object_key: 'drive/drive-file-1234567890' }, new Request('https://dafatii.example/file', { headers: { Range: 'bytes=0-7' } }));
+assert.equal(streamed.status, 206);
+assert.equal(streamed.headers.get('content-type'), 'application/pdf');
+assert.match(streamed.headers.get('content-disposition'), /lecture\.pdf/);
+globalThis.fetch = originalFetch;
 
 assert.match(sessionCookie(new Request('https://dafatii.example/'), 'token'), /HttpOnly; Secure; SameSite=Lax/);
 assert.match(clearSessionCookie(new Request('https://dafatii.example/')), /Max-Age=0/);

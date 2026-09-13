@@ -7,8 +7,13 @@
     try { response = await fetch(initialized.upload.url, { method: initialized.upload.method, headers: initialized.upload.headers, body: file, signal: options.signal }); }
     catch (error) { void remove(initialized.fileId).catch(() => {}); throw error; }
     if (!response.ok) { void remove(initialized.fileId).catch(() => {}); throw new Error(`Storage upload failed (${response.status}).`); }
+    let completion = {};
+    if (initialized.upload.provider === 'drive') {
+      try { completion = { driveFileId: (await response.json()).id }; }
+      catch { void remove(initialized.fileId).catch(() => {}); throw new Error('Google Drive did not confirm the uploaded file.'); }
+    }
     options.onProgress?.({ loaded: file.size, total: file.size, ratio: 1 });
-    return window.DafatiiApi.request(`/files/${initialized.fileId}/complete`, { method: 'POST', body: {}, idempotent: true });
+    return window.DafatiiApi.request(`/files/${initialized.fileId}/complete`, { method: 'POST', body: completion, idempotent: true });
   }
   const get = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`);
   const list = options => window.DafatiiApi.request(`/files?limit=${Math.min(options?.limit || 50, 100)}`);
