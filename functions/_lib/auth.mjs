@@ -89,9 +89,10 @@ export async function requireUser(context) {
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.status = 'active'`).bind(tokenHash, now).first();
   if (!row) { logEvent('warn', 'auth.invalid_session'); throw new HttpError(401, 'INVALID_SESSION', 'Session is invalid or expired.'); }
-  const update = context.env.DB.prepare('UPDATE sessions SET last_seen_at = ? WHERE id = ?').bind(now, row.session_id).run();
+  const expiresAt = now + SESSION_SECONDS * 1000;
+  const update = context.env.DB.prepare('UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?').bind(now, expiresAt, row.session_id).run();
   context.waitUntil?.(update);
-  return { id: row.id, email: row.email_normalized, displayName: row.display_name, sessionId: row.session_id };
+  return { id: row.id, email: row.email_normalized, displayName: row.display_name, sessionId: row.session_id, sessionToken: token, expiresAt };
 }
 export async function revokeCurrentSession(context) {
   try { const user = await requireUser(context); await context.env.DB.prepare('UPDATE sessions SET revoked_at = ? WHERE id = ?').bind(Date.now(), user.sessionId).run(); return true; }

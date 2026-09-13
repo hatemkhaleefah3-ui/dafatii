@@ -100,7 +100,8 @@
     window.DafatiiData.writeString(THEME_KEY,next);
     syncThemeChrome();
     if(typeof showToast === 'function') showToast(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled`);
-    requestAnimationFrame(enhancePremiumShell);
+    if(document.querySelector('.pre-course-shell')&&typeof render==='function')requestAnimationFrame(render);
+    else requestAnimationFrame(enhancePremiumShell);
   }
 
   function ripple(event){

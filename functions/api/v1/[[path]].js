@@ -40,7 +40,7 @@ async function login(context) {
 
 async function session(context) {
   const user = await requireUser(context);
-  return ok({ user: publicActor(await actorFor(context.env.DB, user, context.env)) });
+  return ok({ user: publicActor(await actorFor(context.env.DB, user, context.env)), expiresAt: user.expiresAt }, 200, { 'Set-Cookie': sessionCookie(context.request, user.sessionToken) });
 }
 
 async function logout(context) {
