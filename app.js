@@ -143,6 +143,7 @@ function join(){
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
+  if(authOffline) document.querySelectorAll('#auth-form input,#auth-form select').forEach(control=>{control.disabled=true;});
   document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
     const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
