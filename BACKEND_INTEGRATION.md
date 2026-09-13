@@ -27,7 +27,7 @@ Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive`
 
 `window.DafatiiAuth` exposes `signup`, `login`, `current`, and `logout`. Passwords are hashed server-side, sessions are stored in D1, and production cookies use the `__Host-` prefix with `HttpOnly`, `Secure`, `SameSite=Lax`, and `Path=/`.
 
-`window.DafatiiFiles` exposes `upload`, `get`, `list`, `getViewUrl`, `delete`, and `open`. The built-in viewer renders PDFs with PDF.js, images, audio and video with native browser controls, text and CSV inside Dafatii, and Excel workbooks as an in-site table. Other formats receive a consistent Dafatii file screen and authorized download; no Google Drive reader is embedded.
+`window.DafatiiFiles` exposes `upload`, `get`, `list`, `getViewUrl`, `delete`, and `open`. The built-in viewer renders PDFs with PDF.js, images, audio and video with native browser controls, text and CSV inside Dafatii, Excel workbooks as an in-site table, Word `.docx` text as a document, and PowerPoint `.pptx` text as navigable slides. Legacy or unknown formats receive a consistent Dafatii file screen and authorized download; no Google Drive reader is embedded.
 
 ## File lifecycle
 

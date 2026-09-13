@@ -25,6 +25,7 @@
   async function open(fileId) {
     const metadata = await get(fileId);
     if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata);
+    if (window.DafatiiOffice?.types.includes(metadata.contentType)) return window.DafatiiOffice.open(fileId, metadata);
     return window.DafatiiMedia.open(fileId, metadata);
   }
   window.DafatiiFiles = Object.freeze({ upload, get, list, getViewUrl, delete: remove, open });
