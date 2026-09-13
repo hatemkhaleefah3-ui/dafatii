@@ -11,6 +11,7 @@ const recordDto = row => ({ key: row.record_key, format: row.format, value: row.
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
 const routePath = request => new URL(request.url).pathname.replace(/^\/api\/v1\/?/, '');
 const usesDrive = env => String(env.STORAGE_PROVIDER || 'gcs').toLowerCase() === 'drive';
+const uploadSessionKey = fileId => `upload-sessions/${fileId}.json`;
 
 async function writeR2Manifest(env, file) {
   if (!env.R2_STORAGE) return;
@@ -21,6 +22,8 @@ async function writeR2Manifest(env, file) {
 }
 
 async function deleteR2Manifest(env, fileId) { if (env.R2_STORAGE) await env.R2_STORAGE.delete(`files/${fileId}/manifest.json`); }
+async function deleteUploadSession(env, fileId) { if (env.R2_STORAGE) await env.R2_STORAGE.delete(uploadSessionKey(fileId)); }
+async function readUploadSession(env, fileId) { const object = env.R2_STORAGE ? await env.R2_STORAGE.get(uploadSessionKey(fileId)) : null; return object ? object.json() : null; }
 
 async function signup(context) {
   const input = await readJson(context.request, 16384);
@@ -129,10 +132,12 @@ async function uploadInit(context, user) {
     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`).bind(fileId, user.id, courseId, key, input.filename, input.contentType, input.size, expiresAt, now, now).run();
   try {
     if (usesDrive(context.env)) {
+      if (!context.env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'R2 upload-session storage is not configured.');
       const file = { id: fileId, user_id: user.id, course_id: courseId, object_key: key, original_filename: input.filename, content_type: input.contentType, expected_size: input.size };
       const uploadUrl = await startDriveUpload(context.env, file, user.id);
+      await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt }), { httpMetadata: { contentType: 'application/json' } });
       logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', size: input.size, contentType: input.contentType });
-      return ok({ fileId, upload: { url: uploadUrl, method: 'PUT', provider: 'drive', expiresAt, headers: { 'Content-Type': input.contentType } } }, 201);
+      return ok({ fileId, upload: { url: `/api/v1/files/${fileId}/upload`, method: 'PUT', provider: 'drive-proxy', chunkSize: 8388608, expiresAt, headers: { 'Content-Type': input.contentType } } }, 201);
     }
     const signed = await signedObjectUrl(context.env, key, 'PUT', { expires: 900, contentType: input.contentType, contentLength: input.size, fileId, query: { ifGenerationMatch: '0' } });
     logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, size: input.size, contentType: input.contentType });
@@ -144,10 +149,31 @@ async function uploadInit(context, user) {
   }
 }
 
+async function uploadDriveChunk(context, user, fileId) {
+  const file = await ownedFile(context.env.DB, user.id, fileId, ['pending']);
+  if (!isDriveObject(file.object_key) || !context.env.R2_STORAGE) throw new HttpError(404, 'UPLOAD_NOT_FOUND', 'Upload session was not found.');
+  const session = await readUploadSession(context.env, fileId);
+  if (!session) throw new HttpError(410, 'UPLOAD_SESSION_EXPIRED', 'Upload session expired. Start the upload again.');
+  if (session.userId !== user.id || Number(session.expiresAt) < Date.now()) throw new HttpError(410, 'UPLOAD_SESSION_EXPIRED', 'Upload session expired. Start the upload again.');
+  if (session.driveFileId) return ok({ complete: true, driveFileId: session.driveFileId });
+  const match = String(context.request.headers.get('content-range') || '').match(/^bytes (\d+)-(\d+)\/(\d+)$/);
+  if (!match) throw new HttpError(400, 'INVALID_CONTENT_RANGE', 'Upload chunk range is missing or invalid.');
+  const start = Number(match[1]), end = Number(match[2]), total = Number(match[3]), length = end - start + 1;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || total !== Number(file.expected_size) || start < 0 || end < start || end >= total || length > 8388608 || (end + 1 < total && length % 262144 !== 0)) throw new HttpError(400, 'INVALID_CONTENT_RANGE', 'Upload chunk range does not match the authorized file.');
+  const response = await fetch(session.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.content_type, 'Content-Length': String(length), 'Content-Range': `bytes ${start}-${end}/${total}` }, body: context.request.body });
+  if (response.status === 308) return ok({ complete: false, received: response.headers.get('range') || null });
+  if (!response.ok) throw new HttpError(502, 'DRIVE_UPLOAD_FAILED', `Google Drive rejected an upload chunk (${response.status}).`);
+  const result = await response.json().catch(() => null);
+  if (!validDriveId(result?.id)) throw new HttpError(502, 'DRIVE_UPLOAD_FAILED', 'Google Drive did not confirm the uploaded file.');
+  await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ ...session, driveFileId: result.id }), { httpMetadata: { contentType: 'application/json' } });
+  return ok({ complete: true, driveFileId: result.id });
+}
+
 async function completeUpload(context, user, fileId) {
   const input = await readJson(context.request, 4096);
   const file = await ownedFile(context.env.DB, user.id, fileId);
   if (completionDisposition(file.status) === 'already_complete') {
+    await deleteUploadSession(context.env, fileId);
     await writeR2Manifest(context.env, file);
     return ok(publicFileDto(file));
   }
@@ -158,6 +184,8 @@ async function completeUpload(context, user, fileId) {
     try { verifyMagicBytes(file.content_type, await inspectDrivePrefix(context.env, remoteId)); }
     catch (error) {
       if (error.code === 'FILE_CONTENT_MISMATCH') await context.env.DB.prepare("UPDATE files SET status = 'quarantined', scan_status = 'rejected', last_error = ?, updated_at = ? WHERE id = ? AND user_id = ?").bind('content_type_mismatch', Date.now(), fileId, user.id).run();
+      await deleteDriveFile(context.env, remoteId).catch(() => {});
+      await deleteUploadSession(context.env, fileId);
       throw error;
     }
     const now = Date.now();
@@ -166,6 +194,7 @@ async function completeUpload(context, user, fileId) {
       WHERE id = ? AND user_id = ? AND status = 'pending'`).bind(objectKey, metadata.size, metadata.etag, now, now, fileId, user.id).run();
     const available = { ...file, object_key: objectKey, status: 'available', actual_size: metadata.size, etag: metadata.etag, available_at: now };
     if (updated.meta?.changes) await writeR2Manifest(context.env, available);
+    await deleteUploadSession(context.env, fileId);
     const current = updated.meta?.changes ? available : await ownedFile(context.env.DB, user.id, fileId, ['available']);
     logEvent('info', 'file.upload_completed', { userId: user.id, fileId, provider: 'drive', size: metadata.size });
     return ok(publicFileDto(current));
@@ -228,7 +257,10 @@ async function deleteFile(context, user, fileId) {
   const now = Date.now();
   await context.env.DB.prepare("UPDATE files SET status = 'deleting', updated_at = ? WHERE id = ?").bind(now, fileId).run();
   try {
-    if (isDriveObject(file.object_key)) await deleteDriveFile(context.env, driveObjectId(file.object_key));
+    if (isDriveObject(file.object_key)) {
+      const session = driveObjectId(file.object_key) ? null : await readUploadSession(context.env, fileId);
+      await deleteDriveFile(context.env, driveObjectId(file.object_key) || session?.driveFileId);
+    }
     else {
       const query = file.gcs_generation ? { ifGenerationMatch: file.gcs_generation } : {};
       const signed = await signedObjectUrl(context.env, file.object_key, 'DELETE', { expires: 60, query });
@@ -236,6 +268,7 @@ async function deleteFile(context, user, fileId) {
       if (!response.ok && response.status !== 404) throw new Error(`GCS delete status ${response.status}`);
     }
     await deleteR2Manifest(context.env, fileId);
+    await deleteUploadSession(context.env, fileId);
     await context.env.DB.prepare("UPDATE files SET status = 'deleted', deleted_at = ?, updated_at = ?, last_error = NULL WHERE id = ?").bind(Date.now(), Date.now(), fileId).run();
     return ok({ id: fileId, deleted: true });
   } catch (error) {
@@ -261,7 +294,8 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'sync/mutations') return mutate(context, user);
   if (method === 'POST' && path === 'files/upload-init') return uploadInit(context, user);
   if (method === 'GET' && path === 'files') return listFiles(context, user);
-  const match = path.match(/^files\/([0-9a-f-]{36})(?:\/(complete|view|content))?$/i);
+  const match = path.match(/^files\/([0-9a-f-]{36})(?:\/(complete|view|content|upload))?$/i);
+  if (match && method === 'PUT' && match[2] === 'upload') return uploadDriveChunk(context, user, match[1]);
   if (match && method === 'POST' && match[2] === 'complete') return completeUpload(context, user, match[1]);
   if (match && method === 'GET' && match[2] === 'view') return viewFile(context, user, match[1]);
   if (match && method === 'GET' && match[2] === 'content') return contentFile(context, user, match[1]);

@@ -33,8 +33,8 @@ Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive`
 
 1. The signed-in browser sends safe metadata to `POST /api/v1/files/upload-init`.
 2. The API validates course permissions, MIME type, size, quota and rate limits, then creates a pending D1 row.
-3. The API uses the server-only Google refresh token to create a resumable Drive upload session inside `GOOGLE_DRIVE_FOLDER_ID`.
-4. The browser uploads the bytes directly to that session and sends the resulting Drive file ID to `POST /api/v1/files/{id}/complete`.
+3. The API uses the server-only Google refresh token to create a resumable Drive upload session inside `GOOGLE_DRIVE_FOLDER_ID`, then keeps that private session in R2.
+4. The browser sends 8 MiB chunks to Dafatii's same-origin upload route. Pages Functions streams each chunk into the Drive session, avoiding mobile-browser CORS failures, and the browser sends the resulting Drive file ID to `POST /api/v1/files/{id}/complete`.
 5. The API verifies size, MIME type, folder, Dafatii ownership properties and known magic bytes before publishing the file.
 6. The API writes a non-secret manifest to `R2_STORAGE` at `files/{dafatiiFileId}/manifest.json`.
 7. Authorized viewers read `/api/v1/files/{id}/content`; Pages Functions checks D1 access and streams Drive bytes with Range support.
@@ -46,6 +46,7 @@ Drive identifiers are server metadata only. Dafatii stores stable UUID relations
 | Method | Route | Purpose |
 |---|---|---|
 | POST | `/api/v1/files/upload-init` | Start an authorized Drive upload |
+| PUT | `/api/v1/files/{id}/upload` | Stream one authenticated upload chunk into Drive |
 | POST | `/api/v1/files/{id}/complete` | Verify and publish the upload |
 | GET | `/api/v1/files` | List accessible file metadata |
 | GET | `/api/v1/files/{id}` | Read metadata |
