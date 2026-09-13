@@ -138,12 +138,23 @@ function join(){
           ${isSignup ? `<div class="field"><label>Account type</label><select name="accountType"><option value="student">Student</option><option value="representer">Course representer</option></select></div><div class="field"><label>Student stage</label><select name="studentStage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit" ${authOffline ? 'disabled' : ''}>${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
-        <div class="auth-note" id="auth-status">${authOffline ? 'Cloud accounts are temporarily unavailable. Sign in and enrollment require the server.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
+        <div class="auth-note" id="auth-status">${authOffline ? 'The server could not be reached. Check your connection and try again.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
+        ${authOffline ? '<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">Try again</button>' : ''}
       </div>
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
   if(authOffline) document.querySelectorAll('#auth-form input,#auth-form select').forEach(control=>{control.disabled=true;});
+  const retry=document.getElementById('auth-retry');
+  if(retry) retry.onclick=async()=>{
+    retry.disabled=true;
+    document.getElementById('auth-status').textContent='Reconnecting…';
+    await window.DafatiiAuth.current();
+    if(window.DafatiiAuth.availability==='offline'){
+      retry.disabled=false;
+      document.getElementById('auth-status').textContent='The server is still unavailable. Check your connection and try again.';
+    }
+  };
   document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
     const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
@@ -527,6 +538,7 @@ function render(){
 
 window.addEventListener('hashchange',render);
 window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
+window.addEventListener('online',()=>{ if(window.DafatiiAuth?.availability==='offline') window.DafatiiAuth.current(); });
 window.addEventListener('dafatii:datahydrated',()=>{
   state.subjects = loadSubjects();
   state.lectures = loadLectures();

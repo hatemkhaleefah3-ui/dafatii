@@ -6,7 +6,7 @@
   const setAvailability = value => { if (availability !== value) { availability = value; emit('availability'); } };
   const backendUnavailable = error => !error?.status || error.status >= 500;
   async function current() {
-    try { user = (await window.DafatiiApi.request('/auth/session')).user; setAvailability('online'); emit('changed'); return user; }
+    try { user = (await window.DafatiiApi.request('/auth/session', { idempotent: true })).user; setAvailability('online'); emit('changed'); return user; }
     catch (error) {
       if (error.status === 401) { user = null; setAvailability('online'); emit('changed'); return null; }
       if (backendUnavailable(error)) { user = null; setAvailability('offline'); emit('changed'); return null; }
