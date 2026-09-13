@@ -23,4 +23,7 @@ assert.match(router, /status = 'available'/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg\+xml"/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
+const app = fs.readFileSync('app.js', 'utf8');
+assert.doesNotMatch(app, /authOffline \? 'disabled'/, 'a failed startup check must not disable authentication');
+assert.match(app, /dataset\.submitting/, 'authentication errors must survive availability events');
 console.log('static boundary tests passed');

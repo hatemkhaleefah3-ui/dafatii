@@ -131,20 +131,19 @@ function join(){
         <div class="auth-tabs"><button class="auth-tab ${!isSignup?'active':''}" data-auth="signin">Sign in</button><button class="auth-tab ${isSignup?'active':''}" data-auth="signup">Sign up</button></div>
         <h2>${isSignup ? 'Create your account' : 'Welcome back'}</h2>
         <p>${isSignup ? 'Set up your Dafatii workspace in a few seconds.' : 'Sign in to continue to your workspace.'}</p>
-        <form id="auth-form" ${authOffline ? 'aria-disabled="true"' : ''}>
+        <form id="auth-form">
           ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
           <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
           <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
           ${isSignup ? `<div class="field"><label>Account type</label><select name="accountType"><option value="student">Student</option><option value="representer">Course representer</option></select></div><div class="field"><label>Student stage</label><select name="studentStage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div>` : ''}
-          <button class="btn btn-primary auth-submit" type="submit" ${authOffline ? 'disabled' : ''}>${isSignup ? 'Create account' : 'Sign in'} →</button>
+          <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
-        <div class="auth-note" id="auth-status">${authOffline ? 'The server could not be reached. Check your connection and try again.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
+        <div class="auth-note" id="auth-status">${authOffline ? 'The automatic connection check failed. You can still submit the form or try the check again.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
         ${authOffline ? '<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">Try again</button>' : ''}
       </div>
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
-  if(authOffline) document.querySelectorAll('#auth-form input,#auth-form select').forEach(control=>{control.disabled=true;});
   const retry=document.getElementById('auth-retry');
   if(retry) retry.onclick=async()=>{
     retry.disabled=true;
@@ -158,13 +157,18 @@ function join(){
   document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
     const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
-    submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
+    form.dataset.submitting='true'; submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
     try{
       const values=new FormData(form);
       if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
       else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
       state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
-    }catch(error){status.textContent=error.message||'Authentication failed.';submit.disabled=false;}
+    }catch(error){
+      const suffix=error.code?` (${error.code})`:'';
+      status.textContent=`${error.message||'Authentication failed.'}${suffix}`;
+      submit.disabled=false;
+      delete form.dataset.submitting;
+    }
   };
 }
 
@@ -537,7 +541,9 @@ function render(){
 }
 
 window.addEventListener('hashchange',render);
-window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
+window.addEventListener('dafatii:auth:availability',()=>{
+  if(route()==='join'&&!document.getElementById('auth-form')?.dataset.submitting) join();
+});
 window.addEventListener('online',()=>{ if(window.DafatiiAuth?.availability==='offline') window.DafatiiAuth.current(); });
 window.addEventListener('dafatii:datahydrated',()=>{
   state.subjects = loadSubjects();
