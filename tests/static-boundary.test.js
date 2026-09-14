@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=6/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=7/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /quiet-shell\.js\?v=3/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
@@ -41,6 +41,7 @@ assert.ok(
   quietDesign.lastIndexOf('@media(max-width:1100px) and (max-aspect-ratio:5/8)') > quietDesign.indexOf('.landing-nav{position:sticky;top:0'),
   'the phone-shaped viewport fallback must come after the desktop navigation rule'
 );
+assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav\{[^}]*backdrop-filter:none;[^}]*contain:none\}/, 'mobile landing header must not create a fixed-position containing block');
 assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
 assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-place language switch');
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');

@@ -102,7 +102,7 @@ body .quiet-workspace.quiet-sidebar-collapsed>.workspace-main,body .quiet-worksp
 
 /* Device-class overrides keep browser containers from misreporting phone layouts. */
 html[data-device=mobile] .landing-page{padding-inline-start:0;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-html[data-device=mobile] .landing-nav{position:sticky;inset:auto;top:0;width:auto;height:62px;padding:0 4px;display:grid;grid-template-columns:1fr 48px;grid-template-rows:1fr;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0}
+html[data-device=mobile] .landing-nav{position:sticky;inset:auto;top:0;width:auto;height:62px;padding:0 4px;display:grid;grid-template-columns:1fr 48px;grid-template-rows:1fr;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;transform:none;filter:none;contain:none}
 html[data-device=mobile] .landing-nav .brand{display:flex;justify-content:flex-start;padding-inline:8px}
 html[data-device=mobile] .landing-nav .brand-name{display:initial}
 html[data-device=mobile] .landing-nav .brand-mark{width:auto;height:auto;border-radius:0}
@@ -137,7 +137,7 @@ html[data-device=tablet] .landing-language{align-self:end;justify-self:center}
    very tall viewport is phone-shaped even when its scaled width exceeds 767px. */
 @media(max-width:1100px) and (max-aspect-ratio:5/8){
   .landing-page{padding-inline-start:0;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-  .landing-nav{position:sticky;inset:auto;top:0;width:auto;height:62px;padding:0 4px;display:grid;grid-template-columns:1fr 48px;grid-template-rows:1fr;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0}
+  .landing-nav{position:sticky;inset:auto;top:0;width:auto;height:62px;padding:0 4px;display:grid;grid-template-columns:1fr 48px;grid-template-rows:1fr;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;transform:none;filter:none;contain:none}
   .landing-nav .brand{display:flex;justify-content:flex-start;padding-inline:8px}
   .landing-nav .brand-name{display:initial}
   .landing-nav-tabs{position:fixed;inset:auto 0 0;z-index:120;width:auto;height:calc(68px + env(safe-area-inset-bottom));padding:0 0 env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:0;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(20px);border:0;border-top:1px solid var(--line);box-shadow:0 -1px 8px #00000012}
