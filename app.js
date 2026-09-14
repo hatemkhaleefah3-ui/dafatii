@@ -63,11 +63,7 @@ const LABELS = {
 };
 
 function icon(name){
-  const icons = {
-    dashboard:'⌂', subjects:'◇', calendar:'□', 'study-rooms':'◎', chat:'◌', settings:'⚙', profile:'○',
-    'change-course':'↻','change-language':'文','dark-mode':'◐','apply-work':'↗','apply-scholarship':'✦',volunteer:'♡','donate-us':'＋'
-  };
-  return icons[name] || '•';
+  return window.DafatiiIcons?.icon(name) || '';
 }
 
 function setHash(hash){ location.hash = hash; }
@@ -85,9 +81,9 @@ function landing(){
           ${brand()}
           <div class="landing-nav-tabs">
             <button class="landing-nav-link active" data-landing-section="home">${icon('dashboard')}<span>${escapeHtml(c.home)}</span></button>
-            <button class="landing-nav-link" data-landing-section="about">◎<span>${escapeHtml(c.about)}</span></button>
-            <button class="landing-nav-link" data-landing-section="contact">◌<span>${escapeHtml(c.contact)}</span></button>
-            <button class="landing-nav-link" data-go="join">○<span>${escapeHtml(c.join)}</span></button>
+            <button class="landing-nav-link" data-landing-section="about">${icon('info')}<span>${escapeHtml(c.about)}</span></button>
+            <button class="landing-nav-link" data-landing-section="contact">${icon('mail')}<span>${escapeHtml(c.contact)}</span></button>
+            <button class="landing-nav-link" data-go="join">${icon('profile')}<span>${escapeHtml(c.join)}</span></button>
           </div>
           <button class="landing-language" data-interface-language="${interfaceLanguage()==='ar'?'en':'ar'}">${interfaceLanguage()==='ar'?'EN':'ع'}</button>
         </nav>
@@ -198,7 +194,7 @@ function join(){
 function subjectListView(){
   const cards = state.subjects.length ? state.subjects.map(subjectCard).join('') : `
     <div class="subjects-empty">
-      <div class="subjects-empty-icon">＋</div>
+      <div class="subjects-empty-icon">${icon('add')}</div>
       <h2>No subjects yet</h2>
       <p>Add your first subject to start organizing materials.</p>
       <button class="btn btn-primary" id="subjects-empty-add">Add subject</button>
@@ -209,9 +205,9 @@ function subjectListView(){
         <div>
           <div class="eyebrow">Subjects</div>
           <h1>My subjects</h1>
-          <p>Open a subject, swipe left to edit, or swipe right to delete.</p>
+          <p>Swipe right for edit or left for delete, then tap the revealed action.</p>
         </div>
-        <button class="subject-add" id="subject-add" aria-label="Add subject"><span>＋</span><strong>Add subject</strong></button>
+        <button class="subject-add" id="subject-add" aria-label="Add subject"><span>${icon('add')}</span><strong>Add subject</strong></button>
       </div>
       <div class="subjects-grid">${cards}</div>
     </section>`;
@@ -220,14 +216,14 @@ function subjectListView(){
 function subjectCard(subject){
   return `
     <div class="subject-swipe" data-subject-id="${escapeHtml(subject.id)}">
-      <div class="subject-action subject-action-delete">Delete</div>
-      <div class="subject-action subject-action-edit">Edit</div>
+      <button class="subject-swipe-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}<span>Edit</span></button>
+      <button class="subject-swipe-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}<span>Delete</span></button>
       <article class="subject-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(subject.name)}">
         <div class="subject-card-top">
           <div class="subject-icon">${escapeHtml(subject.icon)}</div>
           <div class="subject-desktop-actions">
-            <button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">✎</button>
-            <button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">×</button>
+            <button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button>
+            <button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button>
           </div>
         </div>
         <div class="subject-card-copy">
@@ -251,7 +247,7 @@ function lectureListView(subject){
   const lectures = subjectLectures(subject.id);
   const cards = lectures.length ? lectures.map(l=>lectureCard(subject, l)).join('') : `
     <div class="subjects-empty lecture-empty">
-      <div class="subjects-empty-icon">＋</div>
+      <div class="subjects-empty-icon">${icon('add')}</div>
       <h2>No lectures yet</h2>
       <p>Add your first lecture for ${escapeHtml(subject.name)}.</p>
       <button class="btn btn-primary" id="lectures-empty-add">Add lecture</button>
@@ -262,9 +258,9 @@ function lectureListView(subject){
         <div>
           <div class="eyebrow">${escapeHtml(subject.name)} · Lectures</div>
           <h1>Lectures</h1>
-          <p>Open a lecture link, swipe left to edit, or swipe right to delete.</p>
+          <p>Swipe right for edit or left for delete, then tap the revealed action.</p>
         </div>
-        <button class="subject-add" id="lecture-add" aria-label="Add lecture"><span>＋</span><strong>Add lecture</strong></button>
+        <button class="subject-add" id="lecture-add" aria-label="Add lecture"><span>${icon('add')}</span><strong>Add lecture</strong></button>
       </div>
       <div class="subjects-grid">${cards}</div>
     </section>`;
@@ -274,14 +270,14 @@ function lectureCard(subject, lecture){
   const hasLink = Boolean(String(lecture.link || '').trim());
   return `
     <div class="subject-swipe lecture-swipe" data-lecture-id="${escapeHtml(lecture.id)}" data-subject-id="${escapeHtml(subject.id)}">
-      <div class="subject-action subject-action-delete">Delete</div>
-      <div class="subject-action subject-action-edit">Edit</div>
+      <button class="subject-swipe-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}<span>Edit</span></button>
+      <button class="subject-swipe-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}<span>Delete</span></button>
       <article class="subject-card lecture-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(lecture.name)}">
         <div class="subject-card-top">
           <div class="subject-icon">${escapeHtml(lecture.icon || '▶')}</div>
           <div class="subject-desktop-actions">
-            <button class="subject-mini-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">✎</button>
-            <button class="subject-mini-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">×</button>
+            <button class="subject-mini-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}</button>
+            <button class="subject-mini-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}</button>
           </div>
         </div>
         <div class="subject-card-copy">
@@ -322,7 +318,7 @@ function preCourseContent(page,copy){
   }
   if(page==='settings'){
     const dark=document.documentElement.dataset.theme==='dark',language=interfaceLanguage();
-    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.settings)}</div><h1>${escapeHtml(copy.settings)}</h1></div></div><div class="pre-course-setting-grid"><article><span class="pre-course-setting-icon">◐</span><div><h2>${escapeHtml(copy.appearance)}</h2><p>${escapeHtml(dark?copy.dark:copy.light)}</p></div><button class="btn btn-primary" data-extra="dark-mode">${escapeHtml(dark?copy.light:copy.dark)}</button></article><article><span class="pre-course-setting-icon">文</span><div><h2>${escapeHtml(copy.language)}</h2><p>${escapeHtml(language==='ar'?copy.arabic:copy.english)}</p></div><button class="btn btn-primary" data-interface-language="${language==='ar'?'en':'ar'}">${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></article></div></section>`;
+    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.settings)}</div><h1>${escapeHtml(copy.settings)}</h1></div></div><div class="pre-course-setting-grid"><article><span class="pre-course-setting-icon">${icon('appearance')}</span><div><h2>${escapeHtml(copy.appearance)}</h2><p>${escapeHtml(dark?copy.dark:copy.light)}</p></div><button class="btn btn-primary" data-extra="dark-mode">${escapeHtml(dark?copy.light:copy.dark)}</button></article><article><span class="pre-course-setting-icon">${icon('language')}</span><div><h2>${escapeHtml(copy.language)}</h2><p>${escapeHtml(language==='ar'?copy.arabic:copy.english)}</p></div><button class="btn btn-primary" data-interface-language="${language==='ar'?'en':'ar'}">${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></article></div></section>`;
   }
   return `<section class="pre-course-page"><div class="pre-course-hero"><div><div class="eyebrow">${escapeHtml(copy.dashboard)}</div><h1>${escapeHtml(copy.welcome)}</h1><p>${escapeHtml(copy.waiting)}</p><div class="pre-course-actions"><button class="btn btn-primary" data-pre-course-route="change-course">${escapeHtml(copy.openCourses)} →</button><button class="btn btn-ghost" id="course-status-refresh">${escapeHtml(copy.check)}</button></div></div><div class="pre-course-orbit">◇</div></div><div class="pre-course-stats"><article><strong>${pending.length}</strong><span>${escapeHtml(copy.pending)}</span></article><article><strong>${courses.length}</strong><span>${escapeHtml(copy.available)}</span></article></div></section>`;
 }
@@ -330,7 +326,7 @@ function preCourseWorkspace(current){
   const requested=current.split('/')[0],page=PRE_COURSE_ROUTES.has(requested)?requested:'dashboard';
   if(page!==requested){setHash('dashboard');return;}
   const language=interfaceLanguage(),copy=PRE_COURSE_COPY[language],dark=document.documentElement.dataset.theme==='dark';
-  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${[['dashboard',copy.dashboard],['change-course',copy.courses],['profile',copy.profile],['settings',copy.settings]].map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">◐ ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">文 ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
+  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${[['dashboard',copy.dashboard],['change-course',copy.courses],['profile',copy.profile],['settings',copy.settings]].map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${icon(key)}${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">${icon('appearance')} ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">${icon('language')} ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
   document.querySelectorAll('[data-pre-course-route]').forEach(button=>button.onclick=()=>setHash(button.dataset.preCourseRoute));
   document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);preCourseWorkspace(page);});
   document.getElementById('course-status-refresh')?.addEventListener('click',async event=>{event.currentTarget.disabled=true;await window.DafatiiCourses.refresh();if(!window.DafatiiCourses.active().id){event.currentTarget.disabled=false;preCourseWorkspace('dashboard');}});
@@ -357,13 +353,13 @@ function workspace(current){
 
     <div class="settings-nav ${state.sidebar?'hidden':''}"><div class="settings-inner">
       ${settingAction('settings','Settings')}${settingAction('profile','Profile')}${settingAction('change-course','Change Course')}${settingAction('change-language','Change Language')}${settingAction('dark-mode','Change Dark Mode')}
-      <button class="settings-action sidebar-trigger" id="sidebar-open">Sidebar ☰</button>
+      <button class="settings-action sidebar-trigger" id="sidebar-open">${icon('menu')} Sidebar</button>
     </div></div>
 
     <div class="sub-nav"><div class="sub-inner">${subnav(mainActive,sub,subject,subjectTab)}</div></div>
 
     <aside class="sidebar ${state.sidebar?'open':''}">
-      <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close">×</button></div>
+      <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close" aria-label="Close">${icon('close')}</button></div>
       <div class="sidebar-label">Settings</div>
       ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
       ${window.DafatiiAuth?.user?.platformRole==='admin'?sideAction('admin','Admin Panel'):''}
@@ -382,7 +378,7 @@ function workspace(current){
 }
 
 function settingAction(key,label){return `<button class="settings-action" data-extra="${key}">${escapeHtml(label)}</button>`;}
-function sideAction(key,label){return `<button class="side-action ${route()===key?'active':''}" data-extra="${key}"><span class="side-dot"></span>${escapeHtml(label)}</button>`;}
+function sideAction(key,label){return `<button class="side-action ${route()===key?'active':''}" data-extra="${key}">${icon(key)}${escapeHtml(label)}</button>`;}
 function subnav(main,sub,subject,subjectTab){
   if(subject){
     return `<button class="sub-link subject-back" data-subjects-back>← ${escapeHtml(subject.name)}</button>` + SUBJECT_TABS.map(tab=>{
@@ -449,24 +445,8 @@ function bindLectures(subject){
   });
 }
 
-function bindSwipe(card,onEdit,onDelete){
-  let startX=0,startY=0,currentX=0,dragging=false;
-  const reset=()=>{card.style.transition='transform .2s ease';card.style.transform='translateX(0)';setTimeout(()=>card.style.transition='',220);};
-  card.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;startX=e.clientX;startY=e.clientY;currentX=0;dragging=true;card.setPointerCapture?.(e.pointerId);});
-  card.addEventListener('pointermove',e=>{
-    if(!dragging)return;
-    const dx=e.clientX-startX,dy=e.clientY-startY;
-    if(Math.abs(dy)>Math.abs(dx)+10)return;
-    currentX=Math.max(-110,Math.min(110,dx));
-    card.style.transform=`translateX(${currentX}px)`;
-  });
-  card.addEventListener('pointerup',()=>{
-    if(!dragging)return;dragging=false;
-    if(currentX<=-70){reset();onEdit();}
-    else if(currentX>=70){reset();onDelete();}
-    else reset();
-  });
-  card.addEventListener('pointercancel',()=>{dragging=false;reset();});
+function bindSwipe(card){
+  window.DafatiiSwipe?.bind(card);
 }
 
 function openSubjectSheet(subjectId=''){
@@ -512,7 +492,7 @@ function openEntitySheet({title,name,icon,icons,link='',showLink=false,submitLab
     <div class="entity-sheet-overlay" id="entity-sheet-overlay">
       <section class="entity-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
         <div class="entity-sheet-handle"></div>
-        <div class="entity-sheet-head"><div><div class="eyebrow">${showLink?'Lecture':'Subject'}</div><h2>${escapeHtml(title)}</h2></div><button class="icon-btn" id="entity-sheet-close" aria-label="Close">×</button></div>
+        <div class="entity-sheet-head"><div><div class="eyebrow">${showLink?'Lecture':'Subject'}</div><h2>${escapeHtml(title)}</h2></div><button class="icon-btn" id="entity-sheet-close" aria-label="Close">${icon('close')}</button></div>
         <form id="entity-form">
           <div class="field"><label>Name</label><input id="entity-name" maxlength="80" value="${escapeHtml(name)}" placeholder="${showLink?'Lecture name':'Subject name'}" required></div>
           ${showLink?`<div class="field"><label>Lecture link <span class="field-optional">Optional</span></label><input id="entity-link" type="url" inputmode="url" value="${escapeHtml(link)}" placeholder="https://example.com/lecture"></div>`:''}

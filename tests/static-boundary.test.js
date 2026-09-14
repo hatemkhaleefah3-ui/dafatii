@@ -24,9 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=7/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=8/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
-assert.match(index, /quiet-shell\.js\?v=3/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /icon-system\.js\?v=1/, 'the unified icon system must load before the interface');
+assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
+assert.match(index, /quiet-shell\.js\?v=4/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
