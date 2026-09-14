@@ -31,4 +31,12 @@ assert.strictEqual(classifyDevice({
 assert.strictEqual(classifyDevice({ viewportWidth: 640 }), "mobile");
 assert.strictEqual(classifyDevice({ viewportWidth: 900 }), "tablet");
 
+assert.strictEqual(classifyDevice({
+  userAgent: "Mozilla/5.0",
+  viewportWidth: 947,
+  viewportHeight: 1800,
+  maxTouchPoints: 0,
+  coarsePointer: false,
+}), "mobile", "privacy-restricted tall phone containers must not render desktop navigation");
+
 console.log("device-layout tests passed");

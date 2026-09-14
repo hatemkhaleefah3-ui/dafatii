@@ -132,3 +132,18 @@ html[data-device=tablet] .landing-language{align-self:end;justify-self:center}
   html:not([data-device]) .landing-nav{position:fixed;inset-block:0;inset-inline-start:0;top:auto;width:96px;height:100dvh;padding:18px 8px;display:grid;grid-template-columns:1fr;grid-template-rows:64px minmax(0,1fr) 56px;gap:14px;border:0;border-inline-end:1px solid var(--line);border-radius:0}
   html:not([data-device]) .landing-nav-tabs{width:100%;height:auto;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(68px,1fr));align-self:center;gap:7px}
 }
+
+/* Privacy-restricted in-app browsers can hide UA and touch data. A narrow,
+   very tall viewport is phone-shaped even when its scaled width exceeds 767px. */
+@media(max-width:1100px) and (max-aspect-ratio:5/8){
+  .landing-page{padding-inline-start:0;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  .landing-nav{position:sticky;inset:auto;top:0;width:auto;height:62px;padding:0 4px;display:grid;grid-template-columns:1fr 48px;grid-template-rows:1fr;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0}
+  .landing-nav .brand{display:flex;justify-content:flex-start;padding-inline:8px}
+  .landing-nav .brand-name{display:initial}
+  .landing-nav-tabs{position:fixed;inset:auto 0 0;z-index:120;width:auto;height:calc(68px + env(safe-area-inset-bottom));padding:0 0 env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:0;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(20px);border:0;border-top:1px solid var(--line);box-shadow:0 -1px 8px #00000012}
+  .landing-nav-link{min-width:0;flex-direction:column;gap:2px;padding:6px 2px;border-radius:0;font-size:10px;line-height:1.15}
+  .landing-nav-link:first-child::before{font-size:24px}
+  .landing-nav-link:first-child span{display:none}
+  .landing-nav-link.active::after{inset:0 10px auto;width:auto;height:3px;border-radius:0 0 3px 3px}
+  .landing-language{align-self:center;justify-self:end}
+}

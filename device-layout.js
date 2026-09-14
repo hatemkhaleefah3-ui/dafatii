@@ -7,6 +7,7 @@
     const mobileHint = details.mobileHint === true;
     const touchPoints = Number(details.maxTouchPoints || 0);
     const viewportWidth = Number(details.viewportWidth || 0);
+    const viewportHeight = Number(details.viewportHeight || 0);
     const screenWidth = Number(details.screenWidth || 0);
     const screenHeight = Number(details.screenHeight || 0);
     const shortestScreenSide = Math.min(
@@ -22,6 +23,13 @@
 
     if (mobileHint || isPhoneAgent) return "mobile";
     if (isTabletAgent) return "tablet";
+
+    // Some in-app iOS browsers expose a desktop user agent, no touch metadata,
+    // and a scaled width near 950px. Their tall viewport is still unambiguous.
+    const viewportRatio = viewportHeight > 0 ? viewportWidth / viewportHeight : 0;
+    if (viewportWidth > 0 && viewportWidth <= 1100 && viewportRatio > 0 && viewportRatio <= 0.625) {
+      return "mobile";
+    }
 
     if (details.coarsePointer && touchPoints > 0 && shortestScreenSide <= 600) {
       return "mobile";
@@ -48,6 +56,7 @@
     mobileHint: navigatorDetails.userAgentData && navigatorDetails.userAgentData.mobile,
     maxTouchPoints: navigatorDetails.maxTouchPoints,
     viewportWidth: root.innerWidth,
+    viewportHeight: root.innerHeight,
     screenWidth: screenDetails.width,
     screenHeight: screenDetails.height,
     coarsePointer: typeof root.matchMedia === "function"
