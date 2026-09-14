@@ -117,9 +117,9 @@ html[data-device=mobile] .landing-nav .brand-name{display:initial}
 html[data-device=mobile] .landing-nav .brand-mark{width:auto;height:auto;border-radius:0}
 html[data-device=mobile] .landing-nav-tabs{position:fixed;inset:auto 10px calc(8px + env(safe-area-inset-bottom));z-index:120;width:auto;height:72px;padding:7px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:4px;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:22px;box-shadow:0 10px 34px rgba(15,23,42,.16)}
 html[data-device=mobile] .landing-nav-link{min-width:0;flex-direction:column;gap:2px;padding:6px 2px;border-radius:16px;font-size:10px;line-height:1.15}
-html[data-device=mobile] 
 html[data-device=mobile] .landing-nav-link span{display:block}
-html[data-device=mobile] .landing-nav-link.active{color:#1877f2;background:rgba(24,119,242,.12)}\nhtml[data-device=mobile] .landing-nav-link.active::after{display:none}
+html[data-device=mobile] .landing-nav-link.active{color:#1877f2;background:rgba(24,119,242,.12)}
+html[data-device=mobile] .landing-nav-link.active::after{display:none}
 html[data-device=mobile] .landing-language{align-self:center;justify-self:end}
 
 html[data-device=tablet] .landing-page{padding-inline-start:108px;padding-bottom:0}
@@ -129,7 +129,6 @@ html[data-device=tablet] .landing-nav .brand-name{display:none}
 html[data-device=tablet] .landing-nav .brand-mark{width:44px;height:44px;border-radius:50%}
 html[data-device=tablet] .landing-nav-tabs{position:static;inset:auto;width:100%;height:auto;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(68px,1fr));align-self:center;justify-content:stretch;gap:7px;padding:0;border:0;background:transparent;box-shadow:none}
 html[data-device=tablet] .landing-nav-link{min-width:0;flex-direction:column;gap:6px;padding:8px 3px;border-radius:13px;font-size:11px;line-height:1.15;text-align:center}
-html[data-device=tablet] 
 html[data-device=tablet] .landing-nav-link span{display:block}
 html[data-device=tablet] .landing-nav-link.active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 html[data-device=tablet] .landing-nav-link.active::after{inset:8px auto 8px 0;inset-inline-start:0;width:3px;height:auto;border-radius:0 3px 3px 0}
@@ -153,6 +152,7 @@ html[data-device=tablet] .landing-language{align-self:end;justify-self:center}
   .landing-nav-link{min-width:0;flex-direction:column;gap:2px;padding:6px 2px;border-radius:16px;font-size:10px;line-height:1.15}
   
   .landing-nav-link span{display:block}
-  .landing-nav-link.active{color:#1877f2;background:rgba(24,119,242,.12)}\n  .landing-nav-link.active::after{display:none}
+  .landing-nav-link.active{color:#1877f2;background:rgba(24,119,242,.12)}
+  .landing-nav-link.active::after{display:none}
   .landing-language{align-self:center;justify-self:end}
 }
