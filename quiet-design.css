@@ -147,3 +147,82 @@ html[data-device=tablet] .landing-language{align-self:end;justify-self:center}
   .landing-nav-link.active::after{inset:0 10px auto;width:auto;height:3px;border-radius:0 0 3px 3px}
   .landing-language{align-self:center;justify-self:end}
 }
+
+/* Unified interaction system v8 */
+.ui-icon{display:block;width:1.5rem;height:1.5rem;flex:none;overflow:visible}
+button .ui-icon,a .ui-icon{pointer-events:none}
+.landing-nav-link:first-child{font-size:inherit}
+.landing-nav-link:first-child::before{display:none!important;content:none!important}
+.quiet-workspace,.quiet-workspace *{box-sizing:border-box}
+.quiet-workspace .workspace-main,.quiet-toolbar>*,.quiet-toolbar-title,.quiet-toolbar-title>div,.quiet-sidebar,.quiet-popover{min-width:0}
+.quiet-toolbar-title strong,.quiet-toolbar-title small,.quiet-link span,.quiet-course-button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quiet-link,.quiet-course-button,.quiet-avatar,.quiet-menu-button,.quiet-sidebar-close,.landing-nav-link{-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .16s ease,background-color .16s ease,transform .12s ease,box-shadow .16s ease}
+.quiet-link:active,.quiet-course-button:active,.quiet-avatar:active,.quiet-menu-button:active,.landing-nav-link:active{transform:scale(.94)}
+.quiet-link:focus-visible,.quiet-course-button:focus-visible,.quiet-avatar:focus-visible,.quiet-menu-button:focus-visible,.landing-nav-link:focus-visible,.subject-swipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 38%,transparent);outline-offset:2px}
+.quiet-desktop-tabs .quiet-link{position:relative;border-radius:10px}
+.quiet-desktop-tabs .quiet-link:hover{background:var(--surface-2)}
+.quiet-desktop-tabs .quiet-link.selected{color:var(--accent);background:transparent}
+.quiet-desktop-tabs .quiet-link.selected::after{content:"";position:absolute;inset-inline:8px;bottom:-10px;height:3px;border-radius:3px;background:var(--accent)}
+.quiet-popover{max-width:min(360px,calc(100vw - 24px));max-height:min(620px,calc(100dvh - 88px));overflow:auto;overscroll-behavior:contain;animation:quiet-popover-in .16s ease-out both;transform-origin:top right}
+[dir="rtl"] .quiet-popover{transform-origin:top left}
+.quiet-popover-more{display:flex!important;align-items:center;justify-content:space-between;gap:10px}
+.quiet-popover-more .ui-icon,.quiet-course-list b .ui-icon{width:18px;height:18px}
+@keyframes quiet-popover-in{from{opacity:0;transform:translateY(-5px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Safe swipe cards: reveal first, act only after a tap. */
+.subject-swipe{--swipe-x:0px;position:relative;isolation:isolate;overflow:hidden;border-radius:22px;touch-action:pan-y;background:var(--surface-2)}
+.subject-swipe .subject-card{position:relative;z-index:2;width:100%;transform:translate3d(var(--swipe-x),0,0)!important;transition:transform .24s cubic-bezier(.2,.8,.2,1)!important;will-change:transform;touch-action:pan-y}
+.subject-swipe.is-dragging .subject-card{transition:none!important;user-select:none}
+.subject-swipe-action{position:absolute;z-index:1;top:0;bottom:0;width:92px;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#fff;font:700 12px/1 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.subject-swipe-action .ui-icon{width:23px;height:23px}
+.subject-swipe-action.edit{left:0;background:#1877f2}
+.subject-swipe-action.delete{right:0;background:#d92d20}
+.subject-swipe-action:active{filter:brightness(.9)}
+.subject-action{display:none!important}
+.subject-mini-action{display:grid;place-items:center}
+.subject-mini-action .ui-icon{width:19px;height:19px}
+.subject-add span{display:grid;place-items:center}.subject-add .ui-icon,.subjects-empty-icon .ui-icon{width:24px;height:24px}
+.subjects-empty-icon .ui-icon{margin:auto}
+.pre-course-setting-icon .ui-icon{width:28px;height:28px}
+.pre-course-nav .ui-icon,.pre-course-preferences .ui-icon,.settings-action .ui-icon,.side-action .ui-icon{display:inline-block;vertical-align:middle;width:20px;height:20px;margin-inline-end:8px}
+.side-action{display:flex;align-items:center;gap:10px}.side-action .ui-icon{margin:0}
+
+/* Facebook-like navigation: neutral line icons with a blue selected state. */
+@media(max-width:767px){
+  .quiet-workspace .workspace-main{padding-bottom:calc(106px + env(safe-area-inset-bottom))!important}
+  .quiet-tabs{left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;height:72px!important;padding:7px!important;border:1px solid var(--line)!important;border-radius:22px!important;background:color-mix(in srgb,var(--surface) 96%,transparent)!important;box-shadow:0 10px 34px rgba(15,23,42,.16)!important;gap:4px!important;overflow:visible!important}
+  .quiet-tabs .quiet-link{position:relative;min-width:0!important;height:56px!important;padding:0!important;border-radius:16px!important;color:var(--muted)!important;background:transparent!important}
+  .quiet-tabs .quiet-link svg{width:27px!important;height:27px!important;stroke-width:1.8!important}
+  .quiet-tabs .quiet-link span{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}
+  .quiet-tabs .quiet-link:hover{background:var(--surface-2)!important}
+  .quiet-tabs .quiet-link.selected{color:#1877f2!important;background:rgba(24,119,242,.12)!important}
+  .quiet-tabs .quiet-link.selected::after{display:none!important}
+  .quiet-toolbar{padding-inline:12px!important}.quiet-toolbar-actions{gap:6px!important}
+  .quiet-course-button{max-width:48px!important;width:48px!important;padding:0!important;justify-content:center!important}.quiet-course-button span{display:none!important}
+  .quiet-popover{position:fixed!important;top:72px!important;left:12px!important;right:12px!important;width:auto!important;max-height:calc(100dvh - 176px)!important}
+  .landing-page{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+  .landing-nav-tabs{inset:auto 10px calc(8px + env(safe-area-inset-bottom))!important;height:72px!important;padding:7px!important;gap:4px!important;border:1px solid var(--line)!important;border-radius:22px!important;box-shadow:0 10px 34px rgba(15,23,42,.16)!important}
+  .landing-nav-tabs .landing-nav-link{border-radius:16px!important}
+  .landing-nav-tabs .landing-nav-link.active{color:#1877f2!important;background:rgba(24,119,242,.12)!important}
+  .landing-nav-tabs .landing-nav-link::after{display:none!important}
+  .landing-nav-tabs .ui-icon{width:25px;height:25px}
+}
+html[data-device=mobile] .landing-page{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+html[data-device=mobile] .landing-nav-tabs{inset:auto 10px calc(8px + env(safe-area-inset-bottom))!important;height:72px!important;padding:7px!important;gap:4px!important;border:1px solid var(--line)!important;border-radius:22px!important;box-shadow:0 10px 34px rgba(15,23,42,.16)!important}
+html[data-device=mobile] .landing-nav-link{border-radius:16px!important}
+html[data-device=mobile] .landing-nav-link.active{color:#1877f2!important;background:rgba(24,119,242,.12)!important}
+html[data-device=mobile] .landing-nav-link.active::after{display:none!important}
+html[data-device=mobile] .landing-nav-link .ui-icon{width:25px;height:25px}
+@media(max-width:1100px) and (max-aspect-ratio:5/8){
+  .landing-page{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+  .landing-nav-tabs{inset:auto 10px calc(8px + env(safe-area-inset-bottom))!important;height:72px!important;padding:7px!important;gap:4px!important;border:1px solid var(--line)!important;border-radius:22px!important;box-shadow:0 10px 34px rgba(15,23,42,.16)!important}
+  .landing-nav-link{border-radius:16px!important}
+  .landing-nav-link.active{color:#1877f2!important;background:rgba(24,119,242,.12)!important}
+  .landing-nav-link.active::after{display:none!important}
+}
+@media(min-width:768px) and (max-width:1099px){
+  .quiet-sidebar .quiet-link.selected{color:#1877f2;background:rgba(24,119,242,.12)}
+  .quiet-sidebar .quiet-link:hover{background:var(--surface-2)}
+  .quiet-popover{max-height:calc(100dvh - 90px)}
+}
+@media(min-width:1100px){.subject-swipe-action{display:none}.subject-swipe .subject-card{transform:none!important}}
