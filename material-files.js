@@ -31,7 +31,7 @@
     });
     section.addEventListener('click', async event => {
       const open = event.target.closest('[data-file-open]'); const remove = event.target.closest('[data-file-delete]');
-      if (open) try { await window.DafatiiFiles.open(open.dataset.fileOpen); } catch (error) { status.textContent = `Open failed: ${error.message}`; }
+      if (open) try { await window.DafatiiFiles.open(open.dataset.fileOpen, { items: files }); } catch (error) { status.textContent = `Open failed: ${error.message}`; }
       if (remove && confirm('Delete this file permanently?')) {
         try { await window.DafatiiFiles.delete(remove.dataset.fileDelete); save(all().filter(item => item.fileId !== remove.dataset.fileDelete)); section.remove(); render(); }
         catch (error) { status.textContent = `Delete failed: ${error.message}`; }

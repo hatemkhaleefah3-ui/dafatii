@@ -2,7 +2,8 @@
   'use strict';
   async function upload(file, options = {}) {
     if (!(file instanceof File)) throw new TypeError('upload() requires a File.');
-    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType: file.type || 'application/octet-stream', size: file.size, courseId: options.courseId || null } });
+    const contentType = file.type || inferType(file.name);
+    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType, size: file.size, courseId: options.courseId || null } });
     let response; let completion = {};
     try {
       if (initialized.upload.provider === 'drive-proxy') {
@@ -27,6 +28,10 @@
     if (initialized.upload.provider !== 'drive-proxy') options.onProgress?.({ loaded: file.size, total: file.size, ratio: 1 });
     return window.DafatiiApi.request(`/files/${initialized.fileId}/complete`, { method: 'POST', body: completion, idempotent: true });
   }
+  function inferType(filename) {
+    const extension = String(filename).toLowerCase().split('.').pop();
+    return ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', txt: 'text/plain', csv: 'text/csv', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })[extension] || 'application/octet-stream';
+  }
   const get = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`);
   const list = options => window.DafatiiApi.request(`/files?limit=${Math.min(options?.limit || 50, 100)}`);
   async function getViewUrl(fileId, options = {}) {
@@ -34,11 +39,11 @@
     return (await window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}/view${suffix}`)).url;
   }
   const remove = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', body: {}, idempotent: true });
-  async function open(fileId) {
+  async function open(fileId, options = {}) {
     const metadata = await get(fileId);
-    if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata);
-    if (window.DafatiiOffice?.types.includes(metadata.contentType)) return window.DafatiiOffice.open(fileId, metadata);
-    return window.DafatiiMedia.open(fileId, metadata);
+    if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata, options);
+    if (window.DafatiiOffice?.types.includes(metadata.contentType)) return window.DafatiiOffice.open(fileId, metadata, options);
+    return window.DafatiiMedia.open(fileId, metadata, options);
   }
   window.DafatiiFiles = Object.freeze({ upload, get, list, getViewUrl, delete: remove, open });
 })();
