@@ -6,7 +6,7 @@
   const setAvailability = value => { if (availability !== value) { availability = value; emit('availability'); } };
   const backendUnavailable = error => !error?.status || error.status >= 500;
   async function current() {
-    try { user = (await window.DafatiiApi.request('/auth/session')).user; setAvailability('online'); emit('changed'); return user; }
+    try { user = (await window.DafatiiApi.request('/auth/session', { idempotent: true })).user; setAvailability('online'); emit('changed'); return user; }
     catch (error) {
       if (error.status === 401) { user = null; setAvailability('online'); emit('changed'); return null; }
       if (backendUnavailable(error)) { user = null; setAvailability('offline'); emit('changed'); return null; }
@@ -21,9 +21,9 @@
     try { await window.DafatiiRemoteData?.connect({ importLocal: false }); } catch (error) { window.dispatchEvent(new CustomEvent('dafatii:sync:offline', { detail: { error } })); }
     return user;
   }
-  async function signup({ email, password, displayName }) {
+  async function signup({ email, password, displayName, accountType, studentStage }) {
     let result;
-    try { result = await window.DafatiiApi.request('/auth/signup', { method: 'POST', body: { email, password, displayName } }); setAvailability('online'); }
+    try { result = await window.DafatiiApi.request('/auth/signup', { method: 'POST', body: { email, password, displayName, accountType, studentStage } }); setAvailability('online'); }
     catch (error) { if (backendUnavailable(error)) setAvailability('offline'); throw error; }
     user = result.user; emit('changed');
     try { await window.DafatiiRemoteData?.connect({ importLocal: true }); } catch (error) { window.dispatchEvent(new CustomEvent('dafatii:sync:offline', { detail: { error } })); }

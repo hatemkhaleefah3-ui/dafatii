@@ -16,7 +16,7 @@ function loadJSON(key, fallback){
 
 function loadSubjects(){
   const stored = loadJSON('dafatii:subjects', null);
-  return Array.isArray(stored) ? stored : DEFAULT_SUBJECTS;
+  return Array.isArray(stored) ? stored : [];
 }
 
 function loadLectures(){
@@ -25,7 +25,8 @@ function loadLectures(){
 }
 
 const state = {
-  joined: window.DafatiiData.readString('dafatii:joined') === '1',
+  joined: Boolean(window.DafatiiAuth?.user),
+  authReady: false,
   sidebar: false,
   authMode: 'signup',
   subjects: loadSubjects(),
@@ -38,6 +39,12 @@ const MAIN_NAV = {
   calendar: ['Schedule', 'Deadlines', 'Exams'],
   'study-rooms': ['Discover', 'My rooms', 'Create room'],
   chat: ['Messages', 'Groups', 'Requests'],
+};
+
+const PRE_COURSE_ROUTES = new Set(['dashboard','change-course','profile','settings']);
+const PRE_COURSE_COPY = {
+  en:{dashboard:'Dashboard',courses:'Courses',profile:'Profile',settings:'Settings',welcome:'Welcome to Dafatii',waiting:'Your account is ready. Create a course or enroll in one to open the full study workspace.',pending:'Pending applications',available:'Available courses',openCourses:'Open courses',appearance:'Appearance',language:'Language',light:'Light',dark:'Dark',english:'English',arabic:'Arabic',account:'Account details',type:'Account type',stage:'Student stage',check:'Check enrollment status'},
+  ar:{dashboard:'لوحة التحكم',courses:'الدورات',profile:'الملف الشخصي',settings:'الإعدادات',welcome:'مرحباً بك في دفاتري',waiting:'حسابك جاهز. أنشئ دورة أو سجّل في دورة لفتح مساحة الدراسة الكاملة.',pending:'طلبات قيد الانتظار',available:'الدورات المتاحة',openCourses:'فتح الدورات',appearance:'المظهر',language:'اللغة',light:'فاتح',dark:'داكن',english:'الإنجليزية',arabic:'العربية',account:'تفاصيل الحساب',type:'نوع الحساب',stage:'المرحلة الدراسية',check:'التحقق من حالة التسجيل'}
 };
 
 const LABELS = {
@@ -130,33 +137,44 @@ function join(){
         <div class="auth-tabs"><button class="auth-tab ${!isSignup?'active':''}" data-auth="signin">Sign in</button><button class="auth-tab ${isSignup?'active':''}" data-auth="signup">Sign up</button></div>
         <h2>${isSignup ? 'Create your account' : 'Welcome back'}</h2>
         <p>${isSignup ? 'Set up your Dafatii workspace in a few seconds.' : 'Sign in to continue to your workspace.'}</p>
-        <form id="auth-form" ${authOffline ? 'aria-disabled="true"' : ''}>
+        <form id="auth-form">
           ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
           <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
           <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
-          ${isSignup ? `<div class="field"><label>I study as</label><select name="studentType"><option>School student</option><option>University student</option><option>Independent student</option></select></div>` : ''}
-          <button class="btn btn-primary auth-submit" type="submit" ${authOffline ? 'disabled' : ''}>${isSignup ? 'Create account' : 'Sign in'} →</button>
+          ${isSignup ? `<div class="field"><label>Account type</label><select name="accountType"><option value="student">Student</option><option value="representer">Course representer</option></select></div><div class="field"><label>Student stage</label><select name="studentStage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div>` : ''}
+          <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
         </form>
-        <button class="btn btn-ghost auth-submit" id="access-site" type="button">Access website without account →</button>
-        <div class="auth-note" id="auth-status">${authOffline ? 'Cloud accounts are temporarily unavailable. Continue without an account; your workspace will remain on this device.' : 'Credentials are verified by Dafatii’s server. Guest access remains local-only and does not synchronize.'}</div>
+        <div class="auth-note" id="auth-status">${authOffline ? 'The automatic connection check failed. You can still submit the form or try the check again.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
+        ${authOffline ? '<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">Try again</button>' : ''}
       </div>
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
+  const retry=document.getElementById('auth-retry');
+  if(retry) retry.onclick=async()=>{
+    retry.disabled=true;
+    document.getElementById('auth-status').textContent='Reconnecting…';
+    await window.DafatiiAuth.current();
+    if(window.DafatiiAuth.availability==='offline'){
+      retry.disabled=false;
+      document.getElementById('auth-status').textContent='The server is still unavailable. Check your connection and try again.';
+    }
+  };
   document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
     const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
-    submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
+    form.dataset.submitting='true'; submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
     try{
       const values=new FormData(form);
-      if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name')});
+      if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
       else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
-      state.joined = true; window.DafatiiData.writeString('dafatii:joined','1'); setHash('dashboard/overview');
-    }catch(error){status.textContent=error.message||'Authentication failed.';submit.disabled=false;}
-  };
-  document.getElementById('access-site').onclick = ()=>{
-    state.joined = true; window.DafatiiData.writeString('dafatii:joined','1');
-    setHash('dashboard/overview');
+      state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
+    }catch(error){
+      const suffix=error.code?` (${error.code})`:'';
+      status.textContent=`${error.message||'Authentication failed.'}${suffix}`;
+      submit.disabled=false;
+      delete form.dataset.submitting;
+    }
   };
 }
 
@@ -271,7 +289,38 @@ function workspaceContent(page, parts, title){
   return `<section class="empty-state"><div class="empty-icon">${icon(page)}</div><h1>${escapeHtml(title)}</h1><p>Coming soon…</p></section>`;
 }
 
+function interfaceLanguage(){return window.DafatiiData?.readString('dafatii:interface-language')==='ar'?'ar':'en';}
+function applyInterfaceLanguage(language=interfaceLanguage()){
+  document.documentElement.lang=language;
+  document.documentElement.dir=language==='ar'?'rtl':'ltr';
+  window.DafatiiData?.writeString('dafatii:interface-language',language);
+}
+function preCourseContent(page,copy){
+  const courses=window.DafatiiCourses.list();
+  const pending=courses.filter(course=>['pending','payment_pending'].includes(course.membership?.status));
+  if(page==='change-course')return workspaceContent('change-course',['change-course'],'Courses');
+  if(page==='profile'){
+    const user=window.DafatiiAuth.user||{};
+    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.profile)}</div><h1>${escapeHtml(copy.account)}</h1></div></div><div class="pre-course-detail-grid"><article><span>${escapeHtml(copy.account)}</span><strong>${escapeHtml(user.displayName||'')}</strong><p>${escapeHtml(user.email||'')}</p></article><article><span>${escapeHtml(copy.type)}</span><strong>${escapeHtml(user.accountType||'student')}</strong><p>${escapeHtml(copy.stage)} · ${escapeHtml(user.studentStage||'university')}</p></article></div></section>`;
+  }
+  if(page==='settings'){
+    const dark=document.documentElement.dataset.theme==='dark',language=interfaceLanguage();
+    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.settings)}</div><h1>${escapeHtml(copy.settings)}</h1></div></div><div class="pre-course-setting-grid"><article><span class="pre-course-setting-icon">◐</span><div><h2>${escapeHtml(copy.appearance)}</h2><p>${escapeHtml(dark?copy.dark:copy.light)}</p></div><button class="btn btn-primary" data-extra="dark-mode">${escapeHtml(dark?copy.light:copy.dark)}</button></article><article><span class="pre-course-setting-icon">文</span><div><h2>${escapeHtml(copy.language)}</h2><p>${escapeHtml(language==='ar'?copy.arabic:copy.english)}</p></div><button class="btn btn-primary" data-interface-language="${language==='ar'?'en':'ar'}">${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></article></div></section>`;
+  }
+  return `<section class="pre-course-page"><div class="pre-course-hero"><div><div class="eyebrow">${escapeHtml(copy.dashboard)}</div><h1>${escapeHtml(copy.welcome)}</h1><p>${escapeHtml(copy.waiting)}</p><div class="pre-course-actions"><button class="btn btn-primary" data-pre-course-route="change-course">${escapeHtml(copy.openCourses)} →</button><button class="btn btn-ghost" id="course-status-refresh">${escapeHtml(copy.check)}</button></div></div><div class="pre-course-orbit">◇</div></div><div class="pre-course-stats"><article><strong>${pending.length}</strong><span>${escapeHtml(copy.pending)}</span></article><article><strong>${courses.length}</strong><span>${escapeHtml(copy.available)}</span></article></div></section>`;
+}
+function preCourseWorkspace(current){
+  const requested=current.split('/')[0],page=PRE_COURSE_ROUTES.has(requested)?requested:'dashboard';
+  if(page!==requested){setHash('dashboard');return;}
+  const language=interfaceLanguage(),copy=PRE_COURSE_COPY[language],dark=document.documentElement.dataset.theme==='dark';
+  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${[['dashboard',copy.dashboard],['change-course',copy.courses],['profile',copy.profile],['settings',copy.settings]].map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">◐ ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">文 ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
+  document.querySelectorAll('[data-pre-course-route]').forEach(button=>button.onclick=()=>setHash(button.dataset.preCourseRoute));
+  document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);preCourseWorkspace(page);});
+  document.getElementById('course-status-refresh')?.addEventListener('click',async event=>{event.currentTarget.disabled=true;await window.DafatiiCourses.refresh();if(!window.DafatiiCourses.active().id){event.currentTarget.disabled=false;preCourseWorkspace('dashboard');}});
+}
+
 function workspace(current){
+  if(!window.DafatiiCourses.active().id){preCourseWorkspace(current);return;}
   const parts = current.split('/');
   const page = parts[0];
   const inSubject = page === 'subjects' && parts[1] === 'subject';
@@ -286,7 +335,7 @@ function workspace(current){
     <header class="main-nav"><div class="inner">
       ${brand()}
       <nav class="nav-center">${Object.keys(MAIN_NAV).map(k=>`<button class="nav-link ${mainActive===k?'active':''}" data-page="${k}">${LABELS[k]}</button>`).join('')}</nav>
-      <div class="user-chip"><span class="avatar">D</span><span>Student</span></div>
+      <div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth?.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth?.user?.displayName||'Account')}</span></div>
     </div></header>
 
     <div class="settings-nav ${state.sidebar?'hidden':''}"><div class="settings-inner">
@@ -300,6 +349,8 @@ function workspace(current){
       <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close">×</button></div>
       <div class="sidebar-label">Settings</div>
       ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
+      ${window.DafatiiAuth?.user?.platformRole==='admin'?sideAction('admin','Admin Panel'):''}
+      ${['owner','representer'].includes(window.DafatiiCourses.active().membership?.role)?sideAction('representer','Representer Panel'):''}
       <div class="sidebar-section"><div class="sidebar-label">Opportunities</div>
         ${sideAction('apply-work','Apply Work')}${sideAction('apply-scholarship','Apply Scholarship')}${sideAction('volunteer','Volunteer')}${sideAction('donate-us','Donate Us')}
       </div>
@@ -520,14 +571,18 @@ function render(){
   const r=route();
   if(r==='landing'){ landing(); return; }
   if(r==='join'){ join(); return; }
+  if(!state.authReady){ app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Checking your session…</h2><p>Your secure workspace is loading.</p></div></section></div>'; return; }
   if(!state.joined){ setHash('join'); return; }
+  if(!window.DafatiiCourses.active().id&&!PRE_COURSE_ROUTES.has(r.split('/')[0])){setHash('dashboard');return;}
   workspace(r);
 }
 
 window.addEventListener('hashchange',render);
-window.addEventListener('dafatii:auth:availability',()=>{ if(route()==='join') join(); });
+window.addEventListener('dafatii:auth:availability',()=>{
+  if(route()==='join'&&!document.getElementById('auth-form')?.dataset.submitting) join();
+});
+window.addEventListener('online',()=>{ if(window.DafatiiAuth?.availability==='offline') window.DafatiiAuth.current(); });
 window.addEventListener('dafatii:datahydrated',()=>{
-  state.joined = window.DafatiiData.readString('dafatii:joined') === '1';
   state.subjects = loadSubjects();
   state.lectures = loadLectures();
   render();
@@ -537,4 +592,19 @@ window.addEventListener('dafatii:coursechanged',()=>{
   state.lectures = loadLectures();
   render();
 });
-window.addEventListener('DOMContentLoaded',()=>{ if(!location.hash) location.hash='landing'; else render(); });
+window.addEventListener('dafatii:coursesloaded',()=>{
+  if(!state.authReady||!state.joined)return;
+  if(window.DafatiiCourses.active().id&&PRE_COURSE_ROUTES.has(route().split('/')[0])){
+    if(route()==='dashboard/Overview')render();else setHash('dashboard/Overview');
+  }
+  else render();
+});
+window.addEventListener('dafatii:auth:changed',async event=>{
+  state.joined=Boolean(event.detail.user);state.authReady=true;
+  if(state.joined){try{await window.DafatiiCourses.refresh();}catch(error){console.warn('Course access unavailable.',error.code||error.message);}}
+  render();
+});
+window.addEventListener('dafatii:coursewriteerror',event=>{showToast(event.detail.error?.message||'Course change was not saved.');state.subjects=loadSubjects();state.lectures=loadLectures();render();});
+window.addEventListener('DOMContentLoaded',()=>{ applyInterfaceLanguage();if(!location.hash) location.hash='landing'; else render(); });
+setInterval(()=>{if(state.joined&&!window.DafatiiCourses.active().id&&document.visibilityState==='visible')window.DafatiiCourses.refresh().catch(()=>{});},60000);
+window.addEventListener('focus',()=>{if(state.joined&&!window.DafatiiCourses.active().id)window.DafatiiCourses.refresh().catch(()=>{});});

@@ -1,8 +1,9 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from './crypto.mjs';
+import { validateProfileInput } from './courses.mjs';
 import { HttpError, logEvent } from './http.mjs';
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
-const DUMMY_PASSWORD_HASH = 'pbkdf2-sha256$600000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const DUMMY_PASSWORD_HASH = 'pbkdf2-sha256-p1$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const normalizeEmail = value => String(value || '').trim().normalize('NFKC').toLowerCase();
 export function validateAccountInput(input, signup = false) {
   const email = normalizeEmail(input?.email);
@@ -11,7 +12,8 @@ export function validateAccountInput(input, signup = false) {
   if (password.length < 12 || password.length > 256) throw new HttpError(400, 'INVALID_CREDENTIALS', signup ? 'Password must be 12–256 characters.' : 'Email or password is invalid.');
   const displayName = String(input?.displayName || input?.name || '').trim().normalize('NFC').slice(0, 100);
   if (signup && !displayName) throw new HttpError(400, 'INVALID_DISPLAY_NAME', 'Display name is required.');
-  return { email, password, displayName };
+  const profile = signup ? validateProfileInput(input) : null;
+  return { email, password, displayName, ...(profile || {}) };
 }
 function cookieName(request) { return new URL(request.url).protocol === 'https:' ? '__Host-dafatii_session' : 'dafatii_session'; }
 function parseCookies(request) {
@@ -27,7 +29,7 @@ async function rateKey(request, email, env) {
   const pepper = String(env.RATE_LIMIT_PEPPER || '');
   if (pepper.length < 32) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Authentication configuration is unavailable.');
   const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  return sha256(`${pepper}\0${ip}\0${email}`);
+  return sha256(`${pepper}\0rate\0${ip}\0${email}`);
 }
 export async function enforceAuthRateLimit(db, request, email, env, now = Date.now()) {
   const attemptLimit = env.AUTH_ATTEMPT_LIMIT === undefined || env.AUTH_ATTEMPT_LIMIT === '' ? 10 : Number(env.AUTH_ATTEMPT_LIMIT);
@@ -42,19 +44,28 @@ export async function enforceAuthRateLimit(db, request, email, env, now = Date.n
 }
 export async function clearAuthRateLimit(db, fingerprint) { await db.prepare('DELETE FROM auth_attempts WHERE fingerprint = ?').bind(fingerprint).run(); }
 
-export async function createUser(db, input, now = Date.now()) {
-  const { email, password, displayName } = validateAccountInput(input, true);
+function passwordPepper(env = {}) {
+  const pepper = String(env.RATE_LIMIT_PEPPER || '');
+  if (pepper.length < 32) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Authentication configuration is unavailable.');
+  return pepper;
+}
+export async function createUser(db, input, env = {}, now = Date.now()) {
+  const { email, password, displayName, accountType, studentStage } = validateAccountInput(input, true);
   const existing = await db.prepare('SELECT id FROM users WHERE email_normalized = ?').bind(email).first();
   if (existing) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.');
   const id = crypto.randomUUID();
-  const passwordHash = await hashPassword(password);
-  try { await db.prepare('INSERT INTO users (id, email_normalized, password_hash, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, email, passwordHash, displayName, 'active', now, now).run(); }
+  const passwordHash = await hashPassword(password, 100000, passwordPepper(env));
+  try {
+    const userInsert = db.prepare('INSERT INTO users (id, email_normalized, password_hash, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, email, passwordHash, displayName, 'active', now, now);
+    const profileInsert = db.prepare('INSERT INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, accountType, studentStage, 'student', now, now);
+    await db.batch([userInsert, profileInsert]);
+  }
   catch (error) { if (/unique|constraint/i.test(String(error))) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.'); throw error; }
-  return { id, email, displayName };
+  return { id, email, displayName, accountType, studentStage, platformRole: 'student' };
 }
-export async function authenticateUser(db, email, password) {
+export async function authenticateUser(db, email, password, env = {}) {
   const user = await db.prepare('SELECT id, email_normalized, password_hash, display_name, status FROM users WHERE email_normalized = ?').bind(normalizeEmail(email)).first();
-  const passwordValid = await verifyPassword(String(password || ''), user?.password_hash || DUMMY_PASSWORD_HASH);
+  const passwordValid = await verifyPassword(String(password || ''), user?.password_hash || DUMMY_PASSWORD_HASH, passwordPepper(env));
   const valid = Boolean(user && user.status === 'active' && passwordValid);
   if (!valid) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is invalid.');
   return { id: user.id, email: user.email_normalized, displayName: user.display_name };
@@ -78,9 +89,10 @@ export async function requireUser(context) {
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.status = 'active'`).bind(tokenHash, now).first();
   if (!row) { logEvent('warn', 'auth.invalid_session'); throw new HttpError(401, 'INVALID_SESSION', 'Session is invalid or expired.'); }
-  const update = context.env.DB.prepare('UPDATE sessions SET last_seen_at = ? WHERE id = ?').bind(now, row.session_id).run();
+  const expiresAt = now + SESSION_SECONDS * 1000;
+  const update = context.env.DB.prepare('UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?').bind(now, expiresAt, row.session_id).run();
   context.waitUntil?.(update);
-  return { id: row.id, email: row.email_normalized, displayName: row.display_name, sessionId: row.session_id };
+  return { id: row.id, email: row.email_normalized, displayName: row.display_name, sessionId: row.session_id, sessionToken: token, expiresAt };
 }
 export async function revokeCurrentSession(context) {
   try { const user = await requireUser(context); await context.env.DB.prepare('UPDATE sessions SET revoked_at = ? WHERE id = ?').bind(Date.now(), user.sessionId).run(); return true; }

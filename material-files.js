@@ -23,7 +23,7 @@
       const file = event.target.files[0]; if (!file) return;
       status.textContent = `Uploading ${file.name}…`;
       try {
-        const stored = await window.DafatiiFiles.upload(file);
+        const stored = await window.DafatiiFiles.upload(file, { courseId: window.DafatiiCourses.active().id });
         save([...all(), { fileId: stored.id, subjectId, filename: stored.filename, contentType: stored.contentType, size: stored.size, createdAt: stored.createdAt }]);
         status.textContent = 'Upload complete.'; section.remove(); render();
       } catch (error) { status.textContent = error.status === 401 ? 'Sign in to upload private files.' : `Upload failed: ${error.message}`; }
@@ -31,7 +31,7 @@
     });
     section.addEventListener('click', async event => {
       const open = event.target.closest('[data-file-open]'); const remove = event.target.closest('[data-file-delete]');
-      if (open) try { await window.DafatiiFiles.open(open.dataset.fileOpen); } catch (error) { status.textContent = `Open failed: ${error.message}`; }
+      if (open) try { await window.DafatiiFiles.open(open.dataset.fileOpen, { items: files }); } catch (error) { status.textContent = `Open failed: ${error.message}`; }
       if (remove && confirm('Delete this file permanently?')) {
         try { await window.DafatiiFiles.delete(remove.dataset.fileDelete); save(all().filter(item => item.fileId !== remove.dataset.fileDelete)); section.remove(); render(); }
         catch (error) { status.textContent = `Delete failed: ${error.message}`; }

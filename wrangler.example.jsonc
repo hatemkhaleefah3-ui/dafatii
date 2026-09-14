@@ -11,11 +11,20 @@
       "migrations_dir": "migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "R2_STORAGE",
+      "bucket_name": "dafatii-app-storage"
+    }
+  ],
   "vars": {
     "APP_ORIGINS": "https://REPLACE_WITH_PRODUCTION_ORIGIN",
+    "ADMIN_EMAILS": "REPLACE_WITH_ADMIN_EMAIL",
     "MAX_UPLOAD_BYTES": "536870912",
     "AUTH_ATTEMPT_LIMIT": "10",
     "UPLOAD_INIT_LIMIT": "60",
-    "USER_STORAGE_QUOTA_BYTES": "10737418240"
+    "USER_STORAGE_QUOTA_BYTES": "10737418240",
+    "STORAGE_PROVIDER": "drive",
+    "GOOGLE_DRIVE_FOLDER_ID": "REPLACE_WITH_PRIVATE_DRIVE_FOLDER_ID"
   }
 }

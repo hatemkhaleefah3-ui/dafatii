@@ -1,50 +1,53 @@
 (() => {
   'use strict';
   const esc=value=>escapeHtml(value??'');
-
+  const statusLabel=value=>({active:'Enrolled',pending:'Awaiting acceptance',payment_pending:'Payment verification pending',rejected:'Rejected',removed:'Removed'}[value]||'Available');
+  const money=course=>course.pricing==='free'?'Free':new Intl.NumberFormat(undefined,{style:'currency',currency:course.currency||'USD'}).format((course.priceMinor||0)/100);
   LABELS['change-course']='Courses';
 
   function coursePage(){
-    const active=window.DafatiiCourses.active();
-    const courses=window.DafatiiCourses.list();
+    const active=window.DafatiiCourses.active(),courses=window.DafatiiCourses.list(),actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
+    const enrolled=courses.filter(course=>course.membership?.status==='active');
+    const available=courses.filter(course=>!course.membership||course.membership.status!=='active');
+    const canCreate=actor?.platformRole==='admin'||actor?.accountType==='representer';
     return `<section class="suite-page course-manager">
-      <div class="suite-head"><div><div class="eyebrow">Workspace · Courses</div><h1>Your courses</h1><p>Each course keeps its own subjects, lectures, materials, calendar, progress, rooms and conversations.</p></div><div class="suite-head-actions"><button class="btn btn-ghost" id="course-edit-active">Edit active</button><button class="btn btn-primary" id="course-add">＋ Add course</button></div></div>
-      <article class="course-active-hero" style="--course-color:${esc(active.color||'#2563eb')}"><span class="course-active-icon">${esc(active.icon||'◇')}</span><div><div class="eyebrow">Active course</div><h2>${esc(active.name)}</h2><p>${esc([active.institution,active.term].filter(Boolean).join(' · ')||'Course workspace')}</p></div><div class="course-active-count"><strong>${state.subjects.length}</strong><span>subjects</span></div></article>
-      <div class="course-card-grid">${courses.map(course=>`<article class="course-card ${course.id===active.id?'active':''}" style="--course-color:${esc(course.color||'#2563eb')}"><div class="course-card-top"><span>${esc(course.icon||'◇')}</span>${course.id===active.id?'<b>Active</b>':''}</div><h2>${esc(course.name)}</h2><p>${esc([course.institution,course.term].filter(Boolean).join(' · ')||'Independent course')}</p><button class="btn ${course.id===active.id?'btn-ghost':'btn-primary'}" data-course-switch="${esc(course.id)}" ${course.id===active.id?'disabled':''}>${course.id===active.id?'Currently open':'Open course'}</button></article>`).join('')}</div>
-      <article class="course-explainer"><span>↻</span><div><h2>Course switching is complete</h2><p>Open another course and every academic surface reloads from that course’s workspace. Your current course stays exactly as you left it.</p></div></article>
+      <div class="suite-head"><div><div class="eyebrow">Courses and enrollment</div><h1>Your courses</h1><p>Enrollment, roles and every course workspace are stored securely on the server.</p></div><div class="suite-head-actions">${canCreate?'<button class="btn btn-primary" id="course-add">＋ Create course</button>':''}<button class="btn btn-ghost" id="course-join">Join with code</button></div></div>
+      ${active.id?`<article class="course-active-hero"><span class="course-active-icon">◇</span><div><div class="eyebrow">Active course · ${esc(active.membership?.role||'student')}</div><h2>${esc(active.name)}</h2><p>${esc([active.institution,active.stage].filter(Boolean).join(' · '))}</p></div><div class="course-active-count"><strong>${state.subjects.length}</strong><span>subjects</span></div></article>`:'<article class="course-explainer"><span>＋</span><div><h2>No active course yet</h2><p>Join a course, or create one from a representer account.</p></div></article>'}
+      <h2 class="course-section-title">Enrolled</h2><div class="course-card-grid">${enrolled.length?enrolled.map(courseCard).join(''):'<p class="muted">You are not enrolled in an active course.</p>'}</div>
+      <h2 class="course-section-title">Discover courses</h2><div class="course-card-grid">${available.length?available.map(courseCard).join(''):'<p class="muted">No other public courses are available.</p>'}</div>
+      <article class="course-explainer"><span>i</span><div><h2>Paid enrollment is verified manually</h2><p>Dafatii records payment as pending until an authorized representer or administrator confirms it. No payment processor is connected yet.</p></div></article>
     </section>`;
+  }
+
+  function courseCard(course){
+    const member=course.membership,status=member?.status,active=course.id===window.DafatiiCourses.active().id;
+    return `<article class="course-card ${active?'active':''}"><div class="course-card-top"><span>◇</span><b>${esc(statusLabel(status))}</b></div><h2>${esc(course.name)}</h2><p>${esc([course.institution,course.stage,money(course),course.visibility,course.joinPolicy==='approval'?'Approval required':'Direct join'].filter(Boolean).join(' · '))}</p><div class="course-card-actions">${status==='active'?`<button class="btn ${active?'btn-ghost':'btn-primary'}" data-course-switch="${esc(course.id)}" ${active?'disabled':''}>${active?'Currently open':'Open course'}</button>`:status?`<span class="course-status">${esc(statusLabel(status))}</span>`:`<button class="btn btn-primary" data-course-enroll="${esc(course.enrollmentCode)}" data-private="${course.visibility==='private'?'1':'0'}">Enroll</button>`}</div></article>`;
   }
 
   const previousWorkspaceContent=workspaceContent;
   workspaceContent=function(page,parts,title){if(page==='change-course')return coursePage();return previousWorkspaceContent(page,parts,title);};
-
   const previousWorkspace=workspace;
   workspace=function(current){previousWorkspace(current);enhanceCourseSwitcher();if(current.split('/')[0]==='change-course')bindCourseManager();};
 
   function enhanceCourseSwitcher(){
-    const host=document.querySelector('.settings-inner');if(!host||host.querySelector('[data-course-picker]'))return;
-    const active=window.DafatiiCourses.active(),courses=window.DafatiiCourses.list();
-    const label=document.createElement('label');label.className='course-picker';label.dataset.coursePicker='';label.style.setProperty('--course-color',active.color||'#2563eb');
-    label.innerHTML=`<span class="course-picker-icon">${esc(active.icon||'◇')}</span><span class="course-picker-copy"><small>Active course</small><strong>${esc(active.name)}</strong></span><select aria-label="Active course">${courses.map(course=>`<option value="${esc(course.id)}" ${course.id===active.id?'selected':''}>${esc(course.name)}</option>`).join('')}</select><b>⌄</b>`;
-    label.querySelector('select').addEventListener('change',event=>window.DafatiiCourses.switchCourse(event.target.value));
-    host.prepend(label);
+    const host=document.querySelector('.settings-inner'),courses=window.DafatiiCourses.list().filter(course=>course.membership?.status==='active'),active=window.DafatiiCourses.active();if(!host||!active.id||host.querySelector('[data-course-picker]'))return;
+    const label=document.createElement('label');label.className='course-picker';label.dataset.coursePicker='';label.innerHTML=`<span class="course-picker-icon">◇</span><span class="course-picker-copy"><small>Active course</small><strong>${esc(active.name)}</strong></span><select aria-label="Active course">${courses.map(course=>`<option value="${esc(course.id)}" ${course.id===active.id?'selected':''}>${esc(course.name)}</option>`).join('')}</select><b>⌄</b>`;
+    label.querySelector('select').addEventListener('change',async event=>{await window.DafatiiCourses.switchCourse(event.target.value);});host.prepend(label);
   }
 
   function bindCourseManager(){
     document.querySelectorAll('[data-course-switch]').forEach(button=>button.onclick=()=>window.DafatiiCourses.switchCourse(button.dataset.courseSwitch));
-    document.getElementById('course-add')?.addEventListener('click',()=>openCourseSheet());
-    document.getElementById('course-edit-active')?.addEventListener('click',()=>openCourseSheet(window.DafatiiCourses.active()));
+    document.querySelectorAll('[data-course-enroll]').forEach(button=>button.onclick=()=>openEnrollSheet(button.dataset.courseEnroll,button.dataset.private==='1'));
+    document.getElementById('course-add')?.addEventListener('click',()=>openCourseSheet());document.getElementById('course-join')?.addEventListener('click',()=>openEnrollSheet('',false));
   }
 
-  function openCourseSheet(course=null){
-    const root=document.getElementById('overlay-root');if(!root)return;
-    const templates=window.DafatiiCourses.templates();
-    root.innerHTML=`<div class="entity-sheet-overlay suite-overlay" id="course-overlay"><section class="entity-sheet suite-sheet course-sheet" role="dialog" aria-modal="true" aria-label="${course?'Edit course':'Add course'}"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Course workspace</div><h2>${course?'Edit course':'Add a course'}</h2></div><button class="icon-btn" id="course-close" aria-label="Close">×</button></div><form id="course-form"><div class="field"><label for="course-name">Course name</label><input id="course-name" maxlength="80" required value="${esc(course?.name||'')}" placeholder="e.g. Computer Science — Year 2"></div>${course?'':`<div class="field"><label for="course-template">Content template</label><select id="course-template">${templates.map(name=>`<option>${esc(name)}</option>`).join('')}</select><small class="course-field-help">Starts the course with tailored subjects, lectures, notes, resources, assignments, calendar items, rooms and conversations.</small></div>`}<div class="suite-form-grid"><div class="field"><label for="course-institution">Institution <span class="field-optional">Optional</span></label><input id="course-institution" maxlength="100" value="${esc(course?.institution||'')}" placeholder="School or university"></div><div class="field"><label for="course-term">Term <span class="field-optional">Optional</span></label><input id="course-term" maxlength="80" value="${esc(course?.term||'')}" placeholder="e.g. Fall 2026"></div></div><button class="btn btn-primary auth-submit" type="submit">${course?'Save course':'Create and open course'}</button></form></section></div>`;
-    const close=()=>{root.innerHTML='';};document.getElementById('course-close').onclick=close;document.getElementById('course-overlay').onclick=event=>{if(event.target.id==='course-overlay')close();};
-    const template=document.getElementById('course-template'),name=document.getElementById('course-name');
-    template?.addEventListener('change',()=>{if(!name.value.trim()||templates.includes(name.value.trim()))name.value=template.value;});
-    if(template&&!name.value)name.value=template.value;
-    document.getElementById('course-form').onsubmit=event=>{event.preventDefault();const payload={name:name.value.trim(),institution:document.getElementById('course-institution').value.trim(),term:document.getElementById('course-term').value.trim()};if(!payload.name)return;if(course)window.DafatiiCourses.updateCourse(course.id,payload);else window.DafatiiCourses.createCourse({...payload,templateName:template.value});close();};
-    setTimeout(()=>name.focus(),40);
+  function sheet(title,body){const root=document.getElementById('overlay-root');root.innerHTML=`<div class="entity-sheet-overlay suite-overlay" id="course-overlay"><section class="entity-sheet suite-sheet course-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-head"><h2>${esc(title)}</h2><button class="icon-btn" id="course-close">×</button></div>${body}</section></div>`;const close=()=>root.innerHTML='';document.getElementById('course-close').onclick=close;document.getElementById('course-overlay').onclick=e=>{if(e.target.id==='course-overlay')close();};return close;}
+  function openEnrollSheet(code='',privateCourse=false){
+    const close=sheet('Join a course',`<form id="course-enroll-form"><div class="field"><label>Enrollment code</label><input name="course" value="${esc(code)}" maxlength="36" required></div><div class="field"><label>Private access code <span class="field-optional">If required</span></label><input name="accessCode" type="password" minlength="6" maxlength="64" ${privateCourse?'required':''}></div><div class="field"><label>Application note <span class="field-optional">Optional</span></label><textarea name="note" maxlength="500"></textarea></div><button class="btn btn-primary auth-submit">Submit enrollment</button><p class="auth-note" id="course-status"></p></form>`);
+    document.getElementById('course-enroll-form').onsubmit=async e=>{e.preventDefault();const values=new FormData(e.currentTarget),status=document.getElementById('course-status');try{const result=await window.DafatiiCourses.enroll(Object.fromEntries(values));status.textContent=statusLabel(result.status);if(result.status==='active'){close();await window.DafatiiCourses.switchCourse(result.courseId);}else setTimeout(()=>{close();render();},900);}catch(error){status.textContent=error.message;}};
+  }
+  function openCourseSheet(){
+    const templates=window.DafatiiCourses.templates();const close=sheet('Create a course',`<form id="course-form"><div class="field"><label>Course name</label><input name="name" maxlength="120" required></div><div class="field"><label>Content template</label><select name="templateName">${templates.map(name=>`<option>${esc(name)}</option>`).join('')}</select></div><div class="suite-form-grid"><div class="field"><label>Institution</label><input name="institution" maxlength="160"></div><div class="field"><label>Stage</label><select name="stage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div><div class="field"><label>Pricing</label><select name="pricing"><option value="free">Free</option><option value="paid">Paid</option></select></div><div class="field"><label>Price (minor units)</label><input name="priceMinor" type="number" min="0" value="0"></div><div class="field"><label>Visibility</label><select name="visibility"><option value="public">Public</option><option value="private">Private by code</option></select></div><div class="field"><label>Join policy</label><select name="joinPolicy"><option value="approval">Needs acceptance</option><option value="direct">Direct join</option></select></div></div><div class="field"><label>Private access code</label><input name="accessCode" type="password" minlength="6" maxlength="64"></div><button class="btn btn-primary auth-submit" type="submit">Create course</button><p class="auth-note" id="course-status"></p></form>`);
+    document.getElementById('course-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,status=document.getElementById('course-status'),submit=form.querySelector('button[type=submit]'),data=Object.fromEntries(new FormData(form));data.priceMinor=Number(data.priceMinor);submit.disabled=true;status.textContent='Creating secure course workspace…';try{await window.DafatiiCourses.createCourse(data);close();setHash('dashboard/overview');}catch(error){status.textContent=error.message;submit.disabled=false;}};
   }
 })();

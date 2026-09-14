@@ -67,28 +67,6 @@
   const scopedKey = (key,courseId) => `dafatii:course:${courseId}:${String(key).replace(/^dafatii:/,'')}`;
   const dueDate = days => {const date=new Date(Date.now()+days*86400000);return date.toISOString().slice(0,10);};
 
-  function validCatalog(value){return value&&Array.isArray(value.courses)&&value.courses.length&&value.courses.some(course=>course.id===value.activeId);}
-  function catalog(){const value=rawRead(CATALOG_KEY,null);return validCatalog(value)?value:initialize();}
-  function saveCatalog(value){rawWrite(CATALOG_KEY,value);return value;}
-  function hasLegacyData(){return [...COURSE_KEYS].some(key=>rawRead(key,null)!==null);}
-
-  function initialize(){
-    const existing=rawRead(CATALOG_KEY,null);
-    if(validCatalog(existing))return existing;
-    if(hasLegacyData()){
-      const legacySuite=rawRead('dafatii:studentSuite:v1',{});
-      const name=String(legacySuite?.profile?.course||'General studies').trim()||'General studies';
-      const course={id:uid(name),name,icon:'◇',color:'#2563eb',institution:String(legacySuite?.profile?.school||''),term:String(legacySuite?.profile?.semester||''),createdAt:Date.now()};
-      COURSE_KEYS.forEach(key=>{const value=rawRead(key,null);if(value!==null)rawWrite(scopedKey(key,course.id),value);});
-      return saveCatalog({version:1,activeId:course.id,courses:[course]});
-    }
-    const names=['Computer Science','Medicine','Business'];
-    const courses=names.map((name,index)=>({id:`starter-${slug(name)}`,name,template:name,icon:TEMPLATES[name].icon,color:TEMPLATES[name].color,institution:'Dafatii Academy',term:'Foundation term',createdAt:Date.now()+index}));
-    const value=saveCatalog({version:1,activeId:courses[0].id,courses});
-    courses.forEach(course=>seedCourse(course.id,course.name));
-    return value;
-  }
-
   function courseSeed(templateName){
     const template=TEMPLATES[templateName]||TEMPLATES['Computer Science'];
     const createdAt=Date.now();
@@ -107,43 +85,61 @@
     return {subjects,lectures,suite,schedule,exams,chat:{conversations,selected:{private:conversations[0]?.id||'',group:conversations[1]?.id||'',unknown:''},reported:[],blocked:[]}};
   }
 
-  function seedCourse(courseId,templateName){
+  function seedValues(templateName){
     const seed=courseSeed(templateName);
-    rawWrite(scopedKey('dafatii:subjects',courseId),seed.subjects);
-    rawWrite(scopedKey('dafatii:lectures',courseId),seed.lectures);
-    rawWrite(scopedKey('dafatii:studentSuite:v1',courseId),seed.suite);
-    rawWrite(scopedKey('dafatii:weeklySchedule',courseId),seed.schedule);
-    rawWrite(scopedKey('dafatii:examSchedule',courseId),seed.exams);
-    rawWrite(scopedKey('dafatii:chatState:v1',courseId),seed.chat);
+    return {'dafatii:subjects':seed.subjects,'dafatii:lectures':seed.lectures,'dafatii:studentSuite:v1':seed.suite,'dafatii:weeklySchedule':seed.schedule,'dafatii:examSchedule':seed.exams,'dafatii:chatState:v1':seed.chat};
   }
 
-  function active(){const value=catalog();return value.courses.find(course=>course.id===value.activeId)||value.courses[0];}
-  function list(){return clone(catalog().courses);}
-  function readJSON(key,fallback){return COURSE_KEYS.has(key)?rawRead(scopedKey(key,active().id),fallback):rawRead(key,fallback);}
-  function writeJSON(key,value){return COURSE_KEYS.has(key)?rawWrite(scopedKey(key,active().id),value):rawWrite(key,value);}
-  function remove(key){return window.DafatiiData.remove(COURSE_KEYS.has(key)?scopedKey(key,active().id):key);}
+  const runtime={actor:null,courses:[],activeId:localStorage.getItem('__dafatii:active-course')||'',revisions:new Map(),queues:new Map(),ready:false};
+  const fallbackCourse={id:'',name:'No active course',institution:'',stage:'university',membership:null,color:'#64748b',icon:'◇'};
+  const cacheKey=(key,courseId)=>`__dafatii:course-cache:${courseId}:${key}`;
+  const cacheRead=(key,fallback,courseId=runtime.activeId)=>{try{const value=localStorage.getItem(cacheKey(key,courseId));return value===null?fallback:(JSON.parse(value)??fallback);}catch{return fallback;}};
+  const cacheWrite=(key,value,courseId=runtime.activeId)=>{localStorage.setItem(cacheKey(key,courseId),JSON.stringify(value));return value;};
 
-  function switchCourse(id){
-    const value=catalog();if(!value.courses.some(course=>course.id===id)||value.activeId===id)return false;
-    value.activeId=id;saveCatalog(value);window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course:active()}}));return true;
+  function active(){return runtime.courses.find(course=>course.id===runtime.activeId)||runtime.courses.find(course=>course.membership?.status==='active')||fallbackCourse;}
+  function list(){return clone(runtime.courses);}
+  function editable(permission){const membership=active().membership;if(runtime.actor?.platformRole==='admin'||membership?.role==='owner')return true;return membership?.role==='representer'&&Boolean(membership.permissions?.[permission]);}
+  function readJSON(key,fallback){return COURSE_KEYS.has(key)&&runtime.activeId?cacheRead(key,fallback):rawRead(key,fallback);}
+  function writeJSON(key,value){
+    if(!COURSE_KEYS.has(key))return rawWrite(key,value);
+    if(!runtime.activeId||!active().membership||active().membership.status!=='active')throw new Error('Open an enrolled course first.');
+    if(!['add_content','edit_content','remove_content'].some(editable))throw new Error('This course is read-only for students.');
+    const courseId=runtime.activeId,previous=cacheRead(key,null,courseId),queueKey=`${courseId}:${key}`;cacheWrite(key,value,courseId);
+    const prior=runtime.queues.get(queueKey)||Promise.resolve();
+    const pending=prior.then(async()=>{const baseRevision=runtime.revisions.get(queueKey)||0;const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision,record:{key,format:'json',value,deleted:false}}});runtime.revisions.set(queueKey,result.revision);}).catch(async error=>{if(previous===null)localStorage.removeItem(cacheKey(key,courseId));else cacheWrite(key,previous,courseId);try{await hydrate(courseId);}catch{}window.dispatchEvent(new CustomEvent('dafatii:coursewriteerror',{detail:{error,key,courseId}}));}).finally(()=>{if(runtime.queues.get(queueKey)===pending)runtime.queues.delete(queueKey);});runtime.queues.set(queueKey,pending);
+    return value;
   }
-  function createCourse({name,templateName,institution='',term=''}){
-    const clean=String(name||templateName||'New course').trim().slice(0,80);if(!clean)throw new Error('Course name is required.');
-    const template=TEMPLATES[templateName]?templateName:'Computer Science';
-    const value=catalog();const course={id:uid(clean),name:clean,template,icon:TEMPLATES[template].icon||ICONS[5],color:TEMPLATES[template].color||'#2563eb',institution:String(institution||'').trim().slice(0,100),term:String(term||'').trim().slice(0,80),createdAt:Date.now()};
-    value.courses.push(course);value.activeId=course.id;saveCatalog(value);seedCourse(course.id,template);
-    const suite=readJSON('dafatii:studentSuite:v1',{});suite.profile={...(suite.profile||{}),course:clean,school:course.institution,semester:course.term};writeJSON('dafatii:studentSuite:v1',suite);
-    window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course}}));return clone(course);
+  function remove(key){if(!COURSE_KEYS.has(key))return window.DafatiiData.remove(key);return writeJSON(key,null);}
+
+  async function hydrate(courseId){
+    const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{idempotent:true});
+    result.records.forEach(record=>{runtime.revisions.set(`${courseId}:${record.key}`,record.revision);if(record.deleted)localStorage.removeItem(cacheKey(record.key,courseId));else cacheWrite(record.key,record.value,courseId);});
+    return result;
   }
-  function updateCourse(id,changes){
-    const value=catalog(),course=value.courses.find(item=>item.id===id);if(!course)return null;
-    if(changes.name)course.name=String(changes.name).trim().slice(0,80)||course.name;
-    course.institution=String(changes.institution??course.institution??'').trim().slice(0,100);course.term=String(changes.term??course.term??'').trim().slice(0,80);saveCatalog(value);
-    if(id===value.activeId){const suite=readJSON('dafatii:studentSuite:v1',{});suite.profile={...(suite.profile||{}),course:course.name,school:course.institution,semester:course.term};writeJSON('dafatii:studentSuite:v1',suite);window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course}}));}
-    return clone(course);
+
+  async function refresh(){
+    if(!window.DafatiiAuth?.user){runtime.actor=null;runtime.courses=[];runtime.activeId='';runtime.ready=true;return []}
+    const result=await window.DafatiiApi.request('/courses?scope=available',{idempotent:true});runtime.actor=result.actor;runtime.courses=result.courses;
+    const available=runtime.courses.find(course=>course.id===runtime.activeId&&course.membership?.status==='active')||runtime.courses.find(course=>course.membership?.status==='active');
+    runtime.activeId=available?.id||'';if(runtime.activeId){localStorage.setItem('__dafatii:active-course',runtime.activeId);await hydrate(runtime.activeId);}runtime.ready=true;
+    window.dispatchEvent(new CustomEvent('dafatii:coursesloaded',{detail:{courses:list(),actor:runtime.actor}}));return list();
   }
+
+  async function switchCourse(id){
+    let course=runtime.courses.find(item=>item.id===id&&(item.membership?.status==='active'||runtime.actor?.platformRole==='admin'));
+    if(!course&&runtime.actor?.platformRole==='admin'){const result=await window.DafatiiApi.request(`/courses/${id}`,{idempotent:true});course=result.course;runtime.courses.push(course);}
+    if(!course||runtime.activeId===id)return false;
+    runtime.activeId=id;localStorage.setItem('__dafatii:active-course',id);await hydrate(id);window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course:active()}}));return true;
+  }
+  async function putInitial(courseId,key,value){const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision:0,record:{key,format:'json',value,deleted:false}}});runtime.revisions.set(`${courseId}:${key}`,result.revision);cacheWrite(key,value,courseId);}
+  async function createCourse(input){
+    const template=TEMPLATES[input.templateName]?input.templateName:'Computer Science';const result=await window.DafatiiApi.request('/courses',{method:'POST',body:input});
+    runtime.activeId=result.course.id;await refresh();for(const [key,value] of Object.entries(seedValues(template)))await putInitial(result.course.id,key,value);
+    await hydrate(result.course.id);window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course:active()}}));return result.course;
+  }
+  async function updateCourse(id,changes){const result=await window.DafatiiApi.request(`/courses/${id}`,{method:'PATCH',body:changes});await refresh();window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course:active()}}));return result.course;}
+  async function enroll(input){const result=await window.DafatiiApi.request('/courses/enroll',{method:'POST',body:input});await refresh();return result;}
   function roomSeeds(){const course=active(),template=TEMPLATES[course.template||course.name]||TEMPLATES['Computer Science'];return template.rooms.map(([name,subject,description],index)=>({id:`course-room-${index+1}`,name,subject,visibility:index?'private':'public',pin:index?'2468':'',description,vibe:index?'Collaborative':'Deep focus',members:48+index*17,online:8+index*3,capacity:30,streak:12+index,accent:course.icon,tags:[course.name,'Course room',index?'PIN':'Open']}));}
 
-  initialize();
-  window.DafatiiCourses={catalogKey:CATALOG_KEY,templates:()=>Object.keys(TEMPLATES),active,list,readJSON,writeJSON,remove,switchCourse,createCourse,updateCourse,roomSeeds,scopedKey:key=>scopedKey(key,active().id),isCourseKey:key=>COURSE_KEYS.has(key)};
+  window.DafatiiCourses={catalogKey:CATALOG_KEY,templates:()=>Object.keys(TEMPLATES),active,list,readJSON,writeJSON,remove,switchCourse,createCourse,updateCourse,enroll,refresh,hydrate,editable,get actor(){return runtime.actor},get ready(){return runtime.ready},roomSeeds,scopedKey:key=>scopedKey(key,active().id),isCourseKey:key=>COURSE_KEYS.has(key)};
 })();
