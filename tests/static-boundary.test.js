@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=13/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=14/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=1/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -50,11 +50,13 @@ assert.match(quietShell, /class="quiet-brand"/, 'the Dafatii logo must remain in
 assert.doesNotMatch(quietShell, /quiet-toolbar-brand/, 'the main navigation header must not contain a website logo');
 assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo styling must stay removed');
 assert.match(quietDesign, /\.quiet-tabs \.quiet-link\.selected::after\{content:"";display:block;[^}]*width:44px;height:44px/, 'mobile main navigation needs a compact active-icon halo');
-assert.match(quietDesign, /\.quiet-toolbar\{position:sticky;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded floating surface');
+assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.quiet-tabs\{inset:auto 10px[^}]*border-radius:20px/, 'mobile main navigation must use a compact rounded floating surface');
-assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:sticky!important;[^}]*top:82px!important/, 'desktop and tablet sub-navigation must stay visible while scrolling');
+assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:fixed!important;top:82px!important/, 'desktop and tablet sub-navigation must be fixed to the viewport');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:0!important;position:fixed!important;top:72px!important/, 'mobile sub-navigation must remain fixed below the toolbar');
-assert.match(quietDesign, />\.sub-nav \+ \.workspace-main\{padding-top:86px!important\}/, 'fixed mobile sub-navigation must reserve content space');
+assert.match(quietDesign, />\.sub-nav \+ \.workspace-main\{padding-top:146px!important\}/, 'fixed mobile navigation bars must reserve content space');
+assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;/, 'desktop main navigation must be fixed to the viewport');
+assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:8px;inset-inline:10px;/, 'mobile main navigation must be fixed to the viewport');
 assert.match(quietDesign, /\.quiet-link:hover \.ui-icon/, 'navigation icons need an interactive hover state');
 assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-place language switch');
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');
