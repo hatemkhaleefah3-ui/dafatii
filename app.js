@@ -46,6 +46,14 @@ const PRE_COURSE_COPY = {
   en:{dashboard:'Dashboard',courses:'Courses',profile:'Profile',settings:'Settings',welcome:'Welcome to Dafatii',waiting:'Your account is ready. Create a course or enroll in one to open the full study workspace.',pending:'Pending applications',available:'Available courses',openCourses:'Open courses',appearance:'Appearance',language:'Language',light:'Light',dark:'Dark',english:'English',arabic:'Arabic',account:'Account details',type:'Account type',stage:'Student stage',check:'Check enrollment status'},
   ar:{dashboard:'لوحة التحكم',courses:'الدورات',profile:'الملف الشخصي',settings:'الإعدادات',welcome:'مرحباً بك في دفاتري',waiting:'حسابك جاهز. أنشئ دورة أو سجّل في دورة لفتح مساحة الدراسة الكاملة.',pending:'طلبات قيد الانتظار',available:'الدورات المتاحة',openCourses:'فتح الدورات',appearance:'المظهر',language:'اللغة',light:'فاتح',dark:'داكن',english:'الإنجليزية',arabic:'العربية',account:'تفاصيل الحساب',type:'نوع الحساب',stage:'المرحلة الدراسية',check:'التحقق من حالة التسجيل'}
 };
+const LANDING_COPY = {
+  ar:{home:'الرئيسية',about:'من نحن',contact:'تواصل معنا',join:'انضم إلينا',eyebrow:'حياتك الدراسية في مكان واحد',title:'دراسة أقل تشتتاً.',titleAccent:'تعلّم أكثر.',intro:'يجمع دفاتري المواد والدروس والجداول وغرف الدراسة والمحادثات في مساحة واحدة منظمة للمدرسة والجامعة والتعلّم المستقل.',start:'ابدأ الدراسة',explore:'استكشف المزايا',proofOne:'مساحة واحدة لكل دورة',proofTwo:'مصمم للتركيز بلا فوضى',today:'اليوم',workspace:'مساحة الدراسة',physics:'الفيزياء',calculus:'التفاضل والتكامل',upcoming:'القادم',focus:'وضع التركيز',ready:'جاهز عندما تكون جاهزاً.',materials:'المواد',reach:'كل شيء في متناولك.',designed:'مصمم حول الطالب',everything:'لكل شيء مكان.',calm:'واجهة هادئة لحياة دراسية معقدة.',planning:'التخطيط',community:'المجتمع',materialText:'نظّم المواد والملاحظات والمصادر بالطريقة التي تدرس بها فعلياً.',planningText:'ضع المحاضرات والاختبارات والمواعيد وجلسات الدراسة في جدول واحد مترابط.',communityText:'انتقل من الدراسة الفردية إلى الغرف والمحادثات المركزة عندما يفيد التعاون.',aboutTitle:'مساحة أكاديمية تبنيها أنت',aboutText:'دفاتري منصة دراسية تجمع المحتوى والتخطيط والتعاون وإدارة الدورات مع صلاحيات واضحة للطلاب والممثلين والمشرفين.',contactTitle:'تواصل مع فريق دفاتري',contactText:'للأسئلة والملاحظات والدعم، راسلنا وسنتابع طلبك.',contactAction:'إرسال بريد',cta:'فصلك الدراسي القادم يستحق نظاماً أوضح.'},
+  en:{home:'Home',about:'About us',contact:'Contact us',join:'Join us',eyebrow:'Your study life, one place',title:'Study less scattered.',titleAccent:'Learn more.',intro:'Dafatii brings materials, subjects, schedules, rooms and conversations into one focused workspace for school, university and independent learners.',start:'Start studying',explore:'Explore features',proofOne:'One workspace for every course',proofTwo:'Built for focus, not clutter',today:'Today',workspace:'Study workspace',physics:'Physics',calculus:'Calculus',upcoming:'Upcoming',focus:'Focus mode',ready:'Ready when you are.',materials:'Materials',reach:'Everything in reach.',designed:'Designed around students',everything:'Everything has a place.',calm:'A calm interface for complex academic life.',planning:'Planning',community:'Community',materialText:'Keep subjects, notes and resources organized around the way you actually study.',planningText:'Put classes, exams, deadlines and study sessions on one coherent timeline.',communityText:'Move from solo study to focused rooms and conversations when collaboration helps.',aboutTitle:'An academic workspace you control',aboutText:'Dafatii brings content, planning, collaboration, and course administration together with clear permissions for students, representatives, and administrators.',contactTitle:'Contact the Dafatii team',contactText:'For questions, feedback, or support, email us and we will follow up.',contactAction:'Send email',cta:'Your next semester deserves a cleaner system.'}
+};
+const AUTH_COPY = {
+  ar:{join:'انضم إلى مساحة الدراسة',build:'ابنِ بيتك الأكاديمي.',description:'لطلاب المدارس والجامعات والمتعلمين المستقلين الذين يريدون المواد والتخطيط والتعاون في نظام واحد.',subjects:'المواد',calendar:'التقويم',rooms:'غرف الدراسة',chat:'المحادثات',signin:'تسجيل الدخول',signup:'إنشاء حساب',create:'أنشئ حسابك',welcome:'مرحباً بعودتك',createText:'جهّز مساحة دفاتري الخاصة بك خلال ثوانٍ.',signinText:'سجّل الدخول للمتابعة إلى مساحتك.',name:'الاسم الكامل',namePlaceholder:'اسمك',email:'البريد الإلكتروني',password:'كلمة المرور',accountType:'نوع الحساب',student:'طالب',representer:'ممثل دورة',stage:'المرحلة الدراسية',school:'المدرسة',university:'الجامعة',independent:'تعلم مستقل',createButton:'إنشاء الحساب',offline:'تعذر فحص الاتصال تلقائياً. ما زال بإمكانك إرسال النموذج أو إعادة المحاولة.',secure:'يتحقق خادم دفاتري من بيانات الدخول والأدوار والتسجيل وصلاحيات الدورات.',retry:'حاول مرة أخرى',reconnecting:'جارٍ إعادة الاتصال…',stillOffline:'الخادم غير متاح بعد. تحقق من اتصالك وحاول مرة أخرى.',creating:'جارٍ إنشاء الحساب…',signing:'جارٍ تسجيل الدخول…',failed:'فشلت المصادقة.'},
+  en:{join:'Join the workspace',build:'Build your academic home.',description:'For school students, university students and independent learners who want materials, planning and collaboration in one focused system.',subjects:'Subjects',calendar:'Calendar',rooms:'Study rooms',chat:'Chat',signin:'Sign in',signup:'Sign up',create:'Create your account',welcome:'Welcome back',createText:'Set up your Dafatii workspace in a few seconds.',signinText:'Sign in to continue to your workspace.',name:'Full name',namePlaceholder:'Your name',email:'Email',password:'Password',accountType:'Account type',student:'Student',representer:'Course representer',stage:'Student stage',school:'School',university:'University',independent:'Independent',createButton:'Create account',offline:'The automatic connection check failed. You can still submit the form or try the check again.',secure:'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.',retry:'Try again',reconnecting:'Reconnecting…',stillOffline:'The server is still unavailable. Check your connection and try again.',creating:'Creating account…',signing:'Signing in…',failed:'Authentication failed.'}
+};
 
 const LABELS = {
   dashboard: 'Dashboard', subjects: 'Subjects', calendar: 'Calendar',
@@ -69,54 +77,60 @@ function saveLectures(){ window.DafatiiCourses.writeJSON('dafatii:lectures', sta
 function subjectLectures(subjectId){ return Array.isArray(state.lectures[subjectId]) ? state.lectures[subjectId] : []; }
 
 function landing(){
+  const c=LANDING_COPY[interfaceLanguage()];
   app.innerHTML = `
-    <div class="app-shell page">
+    <div class="app-shell page landing-page" id="home">
       <div class="container">
-        <nav class="landing-nav">
+        <nav class="landing-nav" aria-label="${escapeHtml(c.home)}">
           ${brand()}
-          <div class="nav-actions">
-            <button class="btn btn-ghost" data-go="join">Sign in</button>
-            <button class="btn btn-primary" data-go="join">Join us →</button>
+          <div class="landing-nav-tabs">
+            <button class="landing-nav-link active" data-landing-section="home">${icon('dashboard')}<span>${escapeHtml(c.home)}</span></button>
+            <button class="landing-nav-link" data-landing-section="about">◎<span>${escapeHtml(c.about)}</span></button>
+            <button class="landing-nav-link" data-landing-section="contact">◌<span>${escapeHtml(c.contact)}</span></button>
+            <button class="landing-nav-link" data-go="join">○<span>${escapeHtml(c.join)}</span></button>
           </div>
+          <button class="landing-language" data-interface-language="${interfaceLanguage()==='ar'?'en':'ar'}">${interfaceLanguage()==='ar'?'EN':'ع'}</button>
         </nav>
         <main>
           <section class="hero">
             <div>
-              <div class="eyebrow">Your study life, one place</div>
-              <h1>Study less scattered. <span>Learn more.</span></h1>
-              <p>Dafatii brings materials, subjects, schedules, rooms and conversations into one focused workspace for school, university and independent learners.</p>
+              <div class="eyebrow">${escapeHtml(c.eyebrow)}</div>
+              <h1>${escapeHtml(c.title)} <span>${escapeHtml(c.titleAccent)}</span></h1>
+              <p>${escapeHtml(c.intro)}</p>
               <div class="hero-actions">
-                <button class="btn btn-primary" data-go="join">Start studying →</button>
-                <a class="btn btn-ghost" href="#features">Explore features</a>
+                <button class="btn btn-primary" data-go="join">${escapeHtml(c.start)} →</button>
+                <button class="btn btn-ghost" data-landing-section="features">${escapeHtml(c.explore)}</button>
               </div>
-              <div class="hero-proof"><span><strong>One workspace</strong> for every course</span><span><strong>Built for focus</strong>, not clutter</span></div>
+              <div class="hero-proof"><span><strong>${escapeHtml(c.proofOne)}</strong></span><span><strong>${escapeHtml(c.proofTwo)}</strong></span></div>
             </div>
             <div class="hero-visual" aria-hidden="true">
               <div class="float-card main">
-                <div class="mock-top"><strong>Today</strong><span class="muted">Study workspace</span></div>
+                <div class="mock-top"><strong>${escapeHtml(c.today)}</strong><span class="muted">${escapeHtml(c.workspace)}</span></div>
                 <div class="mock-grid">
-                  <div class="mock-block"><strong>Physics</strong><div class="mock-pill"></div><div class="mock-pill accent"></div></div>
-                  <div class="mock-block"><strong>Calculus</strong><div class="mock-pill"></div><div class="mock-pill"></div></div>
-                  <div class="mock-block big"><strong>Upcoming</strong><div class="mock-pill"></div><div class="mock-pill accent"></div><div class="mock-pill"></div></div>
+                  <div class="mock-block"><strong>${escapeHtml(c.physics)}</strong><div class="mock-pill"></div><div class="mock-pill accent"></div></div>
+                  <div class="mock-block"><strong>${escapeHtml(c.calculus)}</strong><div class="mock-pill"></div><div class="mock-pill"></div></div>
+                  <div class="mock-block big"><strong>${escapeHtml(c.upcoming)}</strong><div class="mock-pill"></div><div class="mock-pill accent"></div><div class="mock-pill"></div></div>
                 </div>
               </div>
-              <div class="float-card mini-card"><div class="mini-icon">✓</div><strong>Focus mode</strong><p class="muted">Ready when you are.</p></div>
-              <div class="float-card mini-card bottom"><div class="mini-icon">24</div><strong>Materials</strong><p class="muted">Everything in reach.</p></div>
+              <div class="float-card mini-card"><div class="mini-icon">✓</div><strong>${escapeHtml(c.focus)}</strong><p class="muted">${escapeHtml(c.ready)}</p></div>
+              <div class="float-card mini-card bottom"><div class="mini-icon">24</div><strong>${escapeHtml(c.materials)}</strong><p class="muted">${escapeHtml(c.reach)}</p></div>
             </div>
           </section>
           <section class="landing-section" id="features">
-            <div class="section-head"><div><div class="eyebrow">Designed around students</div><h2>Everything has a place.</h2></div><p class="muted">A calm interface for complex academic life.</p></div>
+            <div class="section-head"><div><div class="eyebrow">${escapeHtml(c.designed)}</div><h2>${escapeHtml(c.everything)}</h2></div><p class="muted">${escapeHtml(c.calm)}</p></div>
             <div class="feature-grid">
-              ${feature('01','Materials','Keep subjects, notes and resources organized around the way you actually study.')}
-              ${feature('02','Planning','Put classes, exams, deadlines and study sessions on one coherent timeline.')}
-              ${feature('03','Community','Move from solo study to focused rooms and conversations when collaboration helps.')}
+              ${feature('01',c.materials,c.materialText)}${feature('02',c.planning,c.planningText)}${feature('03',c.community,c.communityText)}
             </div>
           </section>
-          <section class="landing-cta"><h2>Your next semester deserves a cleaner system.</h2><button class="btn" data-go="join">Join Dafatii →</button></section>
+          <section class="landing-section landing-about" id="about"><div class="eyebrow">${escapeHtml(c.about)}</div><h2>${escapeHtml(c.aboutTitle)}</h2><p>${escapeHtml(c.aboutText)}</p></section>
+          <section class="landing-section landing-contact" id="contact"><div><div class="eyebrow">${escapeHtml(c.contact)}</div><h2>${escapeHtml(c.contactTitle)}</h2><p>${escapeHtml(c.contactText)}</p></div><a class="btn btn-primary" href="mailto:hatemkhaleefah3@gmail.com">${escapeHtml(c.contactAction)}</a></section>
+          <section class="landing-cta"><h2>${escapeHtml(c.cta)}</h2><button class="btn" data-go="join">${escapeHtml(c.join)} →</button></section>
         </main>
       </div>
     </div>`;
   bindCommon();
+  document.querySelectorAll('[data-landing-section]').forEach(button=>button.onclick=()=>{const target=document.getElementById(button.dataset.landingSection);target?.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.landing-nav-link').forEach(item=>item.classList.toggle('active',item===button));});
+  document.querySelector('[data-interface-language]')?.addEventListener('click',event=>{applyInterfaceLanguage(event.currentTarget.dataset.interfaceLanguage);landing();});
 }
 
 function brand(){ return `<a class="brand" href="#landing"><span class="brand-mark">D</span><span class="brand-name">dafatii</span></a>`; }
@@ -125,45 +139,48 @@ function feature(num,title,text){ return `<article class="feature-card"><div cla
 function join(){
   const isSignup = state.authMode === 'signup';
   const authOffline = window.DafatiiAuth?.availability === 'offline';
+  const c=AUTH_COPY[interfaceLanguage()];
   app.innerHTML = `
   <div class="join-page">
     <section class="join-panel">
       <div class="join-brand">${brand()}</div>
-      <div class="join-copy"><div class="eyebrow">Join the workspace</div><h1>Build your academic home.</h1><p>For school students, university students and independent learners who want materials, planning and collaboration in one focused system.</p></div>
-      <div class="join-art"><span>Subjects</span><span>Calendar</span><span>Study rooms</span><span>Chat</span></div>
+      <div class="join-copy"><div class="eyebrow">${escapeHtml(c.join)}</div><h1>${escapeHtml(c.build)}</h1><p>${escapeHtml(c.description)}</p></div>
+      <div class="join-art"><span>${escapeHtml(c.subjects)}</span><span>${escapeHtml(c.calendar)}</span><span>${escapeHtml(c.rooms)}</span><span>${escapeHtml(c.chat)}</span></div>
     </section>
     <section class="auth-side">
       <div class="auth-card">
-        <div class="auth-tabs"><button class="auth-tab ${!isSignup?'active':''}" data-auth="signin">Sign in</button><button class="auth-tab ${isSignup?'active':''}" data-auth="signup">Sign up</button></div>
-        <h2>${isSignup ? 'Create your account' : 'Welcome back'}</h2>
-        <p>${isSignup ? 'Set up your Dafatii workspace in a few seconds.' : 'Sign in to continue to your workspace.'}</p>
+        <div class="auth-card-tools"><button class="landing-language" data-interface-language="${interfaceLanguage()==='ar'?'en':'ar'}">${interfaceLanguage()==='ar'?'EN':'ع'}</button></div>
+        <div class="auth-tabs"><button class="auth-tab ${!isSignup?'active':''}" data-auth="signin">${escapeHtml(c.signin)}</button><button class="auth-tab ${isSignup?'active':''}" data-auth="signup">${escapeHtml(c.signup)}</button></div>
+        <h2>${escapeHtml(isSignup ? c.create : c.welcome)}</h2>
+        <p>${escapeHtml(isSignup ? c.createText : c.signinText)}</p>
         <form id="auth-form">
-          ${isSignup ? `<div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Your name" required></div>` : ''}
-          <div class="field"><label>Email</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
-          <div class="field"><label>Password</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
-          ${isSignup ? `<div class="field"><label>Account type</label><select name="accountType"><option value="student">Student</option><option value="representer">Course representer</option></select></div><div class="field"><label>Student stage</label><select name="studentStage"><option value="school">School</option><option value="university" selected>University</option><option value="independent">Independent</option></select></div>` : ''}
-          <button class="btn btn-primary auth-submit" type="submit">${isSignup ? 'Create account' : 'Sign in'} →</button>
+          ${isSignup ? `<div class="field"><label>${escapeHtml(c.name)}</label><input name="name" autocomplete="name" placeholder="${escapeHtml(c.namePlaceholder)}" required></div>` : ''}
+          <div class="field"><label>${escapeHtml(c.email)}</label><input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
+          <div class="field"><label>${escapeHtml(c.password)}</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="${isSignup?'new-password':'current-password'}" placeholder="••••••••••••" required></div>
+          ${isSignup ? `<div class="field"><label>${escapeHtml(c.accountType)}</label><select name="accountType"><option value="student">${escapeHtml(c.student)}</option><option value="representer">${escapeHtml(c.representer)}</option></select></div><div class="field"><label>${escapeHtml(c.stage)}</label><select name="studentStage"><option value="school">${escapeHtml(c.school)}</option><option value="university" selected>${escapeHtml(c.university)}</option><option value="independent">${escapeHtml(c.independent)}</option></select></div>` : ''}
+          <button class="btn btn-primary auth-submit" type="submit">${escapeHtml(isSignup ? c.createButton : c.signin)} →</button>
         </form>
-        <div class="auth-note" id="auth-status">${authOffline ? 'The automatic connection check failed. You can still submit the form or try the check again.' : 'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.'}</div>
-        ${authOffline ? '<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">Try again</button>' : ''}
+        <div class="auth-note" id="auth-status">${escapeHtml(authOffline ? c.offline : c.secure)}</div>
+        ${authOffline ? `<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">${escapeHtml(c.retry)}</button>` : ''}
       </div>
     </section>
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
+  document.querySelector('[data-interface-language]')?.addEventListener('click',event=>{applyInterfaceLanguage(event.currentTarget.dataset.interfaceLanguage);join();});
   const retry=document.getElementById('auth-retry');
   if(retry) retry.onclick=async()=>{
     retry.disabled=true;
-    document.getElementById('auth-status').textContent='Reconnecting…';
+    document.getElementById('auth-status').textContent=c.reconnecting;
     await window.DafatiiAuth.current();
     if(window.DafatiiAuth.availability==='offline'){
       retry.disabled=false;
-      document.getElementById('auth-status').textContent='The server is still unavailable. Check your connection and try again.';
+      document.getElementById('auth-status').textContent=c.stillOffline;
     }
   };
   document.getElementById('auth-form').onsubmit = async e=>{
     e.preventDefault();
     const form=e.currentTarget, submit=form.querySelector('[type=submit]'), status=document.getElementById('auth-status');
-    form.dataset.submitting='true'; submit.disabled=true; status.textContent=isSignup?'Creating account…':'Signing in…';
+    form.dataset.submitting='true'; submit.disabled=true; status.textContent=isSignup?c.creating:c.signing;
     try{
       const values=new FormData(form);
       if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
@@ -171,7 +188,7 @@ function join(){
       state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
     }catch(error){
       const suffix=error.code?` (${error.code})`:'';
-      status.textContent=`${error.message||'Authentication failed.'}${suffix}`;
+      status.textContent=`${error.message||c.failed}${suffix}`;
       submit.disabled=false;
       delete form.dataset.submitting;
     }
@@ -289,7 +306,7 @@ function workspaceContent(page, parts, title){
   return `<section class="empty-state"><div class="empty-icon">${icon(page)}</div><h1>${escapeHtml(title)}</h1><p>Coming soon…</p></section>`;
 }
 
-function interfaceLanguage(){return window.DafatiiData?.readString('dafatii:interface-language')==='ar'?'ar':'en';}
+function interfaceLanguage(){return window.DafatiiData?.readString('dafatii:interface-language')==='en'?'en':'ar';}
 function applyInterfaceLanguage(language=interfaceLanguage()){
   document.documentElement.lang=language;
   document.documentElement.dir=language==='ar'?'rtl':'ltr';
