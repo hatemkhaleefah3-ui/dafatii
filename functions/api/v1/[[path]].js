@@ -2,7 +2,7 @@ import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession
 import { accessibleFile, ownedFile, publicFileDto } from '../../_lib/access.mjs';
 import { dispatchCourseRoute } from '../../_lib/course-routes.mjs';
 import { actorFor, publicActor, requireCourseView, requirePermission } from '../../_lib/courses.mjs';
-import { deleteDriveFile, driveObjectId, inspectDrivePrefix, isDriveObject, readDriveMetadata, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } from '../../_lib/drive.mjs';
+import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driveObjectId, inspectDrivePrefix, isDriveObject, readDriveMetadata, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } from '../../_lib/drive.mjs';
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
 import { isUuid, objectKey, positiveIntegerSetting, validateRecord, validateUpload } from '../../_lib/policy.mjs';
@@ -22,6 +22,7 @@ async function writeR2Manifest(env, file) {
 }
 
 async function deleteR2Manifest(env, fileId) { if (env.R2_STORAGE) await env.R2_STORAGE.delete(`files/${fileId}/manifest.json`); }
+async function deleteR2Preview(env, fileId) { if (env.R2_STORAGE) await env.R2_STORAGE.delete(`files/${fileId}/preview.pdf`); }
 async function deleteUploadSession(env, fileId) { if (env.R2_STORAGE) await env.R2_STORAGE.delete(uploadSessionKey(fileId)); }
 async function readUploadSession(env, fileId) { const object = env.R2_STORAGE ? await env.R2_STORAGE.get(uploadSessionKey(fileId)) : null; return object ? object.json() : null; }
 
@@ -237,11 +238,38 @@ async function listFiles(context, user) {
 
 async function viewFile(context, user, fileId) {
   const file = await accessibleFile(context.env.DB, user, fileId, ['available']);
-  const download = new URL(context.request.url).searchParams.get('download') === '1';
+  const parameters = new URL(context.request.url).searchParams;
+  const download = parameters.get('download') === '1';
+  if (parameters.get('preview') === '1') {
+    if (!isDriveObject(file.object_key) || !canConvertLegacyOffice(file.content_type)) throw new HttpError(415, 'PREVIEW_UNSUPPORTED', 'This file does not require a converted preview.');
+    return ok({ url: `/api/v1/files/${file.id}/preview`, expiresAt: null });
+  }
   if (isDriveObject(file.object_key)) return ok({ url: `/api/v1/files/${file.id}/content${download ? '?download=1' : ''}`, expiresAt: null });
   const disposition = `${download ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(file.original_filename)}`;
   const signed = await signedObjectUrl(context.env, file.object_key, 'GET', { expires: 600, query: { 'response-content-disposition': disposition, 'response-content-type': file.content_type } });
   return ok({ url: signed.url, expiresAt: Date.now() + 600000 });
+}
+
+async function previewFile(context, user, fileId) {
+  const file = await accessibleFile(context.env.DB, user, fileId, ['available']);
+  if (!isDriveObject(file.object_key) || !canConvertLegacyOffice(file.content_type)) throw new HttpError(415, 'PREVIEW_UNSUPPORTED', 'This file cannot be converted for preview.');
+  if (!context.env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'Preview cache storage is not configured.');
+  const key = `files/${file.id}/preview.pdf`;
+  let object = await context.env.R2_STORAGE.get(key);
+  if (!object) {
+    const bytes = await convertLegacyOfficeToPdf(context.env, file);
+    await context.env.R2_STORAGE.put(key, bytes, { httpMetadata: { contentType: 'application/pdf' }, customMetadata: { sourceType: file.content_type } });
+    object = await context.env.R2_STORAGE.get(key);
+  }
+  if (!object) throw new HttpError(502, 'PREVIEW_CACHE_FAILED', 'The converted preview could not be loaded.');
+  const filename = String(file.original_filename).replace(/\.[^.]+$/, '') + '.pdf';
+  return new Response(object.body, { headers: {
+    'Cache-Control': 'private, no-store',
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer'
+  } });
 }
 
 async function contentFile(context, user, fileId) {
@@ -268,6 +296,7 @@ async function deleteFile(context, user, fileId) {
       if (!response.ok && response.status !== 404) throw new Error(`GCS delete status ${response.status}`);
     }
     await deleteR2Manifest(context.env, fileId);
+    await deleteR2Preview(context.env, fileId);
     await deleteUploadSession(context.env, fileId);
     await context.env.DB.prepare("UPDATE files SET status = 'deleted', deleted_at = ?, updated_at = ?, last_error = NULL WHERE id = ?").bind(Date.now(), Date.now(), fileId).run();
     return ok({ id: fileId, deleted: true });
@@ -294,11 +323,12 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'sync/mutations') return mutate(context, user);
   if (method === 'POST' && path === 'files/upload-init') return uploadInit(context, user);
   if (method === 'GET' && path === 'files') return listFiles(context, user);
-  const match = path.match(/^files\/([0-9a-f-]{36})(?:\/(complete|view|content|upload))?$/i);
+  const match = path.match(/^files\/([0-9a-f-]{36})(?:\/(complete|view|content|upload|preview))?$/i);
   if (match && method === 'PUT' && match[2] === 'upload') return uploadDriveChunk(context, user, match[1]);
   if (match && method === 'POST' && match[2] === 'complete') return completeUpload(context, user, match[1]);
   if (match && method === 'GET' && match[2] === 'view') return viewFile(context, user, match[1]);
   if (match && method === 'GET' && match[2] === 'content') return contentFile(context, user, match[1]);
+  if (match && method === 'GET' && match[2] === 'preview') return previewFile(context, user, match[1]);
   if (match && method === 'GET' && !match[2]) return fileMetadata(context, user, match[1]);
   if (match && method === 'DELETE' && !match[2]) return deleteFile(context, user, match[1]);
   throw new HttpError(404, 'NOT_FOUND', 'API route was not found.');
