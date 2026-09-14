@@ -6,7 +6,7 @@
     pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${VERSION}/build/pdf.worker.mjs`;
     return pdfjs;
   });
-  async function open(fileId, metadata) {
+  async function open(fileId, metadata, options = {}) {
     const root = document.createElement('div');
     root.className = 'dafatii-viewer';
     root.innerHTML = `<section class="dafatii-viewer-panel" role="dialog" aria-modal="true" aria-label="PDF viewer">
@@ -62,7 +62,7 @@
     });
     root.querySelector('[data-pdf=page]').addEventListener('change', async event => { pageNumber = Math.min(documentHandle.numPages, Math.max(1, Number(event.target.value) || 1)); await render(); });
     try {
-      const [pdfjs, url] = await Promise.all([loadPdfJs(), window.DafatiiFiles.getViewUrl(fileId)]);
+      const [pdfjs, url] = await Promise.all([loadPdfJs(), options.viewUrl || window.DafatiiFiles.getViewUrl(fileId)]);
       documentHandle = await pdfjs.getDocument({ url }).promise;
       root.querySelector('[data-pdf=total]').textContent = documentHandle.numPages;
       await fit();
@@ -71,4 +71,3 @@
   function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
   window.DafatiiPdf = Object.freeze({ open });
 })();
-
