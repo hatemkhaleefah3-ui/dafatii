@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=8/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=9/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=1/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -33,12 +33,13 @@ assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface 
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
 const quietDesign = fs.readFileSync('quiet-design.css', 'utf8');
-assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;inset:auto 0 0/s, 'mobile landing navigation must be fixed to the bottom');
+assert.doesNotMatch(quietDesign, /Unified interaction system v8/, 'late override layers must not be appended to the canonical stylesheet');
+assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'mobile landing navigation must be fixed to the bottom');
 assert.match(quietDesign, /@media\(min-width:768px\) and \(max-width:1199px\).*\.landing-nav\{position:fixed;inset-block:0;inset-inline-start:0/s, 'tablet landing navigation must use a side rail');
 assert.match(quietDesign, /\.landing-nav\{position:sticky;top:0/s, 'desktop landing navigation must remain above the page');
-assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav-tabs\{position:fixed;inset:auto 0 0/s, 'phone user agents must force the bottom landing navigation');
+assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'phone user agents must force the bottom landing navigation');
 assert.match(quietDesign, /html\[data-device=tablet\] \.landing-nav\{position:fixed;inset-block:0/s, 'tablet user agents must force the side landing navigation');
-assert.match(quietDesign, /@media\(max-width:1100px\) and \(max-aspect-ratio:5\/8\).*\.landing-nav-tabs\{position:fixed;inset:auto 0 0/s, 'tall privacy-restricted phone containers need a CSS-only bottom-nav fallback');
+assert.match(quietDesign, /@media\(max-width:1100px\) and \(max-aspect-ratio:5\/8\).*\.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'tall privacy-restricted phone containers need a CSS-only bottom-nav fallback');
 assert.ok(
   quietDesign.lastIndexOf('@media(max-width:1100px) and (max-aspect-ratio:5/8)') > quietDesign.indexOf('.landing-nav{position:sticky;top:0'),
   'the phone-shaped viewport fallback must come after the desktop navigation rule'
