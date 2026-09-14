@@ -89,7 +89,9 @@
       navigation.prepend(gel);
       immediate=true;
     }
-    const active=[...navigation.children].find(child=>child.matches('.active,.selected,.is-active,[aria-current="page"]'));
+    const items=[...navigation.children].filter(child=>!child.classList.contains('nav-gel'));
+    navigation.style.setProperty('--nav-count',String(items.length));
+    const active=items.find(child=>child.matches('.active,.selected,.is-active,[aria-current="page"]'));
     if(!active){gel.hidden=true;return;}
     gel.hidden=false;
     if(immediate)navigation.classList.remove('gel-nav-ready');
