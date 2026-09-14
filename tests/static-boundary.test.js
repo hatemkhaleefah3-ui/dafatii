@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=11/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=12/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=1/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -50,6 +50,9 @@ assert.match(quietShell, /class="quiet-brand"/, 'the Dafatii logo must remain in
 assert.doesNotMatch(quietShell, /quiet-toolbar-brand/, 'the main navigation header must not contain a website logo');
 assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo styling must stay removed');
 assert.match(quietDesign, /\.quiet-tabs \.quiet-link\.selected::before/, 'mobile main navigation needs a restrained active indicator');
+assert.match(quietDesign, /\.quiet-toolbar\{position:sticky;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded floating surface');
+assert.match(quietDesign, /\.quiet-tabs\{inset:auto 10px[^}]*border-radius:22px/, 'mobile main navigation must use a rounded floating surface');
+assert.match(quietDesign, /\.quiet-link:hover \.ui-icon/, 'navigation icons need an interactive hover state');
 assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-place language switch');
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');
 assert.match(quietShell, /data-quiet-courses/, 'the course access button must open a course popover');
