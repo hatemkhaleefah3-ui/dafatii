@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=16/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=17/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=2/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -56,9 +56,11 @@ assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-
 assert.match(quietDesign, /\.bottom-nav\{position:fixed;left:50%;[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/, 'authenticated mobile navigation must use the replacement floating dock');
 assert.match(quietDesign, /@keyframes bottom-nav-arrive/, 'the replacement bottom navigation needs deliberate selection motion');
 assert.match(quietDesign, /\.bottom-nav-item\.is-active \.bottom-nav-icon/, 'the active state must be scoped to the replacement component');
-assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px 0 0 232px!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
-assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px 10px 0!important;position:relative!important;top:auto!important/, 'mobile sub-navigation must scroll away with the page');
+assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px auto 0!important;[^}]*width:min\(720px,calc\(100% - 264px\)\)!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
+assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
 assert.doesNotMatch(quietDesign, /\.sub-nav \+ \.workspace-main/, 'flow-positioned sub-navigation must not leave fixed-bar compensation space');
+assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*justify-content:center/, 'sub-navigation tabs must be centered inside the bar');
+assert.doesNotMatch(quietDesign, />\.workspace-main,body \.quiet-workspace>\.sub-nav\{[^}]*margin-inline-start/, 'sub-navigation must not inherit the sidebar content offset');
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;/, 'desktop main navigation must be fixed to the viewport');
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:8px;inset-inline:10px;/, 'mobile main navigation must be fixed to the viewport');
 assert.match(quietDesign, /\.bottom-nav-item:not\(\.is-active\):hover \.bottom-nav-icon/, 'replacement navigation icons need an interactive hover state');
