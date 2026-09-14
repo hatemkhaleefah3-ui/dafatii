@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=10/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=11/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=1/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=4/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=5/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
@@ -46,6 +46,10 @@ assert.ok(
 );
 assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav\{[^}]*backdrop-filter:none;[^}]*contain:none\}/, 'mobile landing header must not create a fixed-position containing block');
 assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
+assert.match(quietShell, /class="quiet-brand"/, 'the Dafatii logo must remain in the sidebar');
+assert.doesNotMatch(quietShell, /quiet-toolbar-brand/, 'the main navigation header must not contain a website logo');
+assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo styling must stay removed');
+assert.match(quietDesign, /\.quiet-tabs \.quiet-link\.selected::before/, 'mobile main navigation needs a restrained active indicator');
 assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-place language switch');
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');
 assert.match(quietShell, /data-quiet-courses/, 'the course access button must open a course popover');
