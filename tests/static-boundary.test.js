@@ -24,11 +24,15 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=3/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=4/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /quiet-shell\.js\?v=3/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
+const quietDesign = fs.readFileSync('quiet-design.css', 'utf8');
+assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;inset:auto 0 0/s, 'mobile landing navigation must be fixed to the bottom');
+assert.match(quietDesign, /@media\(min-width:768px\) and \(max-width:1199px\).*\.landing-nav\{position:fixed;inset-block:0;inset-inline-start:0/s, 'tablet landing navigation must use a side rail');
+assert.match(quietDesign, /\.landing-nav\{position:sticky;top:0/s, 'desktop landing navigation must remain above the page');
 assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
 assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-place language switch');
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');
