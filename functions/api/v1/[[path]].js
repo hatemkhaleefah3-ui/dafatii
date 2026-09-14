@@ -6,6 +6,7 @@ import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driv
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
 import { isUuid, objectKey, positiveIntegerSetting, validateRecord, validateUpload } from '../../_lib/policy.mjs';
+import { translateInterfaceText } from '../../_lib/translate.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
@@ -319,6 +320,10 @@ async function dispatch(context) {
   const courseResponse = await dispatchCourseRoute(context, method, path);
   if (courseResponse) return courseResponse;
   const user = await actorFor(context.env.DB, await requireUser(context), context.env);
+  if (method === 'POST' && path === 'translate') {
+    const input = await readJson(context.request, 16384);
+    return ok({ translations: await translateInterfaceText(context.env, input) });
+  }
   if (method === 'POST' && path === 'sync/hydrate') return hydrate(context, user);
   if (method === 'POST' && path === 'sync/mutations') return mutate(context, user);
   if (method === 'POST' && path === 'files/upload-init') return uploadInit(context, user);
