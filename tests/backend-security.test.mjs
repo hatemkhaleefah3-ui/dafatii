@@ -10,6 +10,7 @@ const { canonicalQuery, completionDisposition, signV4, verifyCompletedObject, ve
 const { canConvertLegacyOffice, convertLegacyOfficeToPdf, driveObjectId, isDriveObject, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } = await import('../functions/_lib/drive.mjs');
 const { encodePath } = await import('../functions/_lib/encoding.mjs');
 const { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } = await import('../functions/_lib/policy.mjs');
+const { translateInterfaceText, validateTranslationInput } = await import('../functions/_lib/translate.mjs');
 
 function statement(firstValue) {
   return { bind(...values) { this.values = values; return this; }, async first() { return typeof firstValue === 'function' ? firstValue(this.values) : firstValue; }, async run() { return { meta: { changes: 1 } }; } };
@@ -36,6 +37,8 @@ assert.throws(() => validateUpload({ filename: 'large.pdf', contentType: 'applic
 assert.throws(() => validateUpload({ filename: 'attack.svg', contentType: 'image/svg+xml', size: 20 }), error => error.code === 'FILE_TYPE_NOT_ALLOWED');
 assert.throws(() => validateUpload({ filename: 'large.pdf', contentType: 'application/pdf', size: 101 }, { MAX_UPLOAD_BYTES: 'not-a-number' }), error => error.code === 'CONFIGURATION_ERROR');
 assert.throws(() => positiveIntegerSetting('0', 10), error => error.code === 'CONFIGURATION_ERROR');
+assert.deepEqual(validateTranslationInput({ texts: ['Dashboard'], source: 'en', target: 'ar' }), { texts: ['Dashboard'], source: 'en', target: 'ar' });
+assert.throws(() => validateTranslationInput({ texts: Array(41).fill('x') }), error => error.code === 'INVALID_TRANSLATION_BATCH');
 assert.equal(sanitizeFilename('../ lecture\u0000.pdf'), '.._ lecture_.pdf');
 assert.throws(() => objectKey('../../victim', crypto.randomUUID()));
 const uid = crypto.randomUUID(), fid = crypto.randomUUID();
@@ -103,6 +106,15 @@ const previewBytes = await convertLegacyOfficeToPdf(driveEnv, { ...driveDbFile, 
 assert.equal(new TextDecoder().decode(previewBytes), '%PDF-preview');
 assert.equal(driveCalls.some(call => call.url.includes('/export?mimeType=application%2Fpdf')), true);
 assert.equal(driveCalls.some(call => call.init.method === 'DELETE' && call.url.includes('converted-file-1234567890')), true);
+globalThis.fetch = originalFetch;
+
+globalThis.fetch = async (url, init) => {
+  assert.match(String(url), /^https:\/\/translation\.googleapis\.com\/language\/translate\/v2\?key=/);
+  assert.equal(JSON.parse(init.body).target, 'ar');
+  return new Response(JSON.stringify({ data: { translations: [{ translatedText: 'لوحة التحكم' }] } }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+assert.deepEqual(await translateInterfaceText({ GOOGLE_TRANSLATE_API_KEY: 'secret-translation-key' }, { texts: ['Dashboard'], source: 'en', target: 'ar' }), ['لوحة التحكم']);
+await assert.rejects(() => translateInterfaceText({}, { texts: ['Dashboard'], source: 'en', target: 'ar' }), error => error.code === 'TRANSLATION_NOT_CONFIGURED');
 globalThis.fetch = originalFetch;
 
 assert.match(sessionCookie(new Request('https://dafatii.example/'), 'token'), /HttpOnly; Secure; SameSite=Lax/);
