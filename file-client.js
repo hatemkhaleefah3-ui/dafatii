@@ -30,18 +30,22 @@
   }
   function inferType(filename) {
     const extension = String(filename).toLowerCase().split('.').pop();
-    return ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', txt: 'text/plain', csv: 'text/csv', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })[extension] || 'application/octet-stream';
+    return ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', txt: 'text/plain', csv: 'text/csv', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })[extension] || 'application/octet-stream';
   }
   const get = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`);
   const list = options => window.DafatiiApi.request(`/files?limit=${Math.min(options?.limit || 50, 100)}`);
   async function getViewUrl(fileId, options = {}) {
-    const suffix = options.download ? '?download=1' : '';
+    const suffix = options.download ? '?download=1' : options.preview ? '?preview=1' : '';
     return (await window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}/view${suffix}`)).url;
   }
   const remove = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', body: {}, idempotent: true });
   async function open(fileId, options = {}) {
     const metadata = await get(fileId);
     if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata, options);
+    if (['application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint'].includes(metadata.contentType) && window.DafatiiPdf) {
+      const viewUrl = await getViewUrl(fileId, { preview: true });
+      return window.DafatiiPdf.open(fileId, { ...metadata, contentType: 'application/pdf' }, { ...options, viewUrl });
+    }
     if (window.DafatiiOffice?.types.includes(metadata.contentType)) return window.DafatiiOffice.open(fileId, metadata, options);
     return window.DafatiiMedia.open(fileId, metadata, options);
   }
