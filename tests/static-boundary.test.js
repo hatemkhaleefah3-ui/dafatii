@@ -50,7 +50,7 @@ assert.match(quietShell, /class="quiet-brand"/, 'the Dafatii logo must remain in
 assert.doesNotMatch(quietShell, /quiet-toolbar-brand/, 'the main navigation header must not contain a website logo');
 assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo styling must stay removed');
 assert.match(quietDesign, /\.quiet-tabs \.quiet-link\.selected::after\{content:"";display:block;[^}]*width:44px;height:44px/, 'mobile main navigation needs a compact active-icon halo');
-assert.match(quietDesign, /\.quiet-toolbar\{position:sticky;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded floating surface');
+assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.quiet-tabs\{inset:auto 10px[^}]*border-radius:20px/, 'mobile main navigation must use a compact rounded floating surface');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:fixed!important;top:82px!important/, 'desktop and tablet sub-navigation must be fixed to the viewport');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:0!important;position:fixed!important;top:72px!important/, 'mobile sub-navigation must remain fixed below the toolbar');
