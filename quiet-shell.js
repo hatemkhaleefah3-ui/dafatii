@@ -5,11 +5,11 @@
     menu:'M4 7h16M4 12h16M4 17h16', close:'M6 6l12 12M18 6 6 18',
     dashboard:'M3 10 12 3l9 7M5 9v12h14V9M9 21v-8h6v8', subjects:'M4 4h7v16H4zM14 4h6v16h-6z',
     calendar:'M4 6h16v15H4zM8 3v6M16 3v6M4 11h16', chat:'M3 4h18v14H8l-5 3zM7 9h10M7 13h6',
-    'nav-home':'M4.5 10.5 12 4l7.5 6.5v8.25A1.25 1.25 0 0 1 18.25 20h-12.5a1.25 1.25 0 0 1-1.25-1.25V10.5ZM9.5 20v-6h5v6',
-    'nav-library':'M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5ZM20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5Z',
-    'nav-calendar':'M5 5.5h14A1.5 1.5 0 0 1 20.5 7v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5ZM8 3v5M16 3v5M3.5 10h17',
-    'nav-community':'M8 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2 20v-1a6 6 0 0 1 12 0v1M16.5 5a3 3 0 0 1 0 6M16.5 14a5 5 0 0 1 5 5v1',
-    'nav-messages':'M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 3v-3.5A2 2 0 0 1 3 16V6a2 2 0 0 1 2-2ZM8 9h8M8 13h5',
+    'nav-home':'M3.5 10.25 12 3l8.5 7.25v8A2.75 2.75 0 0 1 17.75 21H6.25a2.75 2.75 0 0 1-2.75-2.75v-8ZM8.75 21v-6.75h6.5V21',
+    'nav-library':'M6 3.5h12A2.5 2.5 0 0 1 20.5 6v12A2.5 2.5 0 0 1 18 20.5H6A2.5 2.5 0 0 1 3.5 18V6A2.5 2.5 0 0 1 6 3.5ZM8.5 3.5v17M12.5 8h4M12.5 12h4M12.5 16h3',
+    'nav-calendar':'M6 4.5h12A2.5 2.5 0 0 1 20.5 7v11A2.5 2.5 0 0 1 18 20.5H6A2.5 2.5 0 0 1 3.5 18V7A2.5 2.5 0 0 1 6 4.5ZM8 2.5v4M16 2.5v4M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01',
+    'nav-community':'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M17 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4.5 5',
+    'nav-messages':'M6 3.5h12A2.5 2.5 0 0 1 20.5 6v9A2.5 2.5 0 0 1 18 17.5H10L4.5 21v-4.85A2.5 2.5 0 0 1 3.5 14V6A2.5 2.5 0 0 1 6 3.5ZM8 9h8M8 13h5',
     'study-rooms':'M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M1 21v-2a7 7 0 0 1 14 0v2M17 5a4 4 0 0 1 0 8M18 16a5 5 0 0 1 5 5',
     'change-course':'M3 7 12 3l9 4-9 4zM6 10v7l6 4 6-4v-7', profile:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 22v-2a8 8 0 0 1 16 0v2',
     settings:'M4 6h16M4 12h16M4 18h16M9 3v6M15 9v6M9 15v6', admin:'M12 3l8 4v5c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V7zM9 12l2 2 4-4',
@@ -28,8 +28,9 @@
   const glyph = key => window.DafatiiIcons?.icon(key) || `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[key] || paths.settings}"/></svg>`;
   const href = key => MAIN_NAV[key] ? `${key}/${encodeURIComponent(MAIN_NAV[key][0])}` : key;
   const activePage = () => route().split('/')[0];
-  const navItem = (key,current) => `<a href="#${href(key)}" aria-label="${escapeHtml(text(key))}" title="${escapeHtml(text(key))}" class="quiet-link ${current===key?'selected':''}" ${current===key?'aria-current="page"':''}>${glyph(key)}<span>${escapeHtml(text(key))}</span></a>`;
-  const bottomIcons = Object.freeze({dashboard:'nav-home',subjects:'nav-library',calendar:'nav-calendar','study-rooms':'nav-community',chat:'nav-messages','change-course':'change-course',profile:'profile',settings:'settings'});
+  const mainNavIcons = Object.freeze({dashboard:'nav-home',subjects:'nav-library',calendar:'nav-calendar','study-rooms':'nav-community',chat:'nav-messages'});
+  const navItem = (key,current) => `<a href="#${href(key)}" aria-label="${escapeHtml(text(key))}" title="${escapeHtml(text(key))}" class="quiet-link ${current===key?'selected':''}" ${current===key?'aria-current="page"':''}>${glyph(mainNavIcons[key]||key)}<span>${escapeHtml(text(key))}</span></a>`;
+  const bottomIcons = Object.freeze({...mainNavIcons,'change-course':'change-course',profile:'profile',settings:'settings'});
   const bottomNavItem = (key,current) => `<a href="#${href(key)}" class="bottom-nav-item ${current===key?'is-active':''}" data-bottom-nav-item="${escapeHtml(key)}" aria-label="${escapeHtml(text(key))}" title="${escapeHtml(text(key))}" ${current===key?'aria-current="page"':''}><span class="bottom-nav-icon">${glyph(bottomIcons[key]||key)}</span><span class="bottom-nav-label">${escapeHtml(text(key))}</span></a>`;
 
   function setTheme(theme){
