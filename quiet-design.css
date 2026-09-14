@@ -55,6 +55,21 @@ body .quiet-workspace.quiet-sidebar-collapsed>.workspace-main,body .quiet-worksp
   body .quiet-workspace>.workspace-main,body .quiet-workspace>.sub-nav{margin-inline-start:0!important}
 }
 
+/* Tablet landing navigation is a dedicated side rail, not a resized top bar. */
+@media(min-width:768px) and (max-width:1199px){
+  .landing-page{padding-inline-start:108px}
+  .landing-nav{position:fixed;inset-block:0;inset-inline-start:0;width:96px;height:100dvh;padding:18px 8px;display:grid;grid-template-columns:1fr;grid-template-rows:64px minmax(0,1fr) 56px;gap:14px;border:0;border-inline-end:1px solid var(--line);border-radius:0;background:color-mix(in srgb,var(--surface) 97%,transparent);box-shadow:1px 0 5px #00000012}
+  .landing-nav .brand{justify-content:center;padding:0}
+  .landing-nav .brand-name{display:none}
+  .landing-nav .brand-mark{width:44px;height:44px;border-radius:50%}
+  .landing-nav-tabs{width:100%;height:auto;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(68px,1fr));align-self:center;justify-content:stretch;gap:7px}
+  .landing-nav-link{min-width:0;flex-direction:column;gap:6px;padding:8px 3px;border-radius:13px;font-size:11px;line-height:1.15;text-align:center}
+  .landing-nav-link:first-child::before{font-size:27px}
+  .landing-nav-link.active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  .landing-nav-link.active::after{inset:8px auto 8px 0;inset-inline-start:0;width:3px;height:auto;border-radius:0 3px 3px 0}
+  .landing-language{align-self:end;justify-self:center}
+}
+
 /* Facebook-inspired navigation: centered icon tabs with compact action popovers. */
 .quiet-toolbar{position:sticky;top:0;z-index:100;height:64px;padding:0 18px;display:grid;grid-template-columns:minmax(230px,1fr) minmax(360px,680px) minmax(180px,1fr);gap:14px;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(20px);box-shadow:0 1px 3px #00000014}
 .quiet-toolbar-brand{display:grid;place-items:center;width:40px;height:40px;margin-inline-end:10px;border-radius:50%;background:var(--accent);color:#fff;font-size:25px;font-weight:800}
