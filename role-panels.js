@@ -39,7 +39,18 @@
   const previousContent=workspaceContent;workspaceContent=function(page,parts,title){if(page==='representer')return representativePage();if(page==='admin')return adminPage();return previousContent(page,parts,title);};
   const previousWorkspace=workspace;workspace=function(current){previousWorkspace(current);const page=current.split('/')[0];applyRoleMode();if(page==='representer')bindRepresentative();if(page==='admin')bindAdmin();if(page==='dashboard'&&['owner','representer'].includes(window.DafatiiCourses.active().membership?.role))addDashboardPanelButton();};
   function applyRoleMode(){const course=window.DafatiiCourses.active(),editable=['owner','representer'].includes(course.membership?.role)&&(course.membership.role==='owner'||['add_content','edit_content','remove_content'].some(key=>course.membership.permissions?.[key]))||window.DafatiiAuth.user?.platformRole==='admin';document.body.classList.toggle('course-readonly',!editable);}
-  function addDashboardPanelButton(){const head=document.querySelector('.suite-head,.dashboard-head,.workspace-main section');if(!head||document.getElementById('representer-panel-button'))return;const button=document.createElement('button');button.id='representer-panel-button';button.className='btn btn-primary';button.textContent='Representer panel';button.onclick=()=>setHash('representer');head.append(button);}
+  function addDashboardPanelButton(){
+    const dashboard=document.querySelector('.suite-dashboard'),head=dashboard?.querySelector('.suite-head');
+    if(!head||document.getElementById('representer-panel-button'))return;
+    const course=window.DafatiiCourses.active(),button=document.createElement('button');
+    button.type='button';
+    button.id='representer-panel-button';
+    button.className='representer-panel-entry';
+    button.setAttribute('aria-label',`Open Representer panel for ${course.name||'active course'}`);
+    button.innerHTML=`<span class="representer-panel-entry-icon">${window.DafatiiIcons?.icon('representer')||''}</span><span class="representer-panel-entry-copy"><strong>Representer panel</strong><small>${esc(course.name||'Manage the active course')}</small></span><span class="representer-panel-entry-arrow">${window.DafatiiIcons?.icon('arrow-right')||''}</span>`;
+    button.onclick=()=>setHash('representer');
+    head.insertAdjacentElement('afterend',button);
+  }
 
   async function loadRepresentative(){const id=window.DafatiiCourses.active().id;if(!id)return;try{const [members,audit]=await Promise.all([window.DafatiiApi.request(`/courses/${id}/members`,{idempotent:true}),window.DafatiiApi.request(`/courses/${id}/audit`,{idempotent:true})]);panel.members=members.members;panel.events=audit.events;panel.error='';}catch(error){panel.error=error.message;}render();}
   function bindRepresentative(){
