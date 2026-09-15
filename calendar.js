@@ -66,8 +66,7 @@
       notes:read(SCHEDULE_NOTES_KEY, ''),
       notesId:'schedule-notes',
       addId:'calendar-add',
-      eyebrow:'Calendar · Schedule',
-      repeatLabel:'Weekly repeat'
+      eyebrow:'Calendar · Schedule'
     });
   }
 
@@ -81,12 +80,11 @@
       notes:read(EXAM_NOTES_KEY, ''),
       notesId:'exam-notes',
       addId:'exam-add',
-      eyebrow:'Calendar · Exams',
-      repeatLabel:'Exam timetable'
+      eyebrow:'Calendar · Exams'
     });
   }
 
-  function timetableView({kind,title,subtitle,entries,notes,notesId,addId,eyebrow,repeatLabel}){
+  function timetableView({kind,title,subtitle,entries,notes,notesId,addId,eyebrow}){
     const {days, periods} = axes(kind);
     const byCell = new Map(entries.map(e => [`${e.day}|${e.time}`, e]));
     const header = days.map((day,index) => `<button class="cal-day cal-head-button" data-axis-kind="${kind}" data-axis-type="day" data-axis-index="${index}" aria-label="Edit ${esc(day)} column">${esc(day)}</button>`).join('');
@@ -100,7 +98,6 @@
     const bottomSpacers = days.map(()=>'<div class="cal-axis-spacer cal-axis-bottom-spacer" aria-hidden="true"></div>').join('');
     return `<section class="calendar-page">
       <div class="calendar-head"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${subtitle}</p></div><button class="subject-add" id="${addId}"><span>＋</span><strong>Add</strong></button></div>
-      <div class="calendar-toolbar"><span>${days.length} columns</span><span>${periods.length} time rows</span><span>${repeatLabel}</span><span>Tap a row/column header to edit</span></div>
       <div class="calendar-scroll"><div class="schedule-grid" style="--cal-cols:${days.length}"><div class="cal-corner">Time</div>${header}<button class="cal-add-axis cal-add-column" data-add-axis="day" data-axis-kind="${kind}" aria-label="Add column">＋</button>${rows}<button class="cal-add-axis cal-add-row" data-add-axis="period" data-axis-kind="${kind}" aria-label="Add row">＋</button>${bottomSpacers}<div class="cal-axis-spacer cal-axis-plus-corner" aria-hidden="true"></div></div></div>
       <div class="calendar-notes"><div class="calendar-notes-head"><h2>Notes</h2><span>Saved automatically</span></div><textarea id="${notesId}" placeholder="Add notes…">${esc(notes)}</textarea></div>
     </section>`;
