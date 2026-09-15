@@ -381,7 +381,7 @@ function settingAction(key,label){return `<button class="settings-action" data-e
 function sideAction(key,label){return `<button class="side-action ${route()===key?'active':''}" data-extra="${key}">${icon(key)}${escapeHtml(label)}</button>`;}
 function subnav(main,sub,subject,subjectTab){
   if(subject){
-    return `<button class="sub-link subject-back" data-subjects-back>← ${escapeHtml(subject.name)}</button>` + SUBJECT_TABS.map(tab=>{
+    return SUBJECT_TABS.map(tab=>{
       const slug = tab.toLowerCase();
       return `<button class="sub-link ${slug===subjectTab?'active':''}" data-subject-tab="${slug}">${tab}</button>`;
     }).join('');
@@ -401,7 +401,6 @@ function bindWorkspace(subject){
   document.querySelectorAll('[data-subject-tab]').forEach(b=>b.onclick=()=>{
     if(subject) setHash(`subjects/subject/${encodeURIComponent(subject.id)}/${b.dataset.subjectTab}`);
   });
-  document.querySelector('[data-subjects-back]')?.addEventListener('click',()=>setHash(`subjects/${encodeURIComponent('All subjects')}`));
   const open=document.getElementById('sidebar-open'), close=document.getElementById('sidebar-close');
   if(open) open.onclick=()=>{state.sidebar=true;render();};
   if(close) close.onclick=()=>{state.sidebar=false;render();};
