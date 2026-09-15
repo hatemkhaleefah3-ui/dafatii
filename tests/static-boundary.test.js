@@ -55,7 +55,7 @@ assert.match(quietShell, /class="bottom-nav-item/, 'the bottom navigation must n
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.bottom-nav\{position:fixed;left:50%;[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/, 'authenticated mobile navigation must use the replacement floating dock');
 assert.match(quietDesign, /@keyframes bottom-nav-arrive/, 'the replacement bottom navigation needs deliberate selection motion');
-assert.match(quietShell, /const gelNavigationSelector = '\\.landing-nav-tabs,\\.quiet-desktop-tabs,\\.bottom-nav'/, 'landing, pre-course, and course navigation must share one gel controller');
+assert.match(quietShell, /const gelNavigationSelector = '\.landing-nav-tabs,\.quiet-desktop-tabs,\.bottom-nav'/, 'landing, pre-course, and course navigation must share one gel controller');
 assert.match(quietShell, /function positionNavigationGel\(navigation, immediate=false\)/, 'the active gel must move to the current destination');
 assert.match(quietShell, /navigation\.style\.setProperty\('--nav-count'/, 'signed-in navigation must adapt to course and no-course destination counts');
 assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*radial-gradient[^}]*linear-gradient[^}]*backdrop-filter:blur\(9px\) saturate\(1\.65\)/, 'the shared active indicator must use the translucent watercolor gel material');
