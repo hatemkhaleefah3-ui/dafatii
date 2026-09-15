@@ -121,10 +121,10 @@
     const shell=document.querySelector('.workspace,.pre-course-shell');
     if(!shell || shell.querySelector('.quiet-sidebar')) return;
     const active=window.DafatiiCourses.active();
-    const full=Boolean(active.id),current=activePage(),user=window.DafatiiAuth.user;
+    const full=Boolean(active.id),currentRoute=route(),current=activePage(),user=window.DafatiiAuth.user;
     const primary=full?['dashboard','subjects','calendar','study-rooms','chat']:['dashboard','change-course','profile','settings'];
     const primaryDestinations=new Set(primary.flatMap(key=>[normalizedRoute(key),normalizedRoute(href(key))]));
-    const showReturnButton=!primaryDestinations.has(normalizedRoute(current));
+    const showReturnButton=!primaryDestinations.has(normalizedRoute(currentRoute));
     const account=full?['change-course','profile','settings']:[];
     const opportunities=full?['apply-work','apply-scholarship','volunteer','donate-us']:[];
     if(user?.platformRole==='admin'&&full) account.push('admin');
