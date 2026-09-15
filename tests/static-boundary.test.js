@@ -30,6 +30,11 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=11/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
+assert.match(index, /app\.js\?v=20260915-3/, 'the cleaned subject interface must be loaded');
+assert.match(index, /calendar\.js\?v=20260915-4/, 'the cleaned calendar interface must be loaded');
+assert.match(index, /calendar\.css\?v=20260915-4/, 'retired calendar toolbar styling must be removed from the active asset');
+assert.match(index, /role-panels\.js\?v=20260915-2/, 'the redesigned dashboard management entry must be loaded');
+assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management entry styling must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
 const quietDesign = fs.readFileSync('quiet-design.css', 'utf8');
@@ -114,4 +119,15 @@ assert.doesNotMatch(app, /applyInterfaceLanguage\(button\.dataset\.interfaceLang
 assert.match(app, /data-landing-section="home"[^>]*aria-label[^>]*>\$\{icon\('nav-home'\)\}/, 'landing navigation must use the shared icon family with accessible labels');
 assert.match(app, /data-landing-section="about"/, 'the landing navigation must expose About us');
 assert.match(app, /data-landing-section="contact"/, 'the landing navigation must expose Contact us');
+assert.doesNotMatch(app, /Swipe right for edit or left for delete/, 'subject and lecture pages must not show swipe instructions');
+const calendarUi = fs.readFileSync('calendar.js', 'utf8');
+const calendarCss = fs.readFileSync('calendar.css', 'utf8');
+assert.doesNotMatch(calendarUi, /calendar-toolbar|repeatLabel|Tap a row\/column header to edit/, 'calendar metadata badges must be removed from markup and code');
+assert.doesNotMatch(calendarCss, /calendar-toolbar/, 'retired calendar metadata badge styles must be removed');
+const rolePanels = fs.readFileSync('role-panels.js', 'utf8');
+const rolePanelCss = fs.readFileSync('role-panels.css', 'utf8');
+assert.match(rolePanels, /className='representer-panel-entry'/, 'dashboard management access must use the redesigned component');
+assert.match(rolePanels, /head\.insertAdjacentElement\('afterend',button\)/, 'the management entry must sit directly below the dashboard heading');
+assert.doesNotMatch(rolePanels, /head\.append\(button\)/, 'the management entry must not be appended to the end of the dashboard');
+assert.match(rolePanelCss, /\.representer-panel-entry\{[^}]*grid-template-columns:48px minmax\(0,1fr\) 38px;[^}]*border-radius:22px/, 'the management entry must use the compact icon-led rounded design');
 console.log('static boundary tests passed');
