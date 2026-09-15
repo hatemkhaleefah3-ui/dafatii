@@ -72,7 +72,7 @@
     panel.querySelector('[data-signout]').onclick=async event=>{event.currentTarget.disabled=true;try{await window.DafatiiAuth.logout();closePopovers();setHash('join');}catch{panel.querySelector('[role=status]').textContent=text('signoutError');event.currentTarget.disabled=false;}};
   }
 
-  const gelNavigationSelector = '.landing-nav-tabs,.quiet-desktop-tabs,.bottom-nav';
+  const gelNavigationSelector = '.landing-nav-tabs,.quiet-desktop-tabs,.bottom-nav,.sub-inner';
   const observedGelNavigations = new WeakSet();
   const gelResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
     entries.forEach(entry => positionNavigationGel(entry.target));
