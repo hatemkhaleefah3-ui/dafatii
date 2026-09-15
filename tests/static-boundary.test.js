@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=22/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=23/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=9/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=10/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
@@ -46,6 +46,11 @@ assert.ok(
 );
 assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav\{[^}]*backdrop-filter:none;[^}]*contain:none\}/, 'mobile landing header must not create a fixed-position containing block');
 assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
+assert.match(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(current\)\)/, 'the floating return control must be hidden on primary navigation destinations');
+assert.match(quietShell, /data-quiet-return/, 'secondary pages need the floating return control');
+assert.match(quietShell, /history\.back\(\)/, 'the return control must perform exactly one history step');
+assert.match(quietShell, /resetPageScroll\(\)/, 'route changes must reopen pages from the top');
+assert.match(quietDesign, /\.quiet-return-button\{position:fixed;inset-inline-start:18px;bottom:calc\(max\(10px,env\(safe-area-inset-bottom\)\) \+ 76px\);[^}]*border-radius:50%;background:var\(--nav-cover\)/, 'the mobile return control must be circular, direction-aware, and above the bottom navigation');
 assert.match(quietShell, /class="quiet-brand"/, 'the Dafatii logo must remain in the sidebar');
 assert.doesNotMatch(quietShell, /quiet-toolbar-brand/, 'the main navigation header must not contain a website logo');
 assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo styling must stay removed');
@@ -73,7 +78,7 @@ assert.match(quietDesign, /\.bottom-nav-item\.is-active \.bottom-nav-icon/, 'the
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px auto 0!important;[^}]*width:min\(720px,calc\(100% - 264px\)\)!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
 assert.doesNotMatch(quietDesign, /\.sub-nav \+ \.workspace-main/, 'flow-positioned sub-navigation must not leave fixed-bar compensation space');
-assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*justify-content:center/, 'sub-navigation tabs must be centered inside the bar');
+assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*justify-content:flex-start;direction:inherit/, 'sub-navigation must begin at the logical language edge');
 assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*background:var\(--nav-cover\)!important;[^}]*border-radius:28px/, 'sub-navigation must use the shared theme-aware translucent cover');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{[^}]*background:transparent!important;[^}]*border:0;[^}]*box-shadow:none!important/, 'the previous outer sub-navigation card layer must be removed');
 assert.match(quietDesign, /\.gel-nav>\.sub-link\.active\{background:transparent;color:var\(--accent\)/, 'sub-navigation selection must use the moving semitransparent layer instead of an opaque active tab');
@@ -92,6 +97,7 @@ assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching m
 assert.match(quietShell, /data-quiet-courses/, 'the course access button must open a course popover');
 assert.match(quietShell, /quiet-profile-popover/, 'the profile button must open a profile summary');
 const app = fs.readFileSync('app.js', 'utf8');
+assert.doesNotMatch(app, /subject-back|data-subjects-back/, 'return controls must not remain embedded in sub-navigation');
 assert.doesNotMatch(app, /authOffline \? 'disabled'/, 'a failed startup check must not disable authentication');
 assert.match(app, /dataset\.submitting/, 'authentication errors must survive availability events');
 assert.match(app, /PRE_COURSE_ROUTES/, 'users without an active course need the limited navigation shell');
