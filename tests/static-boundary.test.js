@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=17/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=18/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=7/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=8/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
@@ -55,6 +55,14 @@ assert.match(quietShell, /class="bottom-nav-item/, 'the bottom navigation must n
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.bottom-nav\{position:fixed;left:50%;[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/, 'authenticated mobile navigation must use the replacement floating dock');
 assert.match(quietDesign, /@keyframes bottom-nav-arrive/, 'the replacement bottom navigation needs deliberate selection motion');
+assert.match(quietShell, /const gelNavigationSelector = '\\.landing-nav-tabs,\\.quiet-desktop-tabs,\\.bottom-nav'/, 'landing, pre-course, and course navigation must share one gel controller');
+assert.match(quietShell, /function positionNavigationGel\(navigation, immediate=false\)/, 'the active gel must move to the current destination');
+assert.match(quietShell, /navigation\.style\.setProperty\('--nav-count'/, 'signed-in navigation must adapt to course and no-course destination counts');
+assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*radial-gradient[^}]*linear-gradient[^}]*backdrop-filter:blur\(9px\) saturate\(1\.65\)/, 'the shared active indicator must use the translucent watercolor gel material');
+assert.match(quietDesign, /\.gel-nav-ready>\.nav-gel\{[^}]*transition:transform \.42s cubic-bezier\(\.22,1,\.36,1\)/, 'the active gel must slide between destinations');
+assert.match(quietDesign, /\.quiet-desktop-tabs\{[^}]*background:color-mix\(in srgb,var\(--surface\) 74%,transparent\)/, 'signed-in desktop navigation must use the shared semitransparent material');
+assert.match(quietDesign, /\.landing-nav-tabs\{[^}]*background:color-mix\(in srgb,var\(--surface\) 74%,transparent\)/, 'landing navigation must use the shared semitransparent material');
+assert.doesNotMatch(quietDesign, /\.bottom-nav-item\.is-active\{color:#fff\}/, 'the previous opaque active navigation treatment must be removed');
 assert.match(quietDesign, /\.bottom-nav-item\.is-active \.bottom-nav-icon/, 'the active state must be scoped to the replacement component');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px auto 0!important;[^}]*width:min\(720px,calc\(100% - 264px\)\)!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
