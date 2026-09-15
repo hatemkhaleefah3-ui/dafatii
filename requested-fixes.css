@@ -4,6 +4,9 @@
 .representer-panel-entry{margin-bottom:38px!important}
 .suite-dashboard>.representer-panel-entry+*{margin-top:0!important}
 
+/* The dashboard quick-action row is intentionally removed. */
+.suite-dashboard>.suite-head .suite-head-actions{display:none!important}
+
 .schedule-leader-mode .schedule-original-add{display:none!important}
 .schedule-readonly-mode #calendar-add,.schedule-readonly-mode .cal-add-axis{display:none!important}
 .schedule-readonly-mode .cal-head-button,.schedule-readonly-mode .cal-cell{cursor:default!important;pointer-events:none!important}
