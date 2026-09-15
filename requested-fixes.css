@@ -1,0 +1,23 @@
+/* Requested dashboard, schedule and shell corrections. */
+.representer-panel-entry{margin-bottom:38px!important}
+.suite-dashboard>.representer-panel-entry+*{margin-top:0!important}
+
+.schedule-leader-mode .schedule-original-add{display:none!important}
+.schedule-readonly-mode #calendar-add,.schedule-readonly-mode .cal-add-axis{display:none!important}
+.schedule-readonly-mode .cal-head-button,.schedule-readonly-mode .cal-cell{cursor:default!important;pointer-events:none!important}
+.schedule-readonly-mode .cal-head-button:disabled,.schedule-readonly-mode .cal-cell:disabled{opacity:1!important;color:inherit!important}
+.schedule-readonly-mode #schedule-notes{cursor:default}
+.schedule-manage-actions{display:grid;gap:12px}.schedule-manage-actions .calendar-choice-card{width:100%;text-align:start}.schedule-remove-card{border-color:color-mix(in srgb,#d92d20 38%,var(--line))!important}.schedule-remove-card .choice-icon,.schedule-remove-card strong{color:#d92d20}
+
+/* Drawers and bottom sheets must sit above the persistent bottom navigation. */
+.quiet-sidebar{z-index:230!important}
+.quiet-menu-backdrop{z-index:220!important}
+.entity-sheet-overlay{z-index:260!important}
+.quiet-popover{z-index:250!important}
+
+@media(max-width:767px){
+  .quiet-sidebar{z-index:230!important}
+  .quiet-menu-backdrop{z-index:220!important}
+  .entity-sheet-overlay{z-index:260!important}
+  .schedule-manage-sheet{padding-bottom:calc(28px + env(safe-area-inset-bottom))!important}
+}
