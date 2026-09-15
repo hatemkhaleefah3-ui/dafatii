@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=20/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=21/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -66,7 +66,9 @@ assert.doesNotMatch(quietDesign, /\.bottom-nav-item\.is-active\{color:#fff\}/, '
 assert.match(quietDesign, /--nav-cover:rgba\(255,255,255,\.68\)/, 'light mode navigation cover must be translucent white');
 assert.match(quietDesign, /html\[data-theme=dark\]\{[^}]*--nav-cover:rgba\(8,8,10,\.72\)/, 'dark mode navigation cover must be translucent near-black');
 assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*border-radius:24px/, 'the moving gel must use the larger rounded shape');
-assert.match(quietDesign, /\.gel-nav>\.landing-nav-link:not\(\.active\):hover,[^}]*background:var\(--nav-hover\)/, 'shared navigation hover surfaces must use the rounded mode-aware material');
+assert.match(quietDesign, /\.gel-nav>\.landing-nav-link:not\(\.active\):hover,[^}]*background:transparent;color:var\(--text\)/, 'main and sub-navigation hover states must remain unfilled');
+assert.match(quietDesign, /\.gel-nav>\.bottom-nav-item:not\(\.is-active\):hover \.bottom-nav-icon\{background:transparent\}/, 'bottom navigation hover must not create a gel surface');
+assert.doesNotMatch(quietDesign, /--nav-hover/, 'the retired hover gel material must be removed');
 assert.match(quietDesign, /\.bottom-nav-item\.is-active \.bottom-nav-icon/, 'the active state must be scoped to the replacement component');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px auto 0!important;[^}]*width:min\(720px,calc\(100% - 264px\)\)!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
