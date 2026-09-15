@@ -3,7 +3,7 @@ import { HttpError } from './http.mjs';
 const ACTIVE_TYPES = new Set(['text/html', 'application/xhtml+xml', 'image/svg+xml', 'text/javascript', 'application/javascript']);
 const ALLOWED_PREFIXES = ['image/', 'audio/', 'video/'];
 const ALLOWED_TYPES = new Set([
-  'application/pdf', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed', 'text/plain', 'text/csv',
+  'application/pdf', 'application/json', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed', 'text/plain', 'text/csv',
   'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
