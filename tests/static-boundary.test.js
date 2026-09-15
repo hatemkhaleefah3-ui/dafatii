@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=18/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=19/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -60,9 +60,13 @@ assert.match(quietShell, /function positionNavigationGel\(navigation, immediate=
 assert.match(quietShell, /navigation\.style\.setProperty\('--nav-count'/, 'signed-in navigation must adapt to course and no-course destination counts');
 assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*radial-gradient[^}]*linear-gradient[^}]*backdrop-filter:blur\(9px\) saturate\(1\.65\)/, 'the shared active indicator must use the translucent watercolor gel material');
 assert.match(quietDesign, /\.gel-nav-ready>\.nav-gel\{[^}]*transition:transform \.42s cubic-bezier\(\.22,1,\.36,1\)/, 'the active gel must slide between destinations');
-assert.match(quietDesign, /\.quiet-desktop-tabs\{[^}]*background:color-mix\(in srgb,var\(--surface\) 74%,transparent\)/, 'signed-in desktop navigation must use the shared semitransparent material');
-assert.match(quietDesign, /\.landing-nav-tabs\{[^}]*background:color-mix\(in srgb,var\(--surface\) 74%,transparent\)/, 'landing navigation must use the shared semitransparent material');
+assert.match(quietDesign, /\.quiet-desktop-tabs\{[^}]*background:var\(--nav-cover\)[^}]*border-radius:28px/, 'signed-in desktop navigation must use the shared semitransparent material');
+assert.match(quietDesign, /\.landing-nav-tabs\{[^}]*background:var\(--nav-cover\)[^}]*border-radius:28px/, 'landing navigation must use the shared semitransparent material');
 assert.doesNotMatch(quietDesign, /\.bottom-nav-item\.is-active\{color:#fff\}/, 'the previous opaque active navigation treatment must be removed');
+assert.match(quietDesign, /--nav-cover:rgba\(255,255,255,\.68\)/, 'light mode navigation cover must be translucent white');
+assert.match(quietDesign, /html\[data-theme=dark\]\{[^}]*--nav-cover:rgba\(8,8,10,\.72\)/, 'dark mode navigation cover must be translucent near-black');
+assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*border-radius:24px/, 'the moving gel must use the larger rounded shape');
+assert.match(quietDesign, /\.gel-nav>\.landing-nav-link:not\(\.active\):hover,[^}]*background:var\(--nav-hover\)/, 'shared navigation hover surfaces must use the rounded mode-aware material');
 assert.match(quietDesign, /\.bottom-nav-item\.is-active \.bottom-nav-icon/, 'the active state must be scoped to the replacement component');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!important;top:auto!important;[^}]*margin:82px auto 0!important;[^}]*width:min\(720px,calc\(100% - 264px\)\)!important/, 'desktop and tablet sub-navigation must remain at the top of the page flow');
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
