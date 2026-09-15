@@ -43,8 +43,9 @@
     const text = normalize(source);
     if(!text) return text;
     if(phrases.has(text)) return phrases.get(text);
-    const replaced = text.replace(/[A-Za-z]+(?:'[A-Za-z]+)?/g, token => words[token.toLowerCase()] || token);
-    return replaced !== text ? replaced : '';
+    const tokens = text.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || [];
+    if(!tokens.length || tokens.some(token => !words[token.toLowerCase()])) return '';
+    return text.replace(/[A-Za-z]+(?:'[A-Za-z]+)?/g, token => words[token.toLowerCase()]);
   }
 
   function translateAttributes(root){
