@@ -1,4 +1,4 @@
-/* Requested dashboard, schedule and shell corrections. */
+/* Requested dashboard, schedule, translation and shell corrections. */
 .representer-panel-entry{margin-bottom:38px!important}
 .suite-dashboard>.representer-panel-entry+*{margin-top:0!important}
 
@@ -9,15 +9,66 @@
 .schedule-readonly-mode #schedule-notes{cursor:default}
 .schedule-manage-actions{display:grid;gap:12px}.schedule-manage-actions .calendar-choice-card{width:100%;text-align:start}.schedule-remove-card{border-color:color-mix(in srgb,#d92d20 38%,var(--line))!important}.schedule-remove-card .choice-icon,.schedule-remove-card strong{color:#d92d20}
 
-/* Drawers and bottom sheets must sit above the persistent bottom navigation. */
+/* Drawers and bottom sheets stay above the persistent bottom navigation. */
 .quiet-sidebar{z-index:230!important}
 .quiet-menu-backdrop{z-index:220!important}
 .entity-sheet-overlay{z-index:260!important}
 .quiet-popover{z-index:250!important}
+
+/* Arabic uses a dedicated display-quality UI face instead of the Latin system stack. */
+html[lang="ar"] body,
+html[lang="ar"] button,
+html[lang="ar"] input,
+html[lang="ar"] select,
+html[lang="ar"] textarea,
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] strong,
+html[lang="ar"] .eyebrow,
+html[lang="ar"] .sub-link,
+html[lang="ar"] .quiet-link,
+html[lang="ar"] .bottom-nav-item{font-family:"IBM Plex Sans Arabic","Noto Sans Arabic",Tahoma,Arial,sans-serif!important}
+html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] h3{letter-spacing:0!important;line-height:1.35!important}
+html[lang="ar"] body{font-feature-settings:"kern" 1,"liga" 1;text-rendering:optimizeLegibility}
+html[lang="ar"] .brand,html[lang="ar"] .quiet-brand{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
 
 @media(max-width:767px){
   .quiet-sidebar{z-index:230!important}
   .quiet-menu-backdrop{z-index:220!important}
   .entity-sheet-overlay{z-index:260!important}
   .schedule-manage-sheet{padding-bottom:calc(28px + env(safe-area-inset-bottom))!important}
+
+  /* Edge-to-edge app header. The content inside retains comfortable safe-area padding. */
+  .quiet-toolbar{
+    top:0!important;
+    inset-inline:0!important;
+    width:100%!important;
+    max-width:none!important;
+    height:calc(64px + env(safe-area-inset-top))!important;
+    padding:env(safe-area-inset-top) 16px 0!important;
+    border-radius:0!important;
+    border-inline:0!important;
+    border-top:0!important;
+    border-bottom:1px solid color-mix(in srgb,var(--line) 82%,transparent)!important;
+    box-shadow:0 8px 24px #0000000d!important;
+  }
+  body .quiet-workspace>.sub-nav{margin-top:76px!important}
+
+  /* Landing header also spans the viewport instead of looking like a floating card. */
+  .landing-nav,
+  html[data-device=mobile] .landing-nav{
+    width:100vw!important;
+    max-width:none!important;
+    margin-inline:calc(50% - 50vw)!important;
+    border-radius:0!important;
+    border-inline:0!important;
+  }
+}
+
+/* Phone-shaped embedded browsers occasionally report widths above the normal mobile breakpoint. */
+@media(max-width:1100px) and (max-aspect-ratio:5/8){
+  .quiet-toolbar{top:0!important;inset-inline:0!important;width:100%!important;max-width:none!important;border-radius:0!important;border-inline:0!important;border-top:0!important}
+  .landing-nav{width:100vw!important;max-width:none!important;margin-inline:calc(50% - 50vw)!important;border-radius:0!important;border-inline:0!important}
 }
