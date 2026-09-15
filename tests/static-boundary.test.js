@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=23/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=24/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -34,12 +34,12 @@ assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layo
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
 const quietDesign = fs.readFileSync('quiet-design.css', 'utf8');
 assert.doesNotMatch(quietDesign, /Unified interaction system v8/, 'late override layers must not be appended to the canonical stylesheet');
-assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'mobile landing navigation must be fixed to the bottom');
+assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/s, 'mobile landing navigation must match the authenticated floating icon dock');
 assert.match(quietDesign, /@media\(min-width:768px\) and \(max-width:1199px\).*\.landing-nav\{position:fixed;inset-block:0;inset-inline-start:0/s, 'tablet landing navigation must use a side rail');
 assert.match(quietDesign, /\.landing-nav\{position:sticky;top:0/s, 'desktop landing navigation must remain above the page');
-assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'phone user agents must force the bottom landing navigation');
+assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*height:64px/s, 'phone user agents must force the shared bottom icon navigation');
 assert.match(quietDesign, /html\[data-device=tablet\] \.landing-nav\{position:fixed;inset-block:0/s, 'tablet user agents must force the side landing navigation');
-assert.match(quietDesign, /@media\(max-width:1100px\) and \(max-aspect-ratio:5\/8\).*\.landing-nav-tabs\{position:fixed;inset:auto 10px/s, 'tall privacy-restricted phone containers need a CSS-only bottom-nav fallback');
+assert.match(quietDesign, /@media\(max-width:1100px\) and \(max-aspect-ratio:5\/8\).*\.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*height:64px/s, 'tall privacy-restricted phone containers need the shared bottom icon navigation');
 assert.ok(
   quietDesign.lastIndexOf('@media(max-width:1100px) and (max-aspect-ratio:5/8)') > quietDesign.indexOf('.landing-nav{position:sticky;top:0'),
   'the phone-shaped viewport fallback must come after the desktop navigation rule'
@@ -69,6 +69,8 @@ assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*border:0;[^}]*background:co
 assert.match(quietDesign, /\.gel-nav-ready>\.nav-gel\{[^}]*transition:transform \.42s cubic-bezier\(\.22,1,\.36,1\)/, 'the active indicator must slide between destinations');
 assert.match(quietDesign, /\.quiet-desktop-tabs\{[^}]*background:var\(--nav-cover\)[^}]*border-radius:28px/, 'signed-in desktop navigation must use the shared semitransparent material');
 assert.match(quietDesign, /\.landing-nav-tabs\{[^}]*background:var\(--nav-cover\)[^}]*border-radius:28px/, 'landing navigation must use the shared semitransparent material');
+assert.match(quietDesign, /\.landing-nav-link span\{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset\(50%\)/, 'landing navigation labels must remain accessible but visually icon-only');
+assert.doesNotMatch(quietDesign, /landing-nav-link span\{display:block\}/, 'device overrides must not restore landing navigation labels');
 assert.doesNotMatch(quietDesign, /\.bottom-nav-item\.is-active\{color:#fff\}/, 'the previous opaque active navigation treatment must be removed');
 assert.match(quietDesign, /--nav-cover:rgba\(255,255,255,\.68\)/, 'light mode navigation cover must be translucent white');
 assert.match(quietDesign, /html\[data-theme=dark\]\{[^}]*--nav-cover:rgba\(8,8,10,\.72\)/, 'dark mode navigation cover must be translucent near-black');
@@ -105,6 +107,11 @@ assert.match(app, /dataset\.submitting/, 'authentication errors must survive ava
 assert.match(app, /PRE_COURSE_ROUTES/, 'users without an active course need the limited navigation shell');
 assert.match(app, /pending','payment_pending/, 'pending enrollments must remain outside the full course workspace');
 assert.match(app, /readString\('dafatii:interface-language'\)==='en'\?'en':'ar'/, 'Arabic must be the default interface language');
+assert.match(app, /function applyInterfaceTheme\(theme=interfaceTheme\(\)\)/, 'the selected theme must have one canonical application path');
+assert.match(app, /applyInterfaceLanguage\(button\.dataset\.interfaceLanguage\);render\(\)/, 'no-course language switching must rebuild the consolidated shell');
+assert.match(app, /querySelectorAll\('\[data-extra="dark-mode"\]'\).*applyInterfaceTheme/s, 'no-course theme controls must apply and persist the selected theme');
+assert.doesNotMatch(app, /applyInterfaceLanguage\(button\.dataset\.interfaceLanguage\);preCourseWorkspace\(page\)/, 'language switching must not bypass the consolidated shell');
+assert.match(app, /data-landing-section="home"[^>]*aria-label[^>]*>\$\{icon\('nav-home'\)\}/, 'landing navigation must use the shared icon family with accessible labels');
 assert.match(app, /data-landing-section="about"/, 'the landing navigation must expose About us');
 assert.match(app, /data-landing-section="contact"/, 'the landing navigation must expose Contact us');
 console.log('static boundary tests passed');
