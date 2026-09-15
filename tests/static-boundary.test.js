@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=19/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=20/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=8/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=9/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
@@ -55,7 +55,7 @@ assert.match(quietShell, /class="bottom-nav-item/, 'the bottom navigation must n
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.bottom-nav\{position:fixed;left:50%;[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/, 'authenticated mobile navigation must use the replacement floating dock');
 assert.match(quietDesign, /@keyframes bottom-nav-arrive/, 'the replacement bottom navigation needs deliberate selection motion');
-assert.match(quietShell, /const gelNavigationSelector = '\.landing-nav-tabs,\.quiet-desktop-tabs,\.bottom-nav'/, 'landing, pre-course, and course navigation must share one gel controller');
+assert.match(quietShell, /const gelNavigationSelector = '\.landing-nav-tabs,\.quiet-desktop-tabs,\.bottom-nav,\.sub-inner'/, 'landing, pre-course, and course navigation must share one gel controller');
 assert.match(quietShell, /function positionNavigationGel\(navigation, immediate=false\)/, 'the active gel must move to the current destination');
 assert.match(quietShell, /navigation\.style\.setProperty\('--nav-count'/, 'signed-in navigation must adapt to course and no-course destination counts');
 assert.match(quietDesign, /\.gel-nav>\.nav-gel\{[^}]*radial-gradient[^}]*linear-gradient[^}]*backdrop-filter:blur\(9px\) saturate\(1\.65\)/, 'the shared active indicator must use the translucent watercolor gel material');
@@ -72,6 +72,9 @@ assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{position:relative!i
 assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{margin:72px auto 0!important;position:relative!important;top:auto!important;[^}]*width:min\(640px,calc\(100% - 20px\)\)!important/, 'mobile sub-navigation must scroll away with the page');
 assert.doesNotMatch(quietDesign, /\.sub-nav \+ \.workspace-main/, 'flow-positioned sub-navigation must not leave fixed-bar compensation space');
 assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*justify-content:center/, 'sub-navigation tabs must be centered inside the bar');
+assert.match(quietDesign, /body \.quiet-workspace \.sub-inner\{[^}]*background:var\(--nav-cover\)!important;[^}]*border-radius:28px/, 'sub-navigation must use the shared theme-aware gel cover');
+assert.match(quietDesign, /body \.quiet-workspace>\.sub-nav\{[^}]*background:transparent!important;[^}]*border:0;[^}]*box-shadow:none!important/, 'the previous outer sub-navigation card layer must be removed');
+assert.match(quietDesign, /\.gel-nav>\.sub-link\.active\{background:transparent;color:var\(--accent\)/, 'sub-navigation selection must use the moving gel instead of an opaque active tab');
 assert.doesNotMatch(quietDesign, />\.workspace-main,body \.quiet-workspace>\.sub-nav\{[^}]*margin-inline-start/, 'sub-navigation must not inherit the sidebar content offset');
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;/, 'desktop main navigation must be fixed to the viewport');
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:8px;inset-inline:10px;/, 'mobile main navigation must be fixed to the viewport');
