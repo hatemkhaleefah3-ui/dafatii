@@ -80,10 +80,10 @@ function landing(){
         <nav class="landing-nav" aria-label="${escapeHtml(c.home)}">
           ${brand()}
           <div class="landing-nav-tabs">
-            <button class="landing-nav-link active" data-landing-section="home">${icon('dashboard')}<span>${escapeHtml(c.home)}</span></button>
-            <button class="landing-nav-link" data-landing-section="about">${icon('info')}<span>${escapeHtml(c.about)}</span></button>
-            <button class="landing-nav-link" data-landing-section="contact">${icon('mail')}<span>${escapeHtml(c.contact)}</span></button>
-            <button class="landing-nav-link" data-go="join">${icon('profile')}<span>${escapeHtml(c.join)}</span></button>
+            <button class="landing-nav-link active" data-landing-section="home" aria-label="${escapeHtml(c.home)}" title="${escapeHtml(c.home)}">${icon('nav-home')}<span>${escapeHtml(c.home)}</span></button>
+            <button class="landing-nav-link" data-landing-section="about" aria-label="${escapeHtml(c.about)}" title="${escapeHtml(c.about)}">${icon('info')}<span>${escapeHtml(c.about)}</span></button>
+            <button class="landing-nav-link" data-landing-section="contact" aria-label="${escapeHtml(c.contact)}" title="${escapeHtml(c.contact)}">${icon('mail')}<span>${escapeHtml(c.contact)}</span></button>
+            <button class="landing-nav-link" data-go="join" aria-label="${escapeHtml(c.join)}" title="${escapeHtml(c.join)}">${icon('profile')}<span>${escapeHtml(c.join)}</span></button>
           </div>
           <button class="landing-language" data-interface-language="${interfaceLanguage()==='ar'?'en':'ar'}">${interfaceLanguage()==='ar'?'EN':'ع'}</button>
         </nav>
@@ -303,6 +303,13 @@ function workspaceContent(page, parts, title){
 }
 
 function interfaceLanguage(){return window.DafatiiData?.readString('dafatii:interface-language')==='en'?'en':'ar';}
+function interfaceTheme(){return window.DafatiiData?.readString('dafatii:theme')==='dark'?'dark':'light';}
+function applyInterfaceTheme(theme=interfaceTheme()){
+  const normalized=theme==='dark'?'dark':'light';
+  document.documentElement.dataset.theme=normalized;
+  document.documentElement.style.colorScheme=normalized;
+  window.DafatiiData?.writeString('dafatii:theme',normalized);
+}
 function applyInterfaceLanguage(language=interfaceLanguage()){
   document.documentElement.lang=language;
   document.documentElement.dir=language==='ar'?'rtl':'ltr';
@@ -328,7 +335,8 @@ function preCourseWorkspace(current){
   const language=interfaceLanguage(),copy=PRE_COURSE_COPY[language],dark=document.documentElement.dataset.theme==='dark';
   app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${[['dashboard',copy.dashboard],['change-course',copy.courses],['profile',copy.profile],['settings',copy.settings]].map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${icon(key)}${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">${icon('appearance')} ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">${icon('language')} ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
   document.querySelectorAll('[data-pre-course-route]').forEach(button=>button.onclick=()=>setHash(button.dataset.preCourseRoute));
-  document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);preCourseWorkspace(page);});
+  document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);render();});
+  document.querySelectorAll('[data-extra="dark-mode"]').forEach(button=>button.onclick=()=>{applyInterfaceTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');render();});
   document.getElementById('course-status-refresh')?.addEventListener('click',async event=>{event.currentTarget.disabled=true;await window.DafatiiCourses.refresh();if(!window.DafatiiCourses.active().id){event.currentTarget.disabled=false;preCourseWorkspace('dashboard');}});
 }
 
@@ -601,6 +609,6 @@ window.addEventListener('dafatii:auth:changed',async event=>{
   render();
 });
 window.addEventListener('dafatii:coursewriteerror',event=>{showToast(event.detail.error?.message||'Course change was not saved.');state.subjects=loadSubjects();state.lectures=loadLectures();render();});
-window.addEventListener('DOMContentLoaded',()=>{ applyInterfaceLanguage();if(!location.hash) location.hash='landing'; else render(); });
+window.addEventListener('DOMContentLoaded',()=>{applyInterfaceTheme();applyInterfaceLanguage();if(!location.hash)location.hash='landing';else render();});
 setInterval(()=>{if(state.joined&&!window.DafatiiCourses.active().id&&document.visibilityState==='visible')window.DafatiiCourses.refresh().catch(()=>{});},60000);
 window.addEventListener('focus',()=>{if(state.joined&&!window.DafatiiCourses.active().id)window.DafatiiCourses.refresh().catch(()=>{});});
