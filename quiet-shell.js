@@ -72,6 +72,43 @@
     panel.querySelector('[data-signout]').onclick=async event=>{event.currentTarget.disabled=true;try{await window.DafatiiAuth.logout();closePopovers();setHash('join');}catch{panel.querySelector('[role=status]').textContent=text('signoutError');event.currentTarget.disabled=false;}};
   }
 
+  const gelNavigationSelector = '.landing-nav-tabs,.quiet-desktop-tabs,.bottom-nav';
+  const observedGelNavigations = new WeakSet();
+  const gelResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+    entries.forEach(entry => positionNavigationGel(entry.target));
+  }) : null;
+
+  function positionNavigationGel(navigation, immediate=false){
+    if(!navigation?.isConnected)return;
+    navigation.classList.add('gel-nav');
+    let gel=[...navigation.children].find(child=>child.classList.contains('nav-gel'));
+    if(!gel){
+      gel=document.createElement('span');
+      gel.className='nav-gel';
+      gel.setAttribute('aria-hidden','true');
+      navigation.prepend(gel);
+      immediate=true;
+    }
+    const items=[...navigation.children].filter(child=>!child.classList.contains('nav-gel'));
+    navigation.style.setProperty('--nav-count',String(items.length));
+    const active=items.find(child=>child.matches('.active,.selected,.is-active,[aria-current="page"]'));
+    if(!active){gel.hidden=true;return;}
+    gel.hidden=false;
+    if(immediate)navigation.classList.remove('gel-nav-ready');
+    gel.style.width=`${active.offsetWidth}px`;
+    gel.style.height=`${active.offsetHeight}px`;
+    gel.style.transform=`translate3d(${active.offsetLeft}px,${active.offsetTop}px,0)`;
+    requestAnimationFrame(()=>navigation.classList.add('gel-nav-ready'));
+    if(gelResizeObserver&&!observedGelNavigations.has(navigation)){
+      observedGelNavigations.add(navigation);
+      gelResizeObserver.observe(navigation);
+    }
+  }
+
+  function syncGelNavigation(root=document){
+    root.querySelectorAll?.(gelNavigationSelector).forEach(navigation=>positionNavigationGel(navigation,true));
+  }
+
   function enhance(){
     const shell=document.querySelector('.workspace,.pre-course-shell');
     if(!shell || shell.querySelector('.quiet-sidebar')) return;
@@ -85,6 +122,7 @@
     shell.classList.add('quiet-workspace');
     const sidebarInitiallyExpanded=window.matchMedia('(min-width:768px)').matches;
     shell.insertAdjacentHTML('afterbegin',`<a class="quiet-skip" href="#quiet-content">${escapeHtml(text('skip'))}</a><button class="quiet-menu-backdrop" data-quiet-menu-close aria-label="${escapeHtml(text('closeMenu'))}"></button><aside class="quiet-sidebar" id="quiet-sidebar" aria-label="${escapeHtml(text('workspace'))}"><div class="quiet-sidebar-head"><a class="quiet-brand" href="#dashboard">d<span>dafatii</span></a><button class="quiet-sidebar-close" data-quiet-menu-close aria-label="${escapeHtml(text('closeMenu'))}">${glyph('close')}</button></div><small>${escapeHtml(text('workspace'))}</small><nav aria-label="${escapeHtml(text('primary'))}">${primary.map(k=>navItem(k,current)).join('')}</nav>${account.length?`<div class="quiet-account-nav" aria-label="${escapeHtml(text('accountNav'))}">${account.map(k=>navItem(k,current)).join('')}</div>`:''}${opportunities.length?`<div class="quiet-opportunity-nav"><small>${escapeHtml(text('opportunities'))}</small>${opportunities.map(k=>navItem(k,current)).join('')}</div>`:''}<div class="quiet-preferences" aria-label="${escapeHtml(text('preferences'))}"><button class="quiet-link" data-quiet-theme>${glyph('appearance')}<span>${escapeHtml(document.documentElement.dataset.theme==='dark'?text('light'):text('dark'))}</span></button><button class="quiet-link" data-quiet-language>${glyph('language')}<span>${escapeHtml(language()==='ar'?text('english'):text('arabic'))}</span></button></div><button class="quiet-person" data-quiet-sidebar-profile>${glyph('profile')}<span>${escapeHtml(user?.displayName||text('yourAccount'))}<small>${escapeHtml(text('account'))}</small></span></button></aside><header class="quiet-toolbar"><div class="quiet-toolbar-title"><button class="quiet-menu-button" data-quiet-menu aria-controls="quiet-sidebar" aria-expanded="${sidebarInitiallyExpanded}" aria-label="${escapeHtml(text('openMenu'))}">${glyph('menu')}</button><div><small>${full?escapeHtml(active.name):escapeHtml(text('workspace'))}</small><strong>${escapeHtml(text(current))}</strong></div></div><nav class="quiet-desktop-tabs" aria-label="${escapeHtml(text('primary'))}">${primary.map(k=>navItem(k,current)).join('')}</nav><div class="quiet-toolbar-actions"><button class="quiet-course-button" data-quiet-courses aria-expanded="false" aria-label="${escapeHtml(text('courses'))}">${glyph('change-course')}<span>${escapeHtml(text('courses'))}</span></button><button class="quiet-avatar" data-quiet-profile aria-expanded="false" aria-label="${escapeHtml(text('account'))}">${escapeHtml((user?.displayName||'D')[0])}</button></div></header><nav class="bottom-nav" aria-label="${escapeHtml(text('primary'))}">${primary.map(k=>bottomNavItem(k,current)).join('')}</nav>`);
+    syncGelNavigation(shell);
     const main=shell.querySelector('.workspace-main');
     if(main){main.id='quiet-content';main.tabIndex=-1;}
     shell.querySelector('[data-quiet-menu]').onclick=()=>{
@@ -106,8 +144,12 @@
     if(current.split('/')[0]==='change-language'){history.replaceState(null,'','#settings');current='settings';}
     previous(current);enhance();
   };
-  window.addEventListener('hashchange',()=>requestAnimationFrame(enhance));
-  window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(enhance));
-  document.addEventListener('click',event=>{if(!event.target.closest('.quiet-popover,.quiet-toolbar-actions,.quiet-person'))closePopovers();});
+  window.addEventListener('hashchange',()=>requestAnimationFrame(()=>{enhance();syncGelNavigation();}));
+  window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>{enhance();syncGelNavigation();}));
+  window.addEventListener('resize',()=>requestAnimationFrame(()=>document.querySelectorAll(gelNavigationSelector).forEach(navigation=>positionNavigationGel(navigation))));
+  document.addEventListener('click',event=>{
+    if(event.target.closest('.landing-nav-link,.quiet-desktop-tabs .quiet-link,.bottom-nav-item'))requestAnimationFrame(()=>syncGelNavigation());
+    if(!event.target.closest('.quiet-popover,.quiet-toolbar-actions,.quiet-person'))closePopovers();
+  });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();closePopovers();}if((event.metaKey||event.ctrlKey)&&event.key===','){event.preventDefault();if(window.DafatiiAuth.user)setHash('settings');}});
 })();
