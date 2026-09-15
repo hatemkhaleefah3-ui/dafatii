@@ -205,7 +205,6 @@ function subjectListView(){
         <div>
           <div class="eyebrow">Subjects</div>
           <h1>My subjects</h1>
-          <p>Swipe right for edit or left for delete, then tap the revealed action.</p>
         </div>
         <button class="subject-add" id="subject-add" aria-label="Add subject"><span>${icon('add')}</span><strong>Add subject</strong></button>
       </div>
@@ -258,7 +257,6 @@ function lectureListView(subject){
         <div>
           <div class="eyebrow">${escapeHtml(subject.name)} · Lectures</div>
           <h1>Lectures</h1>
-          <p>Swipe right for edit or left for delete, then tap the revealed action.</p>
         </div>
         <button class="subject-add" id="lecture-add" aria-label="Add lecture"><span>${icon('add')}</span><strong>Add lecture</strong></button>
       </div>
