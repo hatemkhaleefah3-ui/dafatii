@@ -28,7 +28,7 @@ assert.match(index, /quiet-design\.css\?v=23/, 'the consolidated presentation la
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=10/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=11/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
@@ -46,7 +46,9 @@ assert.ok(
 );
 assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav\{[^}]*backdrop-filter:none;[^}]*contain:none\}/, 'mobile landing header must not create a fixed-position containing block');
 assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
-assert.match(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(current\)\)/, 'the floating return control must be hidden on primary navigation destinations');
+assert.match(quietShell, /currentRoute=route\(\),current=activePage\(\)/, 'return visibility must use the complete route while main navigation highlighting uses the section');
+assert.match(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(currentRoute\)\)/, 'the floating return control must be hidden only on exact primary navigation destinations');
+assert.doesNotMatch(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(current\)\)/, 'secondary routes must not be mistaken for their primary section');
 assert.match(quietShell, /data-quiet-return/, 'secondary pages need the floating return control');
 assert.match(quietShell, /history\.back\(\)/, 'the return control must perform exactly one history step');
 assert.match(quietShell, /resetPageScroll\(\)/, 'route changes must reopen pages from the top');
