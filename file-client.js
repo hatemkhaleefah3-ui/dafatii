@@ -41,6 +41,7 @@
   const remove = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', body: {}, idempotent: true });
   async function open(fileId, options = {}) {
     const metadata = await get(fileId);
+    if (String(metadata.contentType || '').startsWith('video/') && window.DafatiiViewerWorkspace) return window.DafatiiViewerWorkspace.openVideo({ fileId, metadata, lecture: options.lecture || null });
     if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata, options);
     if (['application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint'].includes(metadata.contentType) && window.DafatiiPdf) {
       const viewUrl = await getViewUrl(fileId, { preview: true });
