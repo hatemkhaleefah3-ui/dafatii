@@ -24,6 +24,8 @@ assert.ok(ui.includes('step>=catalog.subjects.length-1') || ui.includes('step >=
 assert.ok(ui.includes('teacher.fameScore') && ui.includes('teacher.selectionCount'), 'teacher cards must expose popularity ordering signals');
 assert.ok(css.includes('.school-stepper') && css.includes('.school-teacher-card'), 'school teacher UI styles missing');
 assert.ok(index.includes('school-teacher-flow.css?v=20260917-1') && index.includes('school-teacher-flow.js?v=20260917-1'), 'school teacher assets must be loaded');
+assert.ok(ui.includes('if(!ALLOWED.has(current))return;'), 'teacher flow must not redirect away from signup or landing during auth transition');
+assert.ok(!ui.includes("if(!ALLOWED.has(current)){location.hash='dashboard';return;}"), 'teacher flow must not tear down the signup route after auth changes');
 
 assert.ok(server.includes('ORDER BY a.fame_score DESC, selection_count DESC'), 'teacher directory must sort by fame and student selections');
 assert.ok(server.includes('academic_level = ?') && server.includes('academic_stage = ?') && server.includes('academic_field = ?'), 'teacher directory must filter academic identity');
