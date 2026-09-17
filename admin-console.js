@@ -103,9 +103,9 @@
     const subjectCount=teacher.subjects?.length||0;
     const chapters=(teacher.subjects||[]).reduce((sum,s)=>sum+(s.chapters?.length||0),0);
     const lectures=(teacher.subjects||[]).reduce((sum,s)=>sum+(s.chapters||[]).reduce((x,c)=>x+(c.lectures?.length||0),0),0);
-    return `<article class="admin-teacher-card" data-admin-teacher="${esc(teacher.id)}">
+    return `<article class="admin-teacher-card ${teacher.status==='removed'?'removed':''}" data-admin-teacher="${esc(teacher.id)}">
       <div class="admin-teacher-avatar">${teacher.imageUrl?`<img src="${esc(teacher.imageUrl)}" alt="">`:`<span>${esc((teacher.displayName||'T').slice(0,1).toUpperCase())}</span>`}</div>
-      <div class="admin-teacher-copy"><h3>${esc(teacher.displayName)}</h3><p>${esc(teacher.email)}</p><div>${(teacher.subjects||[]).map(s=>`<span>${esc(subjectLabel(s.id))}</span>`).join('')}</div></div>
+      <div class="admin-teacher-copy"><h3>${esc(teacher.displayName)} ${teacher.status==='removed'?`<small class="admin-teacher-status">${esc(tx('Removed','مزال'))}</small>`:''}</h3><p>${esc(teacher.email)}</p><div>${(teacher.subjects||[]).map(s=>`<span>${esc(subjectLabel(s.id))}</span>`).join('')}</div></div>
       <div class="admin-teacher-stats"><span><strong>${subjectCount}</strong>${esc(tx('subjects','مواد'))}</span><span><strong>${chapters}</strong>${esc(tx('chapters','فصول'))}</span><span><strong>${lectures}</strong>${esc(tx('lectures','محاضرات'))}</span></div>
       <div class="admin-teacher-actions"><button class="btn btn-ghost btn-small" data-teacher-edit="${esc(teacher.id)}">${esc(tx('Edit','تعديل'))}</button><button class="btn btn-ghost btn-small" data-teacher-status="${esc(teacher.id)}" data-status="${teacher.status==='removed'?'active':'removed'}">${esc(teacher.status==='removed'?tx('Restore','إرجاع'):tx('Remove','إزالة'))}</button><button class="btn btn-danger btn-small" data-teacher-delete="${esc(teacher.id)}">${esc(tx('Delete','حذف'))}</button></div>
     </article>`;
