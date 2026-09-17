@@ -78,7 +78,7 @@ async function getCourse(context, currentActor, courseId) {
 }
 
 async function createCourse(context, currentActor) {
-  const postSchoolStudent = currentActor.accountType === 'student' && currentActor.studentStage !== 'school';
+  const postSchoolStudent = currentActor.accountType === 'student' && currentActor.studentStage === 'university';
   if (!currentActor.isAdmin && currentActor.accountType !== 'representer' && !postSchoolStudent) {
     throw new HttpError(403, 'COURSE_CREATION_NOT_ALLOWED', 'Course creation is available to post-school students, representers, and administrators.');
   }
