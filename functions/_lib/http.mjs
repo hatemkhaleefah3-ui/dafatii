@@ -6,6 +6,7 @@ const SECURITY_HEADERS = {
   'Cache-Control': 'no-store',
   'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
   'Referrer-Policy': 'no-referrer',
+  'Strict-Transport-Security': 'max-age=31536000',
   'X-Content-Type-Options': 'nosniff'
 };
 
