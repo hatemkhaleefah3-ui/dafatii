@@ -95,7 +95,7 @@ export async function authenticateUser(db, encodedIdentifier, credential, env = 
   const separator = key.indexOf(':');
   const type = separator > 0 ? key.slice(0, separator) : '';
   const value = separator > 0 ? key.slice(separator + 1) : '';
-  const kind = type === 'email' ? 'email' : type === 'sid' ? 'studentId' : type === 'phone' ? 'phone' : '';
+  const kind = type === 'email' ? 'email' : type === 'numeric' ? 'numeric' : type === 'phone' ? 'phone' : '';
   const user = kind ? await findStudentLogin(db, { kind, value }) : null;
   const pepper = passwordPepper(env);
   const validCredential = pinMode
