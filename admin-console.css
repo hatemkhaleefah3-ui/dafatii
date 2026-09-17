@@ -69,6 +69,8 @@
 .admin-console-sheet{width:min(760px,calc(100% - 28px));max-height:min(88dvh,860px);overflow:auto}
 .admin-account-summary{display:grid;gap:3px;padding:15px;margin-bottom:18px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
 .admin-account-summary span,.admin-account-summary small{color:var(--muted)}
+.admin-account-stage{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
+.admin-account-stage span{color:var(--muted);font-size:.78rem;font-weight:700}.admin-account-stage strong{text-transform:capitalize}
 .teacher-editor-subjects{display:grid;gap:12px;margin:18px 0}
 .teacher-editor-subject{border:1px solid var(--line);border-radius:18px;padding:14px;background:var(--surface-2)}
 .teacher-editor-subject>header{display:grid;grid-template-columns:minmax(0,1fr) 150px 36px;gap:10px;align-items:center;margin-bottom:12px}
