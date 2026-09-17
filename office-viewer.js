@@ -7,13 +7,18 @@
   const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
   const TYPES = Object.freeze([DOC, DOCX, PPT, PPTX]);
   const RUNTIME_VERSION = '3.1.1';
-  const RUNTIME_BASE = `https://cdn.jsdelivr.net/npm/@file-viewer/web-full@${RUNTIME_VERSION}/dist/`;
-  const RUNTIME_URL = `${RUNTIME_BASE}flyfish-file-viewer-web-full.iife.js`;
+  const RUNTIME_PATH = `@file-viewer/web-full@${RUNTIME_VERSION}/dist/`;
+  const RUNTIME_CDNS = Object.freeze([
+    Object.freeze({ name:'unpkg', base:`https://unpkg.com/${RUNTIME_PATH}` }),
+    Object.freeze({ name:'jsdelivr', base:`https://cdn.jsdelivr.net/npm/${RUNTIME_PATH}` })
+  ]);
   const RUNTIME_ID = 'dafatii-native-office-runtime';
+  const RUNTIME_LOAD_TIMEOUT_MS = 12000;
   const CACHE_TTL_MS = 5 * 60 * 1000;
   const CACHE_MAX_FILE_BYTES = 16 * 1024 * 1024;
   const CACHE_MAX_TOTAL_BYTES = 24 * 1024 * 1024;
   let runtimePromise = null;
+  let activeRuntimeBase = RUNTIME_CDNS[0].base;
   const originalFileCache = new Map();
 
   function normalizedType(value) {
@@ -35,35 +40,76 @@
     status.textContent = message;
   }
 
-  function loadRuntime() {
-    if (window.FlyfishFileViewerWebFull?.mountViewer) return Promise.resolve(window.FlyfishFileViewerWebFull);
-    if (runtimePromise) return runtimePromise;
+  function currentRuntime() {
+    return window.FlyfishFileViewerWebFull;
+  }
 
-    runtimePromise = new Promise((resolve, reject) => {
-      const finish = () => {
-        const runtime = window.FlyfishFileViewerWebFull;
-        if (runtime?.mountViewer) resolve(runtime);
-        else reject(new Error('Native Office reader loaded without its browser API.'));
-      };
-      const fail = () => reject(new Error('Unable to load the native Office reader runtime.'));
-
-      const existing = document.getElementById(RUNTIME_ID);
-      if (existing) {
-        existing.addEventListener('load', finish, { once:true });
-        existing.addEventListener('error', fail, { once:true });
-        if (window.FlyfishFileViewerWebFull?.mountViewer) finish();
+  function loadRuntimeCandidate(candidate, attempt) {
+    return new Promise((resolve, reject) => {
+      const existingRuntime = currentRuntime();
+      if (existingRuntime?.mountViewer) {
+        activeRuntimeBase = candidate.base;
+        resolve({ runtime:existingRuntime, base:candidate.base });
         return;
       }
 
+      const scriptId = `${RUNTIME_ID}-${attempt}`;
+      const stale = document.getElementById(scriptId);
+      stale?.remove();
+
       const script = document.createElement('script');
-      script.id = RUNTIME_ID;
-      script.src = RUNTIME_URL;
+      script.id = scriptId;
+      script.src = `${candidate.base}flyfish-file-viewer-web-full.iife.js`;
       script.async = true;
       script.crossOrigin = 'anonymous';
-      script.addEventListener('load', finish, { once:true });
-      script.addEventListener('error', fail, { once:true });
+
+      let settled = false;
+      const timer = setTimeout(() => finish(new Error(`${candidate.name} Office runtime timed out.`)), RUNTIME_LOAD_TIMEOUT_MS);
+      const finish = error => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        script.removeEventListener('load', onLoad);
+        script.removeEventListener('error', onError);
+        if (error) {
+          script.remove();
+          reject(error);
+          return;
+        }
+        const runtime = currentRuntime();
+        if (!runtime?.mountViewer) {
+          script.remove();
+          reject(new Error(`${candidate.name} Office runtime loaded without its browser API.`));
+          return;
+        }
+        activeRuntimeBase = candidate.base;
+        resolve({ runtime, base:candidate.base });
+      };
+      const onLoad = () => finish();
+      const onError = () => finish(new Error(`${candidate.name} Office runtime failed to load.`));
+      script.addEventListener('load', onLoad, { once:true });
+      script.addEventListener('error', onError, { once:true });
       document.head.append(script);
-    }).catch(error => {
+    });
+  }
+
+  function loadRuntime() {
+    const existingRuntime = currentRuntime();
+    if (existingRuntime?.mountViewer) return Promise.resolve({ runtime:existingRuntime, base:activeRuntimeBase });
+    if (runtimePromise) return runtimePromise;
+
+    runtimePromise = (async () => {
+      let lastError = null;
+      for (let index = 0; index < RUNTIME_CDNS.length; index += 1) {
+        const candidate = RUNTIME_CDNS[index];
+        try {
+          return await loadRuntimeCandidate(candidate, index);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw new Error(`Unable to load the native Office reader runtime${lastError?.message ? `: ${lastError.message}` : '.'}`);
+    })().catch(error => {
       runtimePromise = null;
       throw error;
     });
@@ -82,24 +128,24 @@
     document.head.append(link);
   }
 
-  function warmFormatAssets(type) {
+  function warmFormatAssets(type, runtimeBase = RUNTIME_CDNS[0].base) {
     if (type === PPT) {
-      const base = `${RUNTIME_BASE}vendor/ppt/`;
+      const base = `${runtimeBase}vendor/ppt/`;
       ensureResourceHint('modulepreload', `${base}index.mjs`);
       ensureResourceHint('modulepreload', `${base}worker.mjs`);
       ensureResourceHint('preload', `${base}ppt-native.wasm`, 'fetch', 'application/wasm');
       ensureResourceHint('preload', `${base}ppt-font-cjk.otf`, 'font', 'font/otf');
     } else if (type === PPTX) {
-      ensureResourceHint('modulepreload', `${RUNTIME_BASE}vendor/pptx/pptx.worker.js`);
+      ensureResourceHint('modulepreload', `${runtimeBase}vendor/pptx/pptx.worker.js`);
     } else if (type === DOCX) {
-      ensureResourceHint('modulepreload', `${RUNTIME_BASE}vendor/docx/docx.worker.js`);
-      ensureResourceHint('preload', `${RUNTIME_BASE}vendor/docx/jszip.min.js`, 'script', 'text/javascript');
+      ensureResourceHint('modulepreload', `${runtimeBase}vendor/docx/docx.worker.js`);
+      ensureResourceHint('preload', `${runtimeBase}vendor/docx/jszip.min.js`, 'script', 'text/javascript');
     }
   }
 
-  function nativeFormatOptions(type) {
+  function nativeFormatOptions(type, runtimeBase = activeRuntimeBase) {
     if (type === PPT) {
-      const base = `${RUNTIME_BASE}vendor/ppt/`;
+      const base = `${runtimeBase}vendor/ppt/`;
       return {
         presentation: {
           pptModuleUrl: `${base}index.mjs`,
@@ -111,13 +157,13 @@
       };
     }
     if (type === PPTX) {
-      return { presentation: { workerUrl:`${RUNTIME_BASE}vendor/pptx/pptx.worker.js` } };
+      return { presentation: { workerUrl:`${runtimeBase}vendor/pptx/pptx.worker.js` } };
     }
     if (type === DOCX) {
       return {
         docx: {
-          workerUrl: `${RUNTIME_BASE}vendor/docx/docx.worker.js`,
-          workerJsZipUrl: `${RUNTIME_BASE}vendor/docx/jszip.min.js`
+          workerUrl: `${runtimeBase}vendor/docx/docx.worker.js`,
+          workerJsZipUrl: `${runtimeBase}vendor/docx/jszip.min.js`
         }
       };
     }
@@ -252,7 +298,7 @@
     });
 
     try {
-      warmFormatAssets(type);
+      warmFormatAssets(type, RUNTIME_CDNS[0].base);
       setStatus(status, 'Loading reader and document…');
 
       let lastPercent = -1;
@@ -273,9 +319,10 @@
         }
       });
 
-      const [runtime, original] = await Promise.all([loadRuntime(), filePromise]);
+      const [{ runtime, base:runtimeBase }, original] = await Promise.all([loadRuntime(), filePromise]);
       if (closed) return root;
 
+      warmFormatAssets(type, runtimeBase);
       const { buffer, contentType } = original;
       const file = new File([buffer], title, {
         type:type || contentType || 'application/octet-stream',
@@ -302,7 +349,7 @@
           styleIsolation:'none',
           theme:document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
           fit:'width',
-          ...nativeFormatOptions(type)
+          ...nativeFormatOptions(type, runtimeBase)
         },
         onStateChange(state) {
           if (closed) return;
@@ -333,8 +380,8 @@
 
   function prewarm(type = PPT) {
     const normalized = normalizedType(type);
-    warmFormatAssets(normalized);
-    return loadRuntime().catch(() => null);
+    warmFormatAssets(normalized, RUNTIME_CDNS[0].base);
+    return loadRuntime().then(({ runtime }) => runtime).catch(() => null);
   }
 
   window.DafatiiOffice = Object.freeze({ open, prewarm, types:TYPES });
