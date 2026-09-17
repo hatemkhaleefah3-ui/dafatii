@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const admin = fs.readFileSync('admin-console.js','utf8');
 const adminCss = fs.readFileSync('admin-console.css','utf8');
 const backend = fs.readFileSync('functions/_lib/admin-console.mjs','utf8');
+const schoolTeachers = fs.readFileSync('functions/_lib/school-teachers.mjs','utf8');
 const courseRoutes = fs.readFileSync('functions/_lib/course-routes.mjs','utf8');
 const courseUi = fs.readFileSync('course-ui.js','utf8');
 const courseContext = fs.readFileSync('course-context.js','utf8');
@@ -19,7 +20,7 @@ assert.ok(adminCss.includes('grid-template-columns:repeat(5,1fr)'), 'Admin Conso
 assert.ok(adminCss.includes('.admin-console-active .main-nav') && adminCss.includes('display:none!important'), 'normal main nav must be hidden while Admin Console is open');
 assert.ok(admin.includes('data-student-access') && admin.includes('data-student-status') && admin.includes('data-student-delete'), 'students need account access, remove/restore, and delete controls');
 assert.ok(admin.includes('data-teacher-status') && admin.includes('data-teacher-delete'), 'teachers need distinct remove/restore and permanent delete controls');
-assert.ok(backend.includes("status TEXT NOT NULL DEFAULT 'active'") && backend.includes("['active','removed']"), 'teacher removal must preserve the profile as an unpublished state');
+assert.ok(schoolTeachers.includes("status TEXT NOT NULL DEFAULT 'active'") && backend.includes("['active','removed']"), 'teacher removal must preserve the profile as an unpublished state');
 assert.ok(admin.includes("id=\"admin-add-student\"") && backend.includes("path==='admin/users'") && backend.includes("method==='POST'"), 'admins need a real add-student path');
 const addStudentFlow = admin.slice(admin.indexOf('function openAddStudent'), admin.indexOf('function emptyTeacherDraft'));
 assert.ok(addStudentFlow.includes("e.currentTarget.querySelector('button[type=\"submit\"]').disabled=true") && addStudentFlow.includes('data.loaded=false;') && !addStudentFlow.includes('await load(true)'), 'one-time Student ID/PIN must remain visible after admin account creation');
@@ -34,6 +35,7 @@ for (const marker of ['teacher-editor-subjects','teacher-editor-chapters','teach
 assert.ok(backend.includes("path==='admin/teachers'") && backend.includes("path==='admin/study-rooms'"), 'teacher and Study Room admin APIs must be server-backed');
 
 assert.ok(courseRoutes.includes("currentActor.accountType === 'student' && currentActor.studentStage === 'university'"), 'only higher-education students may create Courses');
+assert.ok(courseRoutes.includes("SCHOOL_STUDENT_COURSES_DISABLED") && courseRoutes.includes("School student accounts cannot own Courses."), 'admins must not be able to assign Course ownership to school students');
 assert.ok(courseUi.includes("actor?.accountType==='student'&&actor?.studentStage==='university'"), 'Course creation UI must match server permission');
 assert.ok(!courseUi.includes('<option value="school">School</option>'), 'Course creation must not offer a school stage');
 
