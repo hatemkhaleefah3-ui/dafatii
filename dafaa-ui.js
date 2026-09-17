@@ -6,7 +6,7 @@
   LABELS.dafati='Dafati';
 
   function dafaaPage(){
-    const active=window.DafatiiDafat.active(),dafat=window.DafatiiDafat.list(),actor=window.DafatiiDafat.actor||window.DafatiiAuth.user;
+    const active=window.DafitiiDafat.active(),dafat=window.DafitiiDafat.list(),actor=window.DafitiiDafat.actor||window.DafitiiAuth.user;
     const enrolled=dafat.filter(dafaa=>dafaa.membership?.status==='active');
     const available=dafat.filter(dafaa=>!dafaa.membership||dafaa.membership.status!=='active');
     const canCreate=actor?.platformRole==='admin'||actor?.studentStage==='university';
@@ -20,7 +20,7 @@
   }
 
   function dafaaCard(dafaa){
-    const member=dafaa.membership,status=member?.status,active=dafaa.id===window.DafatiiDafat.active().id;
+    const member=dafaa.membership,status=member?.status,active=dafaa.id===window.DafitiiDafat.active().id;
     return `<article class="dafaa-card ${active?'active':''}"><div class="dafaa-card-top"><span>◇</span><b>${esc(statusLabel(status))}</b></div><h2>${esc(dafaa.name)}</h2><p>${esc([dafaa.institution,dafaa.stage,money(dafaa),dafaa.visibility,dafaa.joinPolicy==='approval'?'Approval required':'Direct join'].filter(Boolean).join(' · '))}</p><div class="dafaa-card-actions">${status==='active'?`<button class="btn ${active?'btn-ghost':'btn-primary'}" data-dafaa-switch="${esc(dafaa.id)}" ${active?'disabled':''}>${active?'Currently open':'Open Dafaa'}</button>`:status?`<span class="dafaa-status">${esc(statusLabel(status))}</span>`:`<button class="btn btn-primary" data-dafaa-enroll="${esc(dafaa.enrollmentCode)}" data-private="${dafaa.visibility==='private'?'1':'0'}">Enroll</button>`}</div></article>`;
   }
 
@@ -30,13 +30,13 @@
   workspace=function(current){previousWorkspace(current);enhanceDafaaSwitcher();if(current.split('/')[0]==='dafati')bindDafaaManager();};
 
   function enhanceDafaaSwitcher(){
-    const host=document.querySelector('.settings-inner'),dafat=window.DafatiiDafat.list().filter(dafaa=>dafaa.membership?.status==='active'),active=window.DafatiiDafat.active();if(!host||!active.id||host.querySelector('[data-dafaa-picker]'))return;
+    const host=document.querySelector('.settings-inner'),dafat=window.DafitiiDafat.list().filter(dafaa=>dafaa.membership?.status==='active'),active=window.DafitiiDafat.active();if(!host||!active.id||host.querySelector('[data-dafaa-picker]'))return;
     const label=document.createElement('label');label.className='dafaa-picker';label.dataset.dafaaPicker='';label.innerHTML=`<span class="dafaa-picker-icon">◇</span><span class="dafaa-picker-copy"><small>Active Dafaa</small><strong>${esc(active.name)}</strong></span><select aria-label="Active Dafaa">${dafat.map(dafaa=>`<option value="${esc(dafaa.id)}" ${dafaa.id===active.id?'selected':''}>${esc(dafaa.name)}</option>`).join('')}</select><b>⌄</b>`;
-    label.querySelector('select').addEventListener('change',async event=>{await window.DafatiiDafat.switchDafaa(event.target.value);});host.prepend(label);
+    label.querySelector('select').addEventListener('change',async event=>{await window.DafitiiDafat.switchDafaa(event.target.value);});host.prepend(label);
   }
 
   function bindDafaaManager(){
-    document.querySelectorAll('[data-dafaa-switch]').forEach(button=>button.onclick=()=>window.DafatiiDafat.switchDafaa(button.dataset.dafaaSwitch));
+    document.querySelectorAll('[data-dafaa-switch]').forEach(button=>button.onclick=()=>window.DafitiiDafat.switchDafaa(button.dataset.dafaaSwitch));
     document.querySelectorAll('[data-dafaa-enroll]').forEach(button=>button.onclick=()=>openEnrollSheet(button.dataset.dafaaEnroll,button.dataset.private==='1'));
     document.getElementById('dafaa-add')?.addEventListener('click',()=>openDafaaSheetV2());document.getElementById('dafaa-join')?.addEventListener('click',()=>openEnrollSheet('',false));
   }
@@ -44,7 +44,7 @@
   function sheet(title,body){const root=document.getElementById('overlay-root');root.innerHTML=`<div class="entity-sheet-overlay suite-overlay" id="dafaa-overlay"><section class="entity-sheet suite-sheet dafaa-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-head"><h2>${esc(title)}</h2><button class="icon-btn" id="dafaa-close">×</button></div>${body}</section></div>`;const close=()=>root.innerHTML='';document.getElementById('dafaa-close').onclick=close;document.getElementById('dafaa-overlay').onclick=e=>{if(e.target.id==='dafaa-overlay')close();};return close;}
   function openEnrollSheet(code='',privateDafaa=false){
     const close=sheet('Join a Dafaa',`<form id="dafaa-enroll-form"><div class="field"><label>Enrollment code</label><input name="dafaa" value="${esc(code)}" maxlength="36" required></div><div class="field"><label>Private access code <span class="field-optional">If required</span></label><input name="accessCode" type="password" minlength="6" maxlength="64" ${privateDafaa?'required':''}></div><div class="field"><label>Application note <span class="field-optional">Optional</span></label><textarea name="note" maxlength="500"></textarea></div><button class="btn btn-primary auth-submit">Submit enrollment</button><p class="auth-note" id="dafaa-status"></p></form>`);
-    document.getElementById('dafaa-enroll-form').onsubmit=async e=>{e.preventDefault();const values=new FormData(e.currentTarget),status=document.getElementById('dafaa-status');try{const result=await window.DafatiiDafat.enroll(Object.fromEntries(values));status.textContent=statusLabel(result.status);if(result.status==='active'){close();await window.DafatiiDafat.switchDafaa(result.dafaaId);}else setTimeout(()=>{close();render();},900);}catch(error){status.textContent=error.message;}};
+    document.getElementById('dafaa-enroll-form').onsubmit=async e=>{e.preventDefault();const values=new FormData(e.currentTarget),status=document.getElementById('dafaa-status');try{const result=await window.DafitiiDafat.enroll(Object.fromEntries(values));status.textContent=statusLabel(result.status);if(result.status==='active'){close();await window.DafitiiDafat.switchDafaa(result.dafaaId);}else setTimeout(()=>{close();render();},900);}catch(error){status.textContent=error.message;}};
   }
 
   function openDafaaSheetV2(){
@@ -57,8 +57,8 @@
       <button class="btn btn-primary auth-submit dafaa-create-submit" type="submit">Create Dafaa</button><p class="auth-note" id="dafaa-status" aria-live="polite"></p>
     </form>`);
     const form=document.getElementById('dafaa-create-v2'),visibility=document.getElementById('dafaa-v2-visibility'),pricing=document.getElementById('dafaa-v2-pricing'),accessWrap=document.getElementById('dafaa-v2-access-wrap'),access=document.getElementById('dafaa-v2-access'),priceWrap=document.getElementById('dafaa-v2-price-wrap'),price=document.getElementById('dafaa-v2-price');
-    const sync=()=>{const privateMode=visibility.value==='private',paid=pricing.value==='paid';accessWrap.hidden=!privateMode;access.required=privateMode;if(!privateMode)access.value='';priceWrap.hidden=!paid;price.required=paid;if(!paid)price.value='0';else if(Number(price.value)<1)price.value='1';};
+    const sync=()=>{const privateMode=visibility.value==='private',paid=pricing.value==='paid';accessWrap.hidden=!privateMode;access.disabled=!privateMode;access.required=privateMode;if(!privateMode)access.value='';priceWrap.hidden=!paid;price.disabled=!paid;price.required=paid;if(!paid)price.value='0';else if(Number(price.value)<1)price.value='1';};
     visibility.addEventListener('change',sync);pricing.addEventListener('change',sync);sync();
-    form.onsubmit=async e=>{e.preventDefault();const status=document.getElementById('dafaa-status'),submit=form.querySelector('button[type=submit]'),data=Object.fromEntries(new FormData(form));data.priceMinor=Number(data.priceMinor||0);submit.disabled=true;status.textContent='Creating Dafaa…';try{const result=await window.DafatiiApi.request('/dafat/create-v2',{method:'POST',body:data});await window.DafatiiDafat.refresh();if(result?.dafaa?.id)await window.DafatiiDafat.switchDafaa(result.dafaa.id);close();setHash('dashboard/overview');}catch(error){status.textContent=error.message||'Could not create the Dafaa.';submit.disabled=false;}};
+    form.onsubmit=async e=>{e.preventDefault();const status=document.getElementById('dafaa-status'),submit=form.querySelector('button[type=submit]'),data=Object.fromEntries(new FormData(form));data.priceMinor=Number(data.priceMinor||0);submit.disabled=true;status.textContent='Creating Dafaa…';try{const result=await window.DafitiiApi.request('/dafat/create-v2',{method:'POST',body:data});await window.DafitiiDafat.refresh();if(result?.dafaa?.id)await window.DafitiiDafat.switchDafaa(result.dafaa.id);close();setHash('dashboard/overview');}catch(error){status.textContent=error.message||'Could not create the Dafaa.';submit.disabled=false;}};
   }
 })();
