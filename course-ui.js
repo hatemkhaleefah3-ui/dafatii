@@ -9,7 +9,7 @@
     const active=window.DafatiiCourses.active(),courses=window.DafatiiCourses.list(),actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
     const enrolled=courses.filter(course=>course.membership?.status==='active');
     const available=courses.filter(course=>!course.membership||course.membership.status!=='active');
-    const canCreate=actor?.platformRole==='admin'||actor?.accountType==='representer'||(actor?.accountType==='student'&&actor?.studentStage!=='school');
+    const canCreate=actor?.platformRole==='admin'||actor?.accountType==='representer'||(actor?.accountType==='student'&&actor?.studentStage==='university');
     return `<section class="suite-page course-manager">
       <div class="suite-head"><div><div class="eyebrow">Courses and enrollment</div><h1>Your courses</h1><p>Enrollment, roles and every course workspace are stored securely on the server.</p></div><div class="suite-head-actions">${canCreate?'<button class="btn btn-primary" id="course-add">＋ Create course</button>':''}<button class="btn btn-ghost" id="course-join">Join with code</button></div></div>
       ${active.id?`<article class="course-active-hero"><span class="course-active-icon">◇</span><div><div class="eyebrow">Active course · ${esc(active.membership?.role||'student')}</div><h2>${esc(active.name)}</h2><p>${esc([active.institution,active.stage].filter(Boolean).join(' · '))}</p></div><div class="course-active-count"><strong>${state.subjects.length}</strong><span>subjects</span></div></article>`:'<article class="course-explainer"><span>＋</span><div><h2>No active course yet</h2><p>Join a course, or create one if your account is in higher education.</p></div></article>'}
