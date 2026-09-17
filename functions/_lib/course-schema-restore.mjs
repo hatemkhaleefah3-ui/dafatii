@@ -6,81 +6,80 @@ const columnExists = async (db, table, column) => {
   const result = await db.prepare(`PRAGMA table_info(${table})`).all();
   return (result.results || []).some(item => item.name === column);
 };
+const run = (db, sql) => db.prepare(sql).run();
 
 async function ensureLegacyTables(db) {
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS courses (
-      id TEXT PRIMARY KEY,
-      enrollment_code TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL DEFAULT '',
-      institution TEXT NOT NULL DEFAULT '',
-      stage TEXT NOT NULL DEFAULT 'university' CHECK (stage IN ('school', 'university', 'independent')),
-      owner_user_id TEXT NOT NULL REFERENCES users(id),
-      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
-      pricing TEXT NOT NULL DEFAULT 'free' CHECK (pricing IN ('free', 'paid')),
-      price_minor INTEGER NOT NULL DEFAULT 0 CHECK (price_minor >= 0),
-      currency TEXT NOT NULL DEFAULT 'USD',
-      visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
-      join_policy TEXT NOT NULL DEFAULT 'approval' CHECK (join_policy IN ('direct', 'approval')),
-      access_code_hash TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      CHECK ((pricing = 'free' AND price_minor = 0) OR (pricing = 'paid' AND price_minor > 0)),
-      CHECK ((visibility = 'public' AND access_code_hash IS NULL) OR (visibility = 'private' AND access_code_hash IS NOT NULL))
-    );
-    CREATE TABLE IF NOT EXISTS course_memberships (
-      course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('owner', 'representer', 'student')),
-      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'payment_pending', 'active', 'rejected', 'removed')),
-      can_add_content INTEGER NOT NULL DEFAULT 0 CHECK (can_add_content IN (0, 1)),
-      can_edit_content INTEGER NOT NULL DEFAULT 0 CHECK (can_edit_content IN (0, 1)),
-      can_remove_content INTEGER NOT NULL DEFAULT 0 CHECK (can_remove_content IN (0, 1)),
-      can_manage_students INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_students IN (0, 1)),
-      can_review_applications INTEGER NOT NULL DEFAULT 0 CHECK (can_review_applications IN (0, 1)),
-      can_manage_representers INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_representers IN (0, 1)),
-      can_manage_settings INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_settings IN (0, 1)),
-      invited_by TEXT REFERENCES users(id),
-      application_note TEXT NOT NULL DEFAULT '',
-      joined_at INTEGER,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      PRIMARY KEY (course_id, user_id)
-    );
-    CREATE TABLE IF NOT EXISTS course_content_records (
-      course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-      record_key TEXT NOT NULL,
-      format TEXT NOT NULL CHECK (format IN ('json', 'string')),
-      value_json TEXT,
-      deleted INTEGER NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
-      revision INTEGER NOT NULL CHECK (revision > 0),
-      last_mutation_id TEXT,
-      updated_by TEXT NOT NULL REFERENCES users(id),
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      PRIMARY KEY (course_id, record_key),
-      CHECK ((deleted = 1 AND value_json IS NULL) OR (deleted = 0 AND value_json IS NOT NULL))
-    );
-    CREATE TABLE IF NOT EXISTS course_content_mutations (
-      course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      mutation_id TEXT NOT NULL,
-      record_key TEXT NOT NULL,
-      response_json TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      PRIMARY KEY (course_id, user_id, mutation_id)
-    );
-    CREATE TABLE IF NOT EXISTS course_audit_log (
-      id TEXT PRIMARY KEY,
-      course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
-      actor_user_id TEXT NOT NULL REFERENCES users(id),
-      action TEXT NOT NULL,
-      target_user_id TEXT REFERENCES users(id),
-      metadata_json TEXT NOT NULL DEFAULT '{}',
-      created_at INTEGER NOT NULL
-    );
-  `);
+  await run(db, `CREATE TABLE IF NOT EXISTS courses (
+    id TEXT PRIMARY KEY,
+    enrollment_code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    institution TEXT NOT NULL DEFAULT '',
+    stage TEXT NOT NULL DEFAULT 'university' CHECK (stage IN ('school', 'university', 'independent')),
+    owner_user_id TEXT NOT NULL REFERENCES users(id),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    pricing TEXT NOT NULL DEFAULT 'free' CHECK (pricing IN ('free', 'paid')),
+    price_minor INTEGER NOT NULL DEFAULT 0 CHECK (price_minor >= 0),
+    currency TEXT NOT NULL DEFAULT 'USD',
+    visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
+    join_policy TEXT NOT NULL DEFAULT 'approval' CHECK (join_policy IN ('direct', 'approval')),
+    access_code_hash TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    CHECK ((pricing = 'free' AND price_minor = 0) OR (pricing = 'paid' AND price_minor > 0)),
+    CHECK ((visibility = 'public' AND access_code_hash IS NULL) OR (visibility = 'private' AND access_code_hash IS NOT NULL))
+  )`);
+  await run(db, `CREATE TABLE IF NOT EXISTS course_memberships (
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('owner', 'representer', 'student')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'payment_pending', 'active', 'rejected', 'removed')),
+    can_add_content INTEGER NOT NULL DEFAULT 0 CHECK (can_add_content IN (0, 1)),
+    can_edit_content INTEGER NOT NULL DEFAULT 0 CHECK (can_edit_content IN (0, 1)),
+    can_remove_content INTEGER NOT NULL DEFAULT 0 CHECK (can_remove_content IN (0, 1)),
+    can_manage_students INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_students IN (0, 1)),
+    can_review_applications INTEGER NOT NULL DEFAULT 0 CHECK (can_review_applications IN (0, 1)),
+    can_manage_representers INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_representers IN (0, 1)),
+    can_manage_settings INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_settings IN (0, 1)),
+    invited_by TEXT REFERENCES users(id),
+    application_note TEXT NOT NULL DEFAULT '',
+    joined_at INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (course_id, user_id)
+  )`);
+  await run(db, `CREATE TABLE IF NOT EXISTS course_content_records (
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    record_key TEXT NOT NULL,
+    format TEXT NOT NULL CHECK (format IN ('json', 'string')),
+    value_json TEXT,
+    deleted INTEGER NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    last_mutation_id TEXT,
+    updated_by TEXT NOT NULL REFERENCES users(id),
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (course_id, record_key),
+    CHECK ((deleted = 1 AND value_json IS NULL) OR (deleted = 0 AND value_json IS NOT NULL))
+  )`);
+  await run(db, `CREATE TABLE IF NOT EXISTS course_content_mutations (
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mutation_id TEXT NOT NULL,
+    record_key TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (course_id, user_id, mutation_id)
+  )`);
+  await run(db, `CREATE TABLE IF NOT EXISTS course_audit_log (
+    id TEXT PRIMARY KEY,
+    course_id TEXT REFERENCES courses(id) ON DELETE CASCADE,
+    actor_user_id TEXT NOT NULL REFERENCES users(id),
+    action TEXT NOT NULL,
+    target_user_id TEXT REFERENCES users(id),
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at INTEGER NOT NULL
+  )`);
 }
 
 async function mirrorDafaaRows(db) {
@@ -135,7 +134,7 @@ async function mirrorDafaaRows(db) {
 
 async function restoreFilesAndRecords(db) {
   if (await tableExists(db, 'files') && !await columnExists(db, 'files', 'course_id')) {
-    await db.exec('ALTER TABLE files ADD COLUMN course_id TEXT REFERENCES courses(id) DEFAULT NULL;');
+    await run(db, 'ALTER TABLE files ADD COLUMN course_id TEXT REFERENCES courses(id) DEFAULT NULL');
   }
   if (await tableExists(db, 'files') && await columnExists(db, 'files', 'dafaa_id') && await columnExists(db, 'files', 'course_id')) {
     await db.prepare('UPDATE files SET course_id = dafaa_id WHERE dafaa_id IS NOT NULL AND dafaa_id IN (SELECT id FROM courses)').run();
@@ -151,38 +150,36 @@ async function restoreFilesAndRecords(db) {
 }
 
 async function restoreIndexesAndSchoolGuards(db) {
-  await db.exec(`
-    CREATE INDEX IF NOT EXISTS courses_owner_status_idx ON courses(owner_user_id, status, updated_at DESC);
-    CREATE INDEX IF NOT EXISTS courses_discovery_idx ON courses(status, visibility, stage, updated_at DESC);
-    CREATE INDEX IF NOT EXISTS course_memberships_user_idx ON course_memberships(user_id, status, updated_at DESC);
-    CREATE INDEX IF NOT EXISTS course_memberships_course_idx ON course_memberships(course_id, status, role, updated_at DESC);
-    CREATE INDEX IF NOT EXISTS course_content_updated_idx ON course_content_records(course_id, updated_at DESC);
-    CREATE INDEX IF NOT EXISTS course_content_mutations_created_idx ON course_content_mutations(created_at);
-    CREATE INDEX IF NOT EXISTS course_audit_course_idx ON course_audit_log(course_id, created_at DESC);
-    CREATE INDEX IF NOT EXISTS course_audit_actor_idx ON course_audit_log(actor_user_id, created_at DESC);
-    CREATE INDEX IF NOT EXISTS files_course_status_idx ON files(course_id, status, created_at DESC);
-    CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert
+  await run(db, 'CREATE INDEX IF NOT EXISTS courses_owner_status_idx ON courses(owner_user_id, status, updated_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS courses_discovery_idx ON courses(status, visibility, stage, updated_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_memberships_user_idx ON course_memberships(user_id, status, updated_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_memberships_course_idx ON course_memberships(course_id, status, role, updated_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_content_updated_idx ON course_content_records(course_id, updated_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_content_mutations_created_idx ON course_content_mutations(created_at)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_audit_course_idx ON course_audit_log(course_id, created_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS course_audit_actor_idx ON course_audit_log(actor_user_id, created_at DESC)');
+  await run(db, 'CREATE INDEX IF NOT EXISTS files_course_status_idx ON files(course_id, status, created_at DESC)');
+  await run(db, `CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert
     BEFORE INSERT ON course_memberships
     WHEN NEW.role = 'student' AND NEW.status <> 'removed'
       AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END;
-    CREATE TRIGGER IF NOT EXISTS block_school_student_course_update
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`);
+  await run(db, `CREATE TRIGGER IF NOT EXISTS block_school_student_course_update
     BEFORE UPDATE OF role, status ON course_memberships
     WHEN NEW.role = 'student' AND NEW.status <> 'removed'
       AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END;
-    CREATE TRIGGER IF NOT EXISTS block_new_school_courses
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`);
+  await run(db, `CREATE TRIGGER IF NOT EXISTS block_new_school_courses
     BEFORE INSERT ON courses WHEN NEW.stage = 'school'
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END;
-    CREATE TRIGGER IF NOT EXISTS block_course_stage_to_school
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`);
+  await run(db, `CREATE TRIGGER IF NOT EXISTS block_course_stage_to_school
     BEFORE UPDATE OF stage ON courses WHEN NEW.stage = 'school'
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END;
-  `);
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`);
 }
 
 export async function ensurePreDafaaCourseSchema(db) {
   if (!db) return;
-  await db.exec('CREATE TABLE IF NOT EXISTS app_migration_markers (marker TEXT PRIMARY KEY, applied_at INTEGER NOT NULL);');
+  await run(db, 'CREATE TABLE IF NOT EXISTS app_migration_markers (marker TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)');
   if (await db.prepare('SELECT 1 AS present FROM app_migration_markers WHERE marker = ?').bind(MARKER).first()) return;
 
   await ensureLegacyTables(db);

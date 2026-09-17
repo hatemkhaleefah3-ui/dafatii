@@ -11,7 +11,10 @@ assert.ok(helper.includes('CREATE TABLE IF NOT EXISTS course_memberships'), 'leg
 assert.ok(helper.includes("'dafatii:courses:v1'"), 'legacy course record key must be restored');
 assert.ok(helper.includes('SELECT dafaa_id,user_id') && helper.includes('SELECT id,enrollment_code,name'), 'Dafaa-era rows must be preserved during rollback');
 assert.ok(helper.includes('course_id = dafaa_id'), 'file ownership links must be mapped back to course_id');
+assert.ok(helper.includes('const run = (db, sql) => db.prepare(sql).run()'), 'rollback DDL must execute as complete prepared statements');
+assert.ok(!helper.includes('db.exec(`'), 'multiline db.exec must not be used because D1 parses it line-by-line');
 assert.ok(middleware.includes('ensurePreDafaaCourseSchema') && middleware.includes("pathname.startsWith('/api/v1/')"), 'API middleware must run the compatibility restore');
+assert.ok(!middleware.includes('__rollback_diag'), 'temporary rollback diagnostics must not remain in production');
 assert.ok(!index.includes('dafaa-context.js') && !index.includes('dafaa-ui.js') && !index.includes('pre-dafaa.css'), 'active Dafaa UI assets must not remain after rollback');
 assert.ok(index.includes('course-context.js') && index.includes('course-ui.js') && index.includes('pre-course.css'), 'pre-request Course UI assets must be restored');
 
