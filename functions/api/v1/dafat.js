@@ -16,6 +16,9 @@ function classifyDatabaseFailure(error) {
 export async function onRequest(context) {
   try {
     assertSameOrigin(context.request, context.env);
+    if (context.request.method === 'POST') {
+      throw new HttpError(410, 'DAFAA_CREATE_MOVED', 'Dafaa creation moved to the new create-v2 endpoint. Refresh the app and try again.');
+    }
     return await dispatchDafaaWithEducationGate(context, 'dafat');
   } catch (error) {
     if (error.status) return fail(error);
@@ -23,14 +26,6 @@ export async function onRequest(context) {
     const phase = String(error?.dafaaPhase || 'UNCLASSIFIED');
     const category = classifyDatabaseFailure(error);
     logEvent('error', 'dafat.unhandled', { name:error?.name || 'Error', phase, category });
-
-    if (context.request.method === 'POST') {
-      const code = `DAFAA_${phase}_${category}`;
-      const phaseLabel = phase.toLowerCase().replaceAll('_', ' ');
-      const categoryLabel = category.toLowerCase().replaceAll('_', ' ');
-      return fail(new HttpError(500, code, `Dafaa creation failed at ${phaseLabel} (${categoryLabel}).`, { phase, category }));
-    }
-
     return fail(error);
   }
 }
