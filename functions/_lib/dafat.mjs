@@ -1,4 +1,4 @@
-import { ensureDafaaSchema } from './dafaa-schema.mjs';
+import { LEGACY_DAFAT_RECORD_KEY } from './dafaa-schema.mjs';
 import { sha256 } from './crypto.mjs';
 import { HttpError } from './http.mjs';
 import { validateRecord } from './policy.mjs';
@@ -40,13 +40,25 @@ export function validateProfileInput(input = {}) {
   };
 }
 
+async function ensureAccountProfileSchema(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS account_profiles (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    account_type TEXT NOT NULL DEFAULT 'student' CHECK (account_type IN ('student', 'representer')),
+    student_stage TEXT NOT NULL DEFAULT 'university' CHECK (student_stage IN ('school', 'university', 'independent')),
+    platform_role TEXT NOT NULL DEFAULT 'student' CHECK (platform_role IN ('student', 'admin')),
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`).run();
+  await db.prepare('CREATE INDEX IF NOT EXISTS account_profiles_type_idx ON account_profiles(account_type, platform_role)').run();
+}
+
 export async function ensureAccountProfile(db, user, requested = null, now = Date.now()) {
-  await ensureDafaaSchema(db);
+  await ensureAccountProfileSchema(db);
   let row = await db.prepare('SELECT account_type, student_stage, platform_role FROM account_profiles WHERE user_id = ?').bind(user.id).first();
   if (!row) {
     let profile = requested ? validateProfileInput(requested) : null;
     if (!profile) {
-      const legacy = await db.prepare("SELECT 1 AS present FROM records WHERE user_id = ? AND record_key = 'dafatii:dafat:v1' AND deleted = 0 LIMIT 1").bind(user.id).first();
+      const legacy = await db.prepare("SELECT 1 AS present FROM records WHERE user_id = ? AND record_key IN ('dafatii:dafat:v1', ?) AND deleted = 0 LIMIT 1").bind(user.id, LEGACY_DAFAT_RECORD_KEY).first();
       profile = { accountType: legacy ? 'representer' : 'student', studentStage: 'university' };
     }
     await db.prepare('INSERT OR IGNORE INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')

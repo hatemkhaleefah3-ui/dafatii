@@ -311,7 +311,6 @@ async function deleteFile(context, user, fileId) {
 
 async function dispatch(context) {
   requireDb(context.env);
-  await ensureDafaaSchema(context.env.DB);
   assertSameOrigin(context.request, context.env);
   const method = context.request.method;
   const path = routePath(context.request);
@@ -319,6 +318,7 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'auth/login') return login(context);
   if (method === 'GET' && path === 'auth/session') return session(context);
   if (method === 'POST' && path === 'auth/logout') return logout(context);
+  await ensureDafaaSchema(context.env.DB);
   const dafaaResponse = await dispatchDafaaRoute(context, method, path);
   if (dafaaResponse) return dafaaResponse;
   const user = await actorFor(context.env.DB, await requireUser(context), context.env);

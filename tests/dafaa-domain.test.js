@@ -23,4 +23,13 @@ for (const file of ['dafaa-context.js','dafaa-ui.js','functions/_lib/dafat.mjs',
   const value = fs.readFileSync(file,'utf8').replace(/OpenCourseWare/g,'').replace(/https?:[/][/][^\s]+/g,'');
   assert.ok(!/\bcourse(s)?\b/i.test(value), file + ' still contains active Course/Courses terminology');
 }
+const routerSource = fs.readFileSync('functions/api/v1/[[path]].js','utf8');
+const dispatchOffset = routerSource.indexOf('async function dispatch(context)');
+const authOffset = routerSource.indexOf("path === 'auth/signup'", dispatchOffset);
+const migrateOffset = routerSource.indexOf('await ensureDafaaSchema(context.env.DB)', dispatchOffset);
+assert.ok(dispatchOffset >= 0 && authOffset > dispatchOffset && migrateOffset > authOffset, 'authentication routes must run before Dafaa schema migration');
+assert.ok(!/ensureAccountProfile[\s\S]{0,180}ensureDafaaSchema/.test(backend), 'account profile hydration must not depend on Dafaa migration');
+assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS dafat') && schema.includes('CREATE TABLE IF NOT EXISTS dafaa_memberships'), 'Dafaa schema bootstrap must support databases without the legacy Course migration');
+assert.ok(schema.includes('ALTER TABLE files ADD COLUMN dafaa_id'), 'files must gain dafaa_id when the legacy course_id column never existed');
+
 console.log('Dafaa domain rename regression tests passed');
