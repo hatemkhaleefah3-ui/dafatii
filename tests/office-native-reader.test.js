@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const client = fs.readFileSync('file-client.js', 'utf8');
 const viewer = fs.readFileSync('office-viewer.js', 'utf8');
 const headers = fs.readFileSync('_headers', 'utf8');
+const index = fs.readFileSync('index.html', 'utf8');
 
 for (const mime of [
   'application/msword',
@@ -22,5 +23,13 @@ assert.match(viewer, /new File\(\[buffer\],\s*title/, 'the native reader must pa
 assert.match(viewer, /@file-viewer\/web-full@\$\{RUNTIME_VERSION\}/, 'the browser-native Office runtime must be version-pinned');
 assert.match(headers, /script-src[^\n]*'wasm-unsafe-eval'[^\n]*https:\/\/cdn\.jsdelivr\.net/, 'CSP must allow the native PPT WASM runtime');
 assert.match(headers, /connect-src[^\n]*https:\/\/cdn\.jsdelivr\.net/, 'CSP must allow lazy native reader assets');
+
+assert.match(viewer, /Promise\.all\(\[loadRuntime\(\),\s*filePromise\]\)/, 'runtime loading and original-file download must run in parallel');
+assert.match(viewer, /Downloading document…/, 'the reader must expose download progress instead of an indefinite preparing state');
+assert.match(viewer, /originalFileCache/, 'recent original files must be cached in memory for fast reopen');
+assert.match(viewer, /pptModuleUrl:[\s\S]*pptWorkerUrl:[\s\S]*pptWasmUrl:[\s\S]*pptFontUrl:/, 'legacy PPT must use explicit native engine asset URLs');
+assert.match(viewer, /modulepreload[\s\S]*vendor\/ppt/, 'legacy PPT engine assets must be warmed before rendering');
+assert.match(index, /preconnect" href="https:\/\/cdn\.jsdelivr\.net"/, 'the document runtime CDN must be preconnected');
+assert.match(index, /office-viewer\.js\?v=20260917-3/, 'the optimized Office reader must be cache-busted');
 
 console.log('office native reader boundary checks passed');
