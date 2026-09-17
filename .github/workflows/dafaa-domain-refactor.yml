@@ -6,6 +6,7 @@ on:
       - refactor/dafaa-domain-rename
     paths:
       - .github/workflows/dafaa-domain-refactor.yml
+      - scripts/**
 
 permissions:
   contents: write
