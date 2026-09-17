@@ -166,7 +166,7 @@
   function openStudentAccess(user){
     const close=overlay(tx('Account access','إدارة الحساب'),`<form id="admin-student-access-form">
       <div class="admin-account-summary"><strong>${esc(user.displayName)}</strong><span>${esc(user.email)}</span><small>${esc(tx('Passwords and PINs remain secret.','كلمات المرور وPIN تبقى سرية.'))}</small></div>
-      <div class="suite-form-grid"><div class="field"><label>${esc(tx('Student stage','مرحلة الطالب'))}</label><select name="studentStage"><option value="school" ${user.studentStage==='school'?'selected':''}>${esc(tx('School','مدرسة'))}</option><option value="university" ${user.studentStage==='university'?'selected':''}>${esc(tx('Higher education','تعليم عالٍ'))}</option><option value="independent" ${user.studentStage==='independent'?'selected':''}>${esc(tx('Independent','مستقل'))}</option></select></div><div class="field"><label>${esc(tx('Account status','حالة الحساب'))}</label><select name="status"><option value="active" ${user.status==='active'?'selected':''}>${esc(tx('Active','نشط'))}</option><option value="disabled" ${user.status==='disabled'?'selected':''}>${esc(tx('Disabled','معطل'))}</option><option value="deleted" ${user.status==='deleted'?'selected':''}>${esc(tx('Deleted','محذوف'))}</option></select></div></div>
+      <div class="admin-account-stage"><span>${esc(tx('Academic track','المسار الدراسي'))}</span><strong>${esc(user.studentStage)}</strong></div><div class="field"><label>${esc(tx('Account status','حالة الحساب'))}</label><select name="status"><option value="active" ${user.status==='active'?'selected':''}>${esc(tx('Active','نشط'))}</option><option value="disabled" ${user.status==='disabled'?'selected':''}>${esc(tx('Disabled','معطل'))}</option><option value="deleted" ${user.status==='deleted'?'selected':''}>${esc(tx('Deleted','محذوف'))}</option></select></div>
       <div class="field"><label>${esc(tx('Platform role','دور المنصة'))}</label><select name="platformRole"><option value="student" ${user.platformRole==='student'?'selected':''}>${esc(tx('Standard','عادي'))}</option><option value="admin" ${user.platformRole==='admin'?'selected':''}>${esc(tx('Administrator','مشرف'))}</option></select></div>
       <button class="btn btn-primary auth-submit">${esc(tx('Save account access','حفظ وصول الحساب'))}</button><p class="auth-note" id="admin-student-access-status"></p>
     </form>`);
@@ -200,7 +200,8 @@
       try{
         const result=await window.DafatiiApi.request('/admin/users',{method:'POST',body:Object.fromEntries(new FormData(e.currentTarget))});
         status.innerHTML=`${esc(tx('Created. Student ID:','تم الإنشاء. رقم الطالب:'))} <strong>${esc(result.studentId)}</strong> · PIN <strong>${esc(result.initialPin)}</strong>. ${esc(tx('Save these once, then close.','احفظ هذه البيانات الآن ثم أغلق النافذة.'))}`;
-        data.loaded=false;await load(true);
+        e.currentTarget.querySelector('button[type="submit"]').disabled=true;
+        data.loaded=false;
       }catch(error){status.textContent=error.message;}
     };
   }
