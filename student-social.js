@@ -499,4 +499,9 @@
     root.innerHTML=`<div class="entity-sheet-overlay" id="chat-new-overlay"><section class="entity-sheet chat-maker-sheet"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Chat</div><h2>${title}</h2></div><button class="icon-btn" id="chat-new-close">×</button></div><form id="chat-new-form"><div class="field"><label>${label}</label><input id="chat-new-name" maxlength="60" required placeholder="${kind==='group'?'e.g. Organic Chem Crew':kind==='unknown'?'e.g. Lecture notes':'e.g. Sara'}"></div>${kind==='unknown'?'<p class="sr-sheet-help">A random anonymous alias is shown to both sides. Your profile name is not displayed in the thread.</p>':''}<button class="btn btn-primary entity-submit">${kind==='group'?'Create group':'Start chat'}</button></form></section></div>`;
     const close=()=>{root.innerHTML='';};document.getElementById('chat-new-close').onclick=close;document.getElementById('chat-new-overlay').onclick=e=>{if(e.target.id==='chat-new-overlay')close();};document.getElementById('chat-new-form').onsubmit=e=>{e.preventDefault();const name=document.getElementById('chat-new-name').value.trim();if(!name)return;const value=chatState();const id=uid(kind);const display=kind==='unknown'?`Unknown #${Math.floor(1000+Math.random()*9000)}`:name;value.conversations.unshift({id,kind,name:display,topic:kind==='unknown'?name:'',avatar:kind==='group'?'◎':kind==='unknown'?'?':name[0].toUpperCase(),status:kind==='group'?'1 member · you':kind==='unknown'?'anonymous relay':'new chat',messages:[]});value.selected[kind]=id;saveChatState(value);close();render();};
   }
+  window.DafatiiStudyRooms = Object.freeze({
+    view: parts => studyRoomsView(parts),
+    bind: () => bindStudyRooms()
+  });
+
 })();
