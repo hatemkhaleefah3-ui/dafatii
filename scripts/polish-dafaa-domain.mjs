@@ -18,7 +18,7 @@ function walk(dir='.'){
 
 // Personal Dafaa navigation is canonically "Dafati" everywhere.
 for(const file of walk().filter(file=>/\.(?:js|mjs|css|html|md|json)$/.test(file))){
-  let value=read(file);
+  const value=read(file);
   const next=value.replaceAll('change-dafaa','dafati');
   if(next!==value)write(file,next);
 }
@@ -54,7 +54,6 @@ replacements('app.js',[
   ["openDafat:'Open dafat'","openDafat:'Open Dafati'"],
   ["proofOne:'One workspace for every dafaa'","proofOne:'One workspace for every Dafaa'"],
   ["dafaa administration together","Dafaa administration together"],
-  ["LABELS = {","LABELS = {"],
   ["'dafati': 'Change Dafaa'","dafati: 'Dafati'"],
   ["settingAction('dafati','Change Dafaa')","settingAction('dafati','Dafati')"],
   ["sideAction('dafati','Change Dafaa')","sideAction('dafati','Dafati')"]
@@ -78,13 +77,24 @@ replacements('study-structure.js',[
 let index=read('index.html');
 const assets=[
  'academic.js','advanced-chat.js','app.js','calendar-entry-tools.js','calendar.js','dafaa-context.js','dafaa-ui.js','file-client.js','icon-system.js','leader-schedule.js','lecture-media.js','material-files.js','quiet-shell.js','role-panels.js','school-teacher-flow.js','student-social.js','student-suite-grade-fix.js','student-suite.js','study-room-workspace.js','study-structure.js','translation-client-v5.js','viewer-workspace.js',
- 'dafaa-ui.css','pre-dafaa.css','premium-theme.css','quiet-design.css','readonly.css','role-panels.css','school-teacher-flow.css','student-suite.css'
+ 'dafaa-ui.css','pre-dafaa.css','quiet-design.css','readonly.css','role-panels.css','school-teacher-flow.css','student-suite.css'
 ];
 for(const asset of assets){
   const escaped=asset.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   index=index.replace(new RegExp(`${escaped}(?:\\?v=[^"']+)?`,'g'),`${asset}?v=20260917-dafaa1`);
 }
 write('index.html',index);
+
+// These are deliberate cache-boundary assertions, so move them with the assets.
+replacements('tests/static-boundary.test.js',[
+  ["quiet-design\\.css\\?v=24","quiet-design\\.css\\?v=20260917-dafaa1"],
+  ["icon-system\\.js\\?v=3","icon-system\\.js\\?v=20260917-dafaa1"],
+  ["quiet-shell\\.js\\?v=11","quiet-shell\\.js\\?v=20260917-dafaa1"],
+  ["app\\.js\\?v=20260915-3","app\\.js\\?v=20260917-dafaa1"],
+  ["calendar\\.js\\?v=20260915-4","calendar\\.js\\?v=20260917-dafaa1"],
+  ["role-panels\\.js\\?v=20260915-2","role-panels\\.js\\?v=20260917-dafaa1"],
+  ["role-panels\\.css\\?v=20260915-2","role-panels\\.css\\?v=20260917-dafaa1"]
+]);
 
 const test=`const fs=require('node:fs');const assert=require('node:assert/strict');\nconst files=['app.js','quiet-shell.js','dafaa-ui.js','icon-system.js'];\nfor(const file of files){const text=fs.readFileSync(file,'utf8');assert.ok(!text.includes('change-dafaa'),file+' retains old personal route');}\nconst app=fs.readFileSync('app.js','utf8');assert.ok(app.includes('Dafati'), 'app must expose Dafati');\nconst ui=fs.readFileSync('dafaa-ui.js','utf8');assert.ok(ui.includes("LABELS.dafati='Dafati'"));assert.ok(ui.includes('Create a Dafaa'));assert.ok(ui.includes('Discover Dafat'));\nconst structure=fs.readFileSync('study-structure.js','utf8');assert.ok(structure.includes("dafat:{singular:'Dafaa',plural:'Dafat',arSingular:'الدفعة',arPlural:'الدفعات'}"));\nconst index=fs.readFileSync('index.html','utf8');assert.ok(index.includes('dafaa-context.js?v=20260917-dafaa1'));assert.ok(index.includes('app.js?v=20260917-dafaa1'));\nconsole.log('dafaa terminology polish tests passed');\n`;
 write('tests/dafaa-terminology.test.js',test);
