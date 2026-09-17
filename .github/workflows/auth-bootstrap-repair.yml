@@ -20,7 +20,9 @@ jobs:
         with:
           node-version: 22
       - name: Apply auth bootstrap repair
-        run: node scripts/fix-auth-dafaa-bootstrap.mjs
+        run: |
+          node scripts/fix-auth-dafaa-bootstrap.mjs
+          node scripts/postpatch-auth-repair.mjs
       - name: Verify repository
         run: |
           npm test
