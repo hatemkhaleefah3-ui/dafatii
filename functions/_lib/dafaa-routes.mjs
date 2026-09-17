@@ -89,10 +89,22 @@ async function createDafaa(context, currentActor) {
     (dafaa_id, user_id, role, status, can_add_content, can_edit_content, can_remove_content, can_manage_students, can_review_applications, can_manage_representers, can_manage_settings, invited_by, joined_at, created_at, updated_at)
     VALUES (?, ?, 'owner', 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(dafaaId, owner.id, ...PERMISSIONS.map(permission => permissions[permission]), currentActor.id, now, now, now);
   await context.env.DB.batch([insertDafaa, insertOwner]);
-  await audit(context.env.DB, currentActor.id, 'dafaa.created', { dafaaId, targetUserId: owner.id, metadata: { pricing: value.pricing, visibility: value.visibility, joinPolicy: value.joinPolicy } });
-  const row = await context.env.DB.prepare(`${DAFAA_SELECT} WHERE c.id = ?`).bind(currentActor.id, dafaaId).first();
+  try {
+    await audit(context.env.DB, currentActor.id, 'dafaa.created', { dafaaId, targetUserId: owner.id, metadata: { pricing: value.pricing, visibility: value.visibility, joinPolicy: value.joinPolicy } });
+  } catch (error) {
+    logEvent('warn', 'dafaa.audit_failed', { userId: currentActor.id, dafaaId, name: error?.name || 'Error' });
+  }
+  const created = {
+    id: dafaaId, enrollmentCode: code, name: value.name, description: value.description,
+    institution: value.institution, stage: value.stage, status: 'active', pricing: value.pricing,
+    priceMinor: value.priceMinor, currency: value.currency, visibility: value.visibility,
+    joinPolicy: value.joinPolicy, hasAccessCode: Boolean(codeHash), ownerUserId: owner.id,
+    memberCount: 1, applicationCount: 0,
+    membership: { userId: owner.id, role: 'owner', status: 'active', permissions: Object.fromEntries(PERMISSIONS.map(permission => [permission.replace(/^can_/, ''), true])), applicationNote: '', joinedAt: now, updatedAt: now },
+    createdAt: now, updatedAt: now
+  };
   logEvent('info', 'dafaa.created', { userId: currentActor.id, dafaaId });
-  return ok({ dafaa: dafaaDto(row) }, 201);
+  return ok({ dafaa: created }, 201);
 }
 
 async function updateDafaa(context, currentActor, dafaaId) {

@@ -32,5 +32,7 @@ vm.runInContext(source,context);
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.some(([path,options])=>path.endsWith('/content')&&options.method==='PUT'),true);
   assert.equal(events.some(event=>event.type==='dafatii:dafatloaded'),true);
+  assert.ok(source.includes('dafatii:dafaainitwarning'), 'post-create template initialization failures must be non-fatal');
+assert.ok(source.includes('return result.dafaa'), 'successful dafaa creation must return even when initialization warns');
   console.log('dafaa context tests passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

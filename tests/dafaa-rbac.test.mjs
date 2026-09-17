@@ -26,4 +26,6 @@ const routes=readFileSync(new URL('../functions/_lib/dafaa-routes.mjs',import.me
 assert.match(routes,/requirePermission/);
 assert.match(routes,/assertContentPermissions/);
 assert.match(routes,/SELF_LOCKOUT_REJECTED/);
+assert.ok(routes.includes('dafaa.audit_failed'), 'dafaa creation audit must not turn a committed creation into a 500');
+assert.ok(routes.includes('return ok({ dafaa: created }, 201)'), 'dafaa creation must return committed owner data directly');
 console.log('dafaa RBAC tests passed');
