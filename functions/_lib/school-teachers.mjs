@@ -67,6 +67,14 @@ export async function ensureSchoolTeacherSchema(db) {
     updated_at INTEGER NOT NULL,
     PRIMARY KEY (student_user_id, subject)
   )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS school_teacher_profiles (
+    teacher_user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL DEFAULT '',
+    content_json TEXT NOT NULL DEFAULT '{"subjects":[]}',
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`).run();
   await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_assignments_match_idx ON school_teacher_assignments(subject, academic_level, academic_stage, academic_field, status, fame_score DESC)').run();
   await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_selections_teacher_idx ON school_teacher_selections(teacher_user_id, subject)').run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert
@@ -134,22 +142,34 @@ function legacyMatchesSubject(name, subject) {
 
 async function formalCandidates(db, identity, subject) {
   const result = await db.prepare(`SELECT a.teacher_user_id, u.display_name, a.fame_score,
+      COALESCE(p.image_url, '') AS image_url, COALESCE(p.content_json, '{"subjects":[]}') AS content_json,
       (SELECT COUNT(*) FROM school_teacher_selections s WHERE s.teacher_user_id = a.teacher_user_id AND s.subject = a.subject) AS selection_count
     FROM school_teacher_assignments a
     JOIN users u ON u.id = a.teacher_user_id AND u.status = 'active'
+    LEFT JOIN school_teacher_profiles p ON p.teacher_user_id = a.teacher_user_id AND p.status = 'active'
     WHERE a.status = 'active' AND a.subject = ?
       AND (a.academic_level IS NULL OR a.academic_level = ?)
       AND (a.academic_stage IS NULL OR a.academic_stage = ?)
       AND (a.academic_field IS NULL OR a.academic_field = ?)
     ORDER BY a.fame_score DESC, selection_count DESC, u.display_name COLLATE NOCASE ASC`)
     .bind(subject, identity.academicLevel, identity.academicStage, identity.academicField || '').all();
-  return (result.results || []).map(row => ({
-    id:row.teacher_user_id,
-    displayName:row.display_name,
-    fameScore:Number(row.fame_score || 0),
-    selectionCount:Number(row.selection_count || 0),
-    source:'directory'
-  }));
+  return (result.results || []).map(row => {
+    let chapters = [];
+    try {
+      const profile = JSON.parse(row.content_json || '{"subjects":[]}');
+      const item = Array.isArray(profile?.subjects) ? profile.subjects.find(entry => entry?.id === subject) : null;
+      chapters = Array.isArray(item?.chapters) ? item.chapters : [];
+    } catch {}
+    return {
+      id:row.teacher_user_id,
+      displayName:row.display_name,
+      imageUrl:row.image_url || '',
+      chapters,
+      fameScore:Number(row.fame_score || 0),
+      selectionCount:Number(row.selection_count || 0),
+      source:'directory'
+    };
+  });
 }
 
 async function legacyCandidates(db, subject) {
