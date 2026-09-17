@@ -32,5 +32,10 @@ assert.ok(!/ensureAccountProfile[\s\S]{0,180}ensureDafaaSchema/.test(backend), '
 assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS dafat') && schema.includes('CREATE TABLE IF NOT EXISTS dafaa_memberships'), 'Dafaa schema bootstrap must support databases without the legacy Course migration');
 assert.ok(schema.includes('ALTER TABLE files ADD COLUMN dafaa_id'), 'files must gain dafaa_id when the legacy course_id column never existed');
 assert.ok(schema.includes('DELETE FROM records AS legacy') && schema.indexOf('DELETE FROM records AS legacy') < schema.indexOf("UPDATE records SET record_key = 'dafatii:dafat:v1'"), 'duplicate legacy catalog rows must be removed before renaming the legacy key');
+assert.ok(schema.includes('PRAGMA foreign_key_list') && schema.includes('repairDafaaForeignKeys'), 'mixed-schema foreign keys must be inspected and repaired');
+assert.ok(schema.includes('CREATE TABLE dafaa_memberships_repaired') && schema.includes('REFERENCES dafat(id) ON DELETE CASCADE'), 'membership repair must point dafaa_id at dafat');
+assert.ok(schema.includes('INSERT OR IGNORE INTO dafat') && schema.includes('FROM courses c'), 'legacy Dafaa rows must be merged before repairing child foreign keys');
+assert.ok(schema.includes('CREATE TABLE dafaa_content_records_repaired') && schema.includes('CREATE TABLE dafaa_content_mutations_repaired'), 'Dafaa content tables must repair legacy parent references');
+assert.ok(schema.includes('CREATE TABLE files_dafaa_repaired') && schema.includes('CREATE INDEX IF NOT EXISTS files_owner_status_idx'), 'file ownership must survive foreign-key repair');
 
 console.log('Dafaa domain rename regression tests passed');
