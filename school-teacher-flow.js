@@ -15,6 +15,7 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const route = () => location.hash.replace(/^#\/?/,'').split('/')[0] || 'landing';
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
+  const teacherRoute = value => value === 'dashboard' || value === 'change-course';
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
   const avatar = name => esc(String(name || 'T').trim().slice(0,1).toUpperCase() || 'T');
 
@@ -92,9 +93,8 @@
   async function render(force=false){
     if(!school())return;
     const current=route();
-    if(!ALLOWED.has(current))return;
+    if(!ALLOWED.has(current) || !teacherRoute(current))return;
     renameNav();
-    if(!['dashboard','change-course'].includes(current))return;
     const main=document.querySelector('.workspace-main'); if(!main)return;
     if(!force && catalog && main.dataset.schoolTeacherRoute===current && main.querySelector('[data-school-teacher-view]'))return;
     main.dataset.schoolTeacherRoute=current;
@@ -104,13 +104,21 @@
 
   function enhance(){
     scheduled=false;
-    const active=school(); document.documentElement.toggleAttribute('data-school-student',active);
+    const active=school();
+    document.documentElement.toggleAttribute('data-school-student',active);
     if(!active){catalog=null;return;}
-    renameNav(); void render(false);
+    if(!teacherRoute(route()))return;
+    renameNav();
+    void render(false);
   }
   function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(enhance);}
 
-  new MutationObserver(schedule).observe(document.getElementById('app')||document.documentElement,{childList:true,subtree:true});
+  const appRoot=document.getElementById('app');
+  if(appRoot){
+    new MutationObserver(()=>{
+      if(school() && teacherRoute(route())) schedule();
+    }).observe(appRoot,{childList:true});
+  }
   window.addEventListener('hashchange',schedule);
   window.addEventListener('dafatii:auth:changed',()=>{catalog=null;refreshedFor='';schedule();});
   window.addEventListener('dafatii:coursesloaded',schedule);
