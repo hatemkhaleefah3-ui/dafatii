@@ -21,7 +21,8 @@ assert.ok(admin.includes('data-student-access') && admin.includes('data-student-
 assert.ok(admin.includes('data-teacher-status') && admin.includes('data-teacher-delete'), 'teachers need distinct remove/restore and permanent delete controls');
 assert.ok(backend.includes("status TEXT NOT NULL DEFAULT 'active'") && backend.includes("['active','removed']"), 'teacher removal must preserve the profile as an unpublished state');
 assert.ok(admin.includes("id=\"admin-add-student\"") && backend.includes("path==='admin/users'") && backend.includes("method==='POST'"), 'admins need a real add-student path');
-assert.ok(admin.includes("e.currentTarget.querySelector('button[type=\"submit\"]').disabled=true") && !admin.includes("data.loaded=false;await load(true);"), 'one-time Student ID/PIN must remain visible after admin account creation');
+const addStudentFlow = admin.slice(admin.indexOf('function openAddStudent'), admin.indexOf('function emptyTeacherDraft'));
+assert.ok(addStudentFlow.includes("e.currentTarget.querySelector('button[type=\"submit\"]').disabled=true") && addStudentFlow.includes('data.loaded=false;') && !addStudentFlow.includes('await load(true)'), 'one-time Student ID/PIN must remain visible after admin account creation');
 assert.ok(admin.includes('Passwords and PINs remain secret') || admin.includes('كلمات المرور وPIN تبقى سرية'), 'Admin Console must not expose reusable credentials');
 
 for (const marker of ['school_teacher_profiles','content_json','subjects','chapters','lectures','image_url']) {
