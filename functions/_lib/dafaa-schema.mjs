@@ -101,6 +101,16 @@ export async function ensureDafaaSchema(db) {
     BEGIN SELECT RAISE(ABORT, 'SCHOOL_DAFAT_REPLACED_BY_TEACHERS'); END;
   `);
 
+  // A user can legitimately have both the old and new catalog records after a
+  // mixed-version deployment. Updating the legacy key directly would violate
+  // records(user_id, record_key)'s primary key and make every Dafaa request fail.
+  // Prefer the already-canonical record, remove only the duplicate legacy row,
+  // then rename any remaining legacy rows. This sequence is idempotent.
+  await db.prepare(`DELETE FROM records AS legacy
+    WHERE legacy.record_key = 'dafatii:courses:v1'
+      AND EXISTS (SELECT 1 FROM records AS canonical
+        WHERE canonical.user_id = legacy.user_id
+          AND canonical.record_key = 'dafatii:dafat:v1')`).run();
   await db.prepare("UPDATE records SET record_key = 'dafatii:dafat:v1' WHERE record_key = 'dafatii:courses:v1'").run();
   await db.prepare("UPDATE record_mutations SET record_key = 'dafatii:dafat:v1' WHERE record_key = 'dafatii:courses:v1'").run();
   if (await tableExists(db, 'dafaa_audit_log')) {
