@@ -6,7 +6,7 @@
     chapters:{singular:'Chapter',plural:'Chapters',arSingular:'الفصل',arPlural:'الفصول'},
     systems:{singular:'System',plural:'Systems',arSingular:'النظام',arPlural:'الأنظمة'},
     blocks:{singular:'Block',plural:'Blocks',arSingular:'البلوك',arPlural:'البلوكات'},
-    dafat:{singular:'Dafaa',plural:'Dafat',arSingular:'الكورس',arPlural:'الكورسات'}
+    dafat:{singular:'Dafaa',plural:'Dafat',arSingular:'الدفعة',arPlural:'الدفعات'}
   });
   const SCHOOL_LEVELS = new Set(['primary_school','middle_school','preparatory_school']);
   let higherStudyType = '';

@@ -80,7 +80,7 @@
     if(page==='calendar'&&sub==='deadlines')return deadlinesView();
     if(page==='settings')return settingsView();
     if(page==='profile')return profileView();
-    if(page==='change-dafaa')return dafaaView();
+    if(page==='dafati')return dafaaView();
     if(page==='change-language')return languageView();
     if(page==='apply-work')return workView();
     if(page==='apply-scholarship')return scholarshipView();
@@ -103,7 +103,7 @@
     if(page==='calendar'&&sub==='deadlines')bindDeadlines();
     if(page==='settings')bindSettings();
     if(page==='profile')bindProfile();
-    if(page==='change-dafaa')bindDafaa();
+    if(page==='dafati')bindDafaa();
     if(page==='change-language')bindLanguage();
     if(page==='apply-work')bindWork();
     if(page==='apply-scholarship')bindScholarships();
@@ -209,7 +209,7 @@
 
   function dafaaView(){const v=suite(),p=v.profile;return `<section class="suite-page">${pageHead('Settings · Dafaa','Dafaa setup','Update your academic direction and optionally seed a useful starter subject set.',`<button class="btn btn-primary" id="suite-dafaa-edit">Edit dafaa details</button>`)}<div class="suite-dafaa-hero"><div><span class="eyebrow">Current dafaa</span><h2>${esc(p.dafaa||'General studies')}</h2><p>${esc(p.school||'No institution set')}${p.semester?` · ${esc(p.semester)}`:''}</p></div><div><strong>${subjects().length}</strong><span>active subjects</span></div></div><div class="suite-template-grid">${Object.entries(DAFAA_TEMPLATES).map(([name,list])=>`<article class="suite-template-card"><span>◇</span><h2>${esc(name)}</h2><p>${esc(list.join(' · '))}</p><button class="btn btn-ghost" data-dafaa-template="${esc(name)}">Add subject template</button></article>`).join('')}</div><p class="suite-privacy-note">Templates only add missing subjects. They never delete your existing subjects, lectures, calendar entries, or grades.</p></section>`;}
   function bindDafaa(){document.getElementById('suite-dafaa-edit')?.addEventListener('click',openProfileSheet);document.querySelectorAll('[data-dafaa-template]').forEach(b=>b.onclick=()=>applyDafaaTemplate(b.dataset.dafaaTemplate));}
-  function applyDafaaTemplate(name){const list=DAFAA_TEMPLATES[name];if(!list)return;const existing=new Set(subjects().map(s=>s.name.toLowerCase()));const additions=list.filter(n=>!existing.has(n.toLowerCase())).map(n=>({id:uid('subject'),name:n,icon:'◇'}));if(!additions.length){showToast('All template subjects are already present.');return;}if(!confirm(`Add ${additions.length} missing subjects from the ${name} template?`))return;state.subjects.push(...additions);saveSubjects();const v=suite();v.profile.dafaa=name;logActivity(v,'dafaa',`Applied ${name} subject template`,'change-dafaa');saveSuite(v);render();}
+  function applyDafaaTemplate(name){const list=DAFAA_TEMPLATES[name];if(!list)return;const existing=new Set(subjects().map(s=>s.name.toLowerCase()));const additions=list.filter(n=>!existing.has(n.toLowerCase())).map(n=>({id:uid('subject'),name:n,icon:'◇'}));if(!additions.length){showToast('All template subjects are already present.');return;}if(!confirm(`Add ${additions.length} missing subjects from the ${name} template?`))return;state.subjects.push(...additions);saveSubjects();const v=suite();v.profile.dafaa=name;logActivity(v,'dafaa',`Applied ${name} subject template`,'dafati');saveSuite(v);render();}
 
   function languageView(){const v=suite(),p=v.profile;const langs=['English','Arabic','Kurdish','French','Spanish','German','Turkish'];return `<section class="suite-page">${pageHead('Settings · Language','Language preferences','Choose the language you study in and the interface reading direction you prefer.')}<div class="suite-language-grid"><article class="suite-panel"><div class="suite-panel-head"><div><span class="eyebrow">Study content</span><h2>Primary study language</h2></div></div><p class="muted">Used as a profile preference for notes, study rooms and future content recommendations.</p><div class="suite-language-options">${langs.map(l=>`<button data-study-language="${esc(l)}" class="${p.studyLanguage===l?'active':''}">${esc(l)}</button>`).join('')}</div></article><article class="suite-panel"><div class="suite-panel-head"><div><span class="eyebrow">Interface</span><h2>Reading direction</h2></div></div><p class="muted">Dafatii’s current interface copy is English. You can still switch page direction for Arabic/Kurdish study workflows without pretending the full product has been translated.</p><div class="suite-segment wide"><button data-direction="ltr" class="${document.documentElement.dir!=='rtl'?'active':''}">Left → right</button><button data-direction="rtl" class="${document.documentElement.dir==='rtl'?'active':''}">Right → left</button></div></article></div></section>`;}
   function bindLanguage(){document.querySelectorAll('[data-study-language]').forEach(b=>b.onclick=()=>{const v=suite();v.profile.studyLanguage=b.dataset.studyLanguage;saveSuite(v);render();});document.querySelectorAll('[data-direction]').forEach(b=>b.onclick=()=>{document.documentElement.dir=b.dataset.direction;window.DafatiiData.writeString('dafatii:direction',b.dataset.direction);render();});}

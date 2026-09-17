@@ -19,6 +19,6 @@ assert.ok(js.includes('if (!validIds.has(lecture.studyUnitId)) lecture.studyUnit
 assert.ok(js.includes('authFormObserver.observe(form,{childList:true});'), 'signup observation must stay scoped to direct form changes');
 assert.ok(!js.includes('authFormObserver.observe(form,{childList:true,subtree:true})'), 'signup helper must not broadly observe the form subtree');
 assert.ok(css.includes('.study-unit-card-switcher') && css.includes('.study-unit-editor'), 'study structure styles missing');
-assert.ok(index.includes('study-structure.css?v=20260917-1') && index.includes('study-structure.js?v=20260917-1'), 'study structure assets must be loaded');
+assert.ok(index.includes('study-structure.css?v=20260917-1') && index.includes('study-structure.js?v=20260917-dafaa1'), 'study structure assets must be loaded');
 
 console.log('study structure regression tests passed');

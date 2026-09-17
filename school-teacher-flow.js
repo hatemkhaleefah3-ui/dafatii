@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const ALLOWED = new Set(['dashboard','change-dafaa','profile','settings']);
+  const ALLOWED = new Set(['dashboard','dafati','profile','settings']);
   const SUBJECTS = ['arabic','english','math','chemistry','physics','biology','islamic_book'];
   let catalog = null, loading = null, step = 0, saving = false, refreshedFor = '', scheduled = false;
 
@@ -15,13 +15,13 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const route = () => location.hash.replace(/^#\/?/,'').split('/')[0] || 'landing';
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
-  const teacherRoute = value => value === 'dashboard' || value === 'change-dafaa';
+  const teacherRoute = value => value === 'dashboard' || value === 'dafati';
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
   const avatar = name => esc(String(name || 'T').trim().slice(0,1).toUpperCase() || 'T');
 
   function renameNav(){
     const label = t('teachers');
-    document.querySelectorAll('[data-pre-dafaa-route="change-dafaa"]').forEach(button => {
+    document.querySelectorAll('[data-pre-dafaa-route="dafati"]').forEach(button => {
       if (button.dataset.schoolTeacherLabel === label) return;
       button.dataset.schoolTeacherLabel = label;
       const icon = window.DafatiiIcons?.icon?.('subjects') || '';
@@ -77,7 +77,7 @@
 
   function bind(main){
     main.querySelector('[data-school-retry]')?.addEventListener('click',()=>{catalog=null; void render(true);});
-    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='change-dafaa';});
+    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='dafati';});
     main.querySelectorAll('[data-school-step]').forEach(button=>button.addEventListener('click',()=>{step=Number(button.dataset.schoolStep)||0; void render(true);}));
     main.querySelector('[data-school-previous]')?.addEventListener('click',()=>{step=Math.max(0,step-1); void render(true);});
     main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){location.hash='dashboard';return;}step+=1;void render(true);});
@@ -99,7 +99,7 @@
     if(!force && catalog && main.dataset.schoolTeacherRoute===current && main.querySelector('[data-school-teacher-view]'))return;
     main.dataset.schoolTeacherRoute=current;
     if(!catalog||force&&!catalog){main.innerHTML=loadingView();try{await load(Boolean(force&&!catalog));}catch(error){main.innerHTML=errorView(error.message||t('error'));bind(main);return;}if(route()!==current)return;}
-    main.innerHTML=current==='change-dafaa'?pickerView():dashboardView(); bind(main);
+    main.innerHTML=current==='dafati'?pickerView():dashboardView(); bind(main);
   }
 
   function enhance(){
