@@ -41,14 +41,12 @@
   const remove = fileId => window.DafatiiApi.request(`/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', body: {}, idempotent: true });
   async function open(fileId, options = {}) {
     const metadata = await get(fileId);
-    if (String(metadata.contentType || '').startsWith('video/') && window.DafatiiViewerWorkspace) return window.DafatiiViewerWorkspace.openVideo({ fileId, metadata, lecture: options.lecture || null });
-    if (metadata.contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, metadata, options);
-    if (['application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint'].includes(metadata.contentType) && window.DafatiiPdf) {
-      const viewUrl = await getViewUrl(fileId, { preview: true });
-      return window.DafatiiPdf.open(fileId, { ...metadata, contentType: 'application/pdf' }, { ...options, viewUrl });
-    }
-    if (window.DafatiiOffice?.types.includes(metadata.contentType)) return window.DafatiiOffice.open(fileId, metadata, options);
-    return window.DafatiiMedia.open(fileId, metadata, options);
+    const contentType = String(metadata.contentType || '').toLowerCase().split(';')[0].trim();
+    const normalized = { ...metadata, contentType };
+    if (contentType.startsWith('video/') && window.DafatiiViewerWorkspace) return window.DafatiiViewerWorkspace.openVideo({ fileId, metadata:normalized, lecture: options.lecture || null });
+    if (contentType === 'application/pdf' && window.DafatiiPdf) return window.DafatiiPdf.open(fileId, normalized, options);
+    if (window.DafatiiOffice?.types.includes(contentType)) return window.DafatiiOffice.open(fileId, normalized, options);
+    return window.DafatiiMedia.open(fileId, normalized, options);
   }
   window.DafatiiFiles = Object.freeze({ upload, get, list, getViewUrl, delete: remove, open });
 })();
