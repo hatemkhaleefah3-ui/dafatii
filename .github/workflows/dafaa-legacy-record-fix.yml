@@ -1,0 +1,35 @@
+name: Dafaa legacy record fix
+
+on:
+  push:
+    branches:
+      - fix/dafaa-legacy-record-migration
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/dafaa-legacy-record-migration
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Apply repair
+        run: node scripts/apply-dafaa-legacy-record-fix.mjs
+      - name: Verify
+        run: |
+          npm test
+          npm run check
+      - name: Commit runtime repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm scripts/apply-dafaa-legacy-record-fix.mjs .github/workflows/dafaa-legacy-record-fix.yml
+          git add functions/_lib/dafaa-schema.mjs tests/dafaa-domain.test.js
+          git commit -m 'Make Dafaa legacy record migration idempotent'
+          git push origin HEAD:fix/dafaa-legacy-record-migration
