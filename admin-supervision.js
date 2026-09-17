@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  window.DafatiiAdminSupervision=true;
   const esc=value=>escapeHtml(value??'');
   const rtl=()=>document.documentElement.dir==='rtl'||document.documentElement.lang==='ar';
   const copy=()=>rtl()?{

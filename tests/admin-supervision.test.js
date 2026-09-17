@@ -20,4 +20,6 @@ assert.ok(auth.includes('prepareAcademicProfileInsert')&&!auth.includes("student
 assert.ok(profile.includes('CREATE TABLE IF NOT EXISTS student_academic_profiles')&&!profile.includes('ensureSchoolTeacherSchema'),'academic profile persistence must remain independent from Dafaa/school schema bootstrap');
 assert.ok(ui.includes('admin-filter-form')&&ui.includes("['students','dafat','teachers']"),'admin supervision UI tabs/filters missing');
 assert.ok(index.includes('admin-supervision.css')&&index.includes('admin-supervision.js'),'admin supervision assets must be loaded');
+const roles=fs.readFileSync('role-panels.js','utf8');
+assert.ok(ui.includes('DafatiiAdminSupervision')&&roles.includes("page==='admin'&&!window.DafatiiAdminSupervision"),'legacy admin loader must not race the supervision page');
 console.log('admin supervision regression tests passed');
