@@ -35,9 +35,9 @@ assert.ok(server.includes('academic_level = ?') && server.includes('academic_sta
 assert.ok(server.includes('school_teacher_selections') && server.includes('PRIMARY KEY (student_user_id, subject)'), 'one teacher selection per subject must be enforced');
 assert.ok(schoolRoute.includes("method === 'GET' && path === 'teachers'") && schoolRoute.includes("method === 'PUT'"), 'teacher catalog/select API routes missing');
 
-assert.ok(signupProfile.includes('student_academic_profiles') && signupProfile.includes('prepareSchoolAcademicProfileInsert'), 'school signup must prepare its academic profile directly');
-assert.ok(auth.includes("studentStage === 'school'") && auth.includes('prepareSchoolAcademicProfileInsert'), 'school signup must persist academic identity before the first teacher-directory request');
-assert.ok(auth.includes('academicProfileInsert ? [academicProfileInsert]'), 'school academic identity must be part of the signup transaction');
+assert.ok(signupProfile.includes('student_academic_profiles') && signupProfile.includes('prepareAcademicProfileInsert'), 'signup must prepare academic identity directly');
+assert.ok(auth.includes('prepareAcademicProfileInsert') && !auth.includes("studentStage === 'school' ? await prepare"), 'school signup must persist academic identity before the first teacher-directory request');
+assert.ok(auth.includes('academicProfileInsert ? [academicProfileInsert]'), 'academic identity must be part of the signup transaction');
 
 assert.ok(gate.includes("mode:'school-teachers'") && gate.includes('SCHOOL_DAFAT_DISABLED'), 'school accounts must be routed away from dafat');
 assert.ok(gate.includes("input?.stage === 'school'"), 'new school-stage dafat must be blocked');
