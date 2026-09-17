@@ -114,7 +114,7 @@ async function createTeacher(context){
   const content=normalizeTeacherContent(input);
   const now=Date.now();
   await context.env.DB.prepare('UPDATE users SET display_name = ?, updated_at = ? WHERE id = ?').bind(displayName,now,user.id).run();
-  await context.env.DB.prepare('INSERT INTO school_teacher_profiles (teacher_user_id,image_url,content_json,status,created_at,updated_at) VALUES (?,?,?,'active',?,?)')
+  await context.env.DB.prepare("INSERT INTO school_teacher_profiles (teacher_user_id,image_url,content_json,status,created_at,updated_at) VALUES (?,?,?,'active',?,?)")
     .bind(user.id,imageUrl,JSON.stringify(content),now,now).run();
   await syncAssignments(context.env.DB,user.id,content,now);
   const row=await context.env.DB.prepare(`SELECT p.teacher_user_id,p.image_url,p.content_json,p.status,p.updated_at,u.email_normalized,u.display_name
