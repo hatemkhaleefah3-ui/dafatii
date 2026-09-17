@@ -337,7 +337,6 @@ function preCourseWorkspace(current){
   document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);render();});
   document.querySelectorAll('[data-extra="dark-mode"]').forEach(button=>button.onclick=()=>{applyInterfaceTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');render();});
   document.getElementById('course-status-refresh')?.addEventListener('click',async event=>{event.currentTarget.disabled=true;await window.DafatiiCourses.refresh();if(!window.DafatiiCourses.active().id){event.currentTarget.disabled=false;preCourseWorkspace('dashboard');}});
-  if(page==='study-rooms') window.DafatiiStudyRooms?.bind?.();
 }
 
 function workspace(current){
