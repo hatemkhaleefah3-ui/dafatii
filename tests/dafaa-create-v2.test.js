@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const ui = fs.readFileSync('dafaa-ui.js', 'utf8');
+const client = fs.readFileSync('dafaa-create-v2-client.js', 'utf8');
 const legacyRoute = fs.readFileSync('functions/api/v1/dafat.js', 'utf8');
 const v2Route = fs.readFileSync('functions/api/v1/dafat/create-v2.js', 'utf8');
 const service = fs.readFileSync('functions/_lib/dafaa-create-v2.mjs', 'utf8');
@@ -14,7 +15,11 @@ assert.match(ui, /visibility\.addEventListener\('change',sync\)/, 'private acces
 assert.match(ui, /pricing\.addEventListener\('change',sync\)/, 'price fields must react to pricing mode');
 assert.match(index, /dafaa-ui\.js\?v=20260917-create2/, 'the new creator must be cache-busted');
 assert.match(index, /dafaa-ui\.css\?v=20260917-create2/, 'the new creator styles must be cache-busted');
+assert.match(index, /dafaa-context\.js[^\n]*\n\s*<script src="dafaa-create-v2-client\.js\?v=20260917-create2"/, 'the v2 client must override creation immediately after the base Dafaa context');
 
+assert.match(client, /DafitiiDafat\.createDafaa\s*=\s*async/, 'all runtime creation calls must be canonicalized on the v2 client');
+assert.match(client, /\/dafat\/create-v2/, 'the canonical create method must use the v2 endpoint');
+assert.doesNotMatch(client, /request\('\/dafat'\s*,\s*\{\s*method:\s*'POST'/, 'the canonical client must never call legacy POST /dafat');
 assert.match(legacyRoute, /DAFAA_CREATE_MOVED/, 'legacy POST /dafat creation must be retired');
 assert.match(v2Route, /createDafaaV2/, 'the v2 route must use the isolated creation service');
 assert.match(v2Route, /method !== 'POST'/, 'the v2 creation endpoint must reject non-POST methods');
