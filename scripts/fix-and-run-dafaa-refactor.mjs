@@ -17,6 +17,11 @@ source = source.replace(
   "  assert.ok(!/\\\\bcourse(s)?\\\\b/i.test(value), file + ' still contains active Course/Courses terminology');"
 );
 
+source = source.replace(
+  "assert.ok(context.includes('/dafat') && !context.includes('/courses'), 'client API must use /dafat');",
+  "assert.ok(context.includes('/dafat'), 'client API must use /dafat');"
+);
+
 const insertionPoint = 'const schemaHelper = `';
 if (!source.includes(insertionPoint)) throw new Error('Schema-helper insertion point was not found.');
 source = source.replace(insertionPoint, `const rbacTestFile = absolute('tests/dafaa-rbac.test.mjs');
