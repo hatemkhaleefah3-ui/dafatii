@@ -11,7 +11,7 @@
     chat: svg('<path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8M8 13h5"/>'),
     settings: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.07 14H3v-4h.07A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.63 1.7 1.7 0 0 0 10 3.07V3h4v.07A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.37 9 1.7 1.7 0 0 0 20.93 10H21v4h-.07A1.7 1.7 0 0 0 19.4 15Z"/>'),
     profile: svg('<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'),
-    'change-course': svg('<path d="M3.5 8.5 12 4l8.5 4.5L12 13 3.5 8.5Z"/><path d="M6.5 10.2V15c0 1.8 2.5 3.3 5.5 3.3s5.5-1.5 5.5-3.3v-4.8M20.5 8.5V14"/>'),
+    'dafati': svg('<path d="M3.5 8.5 12 4l8.5 4.5L12 13 3.5 8.5Z"/><path d="M6.5 10.2V15c0 1.8 2.5 3.3 5.5 3.3s5.5-1.5 5.5-3.3v-4.8M20.5 8.5V14"/>'),
     'change-language': svg('<circle cx="12" cy="12" r="9"/><path d="M3.5 12h17M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
     'dark-mode': svg('<path d="M20 15.2A8.2 8.2 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"/>'),
     sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.5 4.5l1.4 1.4M18.1 18.1l1.4 1.4M2.5 12h2M19.5 12h2M4.5 19.5l1.4-1.4M18.1 5.9l1.4-1.4"/>'),
@@ -100,7 +100,7 @@
     window.DafatiiData.writeString(THEME_KEY,next);
     syncThemeChrome();
     if(typeof showToast === 'function') showToast(`${next === 'dark' ? 'Dark' : 'Light'} mode enabled`);
-    if(document.querySelector('.pre-course-shell')&&typeof render==='function')requestAnimationFrame(render);
+    if(document.querySelector('.pre-dafaa-shell')&&typeof render==='function')requestAnimationFrame(render);
     else requestAnimationFrame(enhancePremiumShell);
   }
 

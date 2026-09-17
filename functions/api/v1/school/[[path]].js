@@ -1,5 +1,5 @@
 import { requireUser } from '../../../_lib/auth.mjs';
-import { actorFor } from '../../../_lib/courses.mjs';
+import { actorFor } from '../../../_lib/dafat.mjs';
 import { assertSameOrigin, fail, HttpError, ok, readJson } from '../../../_lib/http.mjs';
 import { schoolTeacherCatalog, selectSchoolTeacher } from '../../../_lib/school-teachers.mjs';
 

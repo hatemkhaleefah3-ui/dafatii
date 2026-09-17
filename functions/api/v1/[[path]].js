@@ -1,7 +1,8 @@
 import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession, createUser, enforceAuthRateLimit, normalizeEmail, requireUser, revokeCurrentSession, sessionCookie, validateAccountInput } from '../../_lib/auth.mjs';
 import { accessibleFile, ownedFile, publicFileDto } from '../../_lib/access.mjs';
-import { dispatchCourseRoute } from '../../_lib/course-routes.mjs';
-import { actorFor, publicActor, requireCourseView, requirePermission } from '../../_lib/courses.mjs';
+import { ensureDafaaSchema } from '../../_lib/dafaa-schema.mjs';
+import { dispatchDafaaRoute } from '../../_lib/dafaa-routes.mjs';
+import { actorFor, publicActor, requireDafaaView, requirePermission } from '../../_lib/dafat.mjs';
 import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driveObjectId, inspectDrivePrefix, isDriveObject, readDriveMetadata, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } from '../../_lib/drive.mjs';
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
@@ -17,7 +18,7 @@ const uploadSessionKey = fileId => `upload-sessions/${fileId}.json`;
 async function writeR2Manifest(env, file) {
   if (!env.R2_STORAGE) return;
   await env.R2_STORAGE.put(`files/${file.id}/manifest.json`, JSON.stringify({
-    id: file.id, ownerId: file.user_id, courseId: file.course_id || null, filename: file.original_filename,
+    id: file.id, ownerId: file.user_id, dafaaId: file.dafaa_id || null, filename: file.original_filename,
     contentType: file.content_type, size: Number(file.actual_size ?? file.expected_size), storage: isDriveObject(file.object_key) ? 'google-drive' : 'gcs', updatedAt: Date.now()
   }), { httpMetadata: { contentType: 'application/json' } });
 }
@@ -117,8 +118,8 @@ async function mutate(context, user) {
 async function uploadInit(context, user) {
   const raw = await readJson(context.request, 32768);
   const input = validateUpload(raw, context.env);
-  const courseId = raw.courseId ? String(raw.courseId) : null;
-  if (courseId) { if (!isUuid(courseId)) throw new HttpError(400, 'INVALID_IDENTIFIER', 'Course identifier is invalid.'); await requirePermission(context.env.DB, user, courseId, 'can_add_content'); }
+  const dafaaId = raw.dafaaId ? String(raw.dafaaId) : null;
+  if (dafaaId) { if (!isUuid(dafaaId)) throw new HttpError(400, 'INVALID_IDENTIFIER', 'Dafaa identifier is invalid.'); await requirePermission(context.env.DB, user, dafaaId, 'can_add_content'); }
   const uploadLimit = positiveIntegerSetting(context.env.UPLOAD_INIT_LIMIT, 60, { maximum: 10000 });
   const quota = positiveIntegerSetting(context.env.USER_STORAGE_QUOTA_BYTES, 10737418240);
   const now = Date.now();
@@ -130,12 +131,12 @@ async function uploadInit(context, user) {
   const key = usesDrive(context.env) ? `drive/pending/${fileId}` : objectKey(user.id, fileId);
   const expiresAt = now + 15 * 60 * 1000;
   await context.env.DB.prepare(`INSERT INTO files
-    (id, user_id, course_id, object_key, original_filename, content_type, expected_size, status, upload_expires_at, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`).bind(fileId, user.id, courseId, key, input.filename, input.contentType, input.size, expiresAt, now, now).run();
+    (id, user_id, dafaa_id, object_key, original_filename, content_type, expected_size, status, upload_expires_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`).bind(fileId, user.id, dafaaId, key, input.filename, input.contentType, input.size, expiresAt, now, now).run();
   try {
     if (usesDrive(context.env)) {
       if (!context.env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'R2 upload-session storage is not configured.');
-      const file = { id: fileId, user_id: user.id, course_id: courseId, object_key: key, original_filename: input.filename, content_type: input.contentType, expected_size: input.size };
+      const file = { id: fileId, user_id: user.id, dafaa_id: dafaaId, object_key: key, original_filename: input.filename, content_type: input.contentType, expected_size: input.size };
       const uploadUrl = await startDriveUpload(context.env, file, user.id);
       await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt }), { httpMetadata: { contentType: 'application/json' } });
       logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', size: input.size, contentType: input.contentType });
@@ -227,13 +228,13 @@ async function listFiles(context, user) {
   const requestedLimit = Number(url.searchParams.get('limit') || 50);
   if (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1) throw new HttpError(400, 'INVALID_LIMIT', 'File list limit is invalid.');
   const limit = Math.min(requestedLimit, 100);
-  const courseId = url.searchParams.get('courseId');
+  const dafaaId = url.searchParams.get('dafaaId');
   let result;
-  if (courseId) {
-    if (!isUuid(courseId)) throw new HttpError(400, 'INVALID_IDENTIFIER', 'Course identifier is invalid.');
-    await requireCourseView(context.env.DB, user, courseId, { content: true });
-    result = await context.env.DB.prepare("SELECT * FROM files WHERE course_id = ? AND status != 'deleted' ORDER BY created_at DESC LIMIT ?").bind(courseId, limit).all();
-  } else result = await context.env.DB.prepare("SELECT * FROM files WHERE user_id = ? AND course_id IS NULL AND status != 'deleted' ORDER BY created_at DESC LIMIT ?").bind(user.id, limit).all();
+  if (dafaaId) {
+    if (!isUuid(dafaaId)) throw new HttpError(400, 'INVALID_IDENTIFIER', 'Dafaa identifier is invalid.');
+    await requireDafaaView(context.env.DB, user, dafaaId, { content: true });
+    result = await context.env.DB.prepare("SELECT * FROM files WHERE dafaa_id = ? AND status != 'deleted' ORDER BY created_at DESC LIMIT ?").bind(dafaaId, limit).all();
+  } else result = await context.env.DB.prepare("SELECT * FROM files WHERE user_id = ? AND dafaa_id IS NULL AND status != 'deleted' ORDER BY created_at DESC LIMIT ?").bind(user.id, limit).all();
   return ok({ files: result.results.map(publicFileDto) });
 }
 
@@ -310,6 +311,7 @@ async function deleteFile(context, user, fileId) {
 
 async function dispatch(context) {
   requireDb(context.env);
+  await ensureDafaaSchema(context.env.DB);
   assertSameOrigin(context.request, context.env);
   const method = context.request.method;
   const path = routePath(context.request);
@@ -317,8 +319,8 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'auth/login') return login(context);
   if (method === 'GET' && path === 'auth/session') return session(context);
   if (method === 'POST' && path === 'auth/logout') return logout(context);
-  const courseResponse = await dispatchCourseRoute(context, method, path);
-  if (courseResponse) return courseResponse;
+  const dafaaResponse = await dispatchDafaaRoute(context, method, path);
+  if (dafaaResponse) return dafaaResponse;
   const user = await actorFor(context.env.DB, await requireUser(context), context.env);
   if (method === 'POST' && path === 'translate') {
     const input = await readJson(context.request, 16384);
