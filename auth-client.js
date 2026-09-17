@@ -13,17 +13,19 @@
       throw error;
     }
   }
-  async function login({ email, password }) {
+  async function login(input = {}) {
+    const identifier = input.identifier ?? input.email ?? input.phone ?? input.studentId ?? '';
+    const credential = input.credential ?? input.password ?? input.pin ?? '';
     let result;
-    try { result = await window.DafatiiApi.request('/auth/login', { method: 'POST', body: { email, password } }); setAvailability('online'); }
+    try { result = await window.DafatiiApi.request('/auth/login', { method: 'POST', body: { identifier, credential } }); setAvailability('online'); }
     catch (error) { if (backendUnavailable(error)) setAvailability('offline'); throw error; }
     user = result.user; emit('changed');
     try { await window.DafatiiRemoteData?.connect({ importLocal: false }); } catch (error) { window.dispatchEvent(new CustomEvent('dafatii:sync:offline', { detail: { error } })); }
     return user;
   }
-  async function signup({ email, password, displayName, accountType, studentStage }) {
+  async function signup(input = {}) {
     let result;
-    try { result = await window.DafatiiApi.request('/auth/signup', { method: 'POST', body: { email, password, displayName, accountType, studentStage } }); setAvailability('online'); }
+    try { result = await window.DafatiiApi.request('/auth/signup', { method: 'POST', body: input }); setAvailability('online'); }
     catch (error) { if (backendUnavailable(error)) setAvailability('offline'); throw error; }
     user = result.user; emit('changed');
     try { await window.DafatiiRemoteData?.connect({ importLocal: true }); } catch (error) { window.dispatchEvent(new CustomEvent('dafatii:sync:offline', { detail: { error } })); }
