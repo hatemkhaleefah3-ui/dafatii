@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 22
       - name: Apply canonical Dafaa/Dafat rename
-        run: node scripts/dafaa-domain-refactor.mjs
+        run: node scripts/fix-and-run-dafaa-refactor.mjs
       - name: Verify transformed repository
         run: |
           npm test
