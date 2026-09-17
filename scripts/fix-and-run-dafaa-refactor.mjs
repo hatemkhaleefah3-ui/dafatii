@@ -24,6 +24,7 @@ let rbacTest = fs.readFileSync(rbacTestFile, 'utf8');
 rbacTest = rbacTest
   .replace('../migrations/0002_course_rbac.sql', '../migrations/0006_dafaa_domain.sql')
   .replace('/CREATE TABLE dafaa_memberships/', '/ALTER TABLE course_memberships RENAME TO dafaa_memberships/')
+  .replace("assert.match(migration,/can_manage_representers/);", "assert.match(readFileSync(new URL('../functions/_lib/dafat.mjs',import.meta.url),'utf8'),/can_manage_representers/);")
   .replace('/ALTER TABLE files ADD COLUMN dafaa_id/', '/ALTER TABLE files RENAME COLUMN course_id TO dafaa_id/');
 fs.writeFileSync(rbacTestFile, rbacTest);
 
