@@ -138,3 +138,7 @@ html[data-theme="dark"] .admin-teacher-card{box-shadow:0 10px 30px rgba(0,0,0,.1
   .teacher-editor-lecture input:nth-child(2){grid-column:1/-1;grid-row:2}
   .teacher-editor-lecture button{grid-column:2;grid-row:1}
 }
+
+.admin-account-stage{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}
+.admin-account-stage span{color:var(--muted);font-size:.8rem;font-weight:700}.admin-account-stage strong{font-size:.88rem}
+.admin-teacher-card.removed{opacity:.68}.admin-teacher-status{display:inline-flex;margin-inline-start:6px;padding:3px 6px;border-radius:999px;background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);font:.7rem/1 "DM Sans";vertical-align:middle}
