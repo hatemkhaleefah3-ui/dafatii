@@ -1,0 +1,23 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const script = fs.readFileSync('file-reader-interactions.js', 'utf8');
+const css = fs.readFileSync('file-reader-interactions.css', 'utf8');
+const index = fs.readFileSync('index.html', 'utf8');
+
+assert.match(script, /reader-loading/, 'file readers must enter a dedicated loading state');
+assert.match(script, /reader-ready/, 'file readers must expose a ready state before content is revealed');
+assert.match(script, /data-viewer-loading-screen/, 'file readers must mount a full loading screen');
+assert.match(script, /originalPdf\.open[\s\S]*await originalOpen[\s\S]*reveal\(root\)/, 'PDF content must remain gated until its initial render completes');
+assert.match(script, /status\.hidden[\s\S]*reveal\(root\)/, 'Office content must remain gated until the renderer reports ready');
+assert.match(script, /event\.touches\.length !== 2/, 'pinch zoom must require exactly two touch points');
+assert.match(script, /event\.preventDefault\(\)/, 'custom pinch zoom must suppress browser page zoom while active');
+assert.match(script, /controls\.zoomIn|controls\.zoomOut/, 'pinch gestures must use the viewer zoom API');
+assert.match(script, /Math\.hypot/, 'pinch zoom must calculate two-finger distance');
+assert.match(css, /\.viewer-loading-screen\{/, 'the loading screen must cover the reader');
+assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages must remain hidden while loading');
+assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
+assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
+assert.match(index, /file-reader-interactions\.js\?v=20260917-1/, 'the loading and pinch controller must be loaded');
+
+console.log('file reader loading and pinch checks passed');
