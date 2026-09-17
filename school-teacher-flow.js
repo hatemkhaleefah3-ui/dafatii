@@ -92,7 +92,7 @@
   async function render(force=false){
     if(!school())return;
     const current=route();
-    if(!ALLOWED.has(current)){location.hash='dashboard';return;}
+    if(!ALLOWED.has(current))return;
     renameNav();
     if(!['dashboard','change-course'].includes(current))return;
     const main=document.querySelector('.workspace-main'); if(!main)return;
