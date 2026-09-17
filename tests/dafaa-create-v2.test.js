@@ -13,7 +13,9 @@ assert.match(ui, /\/dafat\/create-v2/, 'the new form must submit only to the v2 
 assert.doesNotMatch(ui, /id="dafaa-form"/, 'the legacy create form must not remain active');
 assert.match(ui, /visibility\.addEventListener\('change',sync\)/, 'private access fields must react to visibility');
 assert.match(ui, /pricing\.addEventListener\('change',sync\)/, 'price fields must react to pricing mode');
-assert.match(index, /dafaa-ui\.js\?v=20260917-create2/, 'the new creator must be cache-busted');
+assert.match(ui, /access\.disabled=!privateMode/, 'inactive private access input must be disabled so native validation cannot block public creation');
+assert.match(ui, /price\.disabled=!paid/, 'inactive paid price input must be disabled so min validation cannot block free creation');
+assert.match(index, /dafaa-ui\.js\?v=20260917-create3/, 'the submit validation fix must be cache-busted');
 assert.match(index, /dafaa-ui\.css\?v=20260917-create2/, 'the new creator styles must be cache-busted');
 assert.match(index, /dafaa-context\.js[^\n]*\n\s*<script src="dafaa-create-v2-client\.js\?v=20260917-create2"/, 'the v2 client must override creation immediately after the base Dafaa context');
 
