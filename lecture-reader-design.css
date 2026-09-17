@@ -145,7 +145,30 @@
   box-shadow:none;
 }
 
-/* Office lecture files use the same geometry as PDFs. */
+/* Native Word/PowerPoint files render from their original bytes inside the same Dafatii shell. */
+.native-office-workspace .native-office-stage{
+  inset:0;
+  padding:0;
+  overflow:hidden;
+  background:var(--lecture-reader-bg);
+}
+.native-office-workspace .native-office-host{
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  background:#fff;
+}
+.native-office-workspace .native-office-host>*,
+.native-office-workspace .native-office-host [data-file-viewer-root]{
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+}
+
+/* Compatibility geometry for the previous lightweight Office renderer. */
 .file-workspace .office-workspace-stage{
   inset:0;
   padding:0;
