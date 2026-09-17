@@ -30,9 +30,14 @@ fs.writeFileSync(rbacTestFile, rbacTest);
 
 const schoolTestFile = absolute('tests/school-teacher-flow.test.js');
 let schoolTest = fs.readFileSync(schoolTestFile, 'utf8');
-schoolTest = schoolTest
-  .replace("fs.readFileSync('migrations/0005_school_teacher_system.sql', 'utf8')", "fs.readFileSync('migrations/0006_dafaa_domain.sql', 'utf8')")
-  .replace("migration.includes('block_new_school_dafat') && migration.includes(\"WHERE stage = 'school' AND status = 'active'\")", "migration.includes('block_new_school_dafat') && migration.includes('block_dafaa_stage_to_school')");
+schoolTest = schoolTest.replace(
+  "fs.readFileSync('migrations/0005_school_teacher_system.sql', 'utf8')",
+  "fs.readFileSync('migrations/0006_dafaa_domain.sql', 'utf8')"
+);
+schoolTest = schoolTest.replace(
+  /migration\\.includes\\('block_new_school_dafat'\\) && migration\\.includes\\([^;]+?\\)/,
+  "migration.includes('block_new_school_dafat') && migration.includes('block_dafaa_stage_to_school')"
+);
 fs.writeFileSync(schoolTestFile, schoolTest);
 
 ${insertionPoint}`);
