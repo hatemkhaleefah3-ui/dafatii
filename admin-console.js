@@ -63,7 +63,8 @@
 
   function overviewView(){
     const o=data.overview||{};
-    const students=data.users.filter(user=>user.accountType==='student').length;
+    const teacherIds=new Set(data.teachers.map(teacher=>teacher.id));
+    const students=data.users.filter(user=>user.accountType==='student'&&!teacherIds.has(user.id)).length;
     return shell(`<div class="admin-console-metrics">
       ${metric(students,tx('Students','الطلاب'))}
       ${metric(data.teachers.length,tx('Teachers','المدرسون'))}
@@ -79,7 +80,8 @@
   }
 
   function studentsView(){
-    const users=data.users.filter(user=>user.accountType==='student');
+    const teacherIds=new Set(data.teachers.map(teacher=>teacher.id));
+    const users=data.users.filter(user=>user.accountType==='student'&&!teacherIds.has(user.id));
     return shell(`<div class="admin-console-section-head"><div><div class="eyebrow">${esc(tx('Accounts','الحسابات'))}</div><h2>${esc(tx('Students','الطلاب'))}</h2><p>${esc(tx('Disable removes sign-in access; Delete is a reversible soft-delete. Passwords and PINs are never shown here.','التعطيل يمنع تسجيل الدخول، والحذف حذف منطقي قابل للإرجاع. كلمات المرور وPIN لا تظهر هنا.'))}</p></div><button class="btn btn-primary" id="admin-add-student">＋ ${esc(tx('Add student','إضافة طالب'))}</button></div>
       <div class="admin-console-list">${users.length?users.map(studentRow).join(''):`<div class="admin-console-empty">${esc(tx('No student accounts found.','لا توجد حسابات طلاب.'))}</div>`}</div>`);
   }
