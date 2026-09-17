@@ -84,8 +84,14 @@ async function createCourse(context, currentActor) {
   }
   const input = await readJson(context.request, 65536);
   const value = validateCourseInput(input);
-  const owner = currentActor.isAdmin && input.ownerEmail ? await context.env.DB.prepare('SELECT id, email_normalized, display_name FROM users WHERE email_normalized = ? AND status = ?').bind(normalizeEmail(input.ownerEmail), 'active').first() : currentActor;
+  const owner = currentActor.isAdmin && input.ownerEmail ? await context.env.DB.prepare(`SELECT u.id, u.email_normalized, u.display_name,
+      COALESCE(p.account_type, 'student') AS account_type, COALESCE(p.student_stage, 'university') AS student_stage
+    FROM users u LEFT JOIN account_profiles p ON p.user_id = u.id
+    WHERE u.email_normalized = ? AND u.status = ?`).bind(normalizeEmail(input.ownerEmail), 'active').first() : currentActor;
   if (!owner) throw new HttpError(404, 'USER_NOT_FOUND', 'The selected owner account was not found.');
+  if (owner.accountType === 'student' && owner.studentStage === 'school' || owner.account_type === 'student' && owner.student_stage === 'school') {
+    throw new HttpError(403, 'SCHOOL_STUDENT_COURSES_DISABLED', 'School student accounts cannot own Courses.');
+  }
   const courseId = crypto.randomUUID(), code = await uniqueEnrollmentCode(context.env.DB);
   if (value.pricing === 'free') value.priceMinor = 0;
   if (value.pricing === 'paid' && value.priceMinor < 1) throw new HttpError(400, 'INVALID_PRICE', 'Paid courses require a positive price.');
