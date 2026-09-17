@@ -2,6 +2,7 @@ import { authenticateUser, clearAuthRateLimit, clearSessionCookie, createSession
 import { accessibleFile, ownedFile, publicFileDto } from '../../_lib/access.mjs';
 import { ensureDafaaSchema } from '../../_lib/dafaa-schema.mjs';
 import { dispatchDafaaRoute } from '../../_lib/dafaa-routes.mjs';
+import { dispatchAdminSupervision } from '../../_lib/admin-supervision.mjs';
 import { actorFor, publicActor, requireDafaaView, requirePermission } from '../../_lib/dafat.mjs';
 import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driveObjectId, inspectDrivePrefix, isDriveObject, readDriveMetadata, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } from '../../_lib/drive.mjs';
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
@@ -318,6 +319,8 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'auth/login') return login(context);
   if (method === 'GET' && path === 'auth/session') return session(context);
   if (method === 'POST' && path === 'auth/logout') return logout(context);
+  const adminResponse = await dispatchAdminSupervision(context, method, path);
+  if (adminResponse) return adminResponse;
   await ensureDafaaSchema(context.env.DB);
   const dafaaResponse = await dispatchDafaaRoute(context, method, path);
   if (dafaaResponse) return dafaaResponse;
