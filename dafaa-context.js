@@ -133,9 +133,23 @@
   }
   async function putInitial(dafaaId,key,value){const result=await window.DafatiiApi.request(`/dafat/${dafaaId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision:0,record:{key,format:'json',value,deleted:false}}});runtime.revisions.set(`${dafaaId}:${key}`,result.revision);cacheWrite(key,value,dafaaId);}
   async function createDafaa(input){
-    const template=TEMPLATES[input.templateName]?input.templateName:'Computer Science';const result=await window.DafatiiApi.request('/dafat',{method:'POST',body:input});
-    runtime.activeId=result.dafaa.id;await refresh();for(const [key,value] of Object.entries(seedValues(template)))await putInitial(result.dafaa.id,key,value);
-    await hydrate(result.dafaa.id);window.dispatchEvent(new CustomEvent('dafatii:dafaachanged',{detail:{dafaa:active()}}));return result.dafaa;
+    const template=TEMPLATES[input.templateName]?input.templateName:'Computer Science';
+    const result=await window.DafatiiApi.request('/dafat',{method:'POST',body:input});
+    runtime.activeId=result.dafaa.id;
+    localStorage.setItem('__dafatii:active-dafaa',runtime.activeId);
+    runtime.dafat=[result.dafaa,...runtime.dafat.filter(item=>item.id!==result.dafaa.id)];
+    let initializationError=null;
+    try{
+      await refresh();
+      for(const [key,value] of Object.entries(seedValues(template)))await putInitial(result.dafaa.id,key,value);
+      await hydrate(result.dafaa.id);
+    }catch(error){
+      initializationError=error;
+      try{await refresh();}catch{}
+    }
+    window.dispatchEvent(new CustomEvent('dafatii:dafaachanged',{detail:{dafaa:active(),initializationError}}));
+    if(initializationError)window.dispatchEvent(new CustomEvent('dafatii:dafaainitwarning',{detail:{dafaaId:result.dafaa.id,error:initializationError}}));
+    return result.dafaa;
   }
   async function updateDafaa(id,changes){const result=await window.DafatiiApi.request(`/dafat/${id}`,{method:'PATCH',body:changes});await refresh();window.dispatchEvent(new CustomEvent('dafatii:dafaachanged',{detail:{dafaa:active()}}));return result.dafaa;}
   async function enroll(input){const result=await window.DafatiiApi.request('/dafat/enroll',{method:'POST',body:input});await refresh();return result;}
