@@ -6,6 +6,7 @@ import {
   validateCourseRecord, validateMemberPatch
 } from './courses.mjs';
 import { HttpError, logEvent, ok, readJson } from './http.mjs';
+import { dispatchAdminConsoleRoute } from './admin-console.mjs';
 import { isUuid } from './policy.mjs';
 
 const COURSE_SELECT = `SELECT c.*, m.user_id AS membership_user_id, m.role AS membership_role, m.status AS membership_status,
@@ -77,7 +78,10 @@ async function getCourse(context, currentActor, courseId) {
 }
 
 async function createCourse(context, currentActor) {
-  if (!currentActor.isAdmin && currentActor.accountType !== 'representer') throw new HttpError(403, 'REPRESENTER_ACCOUNT_REQUIRED', 'A representer account is required to create a course.');
+  const postSchoolStudent = currentActor.accountType === 'student' && currentActor.studentStage !== 'school';
+  if (!currentActor.isAdmin && currentActor.accountType !== 'representer' && !postSchoolStudent) {
+    throw new HttpError(403, 'COURSE_CREATION_NOT_ALLOWED', 'Course creation is available to post-school students, representers, and administrators.');
+  }
   const input = await readJson(context.request, 65536);
   const value = validateCourseInput(input);
   const owner = currentActor.isAdmin && input.ownerEmail ? await context.env.DB.prepare('SELECT id, email_normalized, display_name FROM users WHERE email_normalized = ? AND status = ?').bind(normalizeEmail(input.ownerEmail), 'active').first() : currentActor;
@@ -95,7 +99,6 @@ async function createCourse(context, currentActor) {
     (course_id, user_id, role, status, can_add_content, can_edit_content, can_remove_content, can_manage_students, can_review_applications, can_manage_representers, can_manage_settings, invited_by, joined_at, created_at, updated_at)
     VALUES (?, ?, 'owner', 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(courseId, owner.id, ...PERMISSIONS.map(permission => permissions[permission]), currentActor.id, now, now, now);
   await context.env.DB.batch([insertCourse, insertOwner]);
-  await ensureRepresenterAccount(context.env.DB, owner.id, now);
   await audit(context.env.DB, currentActor.id, 'course.created', { courseId, targetUserId: owner.id, metadata: { pricing: value.pricing, visibility: value.visibility, joinPolicy: value.joinPolicy } });
   const row = await context.env.DB.prepare(`${COURSE_SELECT} WHERE c.id = ?`).bind(currentActor.id, courseId).first();
   logEvent('info', 'course.created', { userId: currentActor.id, courseId });
@@ -327,6 +330,10 @@ async function adminPatchUser(context, currentActor, targetUserId) {
 export async function dispatchCourseRoute(context, method, path) {
   if (!path.startsWith('courses') && !path.startsWith('admin')) return null;
   const currentActor = await actor(context);
+  if (path.startsWith('admin/')) {
+    const adminConsoleResponse = await dispatchAdminConsoleRoute(context, method, path, currentActor);
+    if (adminConsoleResponse) return adminConsoleResponse;
+  }
   if (method === 'GET' && path === 'courses') return listCourses(context, currentActor);
   if (method === 'POST' && path === 'courses') return createCourse(context, currentActor);
   if (method === 'POST' && path === 'courses/enroll') return enroll(context, currentActor, '');
