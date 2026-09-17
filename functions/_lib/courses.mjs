@@ -1,9 +1,8 @@
-import { LEGACY_DAFAT_RECORD_KEY } from './dafaa-schema.mjs';
 import { sha256 } from './crypto.mjs';
 import { HttpError } from './http.mjs';
 import { validateRecord } from './policy.mjs';
 
-export const DAFAA_CONTENT_KEYS = new Set([
+export const COURSE_CONTENT_KEYS = new Set([
   'dafatii:subjects','dafatii:lectures','dafatii:weeklySchedule','dafatii:scheduleNotes',
   'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
   'dafatii:examDays','dafatii:examPeriods','dafatii:studentSuite:v1','dafatii:studyRoomState:v1',
@@ -18,7 +17,7 @@ export const PERMISSIONS = [
 
 const stages = new Set(['school','university','independent']);
 const accountTypes = new Set(['student','representer']);
-const dafaaRoles = new Set(['owner','representer','student']);
+const courseRoles = new Set(['owner','representer','student']);
 const memberStatuses = new Set(['pending','payment_pending','active','rejected','removed']);
 const pricingModes = new Set(['free','paid']);
 const visibilities = new Set(['public','private']);
@@ -40,25 +39,12 @@ export function validateProfileInput(input = {}) {
   };
 }
 
-async function ensureAccountProfileSchema(db) {
-  await db.prepare(`CREATE TABLE IF NOT EXISTS account_profiles (
-    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    account_type TEXT NOT NULL DEFAULT 'student' CHECK (account_type IN ('student', 'representer')),
-    student_stage TEXT NOT NULL DEFAULT 'university' CHECK (student_stage IN ('school', 'university', 'independent')),
-    platform_role TEXT NOT NULL DEFAULT 'student' CHECK (platform_role IN ('student', 'admin')),
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  )`).run();
-  await db.prepare('CREATE INDEX IF NOT EXISTS account_profiles_type_idx ON account_profiles(account_type, platform_role)').run();
-}
-
 export async function ensureAccountProfile(db, user, requested = null, now = Date.now()) {
-  await ensureAccountProfileSchema(db);
   let row = await db.prepare('SELECT account_type, student_stage, platform_role FROM account_profiles WHERE user_id = ?').bind(user.id).first();
   if (!row) {
     let profile = requested ? validateProfileInput(requested) : null;
     if (!profile) {
-      const legacy = await db.prepare("SELECT 1 AS present FROM records WHERE user_id = ? AND record_key IN ('dafatii:dafat:v1', ?) AND deleted = 0 LIMIT 1").bind(user.id, LEGACY_DAFAT_RECORD_KEY).first();
+      const legacy = await db.prepare("SELECT 1 AS present FROM records WHERE user_id = ? AND record_key = 'dafatii:courses:v1' AND deleted = 0 LIMIT 1").bind(user.id).first();
       profile = { accountType: legacy ? 'representer' : 'student', studentStage: 'university' };
     }
     await db.prepare('INSERT OR IGNORE INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
@@ -88,19 +74,19 @@ export function enrollmentCode(bytes = 5) {
   return [...random].map(value => alphabet[value % alphabet.length]).join('');
 }
 
-export async function accessCodeHash(dafaaId, code, env) {
+export async function accessCodeHash(courseId, code, env) {
   const pepper = String(env.RATE_LIMIT_PEPPER || '');
-  if (pepper.length < 32) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Dafaa access configuration is unavailable.');
+  if (pepper.length < 32) throw new HttpError(503, 'CONFIGURATION_ERROR', 'Course access configuration is unavailable.');
   const normalized = String(code || '').trim();
-  if (normalized.length < 6 || normalized.length > 64) throw new HttpError(400, 'INVALID_ACCESS_CODE', 'Private dafaa access codes must be 6–64 characters.');
-  return sha256(`${pepper}\0${dafaaId}\0${normalized}`);
+  if (normalized.length < 6 || normalized.length > 64) throw new HttpError(400, 'INVALID_ACCESS_CODE', 'Private course access codes must be 6–64 characters.');
+  return sha256(`${pepper}\0${courseId}\0${normalized}`);
 }
 
-export function validateDafaaInput(input = {}, { partial = false } = {}) {
+export function validateCourseInput(input = {}, { partial = false } = {}) {
   const value = {};
   if (!partial || input.name !== undefined) {
     value.name = text(input.name, 120);
-    if (value.name.length < 2) throw new HttpError(400, 'INVALID_DAFAA_NAME', 'Dafaa name must contain at least two characters.');
+    if (value.name.length < 2) throw new HttpError(400, 'INVALID_COURSE_NAME', 'Course name must contain at least two characters.');
   }
   if (!partial || input.description !== undefined) value.description = text(input.description, 1000);
   if (!partial || input.institution !== undefined) value.institution = text(input.institution, 160);
@@ -114,7 +100,7 @@ export function validateDafaaInput(input = {}, { partial = false } = {}) {
   }
   if (!partial || input.priceMinor !== undefined || input.pricing !== undefined) {
     const priceMinor = Number(input.priceMinor || 0);
-    if (!Number.isSafeInteger(priceMinor) || priceMinor < 0 || priceMinor > 100000000) throw new HttpError(400, 'INVALID_PRICE', 'Dafaa price is invalid.');
+    if (!Number.isSafeInteger(priceMinor) || priceMinor < 0 || priceMinor > 100000000) throw new HttpError(400, 'INVALID_PRICE', 'Course price is invalid.');
     value.priceMinor = priceMinor;
   }
   if (input.accessCode !== undefined) value.accessCode = String(input.accessCode || '').trim();
@@ -136,7 +122,7 @@ export function membershipDto(row) {
   };
 }
 
-export function dafaaDto(row) {
+export function courseDto(row) {
   return {
     id: row.id, enrollmentCode: row.enrollment_code, name: row.name, description: row.description,
     institution: row.institution, stage: row.stage, status: row.status, pricing: row.pricing,
@@ -147,12 +133,12 @@ export function dafaaDto(row) {
   };
 }
 
-export async function dafaaWithMembership(db, dafaaId, userId) {
+export async function courseWithMembership(db, courseId, userId) {
   return db.prepare(`SELECT c.*, m.user_id AS membership_user_id, m.role AS membership_role, m.status AS membership_status,
     m.can_add_content, m.can_edit_content, m.can_remove_content, m.can_manage_students,
     m.can_review_applications, m.can_manage_representers, m.can_manage_settings,
     m.application_note, m.joined_at, m.updated_at AS membership_updated_at
-    FROM dafat c LEFT JOIN dafaa_memberships m ON m.dafaa_id = c.id AND m.user_id = ? WHERE c.id = ?`).bind(userId, dafaaId).first();
+    FROM courses c LEFT JOIN course_memberships m ON m.course_id = c.id AND m.user_id = ? WHERE c.id = ?`).bind(userId, courseId).first();
 }
 
 export function can(row, actor, permission) {
@@ -162,23 +148,23 @@ export function can(row, actor, permission) {
   return row.membership_role === 'representer' && Boolean(row[permission]);
 }
 
-export async function requireDafaaView(db, actor, dafaaId, { content = false } = {}) {
-  const row = await dafaaWithMembership(db, dafaaId, actor.id);
-  if (!row || row.status !== 'active') throw new HttpError(404, 'DAFAA_NOT_FOUND', 'Dafaa was not found.');
+export async function requireCourseView(db, actor, courseId, { content = false } = {}) {
+  const row = await courseWithMembership(db, courseId, actor.id);
+  if (!row || row.status !== 'active') throw new HttpError(404, 'COURSE_NOT_FOUND', 'Course was not found.');
   const activeMember = row.membership_status === 'active';
-  if (content ? !activeMember && !actor.isAdmin : row.visibility !== 'public' && !activeMember && !actor.isAdmin) throw new HttpError(404, 'DAFAA_NOT_FOUND', 'Dafaa was not found.');
+  if (content ? !activeMember && !actor.isAdmin : row.visibility !== 'public' && !activeMember && !actor.isAdmin) throw new HttpError(404, 'COURSE_NOT_FOUND', 'Course was not found.');
   return row;
 }
 
-export async function requirePermission(db, actor, dafaaId, permission) {
-  const row = await requireDafaaView(db, actor, dafaaId, { content: true });
-  if (!can(row, actor, permission)) throw new HttpError(403, 'DAFAA_PERMISSION_REQUIRED', 'You do not have permission for this dafaa action.');
+export async function requirePermission(db, actor, courseId, permission) {
+  const row = await requireCourseView(db, actor, courseId, { content: true });
+  if (!can(row, actor, permission)) throw new HttpError(403, 'COURSE_PERMISSION_REQUIRED', 'You do not have permission for this course action.');
   return row;
 }
 
-export function validateDafaaRecord(record) {
+export function validateCourseRecord(record) {
   const normalized = validateRecord(record);
-  if (!DAFAA_CONTENT_KEYS.has(normalized.key)) throw new HttpError(400, 'INVALID_DAFAA_RECORD', 'This record type cannot be stored as dafaa content.');
+  if (!COURSE_CONTENT_KEYS.has(normalized.key)) throw new HttpError(400, 'INVALID_COURSE_RECORD', 'This record type cannot be stored as course content.');
   return normalized;
 }
 
@@ -215,17 +201,17 @@ export function requiredContentPermissions(previousValue, nextValue, deleted = f
 }
 
 export function assertContentPermissions(row, actor, required) {
-  for (const permission of required) if (!can(row, actor, permission)) throw new HttpError(403, 'DAFAA_PERMISSION_REQUIRED', 'You do not have permission for this content change.');
+  for (const permission of required) if (!can(row, actor, permission)) throw new HttpError(403, 'COURSE_PERMISSION_REQUIRED', 'You do not have permission for this content change.');
 }
 
-export async function audit(db, actorId, action, { dafaaId = null, targetUserId = null, metadata = {} } = {}) {
-  await db.prepare('INSERT INTO dafaa_audit_log (id, dafaa_id, actor_user_id, action, target_user_id, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .bind(crypto.randomUUID(), dafaaId, actorId, action, targetUserId, JSON.stringify(metadata), Date.now()).run();
+export async function audit(db, actorId, action, { courseId = null, targetUserId = null, metadata = {} } = {}) {
+  await db.prepare('INSERT INTO course_audit_log (id, course_id, actor_user_id, action, target_user_id, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(crypto.randomUUID(), courseId, actorId, action, targetUserId, JSON.stringify(metadata), Date.now()).run();
 }
 
 export function validateMemberPatch(input = {}) {
   const value = {};
-  if (input.role !== undefined) value.role = enumValue(input.role, dafaaRoles, 'student');
+  if (input.role !== undefined) value.role = enumValue(input.role, courseRoles, 'student');
   if (input.status !== undefined) value.status = enumValue(input.status, memberStatuses, 'active');
   if (input.permissions !== undefined) value.permissions = permissionInput(input.permissions);
   return value;

@@ -10,13 +10,13 @@
 
   const isArabic = () => typeof interfaceLanguage === 'function' ? interfaceLanguage() === 'ar' : document.documentElement.lang === 'ar';
   const t = (en, ar) => isArabic() ? ar : en;
-  const read = (key, fallback) => window.DafatiiDafat.readJSON(key, fallback);
-  const write = (key, value) => window.DafatiiDafat.writeJSON(key, value);
+  const read = (key, fallback) => window.DafatiiCourses.readJSON(key, fallback);
+  const write = (key, value) => window.DafatiiCourses.writeJSON(key, value);
   const uid = () => `cal-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 
   function canManageSchedule(){
     const user = window.DafatiiAuth?.user;
-    const active = window.DafatiiDafat?.active?.() || {};
+    const active = window.DafatiiCourses?.active?.() || {};
     return user?.platformRole === 'admin' || ['owner','representer'].includes(active.membership?.role);
   }
 

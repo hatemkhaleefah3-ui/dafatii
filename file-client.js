@@ -3,7 +3,7 @@
   async function upload(file, options = {}) {
     if (!(file instanceof File)) throw new TypeError('upload() requires a File.');
     const contentType = file.type || inferType(file.name);
-    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType, size: file.size, dafaaId: options.dafaaId || null } });
+    const initialized = await window.DafatiiApi.request('/files/upload-init', { method: 'POST', body: { filename: file.name, contentType, size: file.size, courseId: options.courseId || null } });
     let response; let completion = {};
     try {
       if (initialized.upload.provider === 'drive-proxy') {

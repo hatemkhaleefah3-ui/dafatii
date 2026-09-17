@@ -26,7 +26,7 @@
   const t = key => copy[lang()][key] || copy.en[key] || key;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   const uid = () => `lecture-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-  const activeDafaaId = () => window.DafatiiDafat?.active?.().id || null;
+  const activeCourseId = () => window.DafatiiCourses?.active?.().id || null;
 
   function normalizeUrl(value) {
     const raw = String(value || '').trim();
@@ -99,7 +99,7 @@
   async function uploadToDrive(file, status, progress) {
     status.textContent = t('uploading');
     return window.DafatiiFiles.upload(file, {
-      dafaaId: activeDafaaId(),
+      courseId: activeCourseId(),
       onProgress: ({ ratio }) => {
         const percent = Math.max(0, Math.min(100, Math.round(Number(ratio || 0) * 100)));
         progress.hidden = false;
@@ -127,7 +127,7 @@
       updatedAt: Date.now()
     };
     const file = new File([JSON.stringify(snapshot, null, 2)], `.dafatii-lecture-${payload.id}.json`, { type:'application/json' });
-    return window.DafatiiFiles.upload(file, { dafaaId: activeDafaaId() });
+    return window.DafatiiFiles.upload(file, { courseId: activeCourseId() });
   }
 
   function cleanupFile(fileId) {
