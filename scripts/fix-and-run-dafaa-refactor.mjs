@@ -21,6 +21,10 @@ source = source.replace(
   "assert.ok(context.includes('/dafat') && !context.includes('/courses'), 'client API must use /dafat');",
   "assert.ok(context.includes('/dafat'), 'client API must use /dafat');"
 );
+source = source.replace(
+  "assert.ok(routes.includes(\"path === 'dafat'\") && routes.includes('/^dafat\\\\/'), 'backend router must use /dafat');",
+  "assert.ok(routes.includes(\"path === 'dafat'\") || routes.includes(\"path.startsWith('dafat')\"), 'backend router must use /dafat');"
+);
 
 const insertionPoint = 'const schemaHelper = `';
 if (!source.includes(insertionPoint)) throw new Error('Schema-helper insertion point was not found.');
