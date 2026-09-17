@@ -26,4 +26,7 @@ const routes=readFileSync(new URL('../functions/_lib/course-routes.mjs',import.m
 assert.match(routes,/requirePermission/);
 assert.match(routes,/assertContentPermissions/);
 assert.match(routes,/SELF_LOCKOUT_REJECTED/);
+const optionalRoute=readFileSync(new URL('../functions/api/v1/courses/[[path]].js',import.meta.url),'utf8');
+assert.match(optionalRoute,/child \? `courses\/\$\{child\}` : 'courses'/, 'bare /api/v1/courses must dispatch as courses, not courses/');
+assert.doesNotMatch(optionalRoute,/`courses\/\$\{joinedPath\(context\.params\?\.path\)\}`/, 'optional catch-all must not append a trailing slash for an empty path');
 console.log('course RBAC tests passed');
