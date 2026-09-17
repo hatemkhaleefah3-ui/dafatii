@@ -30,10 +30,10 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=11/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260915-3/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260918-1/, 'the cleaned subject interface must be loaded');
 assert.match(index, /calendar\.js\?v=20260915-4/, 'the cleaned calendar interface must be loaded');
 assert.match(index, /calendar\.css\?v=20260915-4/, 'retired calendar toolbar styling must be removed from the active asset');
-assert.match(index, /role-panels\.js\?v=20260915-2/, 'the redesigned dashboard management entry must be loaded');
+assert.match(index, /role-panels\.js\?v=20260918-1/, 'the redesigned dashboard management entry must be loaded');
 assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management entry styling must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
