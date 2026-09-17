@@ -1,0 +1,36 @@
+name: Dafaa domain refactor
+
+on:
+  push:
+    branches:
+      - refactor/dafaa-domain-rename
+    paths:
+      - .github/workflows/dafaa-domain-refactor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refactor/dafaa-domain-rename
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Apply canonical Dafaa/Dafat rename
+        run: node scripts/dafaa-domain-refactor.mjs
+      - name: Verify transformed repository
+        run: |
+          npm test
+          npm run check
+      - name: Commit transformed repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rename course domain to Dafaa and Dafat"
+          git push origin HEAD:refactor/dafaa-domain-rename
