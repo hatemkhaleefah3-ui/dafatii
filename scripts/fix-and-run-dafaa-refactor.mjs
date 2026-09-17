@@ -17,6 +17,18 @@ source = source.replace(
   "  assert.ok(!/\\\\bcourse(s)?\\\\b/i.test(value), file + ' still contains active Course/Courses terminology');"
 );
 
+const insertionPoint = 'const schemaHelper = `';
+if (!source.includes(insertionPoint)) throw new Error('Schema-helper insertion point was not found.');
+source = source.replace(insertionPoint, `const rbacTestFile = absolute('tests/dafaa-rbac.test.mjs');
+let rbacTest = fs.readFileSync(rbacTestFile, 'utf8');
+rbacTest = rbacTest
+  .replace('../migrations/0002_course_rbac.sql', '../migrations/0006_dafaa_domain.sql')
+  .replace('/CREATE TABLE dafaa_memberships/', '/ALTER TABLE course_memberships RENAME TO dafaa_memberships/')
+  .replace('/ALTER TABLE files ADD COLUMN dafaa_id/', '/ALTER TABLE files RENAME COLUMN course_id TO dafaa_id/');
+fs.writeFileSync(rbacTestFile, rbacTest);
+
+${insertionPoint}`);
+
 fs.writeFileSync(scriptPath, source);
 await import(`./dafaa-domain-refactor.mjs?fixed=${Date.now()}`);
 fs.rmSync('scripts/fix-and-run-dafaa-refactor.mjs', { force: true });
