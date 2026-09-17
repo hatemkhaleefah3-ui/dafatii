@@ -77,7 +77,7 @@ export function normalizeLoginIdentifier(value, normalizeEmail) {
   const raw = String(value || '').trim().normalize('NFKC');
   const email = normalizeEmail(raw);
   if (raw.includes('@') && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { kind:'email', value:email, key:`email:${email}` };
-  if (/^\d{12}$/.test(raw)) return { kind:'studentId', value:raw, key:`sid:${raw}` };
+  if (/^\d{12}$/.test(raw)) return { kind:'numeric', value:raw, key:`numeric:${raw}` };
   const phone = normalizePhone(raw);
   if (phone) return { kind:'phone', value:phone, key:`phone:${phone}` };
   throw new HttpError(400, 'INVALID_CREDENTIALS', 'Identifier or credential is invalid.');
@@ -99,12 +99,14 @@ export async function ensureStudentCredentialsSchema(db) {
 const pinMaterial = pin => `${PIN_PREFIX}${String(pin || '')}`;
 export async function createStudentCredentials(db, userId, identity, pepper, now = Date.now()) {
   await ensureStudentCredentialsSchema(db);
-  const existingId = await db.prepare('SELECT user_id FROM student_credentials WHERE student_id = ?').bind(identity.studentId).first();
-  const existingPhone = identity.phone ? await db.prepare('SELECT user_id FROM student_credentials WHERE phone_normalized = ?').bind(identity.phone).first() : null;
-  if (existingId || existingPhone) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.');
+  const phone = identity.phone || null;
+  const collision = await db.prepare(`SELECT user_id FROM student_credentials
+    WHERE student_id = ? OR phone_normalized = ? OR (? IS NOT NULL AND (student_id = ? OR phone_normalized = ?)) LIMIT 1`)
+    .bind(identity.studentId, identity.studentId, phone, phone, phone).first();
+  if (collision) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.');
   const pinHash = await hashPassword(pinMaterial(identity.pin), 100000, pepper);
   return db.prepare('INSERT INTO student_credentials (user_id, student_id, phone_normalized, pin_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(userId, identity.studentId, identity.phone || null, pinHash, now, now);
+    .bind(userId, identity.studentId, phone, pinHash, now, now);
 }
 
 export async function findStudentLogin(db, login) {
@@ -113,9 +115,10 @@ export async function findStudentLogin(db, login) {
     return db.prepare(`SELECT u.id, u.email_normalized, u.password_hash, u.display_name, u.status, c.pin_hash
       FROM users u LEFT JOIN student_credentials c ON c.user_id = u.id WHERE u.email_normalized = ?`).bind(login.value).first();
   }
-  if (login.kind === 'studentId') {
-    return db.prepare(`SELECT u.id, u.email_normalized, u.password_hash, u.display_name, u.status, c.pin_hash
-      FROM student_credentials c JOIN users u ON u.id = c.user_id WHERE c.student_id = ?`).bind(login.value).first();
+  if (login.kind === 'numeric') {
+    const result = await db.prepare(`SELECT u.id, u.email_normalized, u.password_hash, u.display_name, u.status, c.pin_hash
+      FROM student_credentials c JOIN users u ON u.id = c.user_id WHERE c.student_id = ? OR c.phone_normalized = ? LIMIT 2`).bind(login.value, login.value).all();
+    return result.results?.length === 1 ? result.results[0] : null;
   }
   if (login.kind === 'phone') {
     return db.prepare(`SELECT u.id, u.email_normalized, u.password_hash, u.display_name, u.status, c.pin_hash
