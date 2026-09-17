@@ -17,14 +17,6 @@ const randomDigits=length=>{
 async function ensureSchema(db){
   if(schemaReady)return;
   await ensureSchoolTeacherSchema(db);
-  await db.prepare(`CREATE TABLE IF NOT EXISTS school_teacher_profiles (
-    teacher_user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL DEFAULT '',
-    content_json TEXT NOT NULL DEFAULT '{"subjects":[]}',
-    status TEXT NOT NULL DEFAULT 'active',
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  )`).run();
   schemaReady=true;
 }
 
