@@ -18,7 +18,10 @@ for (const tab of ["['overview'","['students'","['teachers'","['courses'","['stu
 assert.ok(adminCss.includes('grid-template-columns:repeat(5,1fr)'), 'Admin Console needs its own five-item bottom nav');
 assert.ok(adminCss.includes('.admin-console-active .main-nav') && adminCss.includes('display:none!important'), 'normal main nav must be hidden while Admin Console is open');
 assert.ok(admin.includes('data-student-access') && admin.includes('data-student-status') && admin.includes('data-student-delete'), 'students need account access, remove/restore, and delete controls');
+assert.ok(admin.includes('data-teacher-status') && admin.includes('data-teacher-delete'), 'teachers need distinct remove/restore and permanent delete controls');
+assert.ok(backend.includes("status TEXT NOT NULL DEFAULT 'active'") && backend.includes("['active','removed']"), 'teacher removal must preserve the profile as an unpublished state');
 assert.ok(admin.includes("id=\"admin-add-student\"") && backend.includes("path==='admin/users'") && backend.includes("method==='POST'"), 'admins need a real add-student path');
+assert.ok(admin.includes("e.currentTarget.querySelector('button[type=\"submit\"]').disabled=true") && !admin.includes("data.loaded=false;await load(true);"), 'one-time Student ID/PIN must remain visible after admin account creation');
 assert.ok(admin.includes('Passwords and PINs remain secret') || admin.includes('كلمات المرور وPIN تبقى سرية'), 'Admin Console must not expose reusable credentials');
 
 for (const marker of ['school_teacher_profiles','content_json','subjects','chapters','lectures','image_url']) {
