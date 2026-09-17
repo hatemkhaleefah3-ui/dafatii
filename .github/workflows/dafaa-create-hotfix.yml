@@ -1,0 +1,32 @@
+name: Dafaa create hotfix
+on:
+  push:
+    branches: [fix/dafaa-create-internal-error]
+    paths: ['scripts/apply-dafaa-create-hotfix.mjs','.github/workflows/dafaa-create-hotfix.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/dafaa-create-internal-error
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Apply hotfix
+        run: node scripts/apply-dafaa-create-hotfix.mjs
+      - name: Verify
+        run: |
+          npm test
+          npm run check
+      - name: Commit runtime changes
+        run: |
+          rm scripts/apply-dafaa-create-hotfix.mjs .github/workflows/dafaa-create-hotfix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Harden Dafaa creation success path'
+          git push origin HEAD:fix/dafaa-create-internal-error
