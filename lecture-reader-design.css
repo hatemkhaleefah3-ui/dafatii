@@ -1,0 +1,250 @@
+/* Lecture file reader presentation.
+   Vertical mode: continuous edge-to-edge pages with no inter-page gap.
+   Horizontal mode: one reader-width page slot at a time with no gap between slots. */
+.file-workspace{
+  --lecture-reader-bg:#e6e9ee;
+  --lecture-reader-control:rgba(18,20,25,.92);
+  --lecture-reader-control-text:#fff;
+  --lecture-reader-float:rgba(236,240,245,.94);
+  --lecture-reader-float-text:#171a20;
+}
+
+.file-workspace .immersive-viewer-shell{
+  width:min(980px,100%);
+  height:min(96dvh,980px);
+  background:var(--lecture-reader-bg);
+}
+
+/* The document itself is the viewer surface; chrome floats above it. */
+.file-workspace .immersive-title{display:none}
+.file-workspace .immersive-close{
+  top:18px;
+  left:18px;
+  width:54px;
+  height:54px;
+  border:0;
+  background:var(--lecture-reader-control);
+  color:var(--lecture-reader-control-text);
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+.file-workspace .viewer-file-status{
+  top:20px;
+  max-width:46%;
+  border:0;
+  background:rgba(18,20,25,.76);
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+
+/* Keep the reader controls floating in the lower-left corner, as in the design. */
+.file-workspace .viewer-bottom-dock{
+  left:18px;
+  right:auto;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  translate:0 0;
+  gap:8px;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.file-workspace .viewer-bottom-dock button{
+  width:56px;
+  height:56px;
+  border:1px solid rgba(22,26,34,.08);
+  background:var(--lecture-reader-float);
+  color:var(--lecture-reader-float-text);
+  box-shadow:0 10px 26px rgba(15,23,42,.16);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.file-workspace .viewer-bottom-dock button:hover{background:#fff}
+.file-workspace .viewer-bottom-dock button:last-child{background:var(--lecture-reader-float);color:var(--lecture-reader-float-text)}
+/* Axis switching already exists inside the settings sheet, so the floating chrome stays compact. */
+.file-workspace .viewer-bottom-dock [data-viewer-dock="axis"]{display:none}
+
+/* PDF reader: remove all stage padding so pages can touch the reader edges. */
+.file-workspace .immersive-file-stage{
+  inset:0;
+  padding:0;
+  background:var(--lecture-reader-bg);
+  scrollbar-gutter:auto;
+}
+.file-workspace .immersive-page-track{
+  width:100%;
+  min-width:100%;
+  min-height:100%;
+  gap:0;
+}
+.file-workspace .immersive-page-label{display:none}
+
+/* Vertical continuous scroll: every PDF page is exactly reader width and pages meet edge-to-edge. */
+.file-workspace .immersive-file-stage[data-axis="vertical"] .immersive-page-track{
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:0;
+}
+.file-workspace .immersive-file-stage[data-axis="vertical"] .immersive-page{
+  width:100%;
+  flex:0 0 auto;
+  display:block;
+  margin:0;
+  padding:0;
+}
+.file-workspace .immersive-file-stage[data-axis="vertical"] .immersive-page canvas{
+  display:block;
+  width:100%!important;
+  height:auto!important;
+  margin:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+
+/* Horizontal page mode: each page gets one reader-width slot. Slots have zero gap;
+   the page is centered vertically inside the reader when its aspect ratio leaves room. */
+.file-workspace .immersive-file-stage[data-axis="horizontal"]{
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scroll-padding:0;
+}
+.file-workspace .immersive-file-stage[data-axis="horizontal"] .immersive-page-track{
+  width:100%;
+  height:100%;
+  min-width:100%;
+  min-height:100%;
+  flex-direction:row;
+  align-items:stretch;
+  gap:0;
+}
+.file-workspace .immersive-file-stage[data-axis="horizontal"] .immersive-page{
+  flex:0 0 100%;
+  width:100%;
+  height:100%;
+  min-width:100%;
+  box-sizing:border-box;
+  display:grid;
+  place-items:center;
+  margin:0;
+  padding:76px 0 92px;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+}
+.file-workspace .immersive-file-stage[data-axis="horizontal"] .immersive-page canvas{
+  display:block;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%;
+  max-height:100%;
+  margin:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+
+/* Office lecture files use the same geometry as PDFs. */
+.file-workspace .office-workspace-stage{
+  inset:0;
+  padding:0;
+  background:var(--lecture-reader-bg);
+  overscroll-behavior:contain;
+}
+.file-workspace .office-page-track{
+  width:100%;
+  min-width:100%;
+  min-height:100%;
+}
+.file-workspace .office-workspace-stage[data-axis="vertical"] .office-page-track{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
+}
+.file-workspace .office-workspace-stage[data-axis="vertical"] .office-page-track>[data-office-page]{
+  width:100%;
+  flex:0 0 auto;
+  margin:0;
+  padding:0;
+}
+.file-workspace .office-workspace-stage[data-axis="vertical"] .word-reader,
+.file-workspace .office-workspace-stage[data-axis="vertical"] .slide-reader{
+  width:100%;
+  max-width:none;
+  margin:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+.file-workspace .office-workspace-stage[data-axis="horizontal"]{
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scroll-padding:0;
+}
+.file-workspace .office-workspace-stage[data-axis="horizontal"] .office-page-track{
+  width:100%;
+  min-width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:row;
+  align-items:stretch;
+  gap:0;
+}
+.file-workspace .office-workspace-stage[data-axis="horizontal"] .office-page-track>[data-office-page]{
+  flex:0 0 100%;
+  width:100%;
+  height:100%;
+  min-width:100%;
+  box-sizing:border-box;
+  display:grid;
+  place-items:center;
+  padding:76px 0 92px;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+}
+.file-workspace .office-workspace-stage[data-axis="horizontal"] .word-reader,
+.file-workspace .office-workspace-stage[data-axis="horizontal"] .slide-reader{
+  max-width:100%;
+  max-height:100%;
+  margin:0;
+  border:0;
+  box-shadow:none;
+}
+
+@media(max-width:760px){
+  .file-workspace .immersive-viewer-shell{
+    width:100%;
+    height:100dvh;
+    max-height:none;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+  }
+  .file-workspace .immersive-close{
+    top:calc(12px + env(safe-area-inset-top));
+    left:12px;
+    width:50px;
+    height:50px;
+  }
+  .file-workspace .viewer-file-status{
+    top:calc(14px + env(safe-area-inset-top));
+    max-width:48%;
+  }
+  .file-workspace .viewer-bottom-dock{
+    left:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+  }
+  .file-workspace .viewer-bottom-dock button{
+    width:54px;
+    height:54px;
+  }
+  .file-workspace .immersive-file-stage,
+  .file-workspace .office-workspace-stage{padding:0}
+  .file-workspace .immersive-file-stage[data-axis="horizontal"] .immersive-page,
+  .file-workspace .office-workspace-stage[data-axis="horizontal"] .office-page-track>[data-office-page]{
+    padding:calc(68px + env(safe-area-inset-top)) 0 calc(82px + env(safe-area-inset-bottom));
+  }
+}
