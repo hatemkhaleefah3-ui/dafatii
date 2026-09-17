@@ -21,8 +21,8 @@
   const lang = () => (typeof interfaceLanguage === 'function' ? interfaceLanguage() : document.documentElement.lang) === 'ar' ? 'ar' : 'en';
   const t = key => copy[lang()][key] || copy.en[key] || key;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
-  const readJSON = (key, fallback) => window.DafatiiDafat?.readJSON?.(key, fallback) ?? fallback;
-  const writeJSON = (key, value) => window.DafatiiDafat?.writeJSON?.(key, value);
+  const readJSON = (key, fallback) => window.DafatiiCourses?.readJSON?.(key, fallback) ?? fallback;
+  const writeJSON = (key, value) => window.DafatiiCourses?.writeJSON?.(key, value);
 
   function prefs() {
     const value = readJSON(PREFS_KEY, {});

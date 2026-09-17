@@ -72,7 +72,7 @@ assert.equal(completionDisposition('pending'), 'verify');
 assert.throws(() => completionDisposition('upload_failed'), error => error.status === 409);
 
 const driveEnv = { GOOGLE_DRIVE_CLIENT_ID: 'client-id', GOOGLE_DRIVE_CLIENT_SECRET: 'client-secret', GOOGLE_DRIVE_REFRESH_TOKEN: 'refresh-token', GOOGLE_DRIVE_FOLDER_ID: 'folder-1234567890' };
-const driveDbFile = { id: fid, user_id: uid, dafaa_id: null, object_key: `drive/pending/${fid}`, original_filename: 'lecture.pdf', content_type: 'application/pdf', expected_size: 42 };
+const driveDbFile = { id: fid, user_id: uid, course_id: null, object_key: `drive/pending/${fid}`, original_filename: 'lecture.pdf', content_type: 'application/pdf', expected_size: 42 };
 const originalFetch = globalThis.fetch;
 let driveCalls = [];
 globalThis.fetch = async (url, init = {}) => {
@@ -89,7 +89,7 @@ const driveUploadUrl = await startDriveUpload(driveEnv, driveDbFile, uid);
 assert.equal(driveUploadUrl, 'https://www.googleapis.com/upload/session-safe-id');
 assert.equal(driveCalls[1].init.headers.get('Authorization'), 'Bearer short-lived-access');
 assert.ok(!driveCalls[1].init.body.includes('client-secret'));
-const driveMetadata = { id: 'drive-file-1234567890', size: '42', mimeType: 'application/pdf', parents: [driveEnv.GOOGLE_DRIVE_FOLDER_ID], trashed: false, appProperties: { dafatiiFileId: fid, dafatiiUserId: uid, dafatiiDafaaId: '' } };
+const driveMetadata = { id: 'drive-file-1234567890', size: '42', mimeType: 'application/pdf', parents: [driveEnv.GOOGLE_DRIVE_FOLDER_ID], trashed: false, appProperties: { dafatiiFileId: fid, dafatiiUserId: uid, dafatiiCourseId: '' } };
 assert.equal(verifyDriveMetadata(driveEnv, driveDbFile, driveMetadata, uid).size, 42);
 assert.throws(() => verifyDriveMetadata(driveEnv, driveDbFile, { ...driveMetadata, parents: ['another-folder'] }, uid), error => error.code === 'UPLOAD_MISMATCH');
 assert.equal(isDriveObject('drive/drive-file-1234567890'), true);

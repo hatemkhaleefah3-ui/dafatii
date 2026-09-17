@@ -2,8 +2,8 @@
   'use strict';
   const KEY = 'dafatii:materialFiles:v1';
   let rendering = false;
-  const all = () => window.DafatiiDafat.readJSON(KEY, []);
-  const save = records => window.DafatiiDafat.writeJSON(KEY, records);
+  const all = () => window.DafatiiCourses.readJSON(KEY, []);
+  const save = records => window.DafatiiCourses.writeJSON(KEY, records);
   function context() {
     const parts = location.hash.replace(/^#\/?/, '').split('/');
     return parts[0] === 'subjects' && parts[1] === 'subject' && parts[3] === 'lectures' ? decodeURIComponent(parts[2] || '') : null;
@@ -23,7 +23,7 @@
       const file = event.target.files[0]; if (!file) return;
       status.textContent = `Uploading ${file.name}…`;
       try {
-        const stored = await window.DafatiiFiles.upload(file, { dafaaId: window.DafatiiDafat.active().id });
+        const stored = await window.DafatiiFiles.upload(file, { courseId: window.DafatiiCourses.active().id });
         save([...all(), { fileId: stored.id, subjectId, filename: stored.filename, contentType: stored.contentType, size: stored.size, createdAt: stored.createdAt }]);
         status.textContent = 'Upload complete.'; section.remove(); render();
       } catch (error) { status.textContent = error.status === 401 ? 'Sign in to upload private files.' : `Upload failed: ${error.message}`; }

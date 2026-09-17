@@ -155,7 +155,7 @@ body{
 .settings-action:hover .settings-motion-icon{color:var(--accent);filter:drop-shadow(0 4px 7px color-mix(in srgb,var(--accent) 22%,transparent))}
 .settings-action[data-extra="settings"]:hover .settings-motion-icon{transform:rotate(80deg) scale(1.06)}
 .settings-action[data-extra="profile"]:hover .settings-motion-icon{transform:translateY(-2px) scale(1.08)}
-.settings-action[data-extra="dafati"]:hover .settings-motion-icon{transform:rotate(-8deg) translateY(-2px)}
+.settings-action[data-extra="change-course"]:hover .settings-motion-icon{transform:rotate(-8deg) translateY(-2px)}
 .settings-action[data-extra="change-language"]:hover .settings-motion-icon{transform:rotate(18deg) scale(1.07)}
 .settings-action[data-extra="dark-mode"]:hover .settings-motion-icon{transform:rotate(-22deg) scale(1.09)}
 .premium-sidebar-trigger:hover .settings-motion-icon{transform:translateX(-2px) scale(1.05)}

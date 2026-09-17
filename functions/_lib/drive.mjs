@@ -60,7 +60,7 @@ export async function startDriveUpload(env, file, userId) {
     name: file.original_filename,
     mimeType: file.content_type,
     parents: [config.folderId],
-    appProperties: { dafatiiFileId: file.id, dafatiiUserId: userId, dafatiiDafaaId: file.dafaa_id || '' }
+    appProperties: { dafatiiFileId: file.id, dafatiiUserId: userId, dafatiiCourseId: file.course_id || '' }
   };
   const response = await driveFetch(env, url, {
     method: 'POST',
@@ -90,7 +90,7 @@ export function verifyDriveMetadata(env, file, metadata, userId) {
   const type = String(metadata?.mimeType || '').toLowerCase().split(';')[0];
   const valid = !metadata?.trashed && Number(metadata?.size) === Number(file.expected_size) && type === file.content_type &&
     Array.isArray(metadata?.parents) && metadata.parents.includes(config.folderId) && properties.dafatiiFileId === file.id &&
-    properties.dafatiiUserId === userId && properties.dafatiiDafaaId === (file.dafaa_id || '');
+    properties.dafatiiUserId === userId && properties.dafatiiCourseId === (file.course_id || '');
   if (!valid) throw new HttpError(409, 'UPLOAD_MISMATCH', 'Uploaded file does not match the authorized upload.');
   return { size: Number(metadata.size), etag: metadata.md5Checksum || null };
 }

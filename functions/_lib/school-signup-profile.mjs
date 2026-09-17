@@ -1,19 +1,10 @@
-async function ensureAcademicProfileSchema(db) {
-  await db.prepare(`CREATE TABLE IF NOT EXISTS student_academic_profiles (
-    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    academic_level TEXT NOT NULL,
-    academic_stage TEXT NOT NULL,
-    academic_field TEXT,
-    institution_name TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  )`).run();
-}
+import { ensureSchoolTeacherSchema } from './school-teachers.mjs';
 
-export async function prepareAcademicProfileInsert(db, userId, identity, now = Date.now()) {
-  if (!identity?.academicLevel || !identity?.academicStage) return null;
-  await ensureAcademicProfileSchema(db);
-  const institutionName = String(identity.institutionName || [identity.universityName, identity.collegeName].filter(Boolean).join(' · ') || '').trim();
+const SCHOOL_LEVELS = new Set(['primary_school','middle_school','preparatory_school']);
+
+export async function prepareSchoolAcademicProfileInsert(db, userId, identity, now = Date.now()) {
+  if (!SCHOOL_LEVELS.has(String(identity?.academicLevel || ''))) return null;
+  await ensureSchoolTeacherSchema(db);
   return db.prepare(`INSERT INTO student_academic_profiles
     (user_id, academic_level, academic_stage, academic_field, institution_name, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -25,10 +16,8 @@ export async function prepareAcademicProfileInsert(db, userId, identity, now = D
       identity.academicLevel,
       identity.academicStage,
       identity.academicField || null,
-      institutionName,
+      String(identity.institutionName || '').trim(),
       now,
       now
     );
 }
-
-export const prepareSchoolAcademicProfileInsert = prepareAcademicProfileInsert;
