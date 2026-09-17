@@ -49,12 +49,6 @@ async function uniqueEnrollmentCode(db) {
   throw new HttpError(503, 'DAFAA_CODE_UNAVAILABLE', 'A dafaa code could not be allocated.');
 }
 
-async function ensureRepresenterAccount(db, userId, now = Date.now()) {
-  await db.prepare(`INSERT INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at)
-    VALUES (?, 'representer', 'university', 'student', ?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET account_type = 'representer', updated_at = excluded.updated_at`).bind(userId, now, now).run();
-}
-
 async function listDafat(context, currentActor) {
   const url = new URL(context.request.url);
   const scope = url.searchParams.get('scope') || 'available';
@@ -77,7 +71,7 @@ async function getDafaa(context, currentActor, dafaaId) {
 }
 
 async function createDafaa(context, currentActor) {
-  if (!currentActor.isAdmin && currentActor.accountType !== 'representer') throw new HttpError(403, 'REPRESENTER_ACCOUNT_REQUIRED', 'A representer account is required to create a dafaa.');
+  if (!currentActor.isAdmin && currentActor.studentStage !== 'university') throw new HttpError(403, 'HIGHER_EDUCATION_REQUIRED', 'Only post-school students can create a dafaa.');
   const input = await readJson(context.request, 65536);
   const value = validateDafaaInput(input);
   const owner = currentActor.isAdmin && input.ownerEmail ? await context.env.DB.prepare('SELECT id, email_normalized, display_name FROM users WHERE email_normalized = ? AND status = ?').bind(normalizeEmail(input.ownerEmail), 'active').first() : currentActor;
@@ -95,7 +89,6 @@ async function createDafaa(context, currentActor) {
     (dafaa_id, user_id, role, status, can_add_content, can_edit_content, can_remove_content, can_manage_students, can_review_applications, can_manage_representers, can_manage_settings, invited_by, joined_at, created_at, updated_at)
     VALUES (?, ?, 'owner', 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(dafaaId, owner.id, ...PERMISSIONS.map(permission => permissions[permission]), currentActor.id, now, now, now);
   await context.env.DB.batch([insertDafaa, insertOwner]);
-  await ensureRepresenterAccount(context.env.DB, owner.id, now);
   await audit(context.env.DB, currentActor.id, 'dafaa.created', { dafaaId, targetUserId: owner.id, metadata: { pricing: value.pricing, visibility: value.visibility, joinPolicy: value.joinPolicy } });
   const row = await context.env.DB.prepare(`${DAFAA_SELECT} WHERE c.id = ?`).bind(currentActor.id, dafaaId).first();
   logEvent('info', 'dafaa.created', { userId: currentActor.id, dafaaId });
