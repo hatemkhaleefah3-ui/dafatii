@@ -17,7 +17,9 @@
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
   const teacherRoute = value => value === 'dashboard' || value === 'change-course';
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
-  const avatar = name => esc(String(name || 'T').trim().slice(0,1).toUpperCase() || 'T');
+  const avatar = teacher => teacher?.imageUrl
+    ? `<img src="${esc(teacher.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+    : esc(String(teacher?.displayName || 'T').trim().slice(0,1).toUpperCase() || 'T');
 
   function renameNav(){
     const label = t('teachers');
@@ -69,7 +71,7 @@
     const item = catalog?.subjects?.[step];
     if(!item) return errorView('');
     const chosen = item.selectedTeacherId || '';
-    const teachers = (item.teachers || []).length ? item.teachers.map((teacher,index)=>`<button class="school-teacher-card ${teacher.id===chosen?'selected':''}" type="button" data-teacher-id="${esc(teacher.id)}" ${saving?'disabled':''}><span class="school-teacher-rank">${index+1}</span><span class="school-teacher-avatar">${avatar(teacher.displayName)}</span><span class="school-teacher-card-copy"><strong>${esc(teacher.displayName)}</strong><small>${esc(meta(teacher,index))}</small></span>${teacher.id===chosen?'<span class="school-selected-check">✓</span>':''}</button>`).join('') : `<div class="school-teacher-empty compact"><strong>${esc(t(item.subject))}</strong><p>${esc(t('noTeachers'))}</p></div>`;
+    const teachers = (item.teachers || []).length ? item.teachers.map((teacher,index)=>`<button class="school-teacher-card ${teacher.id===chosen?'selected':''}" type="button" data-teacher-id="${esc(teacher.id)}" ${saving?'disabled':''}><span class="school-teacher-rank">${index+1}</span><span class="school-teacher-avatar">${avatar(teacher)}</span><span class="school-teacher-card-copy"><strong>${esc(teacher.displayName)}</strong><small>${esc(meta(teacher,index))}</small></span>${teacher.id===chosen?'<span class="school-selected-check">✓</span>':''}</button>`).join('') : `<div class="school-teacher-empty compact"><strong>${esc(t(item.subject))}</strong><p>${esc(t('noTeachers'))}</p></div>`;
     const dots = (catalog.subjects || []).map((subject,index)=>`<button type="button" class="school-step-dot ${index===step?'active':subject.selectedTeacherId?'done':''}" data-school-step="${index}" aria-label="${esc(t(subject.subject))}"><span>${index+1}</span></button>`).join('');
     const last = step === catalog.subjects.length-1;
     return `<section class="school-teacher-page" data-school-teacher-view><header class="school-teacher-picker-head"><div><div class="eyebrow">${esc(t('step'))} ${step+1} ${esc(t('of'))} 7</div><h1>${esc(t(item.subject))}</h1><p>${esc(t('subtitle'))}</p></div><strong class="school-step-count">${step+1}/7</strong></header><div class="school-stepper" aria-label="${esc(t('title'))}">${dots}</div><div class="school-teacher-list">${teachers}</div><footer class="school-teacher-actions"><button class="btn btn-ghost" type="button" data-school-previous ${step===0?'disabled':''}>← ${esc(t('previous'))}</button><button class="btn btn-primary" type="button" data-school-next ${!chosen||saving?'disabled':''}>${esc(saving?t('saving'):last?t('finish'):t('next'))}${saving?'':' →'}</button></footer></section>`;
