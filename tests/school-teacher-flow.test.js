@@ -7,10 +7,10 @@ const index = fs.readFileSync('index.html', 'utf8');
 const server = fs.readFileSync('functions/_lib/school-teachers.mjs', 'utf8');
 const signupProfile = fs.readFileSync('functions/_lib/school-signup-profile.mjs', 'utf8');
 const auth = fs.readFileSync('functions/_lib/auth.mjs', 'utf8');
-const gate = fs.readFileSync('functions/_lib/course-gate.mjs', 'utf8');
-const migration = fs.readFileSync('migrations/0005_school_teacher_system.sql', 'utf8');
-const rootRoute = fs.readFileSync('functions/api/v1/courses.js', 'utf8');
-const nestedRoute = fs.readFileSync('functions/api/v1/courses/[[path]].js', 'utf8');
+const gate = fs.readFileSync('functions/_lib/dafaa-gate.mjs', 'utf8');
+const migration = fs.readFileSync('migrations/0006_dafaa_domain.sql', 'utf8');
+const rootRoute = fs.readFileSync('functions/api/v1/dafat.js', 'utf8');
+const nestedRoute = fs.readFileSync('functions/api/v1/dafat/[[path]].js', 'utf8');
 const schoolRoute = fs.readFileSync('functions/api/v1/school/[[path]].js', 'utf8');
 
 const subjects = ['arabic','english','math','chemistry','physics','biology','islamic_book'];
@@ -39,10 +39,10 @@ assert.ok(signupProfile.includes('student_academic_profiles') && signupProfile.i
 assert.ok(auth.includes("studentStage === 'school'") && auth.includes('prepareSchoolAcademicProfileInsert'), 'school signup must persist academic identity before the first teacher-directory request');
 assert.ok(auth.includes('academicProfileInsert ? [academicProfileInsert]'), 'school academic identity must be part of the signup transaction');
 
-assert.ok(gate.includes("mode:'school-teachers'") && gate.includes('SCHOOL_COURSES_DISABLED'), 'school accounts must be routed away from courses');
-assert.ok(gate.includes("input?.stage === 'school'"), 'new school-stage courses must be blocked');
-assert.ok(rootRoute.includes('assertSameOrigin') && nestedRoute.includes('assertSameOrigin'), 'course gate routes must preserve same-origin mutation protection');
-assert.ok(migration.includes('block_school_student_course_insert') && migration.includes('block_school_student_course_update'), 'database must block school student course memberships');
-assert.ok(migration.includes('block_new_school_courses') && migration.includes("WHERE stage = 'school' AND status = 'active'"), 'school courses must be retired and blocked');
+assert.ok(gate.includes("mode:'school-teachers'") && gate.includes('SCHOOL_DAFAT_DISABLED'), 'school accounts must be routed away from dafat');
+assert.ok(gate.includes("input?.stage === 'school'"), 'new school-stage dafat must be blocked');
+assert.ok(rootRoute.includes('assertSameOrigin') && nestedRoute.includes('assertSameOrigin'), 'dafaa gate routes must preserve same-origin mutation protection');
+assert.ok(migration.includes('block_school_student_dafaa_insert') && migration.includes('block_school_student_dafaa_update'), 'database must block school student dafaa memberships');
+assert.ok(migration.includes('block_new_school_dafat') && migration.includes('block_dafaa_stage_to_school'), 'school dafat must be retired and blocked');
 
 console.log('school teacher flow regression tests passed');

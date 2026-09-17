@@ -6,7 +6,7 @@
     chapters:{singular:'Chapter',plural:'Chapters',arSingular:'الفصل',arPlural:'الفصول'},
     systems:{singular:'System',plural:'Systems',arSingular:'النظام',arPlural:'الأنظمة'},
     blocks:{singular:'Block',plural:'Blocks',arSingular:'البلوك',arPlural:'البلوكات'},
-    courses:{singular:'Course',plural:'Courses',arSingular:'الكورس',arPlural:'الكورسات'}
+    dafat:{singular:'Dafaa',plural:'Dafat',arSingular:'الكورس',arPlural:'الكورسات'}
   });
   const SCHOOL_LEVELS = new Set(['primary_school','middle_school','preparatory_school']);
   let higherStudyType = '';
@@ -18,7 +18,7 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const readProfile = () => window.DafatiiData?.readJSON?.(PROFILE_KEY, null) || (() => { try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; } })();
   const copy = (en, ar) => isArabic() ? ar : en;
-  const typeInfo = type => STUDY_TYPES[type] || STUDY_TYPES.courses;
+  const typeInfo = type => STUDY_TYPES[type] || STUDY_TYPES.dafat;
   const typeSingular = type => isArabic() ? typeInfo(type).arSingular : typeInfo(type).singular;
   const typePlural = type => isArabic() ? typeInfo(type).arPlural : typeInfo(type).plural;
   const defaultUnitName = (type, index = 1) => `${typeSingular(type)} ${index}`;
@@ -27,7 +27,7 @@
     const profile = readProfile() || {};
     const user = window.DafatiiAuth?.user || {};
     if (user.studentStage === 'school' || SCHOOL_LEVELS.has(profile.academicLevel)) return 'chapters';
-    return STUDY_TYPES[profile.studyType] ? profile.studyType : 'courses';
+    return STUDY_TYPES[profile.studyType] ? profile.studyType : 'dafat';
   }
 
   function studyTypeField(levelValue) {
@@ -327,7 +327,7 @@
 
     migrateStudyStructure();
     window.addEventListener('dafatii:datahydrated',migrateStudyStructure);
-    window.addEventListener('dafatii:coursechanged',() => queueMicrotask(migrateStudyStructure));
+    window.addEventListener('dafatii:dafaachanged',() => queueMicrotask(migrateStudyStructure));
   }
 
   patchWorkspace();

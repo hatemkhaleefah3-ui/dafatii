@@ -1,17 +1,17 @@
 # Dafatii backend and storage
 
-Dafatii uses a local-first browser interface with a real Cloudflare backend. UI modules read and write through `window.DafatiiData`; authentication, synchronization and files use the versioned `/api/v1` Pages Functions API. Server sessions use secure HttpOnly cookies, and every course or file action is authorized from D1.
+Dafatii uses a local-first browser interface with a real Cloudflare backend. UI modules read and write through `window.DafatiiData`; authentication, synchronization and files use the versioned `/api/v1` Pages Functions API. Server sessions use secure HttpOnly cookies, and every dafaa or file action is authorized from D1.
 
 ## Hybrid storage model
 
 | Data | Service | Purpose |
 |---|---|---|
-| Accounts, sessions, courses, enrollment, roles and permissions | Cloudflare D1 | Relational and authorization data |
+| Accounts, sessions, dafat, enrollment, roles and permissions | Cloudflare D1 | Relational and authorization data |
 | User-uploaded originals | Owner's private Google Drive | Files, images, audio, video, PDF, Word, Excel, PowerPoint and archives |
 | App-owned manifests and future generated previews/thumbnails | Cloudflare R2 (`R2_STORAGE`) | Durable object storage controlled by Dafatii |
 | API and authorization | Cloudflare Pages Functions | Validates sessions, permissions, uploads, reads and deletion |
 
-R2 is object storage, so it does not replace D1 for accounts or course relationships. The browser never receives the Drive OAuth refresh token or client secret. It receives only a resumable upload session created for one validated file. Reads pass through an authenticated Dafatii content route, so Google Drive's viewer is never used.
+R2 is object storage, so it does not replace D1 for accounts or dafaa relationships. The browser never receives the Drive OAuth refresh token or client secret. It receives only a resumable upload session created for one validated file. Reads pass through an authenticated Dafatii content route, so Google Drive's viewer is never used.
 
 ```mermaid
 flowchart TD
@@ -32,7 +32,7 @@ Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive`
 ## File lifecycle
 
 1. The signed-in browser sends safe metadata to `POST /api/v1/files/upload-init`.
-2. The API validates course permissions, MIME type, size, quota and rate limits, then creates a pending D1 row.
+2. The API validates dafaa permissions, MIME type, size, quota and rate limits, then creates a pending D1 row.
 3. The API uses the server-only Google refresh token to create a resumable Drive upload session inside `GOOGLE_DRIVE_FOLDER_ID`, then keeps that private session in R2.
 4. The browser sends 8 MiB chunks to Dafatii's same-origin upload route. Pages Functions streams each chunk into the Drive session, avoiding mobile-browser CORS failures, and the browser sends the resulting Drive file ID to `POST /api/v1/files/{id}/complete`.
 5. The API verifies size, MIME type, folder, Dafatii ownership properties and known magic bytes before publishing the file.
@@ -91,7 +91,7 @@ Use a dedicated Google account for storage when the site becomes public. Google 
 
 ## Security and recovery
 
-Personal files require ownership. Course files require an active course membership; deletion also requires the content-removal advantage. Missing and unauthorized files both return 404 to prevent identifier discovery. User filenames never become object paths. Logs omit tokens, secrets and upload URLs.
+Personal files require ownership. Dafaa files require an active dafaa membership; deletion also requires the content-removal advantage. Missing and unauthorized files both return 404 to prevent identifier discovery. User filenames never become object paths. Logs omit tokens, secrets and upload URLs.
 
 Back up D1 before migrations and periodically reconcile available D1 file rows with Drive app properties and R2 manifests. If either provider deletion fails, D1 records `delete_failed` so the operation can be retried.
 

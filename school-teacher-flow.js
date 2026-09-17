@@ -1,13 +1,13 @@
 (() => {
   'use strict';
 
-  const ALLOWED = new Set(['dashboard','change-course','profile','settings']);
+  const ALLOWED = new Set(['dashboard','change-dafaa','profile','settings']);
   const SUBJECTS = ['arabic','english','math','chemistry','physics','biology','islamic_book'];
   let catalog = null, loading = null, step = 0, saving = false, refreshedFor = '', scheduled = false;
 
   const copy = {
-    en:{teachers:'My Teachers',title:'Choose your teachers',subtitle:'Choose one teacher for each subject. Teachers are ordered by popularity for your school level, stage and field.',dashboardTitle:'Your school teachers',dashboardText:'School students study by subject and teacher instead of joining courses.',selected:'selected',complete:'Teacher setup complete',continue:'Continue choosing teachers',change:'Change teachers',previous:'Previous',next:'Next',finish:'Finish',step:'Step',of:'of',mostPopular:'Most popular',popular:'Popular',students:'students selected this teacher',teacher:'Teacher',noTeachers:'No teachers have been published for your exact school level, stage and field yet.',loading:'Loading teachers…',error:'Could not load the teacher directory.',retry:'Retry',saving:'Saving…',arabic:'Arabic',english:'English',math:'Math',chemistry:'Chemistry',physics:'Physics',biology:'Biology',islamic_book:'Islamic Book'},
-    ar:{teachers:'مدرسيني',title:'اختر مدرسيك',subtitle:'اختر مدرساً واحداً لكل مادة. يتم ترتيب المدرسين حسب الشهرة بما يطابق مستواك ومرحلتك وفرعك.',dashboardTitle:'مدرسو المدرسة',dashboardText:'طلاب المدارس يدرسون حسب المادة والمدرس بدلاً من التسجيل في الدورات.',selected:'تم اختيارهم',complete:'اكتمل اختيار المدرسين',continue:'متابعة اختيار المدرسين',change:'تغيير المدرسين',previous:'السابق',next:'التالي',finish:'إنهاء',step:'الخطوة',of:'من',mostPopular:'الأكثر شهرة',popular:'شائع',students:'طلاب اختاروا هذا المدرس',teacher:'مدرس',noTeachers:'لم يتم نشر مدرسين مطابقين لمستواك ومرحلتك وفرعك حتى الآن.',loading:'جارٍ تحميل المدرسين…',error:'تعذر تحميل دليل المدرسين.',retry:'إعادة المحاولة',saving:'جارٍ الحفظ…',arabic:'العربي',english:'الإنكليزي',math:'الرياضيات',chemistry:'الكيمياء',physics:'الفيزياء',biology:'الأحياء',islamic_book:'الكتاب الإسلامي'}
+    en:{teachers:'My Teachers',title:'Choose your teachers',subtitle:'Choose one teacher for each subject. Teachers are ordered by popularity for your school level, stage and field.',dashboardTitle:'Your school teachers',dashboardText:'School students study by subject and teacher instead of joining dafat.',selected:'selected',complete:'Teacher setup complete',continue:'Continue choosing teachers',change:'Change teachers',previous:'Previous',next:'Next',finish:'Finish',step:'Step',of:'of',mostPopular:'Most popular',popular:'Popular',students:'students selected this teacher',teacher:'Teacher',noTeachers:'No teachers have been published for your exact school level, stage and field yet.',loading:'Loading teachers…',error:'Could not load the teacher directory.',retry:'Retry',saving:'Saving…',arabic:'Arabic',english:'English',math:'Math',chemistry:'Chemistry',physics:'Physics',biology:'Biology',islamic_book:'Islamic Book'},
+    ar:{teachers:'مدرسيني',title:'اختر مدرسيك',subtitle:'اختر مدرساً واحداً لكل مادة. يتم ترتيب المدرسين حسب الشهرة بما يطابق مستواك ومرحلتك وفرعك.',dashboardTitle:'مدرسو المدرسة',dashboardText:'طلاب المدارس يدرسون حسب المادة والمدرس بدلاً من التسجيل في الدفعات.',selected:'تم اختيارهم',complete:'اكتمل اختيار المدرسين',continue:'متابعة اختيار المدرسين',change:'تغيير المدرسين',previous:'السابق',next:'التالي',finish:'إنهاء',step:'الخطوة',of:'من',mostPopular:'الأكثر شهرة',popular:'شائع',students:'طلاب اختاروا هذا المدرس',teacher:'مدرس',noTeachers:'لم يتم نشر مدرسين مطابقين لمستواك ومرحلتك وفرعك حتى الآن.',loading:'جارٍ تحميل المدرسين…',error:'تعذر تحميل دليل المدرسين.',retry:'إعادة المحاولة',saving:'جارٍ الحفظ…',arabic:'العربي',english:'الإنكليزي',math:'الرياضيات',chemistry:'الكيمياء',physics:'الفيزياء',biology:'الأحياء',islamic_book:'الكتاب الإسلامي'}
   };
 
   const lang = () => document.documentElement.lang === 'ar' ? 'ar' : 'en';
@@ -15,20 +15,20 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const route = () => location.hash.replace(/^#\/?/,'').split('/')[0] || 'landing';
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
-  const teacherRoute = value => value === 'dashboard' || value === 'change-course';
+  const teacherRoute = value => value === 'dashboard' || value === 'change-dafaa';
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
   const avatar = name => esc(String(name || 'T').trim().slice(0,1).toUpperCase() || 'T');
 
   function renameNav(){
     const label = t('teachers');
-    document.querySelectorAll('[data-pre-course-route="change-course"]').forEach(button => {
+    document.querySelectorAll('[data-pre-dafaa-route="change-dafaa"]').forEach(button => {
       if (button.dataset.schoolTeacherLabel === label) return;
       button.dataset.schoolTeacherLabel = label;
       const icon = window.DafatiiIcons?.icon?.('subjects') || '';
       button.innerHTML = `${icon}<span>${esc(label)}</span>`;
       button.setAttribute('aria-label',label); button.setAttribute('title',label);
     });
-    document.querySelectorAll('.quiet-course-button').forEach(button => { button.hidden = true; });
+    document.querySelectorAll('.quiet-dafaa-button').forEach(button => { button.hidden = true; });
   }
 
   async function load(force=false){
@@ -40,7 +40,7 @@
       const missing = catalog.subjects?.findIndex(item => !item.selectedTeacherId) ?? -1;
       if (!catalog.subjects?.[step]) step = missing >= 0 ? missing : 0;
       const uid = window.DafatiiAuth?.user?.id || '';
-      if (uid && refreshedFor !== uid){ refreshedFor = uid; try{ await window.DafatiiCourses?.refresh?.(); }catch{} }
+      if (uid && refreshedFor !== uid){ refreshedFor = uid; try{ await window.DafatiiDafat?.refresh?.(); }catch{} }
       return catalog;
     }).finally(() => { loading = null; });
     return loading;
@@ -77,7 +77,7 @@
 
   function bind(main){
     main.querySelector('[data-school-retry]')?.addEventListener('click',()=>{catalog=null; void render(true);});
-    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='change-course';});
+    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='change-dafaa';});
     main.querySelectorAll('[data-school-step]').forEach(button=>button.addEventListener('click',()=>{step=Number(button.dataset.schoolStep)||0; void render(true);}));
     main.querySelector('[data-school-previous]')?.addEventListener('click',()=>{step=Math.max(0,step-1); void render(true);});
     main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){location.hash='dashboard';return;}step+=1;void render(true);});
@@ -99,7 +99,7 @@
     if(!force && catalog && main.dataset.schoolTeacherRoute===current && main.querySelector('[data-school-teacher-view]'))return;
     main.dataset.schoolTeacherRoute=current;
     if(!catalog||force&&!catalog){main.innerHTML=loadingView();try{await load(Boolean(force&&!catalog));}catch(error){main.innerHTML=errorView(error.message||t('error'));bind(main);return;}if(route()!==current)return;}
-    main.innerHTML=current==='change-course'?pickerView():dashboardView(); bind(main);
+    main.innerHTML=current==='change-dafaa'?pickerView():dashboardView(); bind(main);
   }
 
   function enhance(){
@@ -121,7 +121,7 @@
   }
   window.addEventListener('hashchange',schedule);
   window.addEventListener('dafatii:auth:changed',()=>{catalog=null;refreshedFor='';schedule();});
-  window.addEventListener('dafatii:coursesloaded',schedule);
+  window.addEventListener('dafatii:dafatloaded',schedule);
   window.addEventListener('dafatii:datahydrated',schedule);
   schedule();
 })();

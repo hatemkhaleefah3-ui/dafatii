@@ -5,12 +5,12 @@ const js = fs.readFileSync('study-structure.js','utf8');
 const css = fs.readFileSync('study-structure.css','utf8');
 const index = fs.readFileSync('index.html','utf8');
 
-for (const type of ['chapters','systems','blocks','courses']) {
+for (const type of ['chapters','systems','blocks','dafat']) {
   assert.ok(js.includes(`${type}:`) || js.includes(`'${type}'`) || js.includes(`\"${type}\"`), `missing study type: ${type}`);
 }
 assert.ok(js.includes("SCHOOL_LEVELS") && js.includes("value=\"chapters\""), 'school accounts must be fixed to chapters');
 assert.ok(js.includes('select name="studyType" required'), 'higher-education signup must require study type selection');
-assert.ok(js.includes("return STUDY_TYPES[profile.studyType] ? profile.studyType : 'courses';"), 'existing higher-education accounts must retain a courses fallback');
+assert.ok(js.includes("return STUDY_TYPES[profile.studyType] ? profile.studyType : 'dafat';"), 'existing higher-education accounts must retain a dafat fallback');
 assert.ok(js.includes('studyUnits') && js.includes('activeStudyUnitId'), 'subjects must carry study units and an active unit');
 assert.ok(js.includes('lecture.studyUnitId') && js.includes('lectures.filter'), 'subject content must be scoped to the selected study unit');
 assert.ok(js.includes('data-study-unit-select') && js.includes('data-study-unit-detail-select'), 'subject cards and subject detail need unit selectors');

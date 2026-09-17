@@ -1,4 +1,4 @@
-html[data-school-student] .quiet-course-button{display:none!important}
+html[data-school-student] .quiet-dafaa-button{display:none!important}
 .school-teacher-page{width:min(1040px,100%);margin:0 auto;padding:10px 0 44px;color:var(--text,#1d1d1f)}
 .school-teacher-hero,.school-teacher-picker-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}.school-teacher-hero h1,.school-teacher-picker-head h1{margin:5px 0 8px;font-size:clamp(30px,5vw,48px);letter-spacing:-.045em}.school-teacher-hero p,.school-teacher-picker-head p{max-width:680px;margin:0;color:var(--muted,#667085);line-height:1.6}
 .school-teacher-score,.school-step-count{flex:0 0 auto;display:grid;place-items:center;min-width:102px;min-height:88px;padding:14px;border:1px solid var(--line,#dedee3);border-radius:22px;background:var(--surface,#fff)}.school-teacher-score strong,.school-step-count{font-size:27px;font-weight:800;font-variant-numeric:tabular-nums}.school-teacher-score span{font-size:11px;color:var(--muted,#667085)}

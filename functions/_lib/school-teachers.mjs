@@ -69,26 +69,26 @@ export async function ensureSchoolTeacherSchema(db) {
   )`).run();
   await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_assignments_match_idx ON school_teacher_assignments(subject, academic_level, academic_stage, academic_field, status, fame_score DESC)').run();
   await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_selections_teacher_idx ON school_teacher_selections(teacher_user_id, subject)').run();
-  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert
-    BEFORE INSERT ON course_memberships
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_school_student_dafaa_insert
+    BEFORE INSERT ON dafaa_memberships
     WHEN NEW.role = 'student' AND NEW.status <> 'removed'
       AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`).run();
-  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_school_student_course_update
-    BEFORE UPDATE OF role, status ON course_memberships
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_DAFAT_DISABLED'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_school_student_dafaa_update
+    BEFORE UPDATE OF role, status ON dafaa_memberships
     WHEN NEW.role = 'student' AND NEW.status <> 'removed'
       AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`).run();
-  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_new_school_courses
-    BEFORE INSERT ON courses WHEN NEW.stage = 'school'
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`).run();
-  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_course_stage_to_school
-    BEFORE UPDATE OF stage ON courses WHEN NEW.stage = 'school'
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`).run();
-  await db.prepare("UPDATE courses SET status = 'archived', updated_at = ? WHERE stage = 'school' AND status = 'active'").bind(nowMs()).run();
-  await db.prepare(`UPDATE course_memberships SET status = 'removed', updated_at = ?
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_DAFAT_DISABLED'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_new_school_dafat
+    BEFORE INSERT ON dafat WHEN NEW.stage = 'school'
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_DAFAT_REPLACED_BY_TEACHERS'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_dafaa_stage_to_school
+    BEFORE UPDATE OF stage ON dafat WHEN NEW.stage = 'school'
+    BEGIN SELECT RAISE(ABORT, 'SCHOOL_DAFAT_REPLACED_BY_TEACHERS'); END`).run();
+  await db.prepare("UPDATE dafat SET status = 'archived', updated_at = ? WHERE stage = 'school' AND status = 'active'").bind(nowMs()).run();
+  await db.prepare(`UPDATE dafaa_memberships SET status = 'removed', updated_at = ?
     WHERE role = 'student' AND status <> 'removed'
-      AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = course_memberships.user_id AND p.account_type = 'student' AND p.student_stage = 'school')`).bind(nowMs()).run();
+      AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = dafaa_memberships.user_id AND p.account_type = 'student' AND p.student_stage = 'school')`).bind(nowMs()).run();
   schemaReady = true;
 }
 
@@ -154,8 +154,8 @@ async function formalCandidates(db, identity, subject) {
 
 async function legacyCandidates(db, subject) {
   const result = await db.prepare(`SELECT c.owner_user_id, u.display_name, c.name, c.institution,
-      (SELECT COUNT(*) FROM course_memberships cm WHERE cm.course_id = c.id AND cm.status = 'active') AS popularity
-    FROM courses c JOIN users u ON u.id = c.owner_user_id AND u.status = 'active'
+      (SELECT COUNT(*) FROM dafaa_memberships cm WHERE cm.dafaa_id = c.id AND cm.status = 'active') AS popularity
+    FROM dafat c JOIN users u ON u.id = c.owner_user_id AND u.status = 'active'
     WHERE c.stage = 'school' ORDER BY popularity DESC, c.updated_at DESC LIMIT 500`).all();
   const byTeacher = new Map();
   for (const row of result.results || []) {

@@ -1,5 +1,5 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from './crypto.mjs';
-import { validateProfileInput } from './courses.mjs';
+import { validateProfileInput } from './dafat.mjs';
 import { createStudentCredentials, findStudentLogin, normalizeLoginIdentifier, validateStudentSignup, verifyStudentPin } from './student-identity.mjs';
 import { prepareSchoolAcademicProfileInsert } from './school-signup-profile.mjs';
 import { HttpError, logEvent } from './http.mjs';
