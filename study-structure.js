@@ -1,22 +1,16 @@
 (() => {
   'use strict';
 
-  const PROFILE_KEY = 'dafatii:studentProfile:v2';
   const STUDY_TYPES = Object.freeze({
     chapters:{singular:'Chapter',plural:'Chapters',arSingular:'الفصل',arPlural:'الفصول'},
     systems:{singular:'System',plural:'Systems',arSingular:'النظام',arPlural:'الأنظمة'},
     blocks:{singular:'Block',plural:'Blocks',arSingular:'البلوك',arPlural:'البلوكات'},
     courses:{singular:'Course',plural:'Courses',arSingular:'الكورس',arPlural:'الكورسات'}
   });
-  const SCHOOL_LEVELS = new Set(['primary_school','middle_school','preparatory_school']);
-  let higherStudyType = '';
-  let attachedAuthForm = null;
-  let authFormObserver = null;
   let workspacePatched = false;
 
   const isArabic = () => document.documentElement.lang === 'ar';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const readProfile = () => window.DafatiiData?.readJSON?.(PROFILE_KEY, null) || (() => { try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; } })();
   const copy = (en, ar) => isArabic() ? ar : en;
   const typeInfo = type => STUDY_TYPES[type] || STUDY_TYPES.courses;
   const typeSingular = type => isArabic() ? typeInfo(type).arSingular : typeInfo(type).singular;
@@ -24,78 +18,11 @@
   const defaultUnitName = (type, index = 1) => `${typeSingular(type)} ${index}`;
 
   function effectiveStudyType() {
-    const profile = readProfile() || {};
     const user = window.DafatiiAuth?.user || {};
-    if (user.studentStage === 'school' || SCHOOL_LEVELS.has(profile.academicLevel)) return 'chapters';
-    return STUDY_TYPES[profile.studyType] ? profile.studyType : 'courses';
+    if (user.studentStage === 'school') return 'chapters';
+    const activeCourse = window.DafatiiCourses?.active?.() || {};
+    return STUDY_TYPES[activeCourse.studyType] ? activeCourse.studyType : 'courses';
   }
-
-  function studyTypeField(levelValue) {
-    const school = SCHOOL_LEVELS.has(levelValue);
-    const label = copy('Type of study','نوع الدراسة');
-    const hint = copy('This controls how every subject is divided and keeps each unit’s content separate.','يحدد هذا الخيار طريقة تقسيم كل مادة، ويحتفظ بمحتوى كل وحدة بشكل مستقل.');
-    if (school) {
-      return `<div class="field student-flow-field study-type-field" data-study-type-field><label>${esc(label)}</label><div class="study-type-locked"><strong>${esc(copy('Chapters','الفصول'))}</strong><span>${esc(copy('School study is organized by chapters.','الدراسة المدرسية منظمة تلقائياً حسب الفصول.'))}</span></div><input type="hidden" name="studyType" value="chapters"></div>`;
-    }
-    const selected = STUDY_TYPES[higherStudyType] ? higherStudyType : '';
-    const options = [
-      `<option value=""${selected ? '' : ' selected'} disabled>${esc(copy('Select study type','اختر نوع الدراسة'))}</option>`,
-      ...Object.keys(STUDY_TYPES).map(type => `<option value="${type}"${selected === type ? ' selected' : ''}>${esc(typePlural(type))}</option>`)
-    ].join('');
-    return `<div class="field student-flow-field study-type-field" data-study-type-field><label>${esc(label)}</label><select name="studyType" required>${options}</select><p class="student-flow-hint">${esc(hint)}</p></div>`;
-  }
-
-  function injectStudyTypeField() {
-    const form = document.getElementById('auth-form');
-    if (!form) return;
-    const level = form.elements?.academicLevel;
-    if (!level) {
-      form.querySelector('[data-study-type-field]')?.remove();
-      return;
-    }
-    const step = form.querySelector('.student-flow-step');
-    if (!step) return;
-    const current = form.querySelector('[data-study-type-field]');
-    const levelValue = String(level.value || '');
-    const shouldBeSchool = SCHOOL_LEVELS.has(levelValue);
-    const currentSchool = current?.querySelector('input[name="studyType"]')?.value === 'chapters';
-    if (!current || currentSchool !== shouldBeSchool) {
-      current?.remove();
-      step.insertAdjacentHTML('beforeend', studyTypeField(levelValue));
-    }
-    const select = form.querySelector('select[name="studyType"]');
-    if (select && !select.dataset.studyTypeBound) {
-      select.dataset.studyTypeBound = 'true';
-      select.addEventListener('change', () => { if (STUDY_TYPES[select.value]) higherStudyType = select.value; });
-    }
-    if (!level.dataset.studyTypeBound) {
-      level.dataset.studyTypeBound = 'true';
-      level.addEventListener('change', () => queueMicrotask(() => {
-        form.querySelector('[data-study-type-field]')?.remove();
-        injectStudyTypeField();
-      }));
-    }
-  }
-
-  function attachSignupForm() {
-    const form = document.getElementById('auth-form');
-    if (form === attachedAuthForm) {
-      injectStudyTypeField();
-      return;
-    }
-    authFormObserver?.disconnect();
-    authFormObserver = null;
-    attachedAuthForm = form || null;
-    if (!form) return;
-    authFormObserver = new MutationObserver(() => queueMicrotask(injectStudyTypeField));
-    authFormObserver.observe(form,{childList:true});
-    injectStudyTypeField();
-  }
-
-  const appRoot = document.getElementById('app');
-  if (appRoot) new MutationObserver(attachSignupForm).observe(appRoot,{childList:true});
-  window.addEventListener('hashchange', attachSignupForm);
-  attachSignupForm();
 
   function patchWorkspace() {
     if (workspacePatched) return;
@@ -107,7 +34,7 @@
     const originalLectureListView = lectureListView;
     const originalBindLectures = bindLectures;
 
-    function normalizedUnits(subject, type = subject?.studyType || effectiveStudyType()) {
+    function normalizedUnits(subject, type = effectiveStudyType()) {
       const source = Array.isArray(subject?.studyUnits) ? subject.studyUnits : [];
       const units = source
         .filter(unit => unit && typeof unit === 'object')
@@ -118,7 +45,7 @@
     function normalizeSubject(subject) {
       if (!subject) return false;
       let changed = false;
-      const type = STUDY_TYPES[subject.studyType] ? subject.studyType : effectiveStudyType();
+      const type = effectiveStudyType();
       if (subject.studyType !== type) { subject.studyType = type; changed = true; }
       const units = normalizedUnits(subject,type);
       const oldSerialized = JSON.stringify(subject.studyUnits || []);
@@ -257,7 +184,7 @@
     openSubjectSheet = function(subjectId = '') {
       const subject = state.subjects.find(item => item.id === subjectId);
       if (subject) normalizeSubject(subject);
-      const type = subject?.studyType || effectiveStudyType();
+      const type = effectiveStudyType();
       let draftUnits = subject ? subject.studyUnits.map(unit => ({...unit})) : [{id:makeId('unit'),name:defaultUnitName(type,1)}];
       const root = document.getElementById('overlay-root');
       if (!root) return;
@@ -327,6 +254,7 @@
 
     migrateStudyStructure();
     window.addEventListener('dafatii:datahydrated',migrateStudyStructure);
+    window.addEventListener('dafatii:coursesloaded',() => queueMicrotask(migrateStudyStructure));
     window.addEventListener('dafatii:coursechanged',() => queueMicrotask(migrateStudyStructure));
   }
 
