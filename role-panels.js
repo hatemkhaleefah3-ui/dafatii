@@ -37,7 +37,7 @@
   function denied(message){return `<section class="empty-state"><div class="empty-icon">⛔</div><h1>Access denied</h1><p>${esc(message)}</p></section>`;}
 
   const previousContent=workspaceContent;workspaceContent=function(page,parts,title){if(page==='representer')return representativePage();if(page==='admin')return adminPage();return previousContent(page,parts,title);};
-  const previousWorkspace=workspace;workspace=function(current){previousWorkspace(current);const page=current.split('/')[0];applyRoleMode();if(page==='representer')bindRepresentative();if(page==='admin')bindAdmin();if(page==='dashboard'&&['owner','representer'].includes(window.DafatiiCourses.active().membership?.role))addDashboardPanelButton();};
+  const previousWorkspace=workspace;workspace=function(current){previousWorkspace(current);const page=current.split('/')[0];applyRoleMode();if(page==='representer')bindRepresentative();if(page==='admin'&&!window.__dafatiiAdminConsoleInstalled)bindAdmin();if(page==='dashboard'&&['owner','representer'].includes(window.DafatiiCourses.active().membership?.role))addDashboardPanelButton();};
   function applyRoleMode(){const course=window.DafatiiCourses.active(),editable=['owner','representer'].includes(course.membership?.role)&&(course.membership.role==='owner'||['add_content','edit_content','remove_content'].some(key=>course.membership.permissions?.[key]))||window.DafatiiAuth.user?.platformRole==='admin';document.body.classList.toggle('course-readonly',!editable);}
   function addDashboardPanelButton(){
     const dashboard=document.querySelector('.suite-dashboard'),head=dashboard?.querySelector('.suite-head');

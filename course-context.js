@@ -9,6 +9,7 @@
     'dafatii:studyRoomWorkspace:v1','dafatii:chatState:v1','dafatii:chatProState:v1',
     'dafatii:materialFiles:v1'
   ]);
+  const GLOBAL_USER_KEYS = new Set(['dafatii:studyRoomState:v1','dafatii:studyRoomWorkspace:v1']);
   const ICONS = ['⌘','🧬','◫','⚙','🎓','◇'];
 
   const TEMPLATES = {
@@ -99,8 +100,20 @@
   function active(){return runtime.courses.find(course=>course.id===runtime.activeId)||runtime.courses.find(course=>course.membership?.status==='active')||fallbackCourse;}
   function list(){return clone(runtime.courses);}
   function editable(permission){const membership=active().membership;if(runtime.actor?.platformRole==='admin'||membership?.role==='owner')return true;return membership?.role==='representer'&&Boolean(membership.permissions?.[permission]);}
-  function readJSON(key,fallback){return COURSE_KEYS.has(key)&&runtime.activeId?cacheRead(key,fallback):rawRead(key,fallback);}
+  function readJSON(key,fallback){
+    if(GLOBAL_USER_KEYS.has(key)){
+      const globalValue=rawRead(key,undefined);
+      if(globalValue!==undefined&&globalValue!==null)return globalValue;
+      if(runtime.activeId){
+        const legacy=cacheRead(key,undefined,runtime.activeId);
+        if(legacy!==undefined&&legacy!==null){rawWrite(key,legacy);return legacy;}
+      }
+      return fallback;
+    }
+    return COURSE_KEYS.has(key)&&runtime.activeId?cacheRead(key,fallback):rawRead(key,fallback);
+  }
   function writeJSON(key,value){
+    if(GLOBAL_USER_KEYS.has(key))return rawWrite(key,value);
     if(!COURSE_KEYS.has(key))return rawWrite(key,value);
     if(!runtime.activeId||!active().membership||active().membership.status!=='active')throw new Error('Open an enrolled course first.');
     if(!['add_content','edit_content','remove_content'].some(editable))throw new Error('This course is read-only for students.');
@@ -109,7 +122,7 @@
     const pending=prior.then(async()=>{const baseRevision=runtime.revisions.get(queueKey)||0;const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision,record:{key,format:'json',value,deleted:false}}});runtime.revisions.set(queueKey,result.revision);}).catch(async error=>{if(previous===null)localStorage.removeItem(cacheKey(key,courseId));else cacheWrite(key,previous,courseId);try{await hydrate(courseId);}catch{}window.dispatchEvent(new CustomEvent('dafatii:coursewriteerror',{detail:{error,key,courseId}}));}).finally(()=>{if(runtime.queues.get(queueKey)===pending)runtime.queues.delete(queueKey);});runtime.queues.set(queueKey,pending);
     return value;
   }
-  function remove(key){if(!COURSE_KEYS.has(key))return window.DafatiiData.remove(key);return writeJSON(key,null);}
+  function remove(key){if(GLOBAL_USER_KEYS.has(key)||!COURSE_KEYS.has(key))return window.DafatiiData.remove(key);return writeJSON(key,null);}
 
   async function hydrate(courseId){
     const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{idempotent:true});
