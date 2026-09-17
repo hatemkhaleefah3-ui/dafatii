@@ -1,6 +1,7 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from './crypto.mjs';
 import { validateProfileInput } from './courses.mjs';
 import { createStudentCredentials, findStudentLogin, normalizeLoginIdentifier, validateStudentSignup, verifyStudentPin } from './student-identity.mjs';
+import { prepareSchoolAcademicProfileInsert } from './school-signup-profile.mjs';
 import { HttpError, logEvent } from './http.mjs';
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
@@ -81,10 +82,11 @@ export async function createUser(db, input, env = {}, now = Date.now()) {
   const pepper = passwordPepper(env);
   const passwordHash = await hashPassword(password, 100000, pepper);
   const credentialsInsert = await createStudentCredentials(db, id, validated, pepper, now);
+  const academicProfileInsert = studentStage === 'school' ? await prepareSchoolAcademicProfileInsert(db, id, validated, now) : null;
   try {
     const userInsert = db.prepare('INSERT INTO users (id, email_normalized, password_hash, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, email, passwordHash, displayName, 'active', now, now);
     const profileInsert = db.prepare('INSERT INTO account_profiles (user_id, account_type, student_stage, platform_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, accountType, studentStage, 'student', now, now);
-    await db.batch([userInsert, profileInsert, credentialsInsert]);
+    await db.batch([userInsert, profileInsert, credentialsInsert, ...(academicProfileInsert ? [academicProfileInsert] : [])]);
   }
   catch (error) { if (/unique|constraint/i.test(String(error))) throw new HttpError(409, 'ACCOUNT_UNAVAILABLE', 'An account with these details cannot be created.'); throw error; }
   return { id, email, displayName, accountType, studentStage, platformRole:'student' };
