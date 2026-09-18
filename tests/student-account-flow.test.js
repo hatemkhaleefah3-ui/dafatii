@@ -14,9 +14,11 @@ assert.ok(ui.includes("const profile = { ...signupDraft, studentId, accountType:
 assert.ok(ui.includes('sessionStorage.setItem(INITIAL_PIN_KEY, pin)'), 'initial PIN must stay session-scoped');
 assert.ok(ui.includes("card.classList.toggle('flipped')"), 'student card must flip on click');
 assert.ok(css.includes('.student-id-card.flipped .student-card-inner') && css.includes('rotateY(180deg)'), 'card flip styles missing');
-assert.ok(index.includes('student-account-flow.css?v=20260917-1') && index.includes('student-account-flow.js?v=20260918-1'), 'account flow assets must be loaded');
+assert.ok(index.includes('student-account-flow.css?v=20260917-1') && index.includes('student-account-flow.js?v=20260919-1'), 'account flow assets must be loaded');
 assert.ok(ui.includes("ONBOARDING_KEY = 'dafatii:onboarding:v1'") && ui.includes("location.hash = 'onboarding'"), 'new signups must enter the sequential onboarding flow before the workspace');
 assert.ok(server.includes('student_credentials') && server.includes('validateStudentSignup') && server.includes('verifyStudentPin'), 'student identity server module incomplete');
+assert.ok(!ui.includes("field('birthDate'"), 'student signup must not ask for birth date');
+assert.ok(server.includes("if (!text) return '';"), 'server must accept omitted birth date for the revised signup flow');
 assert.ok(migration.includes('student_id TEXT NOT NULL UNIQUE') && migration.includes('pin_hash TEXT NOT NULL'), 'credential migration must keep ID unique and PIN hashed');
 
 console.log('student account flow regression tests passed');
