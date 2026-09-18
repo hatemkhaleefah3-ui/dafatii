@@ -41,6 +41,8 @@ export async function ensureSchoolTeacherSchema(db) {
   const required = new Set(['student_academic_profiles','school_teacher_assignments','school_teacher_selections','school_teacher_profiles']);
   const existing = await db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('student_academic_profiles','school_teacher_assignments','school_teacher_selections','school_teacher_profiles')").all();
   for (const row of existing.results || []) required.delete(String(row.name));
+  await db.prepare('DROP TRIGGER IF EXISTS block_school_student_course_insert').run();
+  await db.prepare('DROP TRIGGER IF EXISTS block_school_student_course_update').run();
   if (required.size) {
     await db.prepare(`CREATE TABLE IF NOT EXISTS student_academic_profiles (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -81,8 +83,6 @@ export async function ensureSchoolTeacherSchema(db) {
     )`).run();
     await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_assignments_match_idx ON school_teacher_assignments(subject, academic_level, academic_stage, academic_field, status, fame_score DESC)').run();
     await db.prepare('CREATE INDEX IF NOT EXISTS school_teacher_selections_teacher_idx ON school_teacher_selections(teacher_user_id, subject)').run();
-    await db.prepare('DROP TRIGGER IF EXISTS block_school_student_course_insert').run();
-    await db.prepare('DROP TRIGGER IF EXISTS block_school_student_course_update').run();
     await db.prepare(`CREATE TRIGGER IF NOT EXISTS block_new_school_courses
       BEFORE INSERT ON courses WHEN NEW.stage = 'school'
       BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`).run();
