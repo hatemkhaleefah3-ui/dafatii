@@ -25,7 +25,6 @@ export const normalizePhone = value => {
 
 function birthDate(value) {
   const text = String(value || '').trim();
-  if (!text) return '';
   const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) throw new HttpError(400, 'INVALID_BIRTH_DATE', 'Birth date is invalid.');
   const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
@@ -57,6 +56,11 @@ export function validateStudentSignup(input = {}) {
     collegeName = '';
   }
 
+  const country = clean(input.country, 120);
+  const city = clean(input.city, 120);
+  const town = clean(input.town, 120);
+  if (!country || !city || !town) throw new HttpError(400, 'INVALID_LOCATION', 'Country, city and town are required.');
+
   const gender = String(input.gender || '').trim();
   if (!GENDERS.has(gender)) throw new HttpError(400, 'INVALID_GENDER', 'Gender selection is invalid.');
   const rawPhone = String(input.phone || '').trim();
@@ -68,7 +72,7 @@ export function validateStudentSignup(input = {}) {
   if (!/^\d{4}$/.test(pin)) throw new HttpError(400, 'INVALID_PIN', 'PIN must contain exactly 4 digits.');
 
   return {
-    birthDate:birthDate(input.birthDate), gender, phone, studentId, pin,
+    birthDate:birthDate(input.birthDate), country, city, town, gender, phone, studentId, pin,
     academicLevel, academicStage, academicField, institutionName, universityName, collegeName,
     studentStage:rule.legacy
   };
