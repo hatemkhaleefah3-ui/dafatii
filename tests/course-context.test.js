@@ -32,6 +32,12 @@ vm.runInContext(source,context);
   api.writeJSON('dafatii:subjects',[{id:'databases',name:'Databases'}]);
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.some(([path,options])=>path.endsWith('/content')&&options.method==='PUT'),true);
+  api.remove('dafatii:subjects');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  const deleteRequest=[...requests].reverse().find(([path,options])=>path.endsWith('/content')&&options.method==='PUT'&&options.body?.record?.deleted);
+  assert.ok(deleteRequest,'course removal must persist an explicit tombstone');
+  assert.equal(deleteRequest[1].body.record.deleted,true);
+  assert.equal(deleteRequest[1].body.record.value,null);
   assert.equal(events.some(event=>event.type==='dafatii:coursesloaded'),true);
 
   api.setSchoolCourse({
