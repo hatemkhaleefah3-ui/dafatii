@@ -304,8 +304,9 @@
     if(view==='auto'){
       busy=true;
       try{
-        // School Process 1 only needs the teacher catalog. Do not block it on Course discovery/schema work.
-        if(isHigher())await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
+        // New accounts can render Process 1 without Course discovery. Only resume/recovery states need server Course state first.
+        const record=read();
+        if(isHigher()&&(record?.legacyRecovery||record?.primaryComplete))await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
         await determineView();
       }
       catch(error){message=error.message||String(error);view='teacher-error';}
