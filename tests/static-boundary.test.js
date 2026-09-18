@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=24/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=25/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=12/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=13/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
@@ -67,6 +67,12 @@ assert.doesNotMatch(quietDesign, /quiet-toolbar-brand/, 'retired top-bar logo st
 assert.doesNotMatch(quietDesign, /\.quiet-tabs/, 'the inherited bottom navigation implementation must be removed');
 assert.match(quietShell, /const bottomNavItem =/, 'the bottom navigation must use dedicated markup');
 assert.match(quietShell, /class="bottom-nav-item/, 'the bottom navigation must not reuse sidebar links');
+assert.match(quietShell, /schoolStudent=user\?\.accountType==='student'&&user\?\.studentStage==='school'/, 'school student workspace must identify the school-specific top-bar switcher state');
+assert.match(quietShell, /school-course-switcher/, 'school students need an explicit course switcher beside the profile avatar');
+assert.match(quietShell, /const choices=schoolStudent\?ordered:ordered\.slice\(0,3\)/, 'school course switcher must show all active joined courses, including the prepared school course');
+assert.match(quietShell, /schoolStudent&&active\.id\?active\.name:text\('courses'\)/, 'school course switcher must surface the active course name in the top bar');
+assert.match(quietDesign, /\.quiet-course-button\.school-course-switcher\{[^}]*border-radius:20px[^}]*background:var\(--surface-2\)/s, 'school course switcher must use the existing compact top-bar visual language');
+assert.match(quietDesign, /@media\(max-width:767px\)[\s\S]*\.quiet-course-button\.school-course-switcher span\{[^}]*display:block[^}]*max-width:84px/, 'school course switcher label must remain visible beside the profile on phones');
 assert.match(quietDesign, /\.quiet-toolbar\{position:fixed;top:10px;[^}]*border-radius:20px/, 'desktop main navigation must use a rounded fixed surface');
 assert.match(quietDesign, /\.bottom-nav\{position:fixed;left:50%;[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/, 'authenticated mobile navigation must use the replacement floating dock');
 assert.match(quietDesign, /@keyframes bottom-nav-arrive/, 'the replacement bottom navigation needs deliberate selection motion');
