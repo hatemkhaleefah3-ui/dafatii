@@ -26,7 +26,7 @@ assert.ok(ui.includes('data-school-previous') && ui.includes('data-school-next')
 assert.ok(ui.includes('step>=catalog.subjects.length-1') || ui.includes('step >= catalog.subjects.length - 1'), 'final step must finish the flow');
 assert.ok(ui.includes('teacher.fameScore') && ui.includes('teacher.selectionCount'), 'teacher cards must expose popularity ordering signals');
 assert.ok(css.includes('.school-stepper') && css.includes('.school-teacher-card'), 'school teacher UI styles missing');
-assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-6'), 'school teacher behavior must be cache-busted for the school-course integration');
+assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-7'), 'school teacher behavior must be cache-busted for the school-course integration');
 assert.ok(ui.includes("value === 'school-teachers'") && !ui.includes("value === 'change-course' ||"), 'teacher selection must have its own route and must not replace the real Courses page');
 assert.ok(ui.includes('if(!ALLOWED.has(current) || !teacherRoute(current))return;'), 'teacher renderer must stay out of unrelated routes');
 assert.ok(ui.includes("if(!teacherRoute(route()))return;"), 'teacher enhancement must be inert outside dashboard and teacher picker once the catalog is registered');
@@ -36,7 +36,7 @@ assert.ok(ui.includes(".observe(appRoot,{childList:true});"), 'teacher observer 
 assert.ok(!ui.includes('subtree:true'), 'teacher observer must not watch every profile descendant mutation');
 assert.ok(!ui.includes("if(!ALLOWED.has(current)){location.hash='dashboard';return;}"), 'teacher flow must not tear down the signup route after auth changes');
 
-assert.ok(server.includes('ORDER BY a.fame_score DESC, selection_count DESC'), 'teacher directory must sort by fame and student selections');
+assert.ok(server.includes('ORDER BY a.subject, a.fame_score DESC, selection_count DESC') && server.includes('(b.fameScore - a.fameScore) || (b.selectionCount - a.selectionCount)'), 'teacher directory must preserve per-subject fame and student-selection ranking');
 assert.ok(server.includes('school_teacher_profiles') && server.includes('image_url') && server.includes('chapters'), 'teacher catalog must expose managed profile images and subject chapters');
 assert.ok(ui.includes('teacher?.imageUrl') && ui.includes('<img src='), 'school teacher picker must render managed teacher profile images');
 assert.ok(ui.includes('window.DafatiiSchoolWorkspaceReady=ready') && ui.includes('setSchoolCourse') && ui.includes('content:{subjects:nextSubjects,lectures:nextLectures}'), 'completed teacher selection must register a prepared seven-subject course');
@@ -54,7 +54,9 @@ assert.ok(schoolRoute.includes("method === 'GET' && path === 'teachers'") && sch
 assert.ok(signupProfile.includes('student_academic_profiles') && signupProfile.includes('prepareStudentAcademicProfileInsert'), 'signup must persist academic identity for school and higher-education students');
 assert.ok(auth.includes('prepareStudentAcademicProfileInsert') && !auth.includes("studentStage === 'school' ? await prepareSchoolAcademicProfileInsert"), 'academic identity persistence must no longer be school-only');
 assert.ok(auth.includes('academicProfileInsert ? [academicProfileInsert]'), 'academic identity must be part of the signup transaction');
-assert.ok(ui.includes('window.DafatiiSchoolTeachers=Object.freeze'), 'onboarding must be able to refresh and register the prepared school course after teacher selection');
+assert.ok(ui.includes('window.DafatiiSchoolTeachers=Object.freeze') && ui.includes('register(value){return registerCatalog(value);}'), 'onboarding must be able to register the prepared school course from its already-loaded catalog');
+assert.ok(server.includes("SELECT name FROM sqlite_master") && server.includes("const [formalResult, legacyResult] = await Promise.all"), 'school teacher catalog must avoid routine schema writes and batch candidate queries');
+assert.ok(server.includes("const [selections, candidates] = await Promise.all"), 'seven-subject catalog must not query candidates one subject at a time');
 
 assert.ok(!gate.includes("mode:'school-teachers'") && !gate.includes("if (schoolStudent)"), 'school students must be allowed through the normal course list and enrollment routes');
 assert.ok(gate.includes("input?.stage === 'school'"), 'creating shared school-stage courses must remain blocked because the prepared school course is student-specific');

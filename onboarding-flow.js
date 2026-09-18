@@ -4,7 +4,7 @@
   const KEY='dafatii:onboarding:v1';
   const LEVELS=['beginner','intermediate','advanced','expert'];
   const SUBJECT_ICONS={arabic:'✎',english:'Aa',math:'∑',chemistry:'🧪',physics:'⚛',biology:'🧬',islamic_book:'📚'};
-  let teacherCatalog=null,teacherStep=0,view='auto',chosenField='',chosenLevel='',busy=false,message='',waitingCourseId='',resolving=null;
+  let teacherCatalog=null,teacherStep=0,view='auto',chosenField='',chosenLevel='',busy=false,message='',waitingCourseId='',resolving=null,resolveGeneration=0;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const user=()=>window.DafatiiAuth?.user||null;
@@ -73,11 +73,9 @@
     return teacherCatalog;
   }
 
-  async function registerSchoolProgram(){
-    try{await window.DafatiiSchoolTeachers?.refresh?.();}catch{}
-    if(!schoolProgram()){
-      try{await window.DafatiiCourses?.refresh?.();await window.DafatiiSchoolTeachers?.refresh?.();}catch{}
-    }
+  function registerSchoolProgram(){
+    if(teacherCatalog?.complete)window.DafatiiSchoolTeachers?.register?.(teacherCatalog);
+    return Boolean(schoolProgram()||window.DafatiiCourses?.active?.()?.isSchoolProgram);
   }
 
   function teacherView(){
@@ -148,7 +146,8 @@
   function recommendationIntent(){
     return shell(`<section class="onboarding-section onboarding-question"><div class="onboarding-kicker">Optional learning · Question 1</div>
       <h1>Do you want to learn new things?</h1><p>Dafatii can recommend public Courses created by the administrator. This does not replace your main Course.</p>
-      <div class="onboarding-answer-grid"><button class="btn btn-primary" data-recommend-intent="yes">Yes, continue →</button><button class="btn btn-ghost" data-recommend-intent="no">No, finish setup</button></div>
+      <div class="onboarding-answer-grid"><button class="btn btn-primary" data-recommend-intent="yes" ${busy?'disabled':''}>${busy?'Loading…':'Yes, continue →'}</button><button class="btn btn-ghost" data-recommend-intent="no" ${busy?'disabled':''}>No, finish setup</button></div>
+      ${message?`<p class="onboarding-status">${esc(message)}</p>`:''}
     </section>`,2,1,3);
   }
 
@@ -185,10 +184,11 @@
 
   async function finish(){
     write({required:false,primaryComplete:true,recommendationComplete:true,completed:true,completedAt:Date.now()});
-    try{await window.DafatiiCourses?.refresh?.();if(isSchool())await registerSchoolProgram();}catch{}
+    if(isSchool())registerSchoolProgram();
     view='auto';message='';
     location.hash='dashboard/Overview';
     window.render?.();
+    queueMicrotask(()=>{if(!isSchool())window.DafatiiCourses?.refresh?.().catch(()=>{});});
   }
 
   async function determineView(){
@@ -198,7 +198,7 @@
     if(isSchool()){
       try{await loadTeachers(false);}catch(error){message=error.message||String(error);view='teacher-error';return;}
       if(!teacherCatalog.complete){view='teachers';return;}
-      await registerSchoolProgram();
+      registerSchoolProgram();
       if(!record.primaryComplete){record=write({primaryComplete:true});}
     }else if(isHigher()){
       if(!activeNormal()){if(!['create','join','waiting'].includes(view))view='foundation';return;}
@@ -240,9 +240,8 @@
       if(teacherStep<(teacherCatalog.subjects?.length||1)-1){teacherStep+=1;draw();return;}
       busy=true;draw();
       try{
-        teacherCatalog=await loadTeachers(true);
-        if(!teacherCatalog.complete){teacherStep=teacherCatalog.subjects.findIndex(subject=>!subject.selectedTeacherId);busy=false;draw();return;}
-        await registerSchoolProgram();write({primaryComplete:true});view='recommend-intent';
+        if(!teacherCatalog?.complete){teacherStep=teacherCatalog?.subjects?.findIndex(subject=>!subject.selectedTeacherId)??0;busy=false;draw();return;}
+        registerSchoolProgram();write({primaryComplete:true});view='recommend-intent';
       }catch(error){message=error.message||String(error);}
       busy=false;draw();
     });
@@ -275,7 +274,13 @@
     });
 
     document.querySelector('[data-recommend-intent="no"]')?.addEventListener('click',()=>{write({recommendationComplete:true,recommendationOptIn:false});void finish();});
-    document.querySelector('[data-recommend-intent="yes"]')?.addEventListener('click',()=>{write({recommendationOptIn:true});view='recommend-field';draw();});
+    document.querySelector('[data-recommend-intent="yes"]')?.addEventListener('click',async()=>{
+      if(busy)return;
+      write({recommendationOptIn:true});busy=true;message='Loading public Courses…';draw();
+      try{await withDeadline(window.DafatiiCourses?.refresh?.(),'Public Course discovery');view='recommend-field';message='';}
+      catch(error){view='recommend-intent';message=error.message||String(error);}
+      busy=false;draw();
+    });
     document.querySelectorAll('[data-recommend-field]').forEach(button=>button.addEventListener('click',()=>{chosenField=button.dataset.recommendField||'';chosenLevel='';view='recommend-level';draw();}));
     document.querySelectorAll('[data-recommend-level]').forEach(button=>button.addEventListener('click',()=>{chosenLevel=button.dataset.recommendLevel||'beginner';view='recommend-results';draw();}));
     document.querySelectorAll('[data-recommend-back]').forEach(button=>button.addEventListener('click',()=>{const target=button.dataset.recommendBack;view=target==='intent'?'recommend-intent':target==='field'?'recommend-field':'recommend-level';message='';draw();}));
@@ -299,29 +304,35 @@
   async function render(force=false){
     if(!blocks())return false;
     if(location.hash!=='#onboarding'){location.hash='onboarding';return true;}
-    if(force){teacherCatalog=null;view='auto';message='';}
+    if(force){teacherCatalog=null;view='auto';message='';resolveGeneration+=1;resolving=null;}
     draw();
 
-    const needsResolve=view==='auto'||((view==='teachers'||view==='teacher-error')&&!teacherCatalog);
+    const needsResolve=view==='auto'||(view==='teachers'&&!teacherCatalog);
     if(!needsResolve)return true;
     if(resolving)return true;
+
+    const generation=++resolveGeneration;
+    const watchdog=setTimeout(()=>{
+      if(generation!==resolveGeneration)return;
+      resolveGeneration+=1;resolving=null;busy=false;view='teacher-error';
+      message='This setup step is taking too long. Tap Try again.';
+      draw();
+    },17000);
 
     resolving=(async()=>{
       busy=true;
       try{
         if(view==='auto'){
-          // New accounts can render Process 1 without Course discovery. Only resume/recovery states need server Course state first.
           const record=read();
           if(isHigher()&&(record?.legacyRecovery||record?.primaryComplete))await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
         }
         await determineView();
       }catch(error){
-        message=error.message||String(error);
-        view='teacher-error';
+        if(generation!==resolveGeneration)return;
+        message=error.message||String(error);view='teacher-error';
       }finally{
-        busy=false;
-        resolving=null;
-        draw();
+        clearTimeout(watchdog);
+        if(generation===resolveGeneration){busy=false;resolving=null;draw();}
       }
     })();
     await resolving;
