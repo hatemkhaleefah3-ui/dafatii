@@ -36,7 +36,7 @@ assert.ok(ui.includes(".observe(appRoot,{childList:true});"), 'teacher observer 
 assert.ok(!ui.includes('subtree:true'), 'teacher observer must not watch every profile descendant mutation');
 assert.ok(!ui.includes("if(!ALLOWED.has(current)){location.hash='dashboard';return;}"), 'teacher flow must not tear down the signup route after auth changes');
 
-assert.ok(server.includes('ORDER BY a.fame_score DESC, selection_count DESC'), 'teacher directory must sort by fame and student selections');
+assert.ok(server.includes('ORDER BY a.subject, a.fame_score DESC, selection_count DESC') && server.includes('(b.fameScore - a.fameScore) || (b.selectionCount - a.selectionCount)'), 'teacher directory must preserve per-subject fame and student-selection ranking');
 assert.ok(server.includes('school_teacher_profiles') && server.includes('image_url') && server.includes('chapters'), 'teacher catalog must expose managed profile images and subject chapters');
 assert.ok(ui.includes('teacher?.imageUrl') && ui.includes('<img src='), 'school teacher picker must render managed teacher profile images');
 assert.ok(ui.includes('window.DafatiiSchoolWorkspaceReady=ready') && ui.includes('setSchoolCourse') && ui.includes('content:{subjects:nextSubjects,lectures:nextLectures}'), 'completed teacher selection must register a prepared seven-subject course');
