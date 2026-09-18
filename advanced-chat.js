@@ -107,16 +107,19 @@
   function conversationRow(c,active,pro){
     const m=lastMessage(c),meta=metaFor(pro,c.id),draft=pro.drafts[c.id],unread=Number(c.unread||0)+(meta.unread?1:0);
     const initial=esc(c.avatar||c.name?.[0]||'?');
-    return `<article class="chatpro-conversation ${active?'active':''}" data-open-chat="${esc(c.id)}">
-      <button class="chatpro-conv-main">
-        <span class="chatpro-avatar ${c.status==='online'?'online':''}">${initial}</span>
-        <span class="chatpro-conv-copy">
-          <span class="chatpro-conv-title"><strong>${esc(c.name)}</strong><span class="chatpro-title-icons">${meta.muted?icon('mute'):''}${meta.pinned?icon('pin'):''}</span></span>
-          <span class="chatpro-preview ${draft?'draft':''}">${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span>
+    const kindLabel=c.kind==='group'?'Group':c.kind==='unknown'?'Anonymous':'';
+    const tags=c.kind==='group'?['Files','Notes',/math/i.test(c.name)?'Quiz Prep':'Project']:c.kind==='unknown'?String(c.topic||'Study Tips · Midterms').split('·').map(x=>x.trim()).filter(Boolean).slice(0,3):[];
+    return `<article class='chatpro-conversation ${active?'active':''} kind-${esc(c.kind)}' data-open-chat='${esc(c.id)}' data-chat-kind='${esc(c.kind)}'>
+      <button class='chatpro-conv-main'>
+        <span class='chatpro-avatar ${c.status==='online'?'online':''}'>${initial}</span>
+        <span class='chatpro-conv-copy'>
+          <span class='chatpro-conv-title'><strong>${esc(c.name)}</strong>${kindLabel?`<em>${kindLabel}</em>`:''}<span class='chatpro-title-icons'>${meta.muted?icon('mute'):''}${meta.pinned?icon('pin'):''}</span></span>
+          <span class='chatpro-preview ${draft?'draft':''}'>${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span>
+          ${tags.length?`<span class='chatpro-conv-tags'>${tags.map(tag=>`<i>${esc(tag)}</i>`).join('')}</span>`:''}
         </span>
-        <span class="chatpro-conv-meta"><time>${m?rel(m.at):''}</time>${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span>
+        <span class='chatpro-conv-meta'><time>${m?rel(m.at):''}</time>${c.kind==='unknown'?`<small>${esc(c.status||'online')}</small>`:''}${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span>
       </button>
-      <button class="chatpro-conv-more" data-conv-more="${esc(c.id)}" aria-label="Conversation options">${icon('more')}</button>
+      <button class='chatpro-conv-more' data-conv-more='${esc(c.id)}' aria-label='Open conversation'>${icon('chevronRight')}</button>
     </article>`;
   }
 
