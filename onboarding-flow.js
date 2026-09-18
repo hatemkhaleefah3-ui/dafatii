@@ -233,7 +233,7 @@
         await registerSchoolProgram();write({primaryComplete:true});view='recommend-intent';
       }catch(error){message=error.message||String(error);}
       busy=false;draw();
-    }));
+    });
 
     document.querySelector('[data-foundation-create]')?.addEventListener('click',()=>{message='';view='create';draw();});
     document.querySelector('[data-foundation-join]')?.addEventListener('click',()=>{message='';view='join';draw();});
