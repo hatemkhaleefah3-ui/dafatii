@@ -135,6 +135,8 @@
     const active=school();
     document.documentElement.toggleAttribute('data-school-student',active);
     if(!active){catalog=null;window.DafatiiSchoolWorkspaceReady=false;return;}
+    // The full-screen onboarding controller owns teacher loading while onboarding is active.
+    if(route()==='onboarding')return;
     if(!catalog){
       void load(false).then(()=>{
         const current=route();

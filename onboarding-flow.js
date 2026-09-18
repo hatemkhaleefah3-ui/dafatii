@@ -21,6 +21,18 @@
   const activeNormal=()=>window.DafatiiCourses?.list?.().find(course=>course.membership?.status==='active'&&!course.isSchoolProgram)||null;
   const schoolProgram=()=>window.DafatiiCourses?.list?.().find(course=>course.isSchoolProgram)||null;
   const publicCourses=()=>window.DafatiiCourses?.list?.().filter(course=>course.status==='active'&&course.visibility==='public'&&String(course.learningField||'').trim())||[];
+  const timeoutError=label=>new Error(`${label} is taking too long. Check your connection and try again.`);
+  const withDeadline=(promise,label,milliseconds=15000)=>Promise.race([
+    Promise.resolve(promise),
+    new Promise((_,reject)=>setTimeout(()=>reject(timeoutError(label)),milliseconds))
+  ]);
+  async function apiWithDeadline(path,options={},milliseconds=15000){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),milliseconds);
+    try{return await window.DafatiiApi.request(path,{...options,signal:controller.signal});}
+    catch(error){if(error?.name==='AbortError')throw timeoutError('This setup step');throw error;}
+    finally{clearTimeout(timer);}
+  }
 
   function needsLegacyRecovery(){
     if(isSchool())return !schoolProgram()&&!window.DafatiiSchoolWorkspaceReady;
@@ -55,7 +67,7 @@
 
   async function loadTeachers(force=false){
     if(teacherCatalog&&!force)return teacherCatalog;
-    teacherCatalog=await window.DafatiiApi.request('/school/teachers',{idempotent:true});
+    teacherCatalog=await apiWithDeadline('/school/teachers',{idempotent:true});
     const missing=teacherCatalog.subjects?.findIndex(item=>!item.selectedTeacherId)??-1;
     teacherStep=missing>=0?missing:0;
     return teacherCatalog;
@@ -218,7 +230,7 @@
     document.querySelectorAll('[data-onboarding-teacher]').forEach(button=>button.addEventListener('click',async()=>{
       if(busy)return;const item=teacherCatalog?.subjects?.[teacherStep];if(!item)return;
       busy=true;message='';draw();
-      try{teacherCatalog=await window.DafatiiApi.request(`/school/teachers/${encodeURIComponent(item.subject)}`,{method:'PUT',body:{teacherId:button.dataset.onboardingTeacher}});}
+      try{teacherCatalog=await apiWithDeadline(`/school/teachers/${encodeURIComponent(item.subject)}`,{method:'PUT',body:{teacherId:button.dataset.onboardingTeacher}});}
       catch(error){message=error.message||String(error);}
       busy=false;draw();
     }));
@@ -291,7 +303,11 @@
     draw();
     if(view==='auto'){
       busy=true;
-      try{await window.DafatiiCourses?.refresh?.();await determineView();}
+      try{
+        // School Process 1 only needs the teacher catalog. Do not block it on Course discovery/schema work.
+        if(isHigher())await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
+        await determineView();
+      }
       catch(error){message=error.message||String(error);view='teacher-error';}
       busy=false;draw();
     }else if((view==='teachers'||view==='teacher-error')&&!teacherCatalog){
