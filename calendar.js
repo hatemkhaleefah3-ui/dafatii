@@ -3,6 +3,12 @@
   const DEFAULT_PERIODS = ['7:00 AM','8:45 AM','10:30 AM','12:15 PM','2:00 PM','3:45 PM','5:30 PM','7:15 PM','9:00 PM'];
   const SCHEDULE_KEY = 'dafatii:weeklySchedule';
   const SCHEDULE_NOTES_KEY = 'dafatii:scheduleNotes';
+  const PLANNER_KEY = 'dafatii:schedulePlanner:v1';
+  const PLANNER_MODES = ['day','week','month','year'];
+  const PLANNER_TABS = ['tasks','schedule','todos','goals','attendance'];
+  let plannerMode = 'day';
+  let plannerDate = new Date();
+  let plannerTab = 'tasks';
   const EXAMS_KEY = 'dafatii:examSchedule';
   const EXAM_NOTES_KEY = 'dafatii:examNotes';
   const AXIS_KEYS = {
@@ -57,17 +63,110 @@
     else if(sub === 'manual-exam') bindManualExam();
   };
 
+  const pad = value => String(value).padStart(2,'0');
+  const dateKey = value => `${value.getFullYear()}-${pad(value.getMonth()+1)}-${pad(value.getDate())}`;
+  const cloneDate = value => new Date(value.getFullYear(),value.getMonth(),value.getDate());
+  const addDate = (value,mode,amount) => {
+    const next=cloneDate(value);
+    if(mode==='day')next.setDate(next.getDate()+amount);
+    else if(mode==='week')next.setDate(next.getDate()+(amount*7));
+    else if(mode==='month')next.setMonth(next.getMonth()+amount);
+    else next.setFullYear(next.getFullYear()+amount);
+    return next;
+  };
+  const weekStart = value => {const next=cloneDate(value);next.setDate(next.getDate()-next.getDay());return next;};
+  const periodKey = (mode,value) => {
+    if(mode==='day')return `day:${dateKey(value)}`;
+    if(mode==='week')return `week:${dateKey(weekStart(value))}`;
+    if(mode==='month')return `month:${value.getFullYear()}-${pad(value.getMonth()+1)}`;
+    return `year:${value.getFullYear()}`;
+  };
+  const plannerData = () => {
+    const value=read(PLANNER_KEY,{});
+    return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  };
+  const emptyBucket = () => ({tasks:[],schedule:[],todos:[],goals:[],attendance:[]});
+  const plannerBucket = () => {
+    const value=plannerData()[periodKey(plannerMode,plannerDate)];
+    return value&&typeof value==='object'?{...emptyBucket(),...value}:emptyBucket();
+  };
+  function savePlannerBucket(bucket){
+    const value=plannerData();
+    value[periodKey(plannerMode,plannerDate)]={...emptyBucket(),...bucket,updatedAt:Date.now()};
+    write(PLANNER_KEY,value);
+  }
+  const sameDay = (a,b) => dateKey(a)===dateKey(b);
+  const monthName = (date,style='long') => date.toLocaleDateString(undefined,{month:style});
+  const dayName = (date,style='long') => date.toLocaleDateString(undefined,{weekday:style});
+  const ordinal = number => {
+    const rem100=number%100;if(rem100>=11&&rem100<=13)return `${number}th`;
+    return `${number}${number%10===1?'st':number%10===2?'nd':number%10===3?'rd':'th'}`;
+  };
+  function periodLabel(mode,date){
+    if(mode==='day')return {primary:dayName(date),secondary:`${monthName(date,'short')} ${ordinal(date.getDate())}`,meta:sameDay(date,new Date())?'Today':String(date.getFullYear())};
+    if(mode==='week'){
+      const start=weekStart(date),end=addDate(start,'day',6);
+      const cross=start.getMonth()!==end.getMonth();
+      return {primary:`${monthName(start,'short')} ${start.getDate()}–${cross?monthName(end,'short')+' ':''}${end.getDate()}`,secondary:'Week',meta:String(start.getFullYear())};
+    }
+    if(mode==='month')return {primary:monthName(date),secondary:String(date.getFullYear()),meta:'Month'};
+    return {primary:String(date.getFullYear()),secondary:'Year',meta:`${date.getFullYear()-1} · ${date.getFullYear()+1}`};
+  }
+  function modeLoop(){
+    const index=PLANNER_MODES.indexOf(plannerMode);
+    return [-2,-1,0,1,2].map(offset=>{
+      const mode=PLANNER_MODES[(index+offset+PLANNER_MODES.length*3)%PLANNER_MODES.length];
+      return `<button class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}">${mode[0].toUpperCase()+mode.slice(1)}${mode==='day'?'s':mode==='week'?'s':mode==='month'?'s':'s'}</button>`;
+    }).join('');
+  }
+  function periodLoop(){
+    return [-3,-2,-1,0,1,2,3].map(offset=>{
+      const date=addDate(plannerDate,plannerMode,offset),label=periodLabel(plannerMode,date);
+      return `<button class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span><small>${esc(label.meta)}</small></button>`;
+    }).join('');
+  }
+  const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals',attendance:'Attendance'}[tab]||tab);
+  function recurringSchedule(){
+    const entries=read(SCHEDULE_KEY,[]);
+    if(!Array.isArray(entries)||!entries.length)return [];
+    if(plannerMode==='day'){
+      const day=dayName(plannerDate);
+      return entries.filter(item=>String(item.day||'').toLowerCase()===day.toLowerCase());
+    }
+    return entries;
+  }
+  function plannerItemMarkup(item,type){
+    const done=Boolean(item.done);
+    if(type==='schedule')return `<article class="planner-content-card schedule-card"><div class="planner-item-time">${esc(item.time||'Any time')}</div><div><strong>${esc(item.title||'Schedule item')}</strong><p>${esc(item.location||item.notes||'')}</p></div><button class="planner-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button></article>`;
+    if(type==='attendance')return `<article class="planner-content-card attendance-card"><div><strong>${esc(item.title||'Attendance')}</strong><p>${esc(item.notes||'')}</p></div><span class="attendance-status ${esc(item.status||'present')}">${esc(item.status||'present')}</span><button class="planner-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button></article>`;
+    return `<article class="planner-content-card ${done?'done':''}"><button class="planner-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button><div><strong>${esc(item.title||tabLabel(type))}</strong><p>${esc(item.notes||'')}</p></div><button class="planner-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button></article>`;
+  }
+  function scheduleContent(){
+    const bucket=plannerBucket(),items=Array.isArray(bucket[plannerTab])?bucket[plannerTab]:[];
+    const recurring=plannerTab==='schedule'?recurringSchedule():[];
+    const own=items.length?items.map(item=>plannerItemMarkup(item,plannerTab)).join(''):`<div class="planner-empty"><strong>No ${esc(tabLabel(plannerTab).toLowerCase())} yet</strong><p>Add something for this selected ${esc(plannerMode)}.</p></div>`;
+    const recurringMarkup=plannerTab==='schedule'&&recurring.length?`<div class="planner-recurring"><div class="planner-section-label"><span>Recurring weekly timetable</span><button id="calendar-add" class="planner-text-button">Edit weekly timetable</button></div>${recurring.map(item=>`<article class="planner-content-card recurring"><div class="planner-item-time">${esc(item.time||'')}</div><div><strong>${esc(item.subject||'Scheduled lecture')}</strong><p>${esc([item.day,item.location].filter(Boolean).join(' · '))}</p></div></article>`).join('')}</div>`:plannerTab==='schedule'?`<div class="planner-recurring"><div class="planner-section-label"><span>Recurring weekly timetable</span><button id="calendar-add" class="planner-text-button">Set weekly timetable</button></div></div>`:'';
+    return `<div class="planner-content-list">${own}${recurringMarkup}</div>`;
+  }
+
   function scheduleView(){
-    return timetableView({
-      kind:'schedule',
-      title:'Weekly schedule',
-      subtitle:'Lectures repeat every week.',
-      entries:read(SCHEDULE_KEY, []),
-      notes:read(SCHEDULE_NOTES_KEY, ''),
-      notesId:'schedule-notes',
-      addId:'calendar-add',
-      eyebrow:'Calendar · Schedule'
-    });
+    const selected=periodLabel(plannerMode,plannerDate);
+    return `<section class="calendar-page planner-page" data-planner-mode="${plannerMode}">
+      <div class="planner-head"><div><div class="eyebrow">Schedule</div><h1>Your schedule</h1><p>Move through time, then keep separate tasks, plans, goals and attendance for every selected period.</p></div><button class="subject-add planner-add" data-planner-add><span>＋</span><strong>Add</strong></button></div>
+      <div class="planner-loop-shell planner-mode-shell">
+        <button class="planner-loop-arrow" data-planner-mode-step="-1" aria-label="Previous time scale">‹</button>
+        <div class="planner-loop-track" data-planner-loop="mode">${modeLoop()}</div>
+        <button class="planner-loop-arrow" data-planner-mode-step="1" aria-label="Next time scale">›</button>
+      </div>
+      <div class="planner-loop-shell planner-date-shell">
+        <button class="planner-loop-arrow" data-planner-period-step="-1" aria-label="Previous ${plannerMode}">‹</button>
+        <div class="planner-date-track" data-planner-loop="period">${periodLoop()}</div>
+        <button class="planner-loop-arrow" data-planner-period-step="1" aria-label="Next ${plannerMode}">›</button>
+      </div>
+      <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
+      <nav class="planner-content-tabs" aria-label="Schedule content">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
+      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${esc(selected.primary)}</h2></div><button class="planner-inline-add" data-planner-add>＋ Add ${esc(tabLabel(plannerTab))}</button></div>${scheduleContent()}</section>
+    </section>`;
   }
 
   function examsView(){
@@ -175,9 +274,71 @@
   }
 
   function bindSchedule(){
+    const rerender=()=>render();
+    document.querySelectorAll('[data-planner-mode]').forEach(button=>button.addEventListener('click',()=>{
+      plannerMode=button.dataset.plannerMode;rerender();
+    }));
+    document.querySelectorAll('[data-planner-mode-step]').forEach(button=>button.addEventListener('click',()=>{
+      const index=PLANNER_MODES.indexOf(plannerMode),step=Number(button.dataset.plannerModeStep||0);
+      plannerMode=PLANNER_MODES[(index+step+PLANNER_MODES.length)%PLANNER_MODES.length];rerender();
+    }));
+    document.querySelectorAll('[data-planner-period-offset]').forEach(button=>button.addEventListener('click',()=>{
+      plannerDate=addDate(plannerDate,plannerMode,Number(button.dataset.plannerPeriodOffset||0));rerender();
+    }));
+    document.querySelectorAll('[data-planner-period-step]').forEach(button=>button.addEventListener('click',()=>{
+      plannerDate=addDate(plannerDate,plannerMode,Number(button.dataset.plannerPeriodStep||0));rerender();
+    }));
+    document.querySelectorAll('[data-planner-tab]').forEach(button=>button.addEventListener('click',()=>{plannerTab=button.dataset.plannerTab;rerender();}));
+    document.querySelectorAll('[data-planner-add]').forEach(button=>button.addEventListener('click',openPlannerEntrySheet));
     document.getElementById('calendar-add')?.addEventListener('click',()=>openChoice('schedule'));
-    document.getElementById('schedule-notes')?.addEventListener('input',e=>write(SCHEDULE_NOTES_KEY,e.target.value));
-    bindTimetable('schedule','calendar/manual-schedule');
+    document.querySelectorAll('[data-planner-toggle]').forEach(button=>button.addEventListener('click',()=>{
+      const bucket=plannerBucket(),list=Array.isArray(bucket[plannerTab])?bucket[plannerTab]:[];
+      const item=list.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;item.done=!item.done;savePlannerBucket(bucket);rerender();
+    }));
+    document.querySelectorAll('[data-planner-delete]').forEach(button=>button.addEventListener('click',()=>{
+      const bucket=plannerBucket(),list=Array.isArray(bucket[plannerTab])?bucket[plannerTab]:[];
+      bucket[plannerTab]=list.filter(entry=>entry.id!==button.dataset.plannerDelete);savePlannerBucket(bucket);rerender();
+    }));
+    document.querySelectorAll('[data-planner-loop]').forEach(track=>{
+      let startX=null;
+      track.addEventListener('pointerdown',event=>{startX=event.clientX;track.setPointerCapture?.(event.pointerId);});
+      track.addEventListener('pointerup',event=>{
+        if(startX===null)return;const delta=event.clientX-startX;startX=null;if(Math.abs(delta)<42)return;
+        if(track.dataset.plannerLoop==='mode'){
+          const index=PLANNER_MODES.indexOf(plannerMode),step=delta<0?1:-1;
+          plannerMode=PLANNER_MODES[(index+step+PLANNER_MODES.length)%PLANNER_MODES.length];
+        }else plannerDate=addDate(plannerDate,plannerMode,delta<0?1:-1);
+        rerender();
+      });
+    });
+    requestAnimationFrame(()=>document.querySelectorAll('.planner-loop-track,.planner-date-track').forEach(track=>{
+      const active=track.querySelector('.active');if(active)active.scrollIntoView({block:'nearest',inline:'center'});
+    }));
+  }
+
+  function openPlannerEntrySheet(){
+    const root=document.getElementById('overlay-root');if(!root)return;
+    const selected=periodLabel(plannerMode,plannerDate),type=plannerTab;
+    const standard=type!=='schedule'&&type!=='attendance';
+    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(tabLabel(type))} · ${esc(selected.primary)}</div><h2>Add ${esc(tabLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
+      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Study for 90 minutes':type==='attendance'?'Physics lecture':'Study session'}"></div>
+      ${type==='schedule'?'<div class="calendar-form-grid"><div class="field"><label>Time</label><input name="time" type="time"></div><div class="field"><label>Location</label><input name="location" maxlength="100"></div></div>':''}
+      ${type==='attendance'?'<div class="field"><label>Status</label><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select></div>':''}
+      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional"></textarea></div>
+      <button class="btn btn-primary" type="submit">Add to this ${esc(plannerMode)}</button>
+    </form></section></div>`;
+    const close=()=>closeOverlay();
+    document.getElementById('planner-entry-close').onclick=close;
+    document.getElementById('planner-entry-overlay').onclick=event=>{if(event.target.id==='planner-entry-overlay')close();};
+    document.getElementById('planner-entry-form').onsubmit=event=>{
+      event.preventDefault();const form=new FormData(event.currentTarget),bucket=plannerBucket();
+      const item={id:id(),title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),createdAt:Date.now()};
+      if(!item.title)return;
+      if(type==='schedule'){item.time=String(form.get('time')||'');item.location=String(form.get('location')||'').trim();}
+      else if(type==='attendance')item.status=String(form.get('status')||'present');
+      else item.done=false;
+      bucket[type]=Array.isArray(bucket[type])?bucket[type]:[];bucket[type].push(item);savePlannerBucket(bucket);close();render();
+    };
   }
 
   function bindExams(){
