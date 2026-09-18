@@ -30,7 +30,7 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');\nassert.match(index, /subject-redesign\.css\?v=20260919-1/, 'the reference-driven Subjects presentation must be loaded');\nassert.match(index, /subject-redesign\.js\?v=20260919-1/, 'the reference-driven Subjects controller must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
