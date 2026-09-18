@@ -90,8 +90,18 @@
   function filterBar(){return `<div class="chatpro-filters">${[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']].map(([id,label])=>`<button data-filter="${id}" class="${ui.filter===id?'active':''}">${label}</button>`).join('')}</div>`;}
   function conversationList(conversations,selectedId,pro){
     const q=ui.query.trim().toLowerCase();
-    const filtered=conversations.filter(c=>{const m=metaFor(pro,c.id);if(ui.filter==='archived'&&!m.archived)return false;if(ui.filter!=='archived'&&m.archived)return false;if(ui.filter==='unread'&&!m.unread&&!c.unread)return false;if(ui.filter==='starred'&&!Object.values(pro.starred[c.id]||{}).some(Boolean))return false;if(q&&!`${c.name} ${preview(lastMessage(c))}`.toLowerCase().includes(q))return false;return true;});
-    if(!filtered.length)return `<div class="chatpro-empty-list"><div>⌁</div><strong>No chats match</strong><span>Try another filter or search.</span></div>`;
+    const filtered=conversations.filter(c=>{
+      const m=metaFor(pro,c.id);
+      if(ui.filter==='archived'&&!m.archived)return false;
+      if(ui.filter!=='archived'&&m.archived)return false;
+      if(ui.filter==='unread'&&!m.unread&&!c.unread)return false;
+      if(ui.filter==='anonymous'&&c.kind!=='unknown')return false;
+      if(ui.filter==='pinned'&&!m.pinned)return false;
+      if(ui.filter==='course'&&!/(course|cs|math|exam|lecture|database|calculus)/i.test(`${c.topic||''} ${c.status||''} ${preview(lastMessage(c))}`))return false;
+      if(q&&!`${c.name} ${c.topic||''} ${preview(lastMessage(c))}`.toLowerCase().includes(q))return false;
+      return true;
+    });
+    if(!filtered.length)return `<div class='chatpro-empty-list'><div>⌁</div><strong>No chats match</strong><span>Try another filter or search.</span></div>`;
     return filtered.map(c=>conversationRow(c,c.id===selectedId,pro)).join('');
   }
   function conversationRow(c,active,pro){
