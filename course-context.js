@@ -167,7 +167,13 @@
       if(SCHOOL_MANAGED_KEYS.has(key))throw new Error('School subjects and lectures are managed by your selected teachers.');
       return window.DafatiiData.remove(schoolRecordKey(key));
     }
-    return writeJSON(key,null);
+    if(!runtime.activeId||!active().membership||active().membership.status!=='active')throw new Error('Open an enrolled course first.');
+    if(!editable('remove_content'))throw new Error('You do not have permission to remove course content.');
+    const courseId=runtime.activeId,previous=cacheRead(key,null,courseId),queueKey=`${courseId}:${key}`;
+    localStorage.removeItem(cacheKey(key,courseId));
+    const prior=runtime.queues.get(queueKey)||Promise.resolve();
+    const pending=prior.then(async()=>{const baseRevision=runtime.revisions.get(queueKey)||0;const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision,record:{key,format:'json',value:null,deleted:true}}});runtime.revisions.set(queueKey,result.revision);}).catch(async error=>{if(previous===null)localStorage.removeItem(cacheKey(key,courseId));else cacheWrite(key,previous,courseId);try{await hydrate(courseId);}catch{}window.dispatchEvent(new CustomEvent('dafatii:coursewriteerror',{detail:{error,key,courseId}}));}).finally(()=>{if(runtime.queues.get(queueKey)===pending)runtime.queues.delete(queueKey);});runtime.queues.set(queueKey,pending);
+    return null;
   }
 
   async function hydrate(courseId){
