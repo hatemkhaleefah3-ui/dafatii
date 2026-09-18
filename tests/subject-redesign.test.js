@@ -19,7 +19,8 @@ assert.ok(ui.includes('subject-r-hero')&&ui.includes('subject-r-outline')&&ui.in
 assert.ok(ui.includes('openExamRedesign')&&ui.includes('openAssignmentRedesign')&&ui.includes('openAddContent'),'reference actions must be functional rather than decorative');
 assert.ok(ui.includes("[['all','All'],['recorded','Recorded']]"),'Lectures must only expose All and Recorded filters');
 assert.ok(!ui.includes("[['all','All'],['upcoming','Upcoming'],['completed','Completed'],['recorded','Recorded']]"),'Upcoming and Completed lecture filters must stay removed');
-assert.ok(!/function lectureCard[\s\S]*?subject-r-status/.test(ui),'Lecture cards must not render Upcoming or Completed status badges');
+const lectureCardSource=ui.slice(ui.indexOf('function lectureCard('),ui.indexOf('function subjectExamsView('));
+assert.ok(!lectureCardSource.includes('subject-r-status'),'Lecture cards must not render Upcoming or Completed status badges');
 assert.ok(ui.includes("const managed = () => typeof schoolManagedWorkspace === 'function' && schoolManagedWorkspace();")&&ui.includes('const editable = () => !managed();'),'managed school workspaces must retain readonly behavior');
 assert.ok(ui.includes("if(editable()){openLectureSheet")&&ui.includes("if(lecture?.link)"),'readonly school subject lectures must open links instead of edit controls');
 assert.ok(ui.includes("window.DafatiiSubjectRedesign = Object.freeze"),'Subjects redesign must expose a stable integration surface');
