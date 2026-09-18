@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js', 'onboarding-flow.js'];
+const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'subject-redesign.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js', 'onboarding-flow.js'];
 for (const file of featureFiles) {
   const source = fs.readFileSync(file, 'utf8');
   assert.doesNotMatch(source, /fetch\s*\(\s*['"`]\/api\//, `${file} must not call backend endpoints directly`);
