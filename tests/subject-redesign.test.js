@@ -17,7 +17,7 @@ assert.ok(ui.includes('subject-r-search')&&ui.includes('subject-r-sort'),'My Sub
 assert.ok(ui.includes('subject-r-progress')&&ui.includes('subject-r-card-meta'),'Subject cards must expose progress and academic metadata');
 assert.ok(ui.includes('subject-r-hero')&&ui.includes('subject-r-outline')&&ui.includes('subject-r-results'),'Subject Overview must include hero, chapter outline, and results');
 assert.ok(ui.includes('openExamRedesign')&&ui.includes('openAssignmentRedesign')&&ui.includes('openAddContent'),'reference actions must be functional rather than decorative');
-assert.ok(ui.includes("const managed = () => typeof schoolManagedWorkspace === 'function' && schoolManagedWorkspace();")&&ui.includes('const editable = () => !managed();'),'managed school workspaces must retain readonly behavior');
+assert.ok(ui.includes("const managed = () => typeof schoolManagedWorkspace === 'function' && schoolManagedWorkspace();")&&ui.includes('const editable = () => !managed();'),'managed school workspaces must retain readonly behavior');\nassert.ok(ui.includes("if(editable()){openLectureSheet")&&ui.includes("if(lecture?.link)"),'readonly school subject lectures must open links instead of edit controls');
 assert.ok(ui.includes("window.DafatiiSubjectRedesign = Object.freeze"),'Subjects redesign must expose a stable integration surface');
 
 for(const marker of ['.subject-r-tabs','.subject-r-card','.subject-r-hero','.subject-r-filterbar','.subject-r-wide-action']) assert.ok(css.includes(marker),marker+' style missing');
