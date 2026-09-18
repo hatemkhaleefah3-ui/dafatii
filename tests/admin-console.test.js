@@ -16,7 +16,7 @@ const index = fs.readFileSync('index.html','utf8');
 for (const tab of ["['overview'","['students'","['teachers'","['courses'","['study-rooms'"]) {
   assert.ok(admin.includes(tab), `missing Admin Console tab: ${tab}`);
 }
-assert.ok(adminCss.includes('grid-template-columns:repeat(5,1fr)'), 'Admin Console needs its own five-item bottom nav');
+assert.ok(adminCss.includes('grid-template-columns:repeat(5,1fr)') && adminCss.includes('border-top:1px solid var(--line)') && adminCss.includes('inset 0 3px 0 var(--accent)'), 'Admin Console bottom nav must mirror the main product navigation style');
 assert.ok(adminCss.includes('.admin-console-active .main-nav') && adminCss.includes('display:none!important'), 'normal main nav must be hidden while Admin Console is open');
 assert.ok(admin.includes('data-student-access') && admin.includes('data-student-status') && admin.includes('data-student-delete'), 'students need account access, remove/restore, and delete controls');
 assert.ok(admin.includes('data-teacher-status') && admin.includes('data-teacher-delete'), 'teachers need distinct remove/restore and permanent delete controls');
@@ -29,9 +29,14 @@ assert.ok(admin.includes('Passwords and PINs remain secret') || admin.includes('
 for (const marker of ['school_teacher_profiles','content_json','subjects','chapters','lectures','image_url']) {
   assert.ok(backend.includes(marker), `teacher backend missing ${marker}`);
 }
-for (const marker of ['teacher-editor-subjects','teacher-editor-chapters','teacher-editor-lectures','data-add-chapter','data-add-lecture']) {
-  assert.ok(admin.includes(marker), `teacher editor missing ${marker}`);
+assert.ok(backend.includes("subjects.length!==1"), 'backend must enforce exactly one subject per teacher');
+assert.ok(admin.includes('id="admin-teacher-subject"') && !admin.includes('teacher-add-subject'), 'teacher profile form must select exactly one subject');
+assert.ok(admin.includes('admin-teacher-image-file') && admin.includes('readTeacherPicture'), 'teacher profile form must accept a profile picture');
+for (const marker of ['data-content-add-chapter','data-content-add-lecture','data-content-import','XLSX.read','sheet_to_json','YouTube video link']) {
+  assert.ok(admin.includes(marker), `teacher content page missing ${marker}`);
 }
+assert.ok(admin.includes("location.hash=`admin/teachers/${encodeURIComponent(button.dataset.teacherOpen)}`"), 'clicking a teacher card must open the teacher content page');
+assert.ok(backend.includes('@internal.dafatii.invalid') && backend.includes('managedPasswordHash'), 'admin-created teachers must not require a registered teacher login');
 assert.ok(backend.includes("path==='admin/teachers'") && backend.includes("path==='admin/study-rooms'"), 'teacher and Study Room admin APIs must be server-backed');
 
 assert.ok(courseRoutes.includes("currentActor.accountType === 'student' && currentActor.studentStage === 'university'"), 'only higher-education students may create Courses');
@@ -44,8 +49,8 @@ assert.ok(social.includes('window.DafatiiStudyRooms = Object.freeze'), 'Study Ro
 assert.ok(app.includes("'study-rooms'") && app.includes('window.DafatiiStudyRooms.view'), 'pre-Course/school shell must expose Study Rooms');
 assert.ok(roles.includes("page==='admin'&&!window.__dafatiiAdminConsoleInstalled"), 'legacy Admin renderer must stay disabled when the new console owns the route');
 
-assert.ok(index.includes('admin-console.css?v=20260918-1'), 'Admin Console stylesheet must be loaded');
-assert.ok(index.includes('admin-console.js?v=20260918-1'), 'Admin Console script must be loaded');
-assert.ok(index.indexOf('admin-console.js?v=20260918-1') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
+assert.ok(index.includes('admin-console.css?v=20260918-2'), 'Admin Console stylesheet must be loaded');
+assert.ok(index.includes('admin-console.js?v=20260918-2'), 'Admin Console script must be loaded');
+assert.ok(index.indexOf('admin-console.js?v=20260918-2') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
 
 console.log('admin console and student creation regression tests passed');

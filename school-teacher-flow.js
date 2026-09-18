@@ -3,6 +3,7 @@
 
   const ALLOWED = new Set(['dashboard','change-course','profile','settings']);
   const SUBJECTS = ['arabic','english','math','chemistry','physics','biology','islamic_book'];
+  const SUBJECT_ICONS = {arabic:'✎',english:'Aa',math:'∑',chemistry:'🧪',physics:'⚛',biology:'🧬',islamic_book:'📚'};
   let catalog = null, loading = null, step = 0, saving = false, refreshedFor = '', scheduled = false;
 
   const copy = {
@@ -15,8 +16,26 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const route = () => location.hash.replace(/^#\/?/,'').split('/')[0] || 'landing';
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
-  const teacherRoute = value => value === 'dashboard' || value === 'change-course';
+  const teacherRoute = value => value === 'change-course' || (value === 'dashboard' && !catalog?.complete);
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
+
+  function syncSchoolWorkspace(){
+    const ready=school()&&Boolean(catalog?.complete);
+    window.DafatiiSchoolWorkspaceReady=ready;
+    if(!ready||typeof state==='undefined')return false;
+    const nextSubjects=[],nextLectures={};
+    for(const item of catalog.subjects||[]){
+      const teacher=selectedTeacher(item),subjectId=`school-${item.subject}`;
+      const chapters=Array.isArray(teacher?.chapters)?teacher.chapters:[];
+      const units=(chapters.length?chapters:[{id:`${subjectId}-chapter-1`,name:'Chapter 1',lectures:[]}]).map((chapter,index)=>({id:String(chapter.id||`${subjectId}-chapter-${index+1}`),name:String(chapter.name||`Chapter ${index+1}`)}));
+      const activeStudyUnitId=units[0].id;
+      nextSubjects.push({id:subjectId,name:t(item.subject),icon:SUBJECT_ICONS[item.subject]||'📚',studyType:'chapters',studyUnits:units,activeStudyUnitId,teacherId:teacher?.id||'',teacherName:teacher?.displayName||'',teacherImageUrl:teacher?.imageUrl||''});
+      const lectures=[];
+      chapters.forEach((chapter,chapterIndex)=>{const unitId=units[chapterIndex]?.id||activeStudyUnitId;(chapter.lectures||[]).forEach((lecture,lectureIndex)=>lectures.push({id:String(lecture.id||`${subjectId}-lecture-${chapterIndex+1}-${lectureIndex+1}`),name:String(lecture.name||''),link:String(lecture.link||''),icon:'▶',studyUnitId:unitId,subjectId}));});
+      nextLectures[subjectId]=lectures;
+    }
+    state.subjects=nextSubjects;state.lectures=nextLectures;return true;
+  }
   const avatar = teacher => teacher?.imageUrl
     ? `<img src="${esc(teacher.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : esc(String(teacher?.displayName || 'T').trim().slice(0,1).toUpperCase() || 'T');
@@ -39,6 +58,7 @@
     if (loading && !force) return loading;
     loading = window.DafatiiApi.request('/school/teachers',{idempotent:true}).then(async result => {
       catalog = result;
+      syncSchoolWorkspace();
       const missing = catalog.subjects?.findIndex(item => !item.selectedTeacherId) ?? -1;
       if (!catalog.subjects?.[step]) step = missing >= 0 ? missing : 0;
       const uid = window.DafatiiAuth?.user?.id || '';
@@ -82,11 +102,11 @@
     main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='change-course';});
     main.querySelectorAll('[data-school-step]').forEach(button=>button.addEventListener('click',()=>{step=Number(button.dataset.schoolStep)||0; void render(true);}));
     main.querySelector('[data-school-previous]')?.addEventListener('click',()=>{step=Math.max(0,step-1); void render(true);});
-    main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){location.hash='dashboard';return;}step+=1;void render(true);});
+    main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){syncSchoolWorkspace();location.hash=catalog.complete?'subjects/All%20subjects':'dashboard';return;}step+=1;void render(true);});
     main.querySelectorAll('[data-teacher-id]').forEach(button=>button.addEventListener('click',async()=>{
       if(saving)return; const item=catalog?.subjects?.[step]; if(!item)return;
       saving=true; await render(true);
-      try{catalog=await window.DafatiiApi.request(`/school/teachers/${encodeURIComponent(item.subject)}`,{method:'PUT',body:{teacherId:button.dataset.teacherId}});}
+      try{catalog=await window.DafatiiApi.request(`/school/teachers/${encodeURIComponent(item.subject)}`,{method:'PUT',body:{teacherId:button.dataset.teacherId}});syncSchoolWorkspace();}
       catch(error){const root=document.querySelector('.workspace-main');if(root){root.dataset.schoolTeacherRoute='error';root.innerHTML=errorView(error.message||t('error'));bind(root);}saving=false;return;}
       saving=false; await render(true);
     }));
@@ -101,6 +121,7 @@
     if(!force && catalog && main.dataset.schoolTeacherRoute===current && main.querySelector('[data-school-teacher-view]'))return;
     main.dataset.schoolTeacherRoute=current;
     if(!catalog||force&&!catalog){main.innerHTML=loadingView();try{await load(Boolean(force&&!catalog));}catch(error){main.innerHTML=errorView(error.message||t('error'));bind(main);return;}if(route()!==current)return;}
+    if(catalog?.complete&&current==='dashboard'){syncSchoolWorkspace();main.removeAttribute('data-school-teacher-route');window.render?.();return;}
     main.innerHTML=current==='change-course'?pickerView():dashboardView(); bind(main);
   }
 
@@ -108,7 +129,7 @@
     scheduled=false;
     const active=school();
     document.documentElement.toggleAttribute('data-school-student',active);
-    if(!active){catalog=null;return;}
+    if(!active){catalog=null;window.DafatiiSchoolWorkspaceReady=false;return;}
     if(!teacherRoute(route()))return;
     renameNav();
     void render(false);
@@ -122,7 +143,7 @@
     }).observe(appRoot,{childList:true});
   }
   window.addEventListener('hashchange',schedule);
-  window.addEventListener('dafatii:auth:changed',()=>{catalog=null;refreshedFor='';schedule();});
+  window.addEventListener('dafatii:auth:changed',()=>{catalog=null;refreshedFor='';window.DafatiiSchoolWorkspaceReady=false;schedule();});
   window.addEventListener('dafatii:coursesloaded',schedule);
   window.addEventListener('dafatii:datahydrated',schedule);
   schedule();
