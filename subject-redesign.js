@@ -391,7 +391,10 @@
     document.getElementById('subject-r-add-content')?.addEventListener('click',()=>subject&&openAddContent(subject));
 
     document.querySelectorAll('[data-open-lecture]').forEach(el=>el.addEventListener('click',()=>{
-      const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openLectureSheet(s,el.dataset.openLecture);
+      const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;
+      const lecture=subjectLectures(s.id).find(x=>x.id===el.dataset.openLecture);
+      if(editable()){openLectureSheet(s,el.dataset.openLecture);return;}
+      if(lecture?.link){try{const url=new URL(lecture.link,location.href);if(['http:','https:'].includes(url.protocol)){const win=window.open(url.href,'_blank','noopener,noreferrer');if(win)win.opener=null;}}catch{}}
     }));
     document.querySelectorAll('[data-open-exam]').forEach(el=>el.addEventListener('click',()=>{
       const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openExamRedesign(s,el.dataset.openExam);
