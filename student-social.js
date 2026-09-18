@@ -311,7 +311,7 @@
     chat:'<path d="M5.5 17.5 4 21l4.4-1.4A8.5 8.5 0 1 0 5.5 17.5Z"/>',
     groups:'<path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M17 11a3 3 0 1 0 0-6m4 15v-1.5a4 4 0 0 0-3-3.9"/>',
     news:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h4M14 13h2M8 16h8"/>',
-    anonymous:'<path d="M8 9.5a4 4 0 1 1 8 0V11l2.5 3.5V20h-13v-5.5L8 11V9.5Z"/><path d="M9.5 15.5h5"/>',
+    anonymous:'<path d="M4 11h16M7 11l2-5h6l2 5"/><circle cx="8" cy="15" r="3"/><circle cx="16" cy="15" r="3"/><path d="M11 15h2"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
     sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
     pin:'<path d="m9 4 6 0-1 5 3 3H7l3-3-1-5Z"/><path d="M12 12v8"/>',
@@ -357,9 +357,8 @@
     return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}">
       <header class="chat-app-topbar">
         <button class="chat-app-menu" id="chat-app-menu" aria-label="Open Chat menu" aria-expanded="false">${chatIcon('menu')}</button>
-        <a class="chat-app-brand" href="#chat/${chatSectionSlug(section)}" aria-label="Dafatii Chat home"><span class="chat-app-logo-mark">D</span><span class="chat-app-brand-copy"><strong>Dafatii</strong><small>People · Connect</small></span></a>
+        <span class="chat-app-topbar-spacer" aria-hidden="true"></span>
         <div class="chat-app-top-actions">
-          <button class="chat-app-search-top" id="chat-app-search-top" aria-label="Search this Chat page">${chatIcon('search')}</button>
           <a class="chat-app-profile" href="#profile" aria-label="Profile"><span>${avatar}</span></a>
         </div>
       </header>
