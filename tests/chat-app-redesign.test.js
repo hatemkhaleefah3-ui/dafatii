@@ -8,7 +8,7 @@ const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(ui.includes("const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];"), 'chat app must expose private/groups/blogs/anonymous destinations');
 assert.ok(ui.includes('function chatAppShell(') && ui.includes('class="chat-app-topbar"') && ui.includes('class="chat-app-subnav"') && ui.includes('class="chat-app-bottom"'), 'chat app must own its top bar, page sub-navigation, and special bottom dock');
-assert.ok(ui.includes('class="chat-app-drawer"') && ui.includes("id="chat-app-menu""), 'chat app must include its own sidebar/drawer access');
+assert.ok(ui.includes('class="chat-app-drawer"') && ui.includes('id="chat-app-menu"'), 'chat app must include its own sidebar/drawer access');
 assert.ok(ui.includes('href="#dashboard"') && ui.includes('Return to dashboard'), 'chat app must provide explicit return paths to the main website');
 assert.ok(ui.includes('function chatFeedView()') && ui.includes('Blogs & announcements'), 'chat app must have a distinct blogs and announcements page');
 assert.ok(ui.includes('chatThreadRoute') && ui.includes('parts[2]') && ui.includes('data-chat-selected'), 'conversation list and conversation thread must be separate routes');
