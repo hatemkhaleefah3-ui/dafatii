@@ -184,7 +184,7 @@
     return `<section class="subject-redesign-page">
       ${pageTitle('Lectures','All lecture materials across your subjects.')}
       ${mainTabs('lectures')}
-      <div class="subject-r-metrics">${metric('▶',rows.length,'Total lectures')}${metric('○',rows.filter(x=>!isLectureDone(x.lecture)).length,'Upcoming','green')}${metric('✓',rows.filter(x=>isLectureDone(x.lecture)).length,'Completed','purple')}${metric('◉',rows.filter(x=>Boolean(x.lecture.link)).length,'With link','red')}</div>
+      <div class="subject-r-metrics two">${metric('▶',rows.length,'Total lectures')}${metric('◉',rows.filter(x=>Boolean(x.lecture.link)).length,'Recorded','red')}</div>
       <div class="subject-r-stack">${rows.length?rows.map(x=>lectureCard(x.subject,x.lecture,true)).join(''):emptyState('No lectures yet','Add a lecture from a subject workspace.')}</div>
     </section>`;
   }
@@ -238,21 +238,19 @@
 
   function subjectLecturesView(subject){
     const list=subjectLectures(subject.id);
-    const filtered=list.filter(l=>ui.lectureFilter==='all'||(ui.lectureFilter==='completed'&&isLectureDone(l))||(ui.lectureFilter==='upcoming'&&!isLectureDone(l))||(ui.lectureFilter==='recorded'&&Boolean(l.link)));
+    const filtered=list.filter(l=>ui.lectureFilter==='all'||(ui.lectureFilter==='recorded'&&Boolean(l.link)));
     return `<section class="subject-redesign-page subject-r-detail" data-subject-id="${esc(subject.id)}">
       ${pageTitle(`${subject.name} Lectures`,'Chapter materials and lecture schedule.',editable()?'<button class="subject-r-primary" id="subject-r-add-lecture">＋ Add Lecture</button>':'',chapterControl(subject))}
       ${detailTabs(subject,'lectures')}
-      <div class="subject-r-metrics">${metric('▶',list.length,'Lectures')}${metric('○',list.filter(l=>!isLectureDone(l)).length,'Upcoming','green')}${metric('✓',list.filter(isLectureDone).length,'Completed','purple')}${metric('◉',list.filter(l=>Boolean(l.link)).length,'Recorded','red')}</div>
-      <div class="subject-r-filterbar">${[['all','All'],['upcoming','Upcoming'],['completed','Completed'],['recorded','Recorded']].map(([key,label])=>`<button class="${ui.lectureFilter===key?'active':''}" data-lecture-filter="${key}">${label}</button>`).join('')}</div>
+      <div class="subject-r-metrics two">${metric('▶',list.length,'Lectures')}${metric('◉',list.filter(l=>Boolean(l.link)).length,'Recorded','red')}</div>
+      <div class="subject-r-filterbar two">${[['all','All'],['recorded','Recorded']].map(([key,label])=>`<button class="${ui.lectureFilter===key?'active':''}" data-lecture-filter="${key}">${label}</button>`).join('')}</div>
       <div class="subject-r-stack">${filtered.length?filtered.map(l=>lectureCard(subject,l,false)).join(''):emptyState('No lectures in this view','Add a lecture or choose another filter.')}</div>
       ${editable()?'<button class="subject-r-wide-action" id="subject-r-add-lecture-bottom">＋ <span>Add Lecture</span></button>':''}
     </section>`;
   }
   function lectureCard(subject,lecture,showSubject){
-    const done=isLectureDone(lecture);
     return `<article class="subject-r-row lecture" data-open-lecture="${esc(lecture.id)}" data-subject-id="${esc(subject.id)}">
       <div class="subject-r-row-main"><h2>${esc(lecture.name)}</h2><p>${showSubject?`${esc(subject.name)} · `:''}${esc(lecture.notes||'Lecture material')}</p><small>${lecture.link?'🔗 Lecture link available':'No recording/link attached'}</small></div>
-      <span class="subject-r-status ${done?'done':'upcoming'}">${done?'Completed':'Upcoming'}</span>
     </article>`;
   }
 
