@@ -1,14 +1,14 @@
 (() => {
   'use strict';
 
-  const ALLOWED = new Set(['dashboard','change-course','profile','settings']);
+  const ALLOWED = new Set(['dashboard','school-teachers','profile','settings']);
   const SUBJECTS = ['arabic','english','math','chemistry','physics','biology','islamic_book'];
   const SUBJECT_ICONS = {arabic:'✎',english:'Aa',math:'∑',chemistry:'🧪',physics:'⚛',biology:'🧬',islamic_book:'📚'};
   let catalog = null, loading = null, step = 0, saving = false, refreshedFor = '', scheduled = false;
 
   const copy = {
-    en:{teachers:'My Teachers',title:'Choose your teachers',subtitle:'Choose one teacher for each subject. Teachers are ordered by popularity for your school level, stage and field.',dashboardTitle:'Your school teachers',dashboardText:'School students study by subject and teacher instead of joining courses.',selected:'selected',complete:'Teacher setup complete',continue:'Continue choosing teachers',change:'Change teachers',previous:'Previous',next:'Next',finish:'Finish',step:'Step',of:'of',mostPopular:'Most popular',popular:'Popular',students:'students selected this teacher',teacher:'Teacher',noTeachers:'No teachers have been published for your exact school level, stage and field yet.',loading:'Loading teachers…',error:'Could not load the teacher directory.',retry:'Retry',saving:'Saving…',arabic:'Arabic',english:'English',math:'Math',chemistry:'Chemistry',physics:'Physics',biology:'Biology',islamic_book:'Islamic Book'},
-    ar:{teachers:'مدرسيني',title:'اختر مدرسيك',subtitle:'اختر مدرساً واحداً لكل مادة. يتم ترتيب المدرسين حسب الشهرة بما يطابق مستواك ومرحلتك وفرعك.',dashboardTitle:'مدرسو المدرسة',dashboardText:'طلاب المدارس يدرسون حسب المادة والمدرس بدلاً من التسجيل في الدورات.',selected:'تم اختيارهم',complete:'اكتمل اختيار المدرسين',continue:'متابعة اختيار المدرسين',change:'تغيير المدرسين',previous:'السابق',next:'التالي',finish:'إنهاء',step:'الخطوة',of:'من',mostPopular:'الأكثر شهرة',popular:'شائع',students:'طلاب اختاروا هذا المدرس',teacher:'مدرس',noTeachers:'لم يتم نشر مدرسين مطابقين لمستواك ومرحلتك وفرعك حتى الآن.',loading:'جارٍ تحميل المدرسين…',error:'تعذر تحميل دليل المدرسين.',retry:'إعادة المحاولة',saving:'جارٍ الحفظ…',arabic:'العربي',english:'الإنكليزي',math:'الرياضيات',chemistry:'الكيمياء',physics:'الفيزياء',biology:'الأحياء',islamic_book:'الكتاب الإسلامي'}
+    en:{teachers:'My Teachers',title:'Choose your teachers',subtitle:'Choose one teacher for each subject. Teachers are ordered by popularity for your school level, stage and field.',dashboardTitle:'Your school teachers',dashboardText:'Your selected teachers build your prepared school course. You can still join other Dafatii courses.',selected:'selected',complete:'Teacher setup complete',continue:'Continue choosing teachers',change:'Change teachers',previous:'Previous',next:'Next',finish:'Finish',step:'Step',of:'of',mostPopular:'Most popular',popular:'Popular',students:'students selected this teacher',teacher:'Teacher',noTeachers:'No teachers have been published for your exact school level, stage and field yet.',loading:'Loading teachers…',error:'Could not load the teacher directory.',retry:'Retry',saving:'Saving…',arabic:'Arabic',english:'English',math:'Math',chemistry:'Chemistry',physics:'Physics',biology:'Biology',islamic_book:'Islamic Book'},
+    ar:{teachers:'مدرسيني',title:'اختر مدرسيك',subtitle:'اختر مدرساً واحداً لكل مادة. يتم ترتيب المدرسين حسب الشهرة بما يطابق مستواك ومرحلتك وفرعك.',dashboardTitle:'مدرسو المدرسة',dashboardText:'يشكّل المدرسون الذين اخترتهم دورتك المدرسية الجاهزة، ويمكنك أيضاً الانضمام إلى دورات دفاتري الأخرى.',selected:'تم اختيارهم',complete:'اكتمل اختيار المدرسين',continue:'متابعة اختيار المدرسين',change:'تغيير المدرسين',previous:'السابق',next:'التالي',finish:'إنهاء',step:'الخطوة',of:'من',mostPopular:'الأكثر شهرة',popular:'شائع',students:'طلاب اختاروا هذا المدرس',teacher:'مدرس',noTeachers:'لم يتم نشر مدرسين مطابقين لمستواك ومرحلتك وفرعك حتى الآن.',loading:'جارٍ تحميل المدرسين…',error:'تعذر تحميل دليل المدرسين.',retry:'إعادة المحاولة',saving:'جارٍ الحفظ…',arabic:'العربي',english:'الإنكليزي',math:'الرياضيات',chemistry:'الكيمياء',physics:'الفيزياء',biology:'الأحياء',islamic_book:'الكتاب الإسلامي'}
   };
 
   const lang = () => document.documentElement.lang === 'ar' ? 'ar' : 'en';
@@ -16,13 +16,17 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const route = () => location.hash.replace(/^#\/?/,'').split('/')[0] || 'landing';
   const school = () => window.DafatiiAuth?.user?.accountType === 'student' && window.DafatiiAuth?.user?.studentStage === 'school';
-  const teacherRoute = value => value === 'change-course' || (value === 'dashboard' && !catalog?.complete);
+  const teacherRoute = value => value === 'school-teachers' || (value === 'dashboard' && !window.DafatiiCourses?.active?.()?.id && !catalog?.complete);
   const selectedTeacher = item => item?.teachers?.find(teacher => teacher.id === item.selectedTeacherId) || null;
+
+  const titlePart=value=>String(value||'').replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase()).trim();
+  const schoolCourseName=identity=>[identity?.academicLevel,identity?.academicStage,identity?.academicField].filter(Boolean).map(titlePart).join(' · ')||'School Course';
 
   function syncSchoolWorkspace(){
     const ready=school()&&Boolean(catalog?.complete);
     window.DafatiiSchoolWorkspaceReady=ready;
-    if(!ready||typeof state==='undefined')return false;
+    if(!ready){window.DafatiiCourses?.clearSchoolCourse?.();return false;}
+    if(typeof state==='undefined')return false;
     const nextSubjects=[],nextLectures={};
     for(const item of catalog.subjects||[]){
       const teacher=selectedTeacher(item),subjectId=`school-${item.subject}`;
@@ -34,24 +38,25 @@
       chapters.forEach((chapter,chapterIndex)=>{const unitId=units[chapterIndex]?.id||activeStudyUnitId;(chapter.lectures||[]).forEach((lecture,lectureIndex)=>lectures.push({id:String(lecture.id||`${subjectId}-lecture-${chapterIndex+1}-${lectureIndex+1}`),name:String(lecture.name||''),link:String(lecture.link||''),icon:'▶',studyUnitId:unitId,subjectId}));});
       nextLectures[subjectId]=lectures;
     }
-    state.subjects=nextSubjects;state.lectures=nextLectures;return true;
+    window.DafatiiCourses?.setSchoolCourse?.({
+      name:schoolCourseName(catalog.identity),
+      institution:catalog.identity?.institutionName||'',
+      identity:catalog.identity||{},
+      content:{subjects:nextSubjects,lectures:nextLectures}
+    });
+    if(window.DafatiiCourses?.active?.()?.isSchoolProgram){state.subjects=nextSubjects;state.lectures=nextLectures;}
+    return true;
   }
   const avatar = teacher => teacher?.imageUrl
     ? `<img src="${esc(teacher.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : esc(String(teacher?.displayName || 'T').trim().slice(0,1).toUpperCase() || 'T');
 
   function renameNav(){
-    const label = t('teachers');
-    document.querySelectorAll('[data-pre-course-route="change-course"]').forEach(button => {
-      if (button.dataset.schoolTeacherLabel === label) return;
-      button.dataset.schoolTeacherLabel = label;
-      const icon = window.DafatiiIcons?.icon?.('subjects') || '';
-      button.innerHTML = `${icon}<span>${esc(label)}</span>`;
-      button.setAttribute('aria-label',label); button.setAttribute('title',label);
+    const label=t('teachers');
+    document.querySelectorAll('[data-pre-course-route="school-teachers"],[data-school-teachers-link]').forEach(button=>{
+      button.setAttribute('aria-label',label);button.setAttribute('title',label);
     });
-    document.querySelectorAll('.quiet-course-button').forEach(button => { button.hidden = true; });
   }
-
   async function load(force=false){
     if (!school()) return null;
     if (catalog && !force) return catalog;
@@ -99,10 +104,10 @@
 
   function bind(main){
     main.querySelector('[data-school-retry]')?.addEventListener('click',()=>{catalog=null; void render(true);});
-    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='change-course';});
+    main.querySelector('[data-open-teachers]')?.addEventListener('click',()=>{location.hash='school-teachers';});
     main.querySelectorAll('[data-school-step]').forEach(button=>button.addEventListener('click',()=>{step=Number(button.dataset.schoolStep)||0; void render(true);}));
     main.querySelector('[data-school-previous]')?.addEventListener('click',()=>{step=Math.max(0,step-1); void render(true);});
-    main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){syncSchoolWorkspace();location.hash=catalog.complete?'subjects/All%20subjects':'dashboard';return;}step+=1;void render(true);});
+    main.querySelector('[data-school-next]')?.addEventListener('click',()=>{if(!catalog?.subjects?.[step]?.selectedTeacherId)return;if(step>=catalog.subjects.length-1){syncSchoolWorkspace();location.hash=catalog.complete?'dashboard/Overview':'dashboard';return;}step+=1;void render(true);});
     main.querySelectorAll('[data-teacher-id]').forEach(button=>button.addEventListener('click',async()=>{
       if(saving)return; const item=catalog?.subjects?.[step]; if(!item)return;
       saving=true; await render(true);
@@ -122,7 +127,7 @@
     main.dataset.schoolTeacherRoute=current;
     if(!catalog||force&&!catalog){main.innerHTML=loadingView();try{await load(Boolean(force&&!catalog));}catch(error){main.innerHTML=errorView(error.message||t('error'));bind(main);return;}if(route()!==current)return;}
     if(catalog?.complete&&current==='dashboard'){syncSchoolWorkspace();main.removeAttribute('data-school-teacher-route');window.render?.();return;}
-    main.innerHTML=current==='change-course'?pickerView():dashboardView(); bind(main);
+    main.innerHTML=current==='school-teachers'?pickerView():dashboardView(); bind(main);
   }
 
   function enhance(){

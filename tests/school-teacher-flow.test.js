@@ -9,6 +9,9 @@ const signupProfile = fs.readFileSync('functions/_lib/school-signup-profile.mjs'
 const auth = fs.readFileSync('functions/_lib/auth.mjs', 'utf8');
 const gate = fs.readFileSync('functions/_lib/course-gate.mjs', 'utf8');
 const migration = fs.readFileSync('migrations/0005_school_teacher_system.sql', 'utf8');
+const enrollmentMigration = fs.readFileSync('migrations/0006_school_students_can_join_courses.sql', 'utf8');
+const courseContext = fs.readFileSync('course-context.js','utf8');
+const quietShell = fs.readFileSync('quiet-shell.js','utf8');
 const rootRoute = fs.readFileSync('functions/api/v1/courses.js', 'utf8');
 const nestedRoute = fs.readFileSync('functions/api/v1/courses/[[path]].js', 'utf8');
 const schoolRoute = fs.readFileSync('functions/api/v1/school/[[path]].js', 'utf8');
@@ -23,8 +26,9 @@ assert.ok(ui.includes('data-school-previous') && ui.includes('data-school-next')
 assert.ok(ui.includes('step>=catalog.subjects.length-1') || ui.includes('step >= catalog.subjects.length - 1'), 'final step must finish the flow');
 assert.ok(ui.includes('teacher.fameScore') && ui.includes('teacher.selectionCount'), 'teacher cards must expose popularity ordering signals');
 assert.ok(css.includes('.school-stepper') && css.includes('.school-teacher-card'), 'school teacher UI styles missing');
-assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-2'), 'school teacher assets must be loaded with the interaction-fix cache version');
-assert.ok(ui.includes('if(!ALLOWED.has(current) || !teacherRoute(current))return;'), 'teacher renderer must stay out of profile/settings/signup routes');
+assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-3'), 'school teacher behavior must be cache-busted for the school-course integration');
+assert.ok(ui.includes("value === 'school-teachers'") && !ui.includes("value === 'change-course' ||"), 'teacher selection must have its own route and must not replace the real Courses page');
+assert.ok(ui.includes('if(!ALLOWED.has(current) || !teacherRoute(current))return;'), 'teacher renderer must stay out of unrelated routes');
 assert.ok(ui.includes("if(!teacherRoute(route()))return;"), 'teacher enhancement must be inert outside dashboard and teacher picker');
 assert.ok(ui.includes(".observe(appRoot,{childList:true});"), 'teacher observer must watch only top-level workspace replacements');
 assert.ok(!ui.includes('subtree:true'), 'teacher observer must not watch every profile descendant mutation');
@@ -33,10 +37,13 @@ assert.ok(!ui.includes("if(!ALLOWED.has(current)){location.hash='dashboard';retu
 assert.ok(server.includes('ORDER BY a.fame_score DESC, selection_count DESC'), 'teacher directory must sort by fame and student selections');
 assert.ok(server.includes('school_teacher_profiles') && server.includes('image_url') && server.includes('chapters'), 'teacher catalog must expose managed profile images and subject chapters');
 assert.ok(ui.includes('teacher?.imageUrl') && ui.includes('<img src='), 'school teacher picker must render managed teacher profile images');
-assert.ok(ui.includes('window.DafatiiSchoolWorkspaceReady=ready') && ui.includes('state.subjects=nextSubjects') && ui.includes('state.lectures=nextLectures'), 'completed teacher selection must hydrate the normal seven-subject workspace');
-assert.ok(ui.includes("location.hash=catalog.complete?'subjects/All%20subjects':'dashboard'"), 'finishing teacher selection must open the normal Subjects workspace');
+assert.ok(ui.includes('window.DafatiiSchoolWorkspaceReady=ready') && ui.includes('setSchoolCourse') && ui.includes('content:{subjects:nextSubjects,lectures:nextLectures}'), 'completed teacher selection must register a prepared seven-subject course');
+assert.ok(ui.includes("location.hash=catalog.complete?'dashboard/Overview':'dashboard'"), 'finishing teacher selection must open the same full dashboard used by normal courses');
+assert.ok(ui.includes('schoolCourseName(catalog.identity)') && ui.includes('academicField'), 'prepared school course must be named from academic level, stage and field');
 const app = fs.readFileSync('app.js','utf8');
-assert.ok(app.includes('schoolManagedWorkspace()') && app.includes("!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()"), 'complete school teacher setup must bypass the pre-course shell');
+assert.ok(app.includes('schoolManagedWorkspace()') && app.includes('active?.()?.isSchoolProgram'), 'teacher-managed read-only behavior must apply only while the prepared school course is active');
+assert.ok(courseContext.includes("SCHOOL_COURSE_ID = 'school-program'") && courseContext.includes('setSchoolCourse') && courseContext.includes('switchCourse'), 'prepared school course must live in the shared course switcher');
+assert.ok(quietShell.includes("user?.studentStage==='school'?'school-teachers':null"), 'full workspace account navigation must retain a teacher-management entry');
 assert.ok(app.includes('school-managed-card') && app.includes("managed?'':"), 'teacher-owned school subjects and lectures must be read-only in the normal workspace');
 assert.ok(server.includes('academic_level = ?') && server.includes('academic_stage = ?') && server.includes('academic_field = ?'), 'teacher directory must filter academic identity');
 assert.ok(server.includes('school_teacher_selections') && server.includes('PRIMARY KEY (student_user_id, subject)'), 'one teacher selection per subject must be enforced');
@@ -46,10 +53,11 @@ assert.ok(signupProfile.includes('student_academic_profiles') && signupProfile.i
 assert.ok(auth.includes("studentStage === 'school'") && auth.includes('prepareSchoolAcademicProfileInsert'), 'school signup must persist academic identity before the first teacher-directory request');
 assert.ok(auth.includes('academicProfileInsert ? [academicProfileInsert]'), 'school academic identity must be part of the signup transaction');
 
-assert.ok(gate.includes("mode:'school-teachers'") && gate.includes('SCHOOL_COURSES_DISABLED'), 'school accounts must be routed away from courses');
-assert.ok(gate.includes("input?.stage === 'school'"), 'new school-stage courses must be blocked');
+assert.ok(!gate.includes("mode:'school-teachers'") && !gate.includes("if (schoolStudent)"), 'school students must be allowed through the normal course list and enrollment routes');
+assert.ok(gate.includes("input?.stage === 'school'"), 'creating shared school-stage courses must remain blocked because the prepared school course is student-specific');
 assert.ok(rootRoute.includes('assertSameOrigin') && nestedRoute.includes('assertSameOrigin'), 'course gate routes must preserve same-origin mutation protection');
-assert.ok(migration.includes('block_school_student_course_insert') && migration.includes('block_school_student_course_update'), 'database must block school student course memberships');
-assert.ok(migration.includes('block_new_school_courses') && migration.includes("WHERE stage = 'school' AND status = 'active'"), 'school courses must be retired and blocked');
+assert.ok(enrollmentMigration.includes('DROP TRIGGER IF EXISTS block_school_student_course_insert') && enrollmentMigration.includes('DROP TRIGGER IF EXISTS block_school_student_course_update'), 'database migration must allow school students to join normal courses');
+assert.ok(server.includes("DROP TRIGGER IF EXISTS block_school_student_course_insert") && !server.includes("UPDATE course_memberships SET status = 'removed'"), 'runtime schema repair must stop removing school memberships');
+assert.ok(migration.includes('block_new_school_courses') && migration.includes("WHERE stage = 'school' AND status = 'active'"), 'legacy shared school courses must remain retired');
 
 console.log('school teacher flow regression tests passed');

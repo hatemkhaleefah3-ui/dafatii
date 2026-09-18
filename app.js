@@ -41,10 +41,10 @@ const MAIN_NAV = {
   chat: ['Messages', 'Groups', 'Requests'],
 };
 
-const PRE_COURSE_ROUTES = new Set(['dashboard','change-course','study-rooms','profile','settings']);
+const PRE_COURSE_ROUTES = new Set(['dashboard','change-course','school-teachers','study-rooms','profile','settings']);
 const PRE_COURSE_COPY = {
-  en:{dashboard:'Dashboard',courses:'Courses',rooms:'Study Rooms',profile:'Profile',settings:'Settings',welcome:'Welcome to Dafatii',waiting:'Your account is ready. Create a course or enroll in one to open the full study workspace.',pending:'Pending applications',available:'Available courses',openCourses:'Open courses',appearance:'Appearance',language:'Language',light:'Light',dark:'Dark',english:'English',arabic:'Arabic',account:'Account details',type:'Account type',stage:'Student stage',check:'Check enrollment status'},
-  ar:{dashboard:'لوحة التحكم',courses:'الدورات',rooms:'غرف الدراسة',profile:'الملف الشخصي',settings:'الإعدادات',welcome:'مرحباً بك في دفاتري',waiting:'حسابك جاهز. أنشئ دورة أو سجّل في دورة لفتح مساحة الدراسة الكاملة.',pending:'طلبات قيد الانتظار',available:'الدورات المتاحة',openCourses:'فتح الدورات',appearance:'المظهر',language:'اللغة',light:'فاتح',dark:'داكن',english:'الإنجليزية',arabic:'العربية',account:'تفاصيل الحساب',type:'نوع الحساب',stage:'المرحلة الدراسية',check:'التحقق من حالة التسجيل'}
+  en:{dashboard:'Dashboard',courses:'Courses',teachers:'Teachers',rooms:'Study Rooms',profile:'Profile',settings:'Settings',welcome:'Welcome to Dafatii',waiting:'Your account is ready. Create a course or enroll in one to open the full study workspace.',pending:'Pending applications',available:'Available courses',openCourses:'Open courses',appearance:'Appearance',language:'Language',light:'Light',dark:'Dark',english:'English',arabic:'Arabic',account:'Account details',type:'Account type',stage:'Student stage',check:'Check enrollment status'},
+  ar:{dashboard:'لوحة التحكم',courses:'الدورات',teachers:'المدرسون',rooms:'غرف الدراسة',profile:'الملف الشخصي',settings:'الإعدادات',welcome:'مرحباً بك في دفاتري',waiting:'حسابك جاهز. أنشئ دورة أو سجّل في دورة لفتح مساحة الدراسة الكاملة.',pending:'طلبات قيد الانتظار',available:'الدورات المتاحة',openCourses:'فتح الدورات',appearance:'المظهر',language:'اللغة',light:'فاتح',dark:'داكن',english:'الإنجليزية',arabic:'العربية',account:'تفاصيل الحساب',type:'نوع الحساب',stage:'المرحلة الدراسية',check:'التحقق من حالة التسجيل'}
 };
 const LANDING_COPY = {
   ar:{home:'الرئيسية',about:'من نحن',contact:'تواصل معنا',join:'انضم إلينا',eyebrow:'حياتك الدراسية في مكان واحد',title:'دراسة أقل تشتتاً.',titleAccent:'تعلّم أكثر.',intro:'يجمع دفاتري المواد والدروس والجداول وغرف الدراسة والمحادثات في مساحة واحدة منظمة للمدرسة والجامعة والتعلّم المستقل.',start:'ابدأ الدراسة',explore:'استكشف المزايا',proofOne:'مساحة واحدة لكل دورة',proofTwo:'مصمم للتركيز بلا فوضى',today:'اليوم',workspace:'مساحة الدراسة',physics:'الفيزياء',calculus:'التفاضل والتكامل',upcoming:'القادم',focus:'وضع التركيز',ready:'جاهز عندما تكون جاهزاً.',materials:'المواد',reach:'كل شيء في متناولك.',designed:'مصمم حول الطالب',everything:'لكل شيء مكان.',calm:'واجهة هادئة لحياة دراسية معقدة.',planning:'التخطيط',community:'المجتمع',materialText:'نظّم المواد والملاحظات والمصادر بالطريقة التي تدرس بها فعلياً.',planningText:'ضع المحاضرات والاختبارات والمواعيد وجلسات الدراسة في جدول واحد مترابط.',communityText:'انتقل من الدراسة الفردية إلى الغرف والمحادثات المركزة عندما يفيد التعاون.',aboutTitle:'مساحة أكاديمية تبنيها أنت',aboutText:'دفاتري منصة دراسية تجمع المحتوى والتخطيط والتعاون وإدارة الدورات مع صلاحيات واضحة للطلاب والممثلين والمشرفين.',contactTitle:'تواصل مع فريق دفاتري',contactText:'للأسئلة والملاحظات والدعم، راسلنا وسنتابع طلبك.',contactAction:'إرسال بريد',cta:'فصلك الدراسي القادم يستحق نظاماً أوضح.'},
@@ -58,7 +58,7 @@ const AUTH_COPY = {
 const LABELS = {
   dashboard: 'Dashboard', subjects: 'Subjects', calendar: 'Calendar',
   'study-rooms': 'Study Rooms', chat: 'Chat', settings: 'Settings', profile: 'Profile',
-  'change-course': 'Change Course', 'change-language': 'Change Language', 'dark-mode': 'Change Dark Mode',
+  'change-course': 'Change Course', 'school-teachers':'Teachers', 'change-language': 'Change Language', 'dark-mode': 'Change Dark Mode',
   'apply-work': 'Apply Work', 'apply-scholarship': 'Apply Scholarship', volunteer: 'Volunteer', 'donate-us': 'Donate Us'
 };
 
@@ -181,7 +181,7 @@ function join(){
       const values=new FormData(form);
       if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
       else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
-      state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
+      state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiAuth?.user?.studentStage==='school'?'dashboard':window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
     }catch(error){
       const suffix=error.code?` (${error.code})`:'';
       status.textContent=`${error.message||c.failed}${suffix}`;
@@ -191,7 +191,7 @@ function join(){
   };
 }
 
-function schoolManagedWorkspace(){return Boolean(window.DafatiiSchoolWorkspaceReady&&window.DafatiiAuth?.user?.accountType==='student'&&window.DafatiiAuth?.user?.studentStage==='school');}
+function schoolManagedWorkspace(){return Boolean(window.DafatiiSchoolWorkspaceReady&&window.DafatiiAuth?.user?.accountType==='student'&&window.DafatiiAuth?.user?.studentStage==='school'&&window.DafatiiCourses?.active?.()?.isSchoolProgram);}
 
 function subjectListView(){
   const managed=schoolManagedWorkspace();
@@ -313,7 +313,9 @@ function preCourseWorkspace(current){
   const requested=current.split('/')[0],page=PRE_COURSE_ROUTES.has(requested)?requested:'dashboard';
   if(page!==requested){setHash('dashboard');return;}
   const language=interfaceLanguage(),copy=PRE_COURSE_COPY[language],dark=document.documentElement.dataset.theme==='dark';
-  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${[['dashboard',copy.dashboard],['change-course',copy.courses],['study-rooms',copy.rooms],['profile',copy.profile],['settings',copy.settings]].map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${icon(key)}${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">${icon('appearance')} ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">${icon('language')} ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
+  const schoolAccount=window.DafatiiAuth?.user?.accountType==='student'&&window.DafatiiAuth?.user?.studentStage==='school';
+  const preNav=schoolAccount?[['dashboard',copy.dashboard],['school-teachers',copy.teachers],['change-course',copy.courses],['study-rooms',copy.rooms],['profile',copy.profile],['settings',copy.settings]]:[['dashboard',copy.dashboard],['change-course',copy.courses],['study-rooms',copy.rooms],['profile',copy.profile],['settings',copy.settings]];
+  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${preNav.map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${icon(key==='school-teachers'?'subjects':key)}${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">${icon('appearance')} ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">${icon('language')} ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
   document.querySelectorAll('[data-pre-course-route]').forEach(button=>button.onclick=()=>setHash(button.dataset.preCourseRoute));
   document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);render();});
   document.querySelectorAll('[data-extra="dark-mode"]').forEach(button=>button.onclick=()=>{applyInterfaceTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');render();});
@@ -340,7 +342,7 @@ function workspace(current){
     </div></header>
 
     <div class="settings-nav ${state.sidebar?'hidden':''}"><div class="settings-inner">
-      ${settingAction('settings','Settings')}${settingAction('profile','Profile')}${settingAction('change-course','Change Course')}${settingAction('change-language','Change Language')}${settingAction('dark-mode','Change Dark Mode')}
+      ${settingAction('settings','Settings')}${settingAction('profile','Profile')}${window.DafatiiAuth?.user?.studentStage==='school'?settingAction('school-teachers','Teachers'):''}${settingAction('change-course','Change Course')}${settingAction('change-language','Change Language')}${settingAction('dark-mode','Change Dark Mode')}
       <button class="settings-action sidebar-trigger" id="sidebar-open">${icon('menu')} Sidebar</button>
     </div></div>
 
@@ -349,7 +351,7 @@ function workspace(current){
     <aside class="sidebar ${state.sidebar?'open':''}">
       <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close" aria-label="Close">${icon('close')}</button></div>
       <div class="sidebar-label">Settings</div>
-      ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
+      ${sideAction('settings','Settings')}${sideAction('profile','Profile')}${window.DafatiiAuth?.user?.studentStage==='school'?sideAction('school-teachers','Teachers'):''}${sideAction('change-course','Change Course')}${sideAction('change-language','Change Language')}${sideAction('dark-mode','Change Dark Mode')}
       ${window.DafatiiAuth?.user?.platformRole==='admin'?sideAction('admin','Admin Panel'):''}
       ${['owner','representer'].includes(window.DafatiiCourses.active().membership?.role)?sideAction('representer','Representer Panel'):''}
       <div class="sidebar-section"><div class="sidebar-label">Opportunities</div>

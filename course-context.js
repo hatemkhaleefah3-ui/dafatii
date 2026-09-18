@@ -2,6 +2,8 @@
   'use strict';
 
   const CATALOG_KEY = 'dafatii:courses:v1';
+  const SCHOOL_COURSE_ID = 'school-program';
+  const SCHOOL_MANAGED_KEYS = new Set(['dafatii:subjects','dafatii:lectures']);
   const COURSE_KEYS = new Set([
     'dafatii:subjects','dafatii:lectures','dafatii:weeklySchedule','dafatii:scheduleNotes',
     'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
@@ -91,30 +93,67 @@
     return {'dafatii:subjects':seed.subjects,'dafatii:lectures':seed.lectures,'dafatii:studentSuite:v1':seed.suite,'dafatii:weeklySchedule':seed.schedule,'dafatii:examSchedule':seed.exams,'dafatii:chatState:v1':seed.chat};
   }
 
-  const runtime={actor:null,courses:[],activeId:localStorage.getItem('__dafatii:active-course')||'',revisions:new Map(),queues:new Map(),ready:false};
+  const runtime={actor:null,courses:[],schoolCourse:null,schoolContent:{subjects:[],lectures:{}},activeId:localStorage.getItem('__dafatii:active-course')||'',revisions:new Map(),queues:new Map(),ready:false};
   const fallbackCourse={id:'',name:'No active course',institution:'',stage:'university',membership:null,color:'#64748b',icon:'◇'};
   const cacheKey=(key,courseId)=>`__dafatii:course-cache:${courseId}:${key}`;
+  const schoolRecordKey=key=>`dafatii:school-course:${String(key).replace(/^dafatii:/,'')}`;
+  const schoolActive=()=>Boolean(runtime.schoolCourse&&runtime.activeId===SCHOOL_COURSE_ID);
   const cacheRead=(key,fallback,courseId=runtime.activeId)=>{try{const value=localStorage.getItem(cacheKey(key,courseId));return value===null?fallback:(JSON.parse(value)??fallback);}catch{return fallback;}};
   const cacheWrite=(key,value,courseId=runtime.activeId)=>{localStorage.setItem(cacheKey(key,courseId),JSON.stringify(value));return value;};
 
-  function active(){return runtime.courses.find(course=>course.id===runtime.activeId)||runtime.courses.find(course=>course.membership?.status==='active')||fallbackCourse;}
-  function list(){return clone(runtime.courses);}
+  function active(){
+    if(schoolActive())return runtime.schoolCourse;
+    return runtime.courses.find(course=>course.id===runtime.activeId)||runtime.courses.find(course=>course.membership?.status==='active')||runtime.schoolCourse||fallbackCourse;
+  }
+  function list(){return clone(runtime.schoolCourse?[runtime.schoolCourse,...runtime.courses]:runtime.courses);}
+  function setSchoolCourse(input={}){
+    const content=input.content||{};
+    runtime.schoolContent={
+      subjects:Array.isArray(content.subjects)?clone(content.subjects):[],
+      lectures:content.lectures&&typeof content.lectures==='object'?clone(content.lectures):{}
+    };
+    runtime.schoolCourse={
+      id:SCHOOL_COURSE_ID,enrollmentCode:'',name:String(input.name||'School Course'),description:'Prepared from your selected school teachers.',
+      institution:String(input.institution||''),stage:'school',status:'active',pricing:'free',priceMinor:0,currency:'USD',
+      visibility:'private',joinPolicy:'direct',hasAccessCode:false,ownerUserId:null,memberCount:1,applicationCount:0,
+      membership:{role:'student',status:'active',permissions:{add_content:false,edit_content:false,remove_content:false,manage_students:false,review_applications:false,manage_representers:false,manage_settings:false}},
+      icon:'🎓',color:'#16a34a',isSchoolProgram:true,academicIdentity:clone(input.identity||{}),createdAt:null,updatedAt:Date.now()
+    };
+    const saved=localStorage.getItem('__dafatii:active-course')||'';
+    if(!runtime.activeId||saved===SCHOOL_COURSE_ID||(!saved&&runtime.actor?.studentStage==='school')){
+      runtime.activeId=SCHOOL_COURSE_ID;localStorage.setItem('__dafatii:active-course',SCHOOL_COURSE_ID);
+    }
+    return clone(runtime.schoolCourse);
+  }
+  function clearSchoolCourse(){
+    const wasActive=schoolActive();runtime.schoolCourse=null;runtime.schoolContent={subjects:[],lectures:{}};
+    if(wasActive){runtime.activeId='';localStorage.removeItem('__dafatii:active-course');}
+  }
   function editable(permission){const membership=active().membership;if(runtime.actor?.platformRole==='admin'||membership?.role==='owner')return true;return membership?.role==='representer'&&Boolean(membership.permissions?.[permission]);}
   function readJSON(key,fallback){
     if(GLOBAL_USER_KEYS.has(key)){
       const globalValue=rawRead(key,undefined);
       if(globalValue!==undefined&&globalValue!==null)return globalValue;
-      if(runtime.activeId){
+      if(runtime.activeId&&!schoolActive()){
         const legacy=cacheRead(key,undefined,runtime.activeId);
         if(legacy!==undefined&&legacy!==null){rawWrite(key,legacy);return legacy;}
       }
       return fallback;
+    }
+    if(schoolActive()&&COURSE_KEYS.has(key)){
+      if(key==='dafatii:subjects')return clone(runtime.schoolContent.subjects);
+      if(key==='dafatii:lectures')return clone(runtime.schoolContent.lectures);
+      return rawRead(schoolRecordKey(key),fallback);
     }
     return COURSE_KEYS.has(key)&&runtime.activeId?cacheRead(key,fallback):rawRead(key,fallback);
   }
   function writeJSON(key,value){
     if(GLOBAL_USER_KEYS.has(key))return rawWrite(key,value);
     if(!COURSE_KEYS.has(key))return rawWrite(key,value);
+    if(schoolActive()){
+      if(SCHOOL_MANAGED_KEYS.has(key))throw new Error('School subjects and lectures are managed by your selected teachers.');
+      return rawWrite(schoolRecordKey(key),value);
+    }
     if(!runtime.activeId||!active().membership||active().membership.status!=='active')throw new Error('Open an enrolled course first.');
     if(!['add_content','edit_content','remove_content'].some(editable))throw new Error('This course is read-only for students.');
     const courseId=runtime.activeId,previous=cacheRead(key,null,courseId),queueKey=`${courseId}:${key}`;cacheWrite(key,value,courseId);
@@ -122,7 +161,14 @@
     const pending=prior.then(async()=>{const baseRevision=runtime.revisions.get(queueKey)||0;const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{method:'PUT',idempotent:true,body:{mutationId:crypto.randomUUID(),baseRevision,record:{key,format:'json',value,deleted:false}}});runtime.revisions.set(queueKey,result.revision);}).catch(async error=>{if(previous===null)localStorage.removeItem(cacheKey(key,courseId));else cacheWrite(key,previous,courseId);try{await hydrate(courseId);}catch{}window.dispatchEvent(new CustomEvent('dafatii:coursewriteerror',{detail:{error,key,courseId}}));}).finally(()=>{if(runtime.queues.get(queueKey)===pending)runtime.queues.delete(queueKey);});runtime.queues.set(queueKey,pending);
     return value;
   }
-  function remove(key){if(GLOBAL_USER_KEYS.has(key)||!COURSE_KEYS.has(key))return window.DafatiiData.remove(key);return writeJSON(key,null);}
+  function remove(key){
+    if(GLOBAL_USER_KEYS.has(key)||!COURSE_KEYS.has(key))return window.DafatiiData.remove(key);
+    if(schoolActive()){
+      if(SCHOOL_MANAGED_KEYS.has(key))throw new Error('School subjects and lectures are managed by your selected teachers.');
+      return window.DafatiiData.remove(schoolRecordKey(key));
+    }
+    return writeJSON(key,null);
+  }
 
   async function hydrate(courseId){
     const result=await window.DafatiiApi.request(`/courses/${courseId}/content`,{idempotent:true});
@@ -131,14 +177,28 @@
   }
 
   async function refresh(){
-    if(!window.DafatiiAuth?.user){runtime.actor=null;runtime.courses=[];runtime.activeId='';runtime.ready=true;return []}
+    if(!window.DafatiiAuth?.user){runtime.actor=null;runtime.courses=[];runtime.schoolCourse=null;runtime.schoolContent={subjects:[],lectures:{}};runtime.activeId='';localStorage.removeItem('__dafatii:active-course');runtime.ready=true;return []}
+    const saved=localStorage.getItem('__dafatii:active-course')||runtime.activeId||'';
     const result=await window.DafatiiApi.request('/courses?scope=available',{idempotent:true});runtime.actor=result.actor;runtime.courses=result.courses;
-    const available=runtime.courses.find(course=>course.id===runtime.activeId&&course.membership?.status==='active')||runtime.courses.find(course=>course.membership?.status==='active');
-    runtime.activeId=available?.id||'';if(runtime.activeId){localStorage.setItem('__dafatii:active-course',runtime.activeId);await hydrate(runtime.activeId);}runtime.ready=true;
+    const schoolStudent=runtime.actor?.accountType==='student'&&runtime.actor?.studentStage==='school';
+    if(schoolStudent&&saved===SCHOOL_COURSE_ID){
+      runtime.activeId=SCHOOL_COURSE_ID;
+    }else{
+      const available=runtime.courses.find(course=>course.id===saved&&course.membership?.status==='active')||(!schoolStudent?runtime.courses.find(course=>course.membership?.status==='active'):null);
+      runtime.activeId=available?.id||'';
+      if(runtime.activeId){localStorage.setItem('__dafatii:active-course',runtime.activeId);await hydrate(runtime.activeId);}
+      else if(!schoolStudent)localStorage.removeItem('__dafatii:active-course');
+    }
+    runtime.ready=true;
     window.dispatchEvent(new CustomEvent('dafatii:coursesloaded',{detail:{courses:list(),actor:runtime.actor}}));return list();
   }
 
   async function switchCourse(id){
+    if(id===SCHOOL_COURSE_ID){
+      if(!runtime.schoolCourse||runtime.activeId===SCHOOL_COURSE_ID)return false;
+      runtime.activeId=SCHOOL_COURSE_ID;localStorage.setItem('__dafatii:active-course',SCHOOL_COURSE_ID);
+      window.dispatchEvent(new CustomEvent('dafatii:coursechanged',{detail:{course:active()}}));return true;
+    }
     let course=runtime.courses.find(item=>item.id===id&&(item.membership?.status==='active'||runtime.actor?.platformRole==='admin'));
     if(!course&&runtime.actor?.platformRole==='admin'){const result=await window.DafatiiApi.request(`/courses/${id}`,{idempotent:true});course=result.course;runtime.courses.push(course);}
     if(!course||runtime.activeId===id)return false;
@@ -154,5 +214,5 @@
   async function enroll(input){const result=await window.DafatiiApi.request('/courses/enroll',{method:'POST',body:input});await refresh();return result;}
   function roomSeeds(){const course=active(),template=TEMPLATES[course.template||course.name]||TEMPLATES['Computer Science'];return template.rooms.map(([name,subject,description],index)=>({id:`course-room-${index+1}`,name,subject,visibility:index?'private':'public',pin:index?'2468':'',description,vibe:index?'Collaborative':'Deep focus',members:48+index*17,online:8+index*3,capacity:30,streak:12+index,accent:course.icon,tags:[course.name,'Course room',index?'PIN':'Open']}));}
 
-  window.DafatiiCourses={catalogKey:CATALOG_KEY,templates:()=>Object.keys(TEMPLATES),active,list,readJSON,writeJSON,remove,switchCourse,createCourse,updateCourse,enroll,refresh,hydrate,editable,get actor(){return runtime.actor},get ready(){return runtime.ready},roomSeeds,scopedKey:key=>scopedKey(key,active().id),isCourseKey:key=>COURSE_KEYS.has(key)};
+  window.DafatiiCourses={catalogKey:CATALOG_KEY,schoolCourseId:SCHOOL_COURSE_ID,templates:()=>Object.keys(TEMPLATES),active,list,readJSON,writeJSON,remove,switchCourse,createCourse,updateCourse,enroll,refresh,hydrate,setSchoolCourse,clearSchoolCourse,editable,get actor(){return runtime.actor},get ready(){return runtime.ready},roomSeeds,scopedKey:key=>schoolActive()?schoolRecordKey(key):scopedKey(key,active().id),isCourseKey:key=>COURSE_KEYS.has(key)};
 })();
