@@ -12,6 +12,7 @@ const LEVELS = Object.freeze({
   primary_studies: { stages:new Set(['primary_studies']), fields:null, legacy:'university', organization:'institution' },
   postgraduate_studies: { stages:new Set(['postgraduate_studies']), fields:null, legacy:'university', organization:'institution' }
 });
+const IRAQ_CITIES = new Set(['Baghdad','Basra','Nineveh','Erbil','Najaf','Karbala','Kirkuk','Sulaymaniyah','Duhok','Anbar','Babil','Diyala','Dhi Qar','Maysan','Muthanna','Al-Qadisiyah','Salah al-Din','Wasit']);
 const GENDERS = new Set(['male','female','prefer_not_to_say']);
 let schemaReady = false;
 
@@ -59,7 +60,7 @@ export function validateStudentSignup(input = {}) {
   const country = clean(input.country, 120);
   const city = clean(input.city, 120);
   const town = clean(input.town, 120);
-  if (!country || !city || !town) throw new HttpError(400, 'INVALID_LOCATION', 'Country, city and town are required.');
+  if (country !== 'Iraq' || !IRAQ_CITIES.has(city) || !town) throw new HttpError(400, 'INVALID_LOCATION', 'Select Iraq and a supported Iraqi city, then enter a town.');
 
   const gender = String(input.gender || '').trim();
   if (!GENDERS.has(gender)) throw new HttpError(400, 'INVALID_GENDER', 'Gender selection is invalid.');
