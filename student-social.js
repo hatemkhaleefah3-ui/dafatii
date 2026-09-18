@@ -5,10 +5,10 @@
   const STUDY_SUBNAV = ['Public study rooms','Private study rooms','My study rooms'];
   const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];
   const CHAT_SECTION_SUBPAGES = {
-    'Private chats':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']],
-    'Groups':[['all','All groups'],['unread','Unread'],['starred','Starred'],['archived','Archived']],
-    'Blogs & announcements':[['latest','Latest'],['announcement','Announcements'],['blog','Blogs'],['study','Study tips']],
-    'Anonymous':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']]
+    'Private chats':[['all','All'],['unread','Unread'],['anonymous','Anonymous'],['archived','Archived']],
+    'Groups':[['joined','Joined'],['discover','Discover'],['pinned','Pinned'],['archived','Archived']],
+    'Blogs & announcements':[['latest','Latest'],['announcement','Announcements'],['article','Articles'],['event','Events']],
+    'Anonymous':[['trending','Trending'],['new','New'],['course','Course-based'],['private','Private']]
   };
   let chatFeedFilter='latest';
   const MAX_IMAGE_BYTES = 900 * 1024;
@@ -348,35 +348,41 @@
   function chatSubpages(section){return CHAT_SECTION_SUBPAGES[section]||CHAT_SECTION_SUBPAGES['Private chats'];}
   function chatAppNavItem(section,label,iconName){
     const active=section.toLowerCase()===label.toLowerCase();
-    return `<a class="chat-app-nav-item ${active?'active':''}" href="#chat/${chatSectionSlug(label)}" aria-current="${active?'page':'false'}"><span aria-hidden="true">${chatIcon(iconName)}</span><small>${esc(label==='Blogs & announcements'?'Blogs':label==='Private chats'?'Private':label)}</small></a>`;
+    return `<a class="chat-app-nav-item ${active?'active':''}" href="#chat/${chatSectionSlug(label)}" aria-current="${active?'page':'false'}"><span aria-hidden="true">${chatIcon(iconName)}</span><small>${esc(label==='Blogs & announcements'?'Blogs':label==='Private chats'?'Messages':label==='Anonymous'?'Anonymous':label)}</small></a>`;
+  }
+  function chatPageTitle(section){
+    if(section==='Private chats')return 'Messages';
+    if(section==='Blogs & announcements')return 'Blogs';
+    if(section==='Anonymous')return 'Anonymous Chats';
+    return 'Groups';
+  }
+  function chatPageSubtitle(section){
+    if(section==='Private chats')return 'Direct chats, anonymous rooms, and study groups';
+    if(section==='Groups')return 'Study groups, projects, and collaboration';
+    if(section==='Blogs & announcements')return 'Announcements, study tips, campus writing, and events.';
+    return 'Ask freely, vent safely, and study together.';
   }
   function chatAppShell(section,body,{thread=false,subpage=''}={}){
     const user=window.DafatiiAuth?.user;
     const avatar=esc((user?.displayName||'D').trim().slice(0,1).toUpperCase()||'D');
     const subpages=chatSubpages(section);
     const activeSubpage=subpage||subpages[0]?.[0]||'';
-    return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}">
-      <header class="chat-app-topbar">
-        <button class="chat-app-menu" id="chat-app-menu" aria-label="Open Chat menu" aria-expanded="false">${chatIcon('menu')}</button>
-        <span class="chat-app-topbar-spacer" aria-hidden="true"></span>
+    if(thread){
+      return `<section class="chat-app-page thread-open" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}"><main class="chat-app-stage chat-app-thread-stage">${body}</main></section>`;
+    }
+    return `<section class="chat-app-page reference-list" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}">
+      <header class="chat-app-topbar reference-brandbar">
+        <a class="chat-app-wordmark" href="#dashboard" aria-label="Dafatii home"><strong>Dafatii</strong><small>Learn together. Go further.</small></a>
         <div class="chat-app-top-actions">
-          <a class="chat-app-profile" href="#profile" aria-label="Profile"><span>${avatar}</span></a>
+          <button class="chat-app-quick-new" id="chat-app-quick-new" type="button" aria-label="Create new">${chatIcon('plus')}</button>
+          <a class="chat-app-profile" href="#profile" aria-label="Profile"><span>${avatar}</span><i aria-hidden="true"></i></a>
         </div>
       </header>
+      <div class="chat-app-page-heading"><h1>${esc(chatPageTitle(section))}</h1><p>${esc(chatPageSubtitle(section))}</p></div>
+      ${section==='Anonymous'?'<div class="chat-app-privacy-banner"><span>◆</span><p>Your identity stays private. Be kind, keep it constructive.</p><b>♥</b></div>':''}
       <nav class="chat-app-subnav" aria-label="${esc(section)} subpages">
         ${subpages.map(([id,label])=>`<button type="button" data-chat-subpage="${esc(id)}" class="${id===activeSubpage?'active':''}" aria-current="${id===activeSubpage?'page':'false'}">${esc(label)}</button>`).join('')}
       </nav>
-      <aside class="chat-app-drawer" id="chat-app-drawer" aria-label="Chat app menu">
-        <div class="chat-app-drawer-head"><div><span class="chat-app-logo-mark">D</span><div><strong>Dafatii Chat</strong><small>People · Connect</small></div></div><button id="chat-app-drawer-close" aria-label="Close Chat menu">${chatIcon('close')}</button></div>
-        <nav>
-          <a class="${section==='Private chats'?'active':''}" href="#chat/${chatSectionSlug('Private chats')}">${chatIcon('chat')}<span>Private chats</span></a>
-          <a class="${section==='Groups'?'active':''}" href="#chat/${chatSectionSlug('Groups')}">${chatIcon('groups')}<span>Groups</span></a>
-          <a class="${section==='Blogs & announcements'?'active':''}" href="#chat/${chatSectionSlug('Blogs & announcements')}">${chatIcon('news')}<span>Blogs & announcements</span></a>
-          <a class="${section==='Anonymous'?'active':''}" href="#chat/${chatSectionSlug('Anonymous')}">${chatIcon('anonymous')}<span>Anonymous</span></a>
-        </nav>
-        <div class="chat-app-drawer-foot"><a href="#dashboard">${chatIcon('back')}<span>Return to dashboard</span></a><a href="#profile">${chatIcon('user')}<span>Profile</span></a></div>
-      </aside>
-      <button class="chat-app-drawer-backdrop" id="chat-app-drawer-backdrop" aria-label="Close Chat menu"></button>
       <main class="chat-app-stage">${body}</main>
       <nav class="chat-app-bottom" aria-label="Chat app navigation">
         <a class="chat-app-nav-item exit" href="#dashboard"><span aria-hidden="true">${chatIcon('back')}</span><small>Dashboard</small></a>
@@ -410,18 +416,17 @@
   function chatFeedView(){
     const posts=[...chatCommunityPosts(),...CHAT_FEED_SEEDS].filter(post=>{
       if(chatFeedFilter==='announcement')return post.type==='announcement';
-      if(chatFeedFilter==='blog')return post.type==='blog';
-      if(chatFeedFilter==='study')return post.type==='blog'&&post.tags.some(tag=>/study|focus|recall|planning/i.test(tag));
+      if(chatFeedFilter==='article')return post.type==='blog';
+      if(chatFeedFilter==='event')return post.type==='event';
       return true;
     }).sort((a,b)=>b.at-a.at);
-    return `<section class="chat-feed-page">
-      <div class="chat-feed-intro"><div><small>Community</small><h1>Blogs & announcements</h1></div><p>Course updates, Dafatii announcements, and useful study posts in one focused feed.</p></div>
-      <button class="chat-feed-create" id="chat-feed-create" type="button" aria-label="Create community post" title="Create community post">${chatIcon('plus')}</button>
-      <div class="chat-feed-grid">${posts.map(post=>`<article class="chat-feed-card ${post.type}">
-        <div class="chat-feed-card-top"><span>${post.type==='announcement'?'Announcement':'Blog'}</span><time>${relativeTime(post.at)}</time></div>
-        <h2>${esc(post.title)}</h2><p>${esc(post.excerpt)}</p>
-        <div class="chat-feed-author"><span>${esc((post.author||'D')[0])}</span><div><strong>${esc(post.author)}</strong><small>${post.type==='announcement'?'Official update':'Community post'}</small></div></div>
+    return `<section class="chat-feed-page reference-feed">
+      <div class="chat-feed-search"><label>${chatIcon('search')}<input id="chat-feed-search" placeholder="Search posts, topics, or people…"></label><button type="button" aria-label="Blog filters">${chatIcon('sliders')}</button></div>
+      <div class="chat-feed-grid">${posts.map((post,index)=>`<article class="chat-feed-card ${post.type}" data-feed-post>
+        <div class="chat-feed-card-top"><span class="chat-feed-type">${post.type==='announcement'?'Announcement':post.type==='event'?'Event':'Study Tips'}</span><time>${relativeTime(post.at)} ago</time><button type="button" class="chat-feed-bookmark" aria-label="Save post">⌑</button></div>
+        <div class="chat-feed-card-body"><div><h2>${esc(post.title)}</h2><p>${esc(post.excerpt)}</p></div><figure class="chat-feed-visual visual-${index%3}"><span>${index%3===0?'Good Students · Brighter Tomorrows':index%3===1?'Small Steps · Big Progress':'Better Students · Together'}</span></figure></div>
         <div class="chat-feed-tags">${post.tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>
+        <div class="chat-feed-author"><span>${esc((post.author||'D')[0])}</span><div><strong>${esc(post.author)}</strong><small>${post.type==='announcement'?'Official update':'Student writer'}</small></div><b>›</b></div>
       </article>`).join('')}</div>
     </section>`;
   }
@@ -532,7 +537,11 @@
         chatFeedFilter=button.dataset.chatSubpage||'latest';
         render();
       }));
-      document.getElementById('chat-feed-create')?.addEventListener('click',openCommunityPostSheet);
+      document.getElementById('chat-app-quick-new')?.addEventListener('click',openCommunityPostSheet);
+      document.getElementById('chat-feed-search')?.addEventListener('input',event=>{
+        const query=event.target.value.trim().toLowerCase();
+        document.querySelectorAll('[data-feed-post]').forEach(card=>{card.hidden=query&&!card.textContent.toLowerCase().includes(query);});
+      });
       return;
     }
 
