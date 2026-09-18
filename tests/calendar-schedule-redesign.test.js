@@ -16,7 +16,7 @@ assert.ok(ui.includes("plannerMode='day'") && ui.includes("plannerMode='month'")
 assert.ok(ui.includes('centeredPlannerItem') && ui.includes("track.addEventListener('scroll'") && ui.includes("track.addEventListener('scrollend'"), 'scroll position must select the item nearest the center of each rail');
 assert.ok(ui.includes("item.style.opacity") && ui.includes("distance/fadeDistance"), 'selection opacity must fall continuously as items move away from the rail center');
 assert.ok(!ui.includes('planner-loop-arrow') && !ui.includes('data-planner-mode-step') && !ui.includes('data-planner-period-step'), 'schedule selectors must not render arrow buttons');
-assert.ok(ui.includes('recurringSchedule()') && ui.includes('Recurring weekly timetable'), 'existing weekly schedule data must remain visible in the redesigned page');
+assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const entries=read(SCHEDULE_KEY,[])') && ui.includes("notes:'Recurring weekly timetable'"), 'existing weekly schedule data must project into matching dated schedule cells');
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-table') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
 assert.ok(index.includes('calendar.js?v=20260918-3') && index.includes('calendar.css?v=20260918-3'), 'schedule redesign assets must be cache-busted');
