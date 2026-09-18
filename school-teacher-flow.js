@@ -135,6 +135,14 @@
     const active=school();
     document.documentElement.toggleAttribute('data-school-student',active);
     if(!active){catalog=null;window.DafatiiSchoolWorkspaceReady=false;return;}
+    if(!catalog){
+      void load(false).then(()=>{
+        const current=route();
+        if(teacherRoute(current))void render(false);
+        else if(current==='change-course'||window.DafatiiCourses?.active?.()?.isSchoolProgram)window.render?.();
+      }).catch(()=>{if(teacherRoute(route()))void render(false);});
+      return;
+    }
     if(!teacherRoute(route()))return;
     renameNav();
     void render(false);
