@@ -123,13 +123,22 @@
     </article>`;
   }
 
-  function threadView(c,state,pro){const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;return `${threadHeader(c,state,pro)}${pinned?`<button class="chatpro-pinned" id="chatpro-pinned"><span>${icon('pin')}</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>${icon('chevronRight')}</b></button>`:''}${ui.search?threadSearch(c):''}<div class="chatpro-messages" id="chatpro-messages">${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;}
+  function threadView(c,state,pro){
+    const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;
+    return `${threadHeader(c,state,pro)}${threadContext(c)}${pinned?`<button class='chatpro-pinned' id='chatpro-pinned'><span>${icon('pin')}</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>${icon('chevronRight')}</b></button>`:''}${ui.search?threadSearch(c):''}<div class='chatpro-messages' id='chatpro-messages'>${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;
+  }
+  function threadContext(c){
+    if(c.kind==='group')return `<div class='chatpro-group-context'><nav><button class='active'>Chat</button><button>Files</button><button>Members</button></nav><div class='chatpro-course-card'><span>▤</span><div><small>CS 310</small><strong>Database Systems</strong><p>Shared resources, notes, and discussion for this study group.</p></div><button type='button'>View Course</button></div></div>`;
+    if(c.kind==='unknown')return `<div class='chatpro-anon-safety'><span>◆</span><div><small>Pinned by Dafatii</small><strong>Be kind. Keep it constructive.</strong><p>This is an anonymous space — support each other, respect different perspectives, and focus on learning.</p></div></div>`;
+    return '';
+  }
   function threadHeader(c,state,pro){
     const blocked=state.blocked.includes(c.id);
-    return `<div class="chatpro-thread-head">
-      <button class="chatpro-mobile-back" id="chatpro-mobile-back" aria-label="Back">${icon('back')}</button>
-      <button class="chatpro-person" id="chatpro-info"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button>
-      <div class="chatpro-head-actions"><button id="chatpro-call" title="Voice call" aria-label="Voice call">${icon('phone')}</button><button id="chatpro-video-call" title="Video call" aria-label="Video call">${icon('video')}</button><button id="chatpro-thread-search" title="Search in conversation" aria-label="Search">${icon('search')}</button>${c.kind==='unknown'?`<button id="chatpro-report" class="danger-text">Report</button>`:''}<button id="chatpro-info-button" title="Chat info" aria-label="Chat info">${icon('info')}</button></div>
+    const subtitle=c.kind==='unknown'?`Anonymous room · ${esc(c.status||'private identity')}`:esc(blocked?'blocked':c.status||c.topic||'Online');
+    return `<div class='chatpro-thread-head'>
+      <button class='chatpro-mobile-back' id='chatpro-mobile-back' aria-label='Back'>${icon('back')}</button>
+      <button class='chatpro-person' id='chatpro-info'><span class='chatpro-avatar large ${c.status==='online'?'online':''}'>${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${subtitle}</small></span></button>
+      <div class='chatpro-head-actions'><button id='chatpro-call' title='Voice call' aria-label='Voice call'>${icon('phone')}</button><button id='chatpro-thread-search' title='Search in conversation' aria-label='Search'>${icon('search')}</button>${c.kind==='unknown'?`<button id='chatpro-report' class='danger-text'>Report</button>`:''}<button id='chatpro-info-button' title='Chat options' aria-label='Chat options'>${icon('more')}</button></div>
     </div>`;
   }
   function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search">${icon('search')}<input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close" aria-label="Close search">${icon('close')}</button></div>`;}
