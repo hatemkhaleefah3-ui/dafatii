@@ -14,7 +14,8 @@ assert.ok(ui.includes("const profile = { ...signupDraft, studentId, accountType:
 assert.ok(ui.includes('sessionStorage.setItem(INITIAL_PIN_KEY, pin)'), 'initial PIN must stay session-scoped');
 assert.ok(ui.includes("card.classList.toggle('flipped')"), 'student card must flip on click');
 assert.ok(css.includes('.student-id-card.flipped .student-card-inner') && css.includes('rotateY(180deg)'), 'card flip styles missing');
-assert.ok(index.includes('student-account-flow.css?v=20260917-1') && index.includes('student-account-flow.js?v=20260919-2'), 'account flow assets must be loaded');
+assert.ok(css.includes('.student-flow-field input[type="date"]') && css.includes('min-width:0') && css.includes('max-width:100%'), 'birth date input must stay within the same field width as other signup inputs');
+assert.ok(index.includes('student-account-flow.css?v=20260919-2') && index.includes('student-account-flow.js?v=20260919-2'), 'account flow assets must be loaded');
 assert.ok(ui.includes("ONBOARDING_KEY = 'dafatii:onboarding:v1'") && ui.includes("location.hash = 'onboarding'"), 'new signups must enter the sequential onboarding flow before the workspace');
 assert.ok(server.includes('student_credentials') && server.includes('validateStudentSignup') && server.includes('verifyStudentPin'), 'student identity server module incomplete');
 assert.ok(ui.includes("field('birthDate'") && ui.includes('autocomplete="bday"'), 'step 1 must collect birth date below the full name');
