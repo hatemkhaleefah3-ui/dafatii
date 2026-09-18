@@ -64,8 +64,8 @@ assert.ok(!app.includes('preCourseWorkspace') && app.includes('DafatiiOnboarding
 assert.ok(roles.includes("page==='admin'&&!window.__dafatiiAdminConsoleInstalled"), 'legacy Admin renderer must stay disabled when the new console owns the route');
 
 assert.ok(index.includes('admin-console.css?v=20260918-3'), 'Admin Console stylesheet must be loaded');
-assert.ok(index.includes('admin-console.js?v=20260918-3'), 'Admin Console script must be loaded');
-assert.ok(index.indexOf('admin-console.js?v=20260918-3') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
+assert.ok(index.includes('admin-console.js?v=20260918-4'), 'Admin Console script must be loaded');
+assert.ok(index.indexOf('admin-console.js?v=20260918-4') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
 assert.ok(index.includes('file-client.js?v=20260918-3'), 'Drive-backed teacher image upload client must be cache-busted');
 
 console.log('admin console and student creation regression tests passed');
