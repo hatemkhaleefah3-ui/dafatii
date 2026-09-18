@@ -114,15 +114,15 @@
   }
   function modeLoop(){
     const index=PLANNER_MODES.indexOf(plannerMode);
-    return [-2,-1,0,1,2].map(offset=>{
-      const mode=PLANNER_MODES[(index+offset+PLANNER_MODES.length*3)%PLANNER_MODES.length];
-      return `<button class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}">${mode[0].toUpperCase()+mode.slice(1)}${mode==='day'?'s':mode==='week'?'s':mode==='month'?'s':'s'}</button>`;
+    return [-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6].map(offset=>{
+      const mode=PLANNER_MODES[(index+offset+PLANNER_MODES.length*8)%PLANNER_MODES.length];
+      return `<button type="button" class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}" tabindex="-1">${mode[0].toUpperCase()+mode.slice(1)}s</button>`;
     }).join('');
   }
   function periodLoop(){
-    return [-3,-2,-1,0,1,2,3].map(offset=>{
+    return [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7].map(offset=>{
       const date=addDate(plannerDate,plannerMode,offset),label=periodLabel(plannerMode,date);
-      return `<button class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span><small>${esc(label.meta)}</small></button>`;
+      return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span><small>${esc(label.meta)}</small></button>`;
     }).join('');
   }
   const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals',attendance:'Attendance'}[tab]||tab);
@@ -154,14 +154,10 @@
     return `<section class="calendar-page planner-page" data-planner-mode="${plannerMode}">
       <div class="planner-head"><div><div class="eyebrow">Schedule</div><h1>Your schedule</h1><p>Move through time, then keep separate tasks, plans, goals and attendance for every selected period.</p></div><button class="subject-add planner-add" data-planner-add><span>＋</span><strong>Add</strong></button></div>
       <div class="planner-loop-shell planner-mode-shell">
-        <button class="planner-loop-arrow" data-planner-mode-step="-1" aria-label="Previous time scale">‹</button>
-        <div class="planner-loop-track" data-planner-loop="mode">${modeLoop()}</div>
-        <button class="planner-loop-arrow" data-planner-mode-step="1" aria-label="Next time scale">›</button>
+        <div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Time scale">${modeLoop()}</div>
       </div>
       <div class="planner-loop-shell planner-date-shell">
-        <button class="planner-loop-arrow" data-planner-period-step="-1" aria-label="Previous ${plannerMode}">‹</button>
-        <div class="planner-date-track" data-planner-loop="period">${periodLoop()}</div>
-        <button class="planner-loop-arrow" data-planner-period-step="1" aria-label="Next ${plannerMode}">›</button>
+        <div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div>
       </div>
       <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
       <nav class="planner-content-tabs" aria-label="Schedule content">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
@@ -273,21 +269,58 @@
     };
   }
 
+  function centeredPlannerItem(track){
+    const items=[...track.children];if(!items.length)return null;
+    const rect=track.getBoundingClientRect(),center=rect.left+(rect.width/2);
+    return items.reduce((best,item)=>{
+      const itemRect=item.getBoundingClientRect(),distance=Math.abs((itemRect.left+(itemRect.width/2))-center);
+      return !best||distance<best.distance?{item,distance}:best;
+    },null)?.item||null;
+  }
+  function paintPlannerTrack(track){
+    const rect=track.getBoundingClientRect(),center=rect.left+(rect.width/2),fadeDistance=Math.max(1,rect.width*.48);
+    const centered=centeredPlannerItem(track);
+    [...track.children].forEach(item=>{
+      const itemRect=item.getBoundingClientRect(),distance=Math.abs((itemRect.left+(itemRect.width/2))-center);
+      const ratio=Math.min(1,distance/fadeDistance);
+      item.style.opacity=String(Math.max(.12,1-(ratio*.88)));
+      item.style.transform=`scale(${(1-(ratio*.12)).toFixed(3)})`;
+      const active=item===centered;
+      item.classList.toggle('active',active);
+      item.setAttribute('aria-current',active?(track.dataset.plannerLoop==='period'?'date':'true'):'false');
+    });
+  }
+  function commitPlannerCenter(track){
+    if(!document.contains(track))return;
+    const centered=centeredPlannerItem(track);if(!centered)return;
+    if(track.dataset.plannerLoop==='mode'){
+      const offset=Number(centered.dataset.loopOffset||0);
+      if(!offset)return;
+      plannerMode=centered.dataset.plannerMode||plannerMode;
+    }else{
+      const offset=Number(centered.dataset.plannerPeriodOffset||0);
+      if(!offset)return;
+      plannerDate=addDate(plannerDate,plannerMode,offset);
+    }
+    render();
+  }
+  function bindPlannerLoop(track){
+    let frame=0,settleTimer=0;
+    const paint=()=>{frame=0;if(document.contains(track))paintPlannerTrack(track);};
+    const settle=()=>{clearTimeout(settleTimer);settleTimer=setTimeout(()=>commitPlannerCenter(track),110);};
+    track.addEventListener('scroll',()=>{
+      if(!frame)frame=requestAnimationFrame(paint);
+      settle();
+    },{passive:true});
+    track.addEventListener('scrollend',()=>commitPlannerCenter(track),{passive:true});
+    requestAnimationFrame(()=>{
+      const active=track.querySelector('[data-loop-offset="0"],[data-planner-period-offset="0"]');
+      active?.scrollIntoView({block:'nearest',inline:'center'});
+      requestAnimationFrame(()=>paintPlannerTrack(track));
+    });
+  }
   function bindSchedule(){
     const rerender=()=>render();
-    document.querySelectorAll('[data-planner-mode]').forEach(button=>button.addEventListener('click',()=>{
-      plannerMode=button.dataset.plannerMode;rerender();
-    }));
-    document.querySelectorAll('[data-planner-mode-step]').forEach(button=>button.addEventListener('click',()=>{
-      const index=PLANNER_MODES.indexOf(plannerMode),step=Number(button.dataset.plannerModeStep||0);
-      plannerMode=PLANNER_MODES[(index+step+PLANNER_MODES.length)%PLANNER_MODES.length];rerender();
-    }));
-    document.querySelectorAll('[data-planner-period-offset]').forEach(button=>button.addEventListener('click',()=>{
-      plannerDate=addDate(plannerDate,plannerMode,Number(button.dataset.plannerPeriodOffset||0));rerender();
-    }));
-    document.querySelectorAll('[data-planner-period-step]').forEach(button=>button.addEventListener('click',()=>{
-      plannerDate=addDate(plannerDate,plannerMode,Number(button.dataset.plannerPeriodStep||0));rerender();
-    }));
     document.querySelectorAll('[data-planner-tab]').forEach(button=>button.addEventListener('click',()=>{plannerTab=button.dataset.plannerTab;rerender();}));
     document.querySelectorAll('[data-planner-add]').forEach(button=>button.addEventListener('click',openPlannerEntrySheet));
     document.getElementById('calendar-add')?.addEventListener('click',()=>openChoice('schedule'));
@@ -299,21 +332,7 @@
       const bucket=plannerBucket(),list=Array.isArray(bucket[plannerTab])?bucket[plannerTab]:[];
       bucket[plannerTab]=list.filter(entry=>entry.id!==button.dataset.plannerDelete);savePlannerBucket(bucket);rerender();
     }));
-    document.querySelectorAll('[data-planner-loop]').forEach(track=>{
-      let startX=null;
-      track.addEventListener('pointerdown',event=>{startX=event.clientX;track.setPointerCapture?.(event.pointerId);});
-      track.addEventListener('pointerup',event=>{
-        if(startX===null)return;const delta=event.clientX-startX;startX=null;if(Math.abs(delta)<42)return;
-        if(track.dataset.plannerLoop==='mode'){
-          const index=PLANNER_MODES.indexOf(plannerMode),step=delta<0?1:-1;
-          plannerMode=PLANNER_MODES[(index+step+PLANNER_MODES.length)%PLANNER_MODES.length];
-        }else plannerDate=addDate(plannerDate,plannerMode,delta<0?1:-1);
-        rerender();
-      });
-    });
-    requestAnimationFrame(()=>document.querySelectorAll('.planner-loop-track,.planner-date-track').forEach(track=>{
-      const active=track.querySelector('.active');if(active)active.scrollIntoView({block:'nearest',inline:'center'});
-    }));
+    document.querySelectorAll('[data-planner-loop]').forEach(bindPlannerLoop);
   }
 
   function openPlannerEntrySheet(){
