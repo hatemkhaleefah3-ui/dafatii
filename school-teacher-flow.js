@@ -47,6 +47,10 @@
     if(window.DafatiiCourses?.active?.()?.isSchoolProgram){state.subjects=nextSubjects;state.lectures=nextLectures;}
     return true;
   }
+  function registerCatalog(value){
+    if(value)catalog=value;
+    return syncSchoolWorkspace();
+  }
   const avatar = teacher => teacher?.imageUrl
     ? `<img src="${esc(teacher.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : esc(String(teacher?.displayName || 'T').trim().slice(0,1).toUpperCase() || 'T');
@@ -163,6 +167,7 @@
   window.addEventListener('dafatii:datahydrated',schedule);
   window.DafatiiSchoolTeachers=Object.freeze({
     async refresh(){catalog=null;const result=await load(true);syncSchoolWorkspace();return result;},
+    register(value){return registerCatalog(value);},
     get catalog(){return catalog;}
   });
   schedule();
