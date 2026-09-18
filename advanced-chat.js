@@ -56,9 +56,10 @@
     if(ui.section!==section){ui.section=section;ui.filter='all';ui.query='';resetTransient();}
     const state=chatState(),pro=proState();
     processScheduled(state,pro);
-    const conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);
+    const scoped=kind==='private'?state.conversations:state.conversations.filter(c=>c.kind===kind);
+    const conversations=sortConversations(scoped,pro);
     const requestedId=parts[2]?decodeURIComponent(parts[2]):'';
-    const selected=requestedId?conversations.find(c=>c.id===requestedId)||null:null;
+    const selected=requestedId?state.conversations.find(c=>c.id===requestedId)||null:null;
     if(selected)state.selected[kind]=selected.id;
     const content=selected
       ? `<section class="chatpro-page route-thread" data-kind="${kind}" data-selected="${esc(selected.id)}">
