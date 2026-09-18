@@ -1,5 +1,5 @@
 import { requireUser } from './auth.mjs';
-import { actorFor, publicActor } from './courses.mjs';
+import { actorFor } from './courses.mjs';
 import { dispatchCourseRoute } from './course-routes.mjs';
 import { attachCourseStudyTypes, ensureCourseStudyTypeSchema, normalizeCourseStudyType, setCourseStudyType } from './course-study-types.mjs';
 import { HttpError, ok } from './http.mjs';
@@ -11,13 +11,6 @@ export async function dispatchCourseWithEducationGate(context, path) {
   await ensureCourseStudyTypeSchema(context.env.DB);
   const currentActor = await actorFor(context.env.DB, await requireUser(context), context.env);
   const method = context.request.method;
-  const schoolStudent = currentActor.accountType === 'student' && currentActor.studentStage === 'school';
-
-  if (schoolStudent) {
-    if (method === 'GET' && path === 'courses') return ok({ actor:publicActor(currentActor), courses:[], mode:'school-teachers' });
-    throw new HttpError(403, 'SCHOOL_COURSES_DISABLED', 'School students choose teachers by subject instead of enrolling in courses.');
-  }
-
   const createCourse = method === 'POST' && path === 'courses';
   const updateCourse = method === 'PATCH' && /^courses\/[0-9a-f-]{36}$/i.test(path);
   let requestedStudyType = null;

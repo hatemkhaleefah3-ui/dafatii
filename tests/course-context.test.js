@@ -32,5 +32,19 @@ vm.runInContext(source,context);
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.some(([path,options])=>path.endsWith('/content')&&options.method==='PUT'),true);
   assert.equal(events.some(event=>event.type==='dafatii:coursesloaded'),true);
+
+  api.setSchoolCourse({
+    name:'Preparatory School · Sixth · Scientific',
+    institution:'Dafatii School',
+    identity:{academicLevel:'preparatory_school',academicStage:'sixth',academicField:'scientific'},
+    content:{subjects:[{id:'school-math',name:'Math'}],lectures:{'school-math':[{id:'l1',name:'Lecture 1'}]}}
+  });
+  assert.equal(api.list().some(item=>item.isSchoolProgram&&item.name.includes('Scientific')),true,'prepared school course must appear beside normal courses');
+  assert.equal(await api.switchCourse(api.schoolCourseId),true,'school course must be switchable like an enrolled course');
+  assert.equal(api.active().isSchoolProgram,true);
+  assert.equal(api.readJSON('dafatii:subjects',[])[0].name,'Math');
+  assert.throws(()=>api.writeJSON('dafatii:subjects',[]),/managed by your selected teachers/);
+  assert.equal(await api.switchCourse(course.id),true,'student must be able to switch back to another joined course');
+  assert.equal(api.active().id,course.id);
   console.log('course context tests passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
