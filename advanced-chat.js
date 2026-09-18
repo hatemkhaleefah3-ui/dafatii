@@ -53,12 +53,14 @@
 
   function proChatView(parts){
     const section=currentSub(parts),kind=kindFromSub(section);
-    if(ui.section!==section){ui.section=section;ui.filter='all';ui.query='';resetTransient();}
+    const defaultFilter=section==='Groups'?'joined':section==='Anonymous'?'trending':'all';
+    if(ui.section!==section){ui.section=section;ui.filter=defaultFilter;ui.query='';resetTransient();}
     const state=chatState(),pro=proState();
     processScheduled(state,pro);
-    const conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);
+    const scoped=kind==='private'?state.conversations:state.conversations.filter(c=>c.kind===kind);
+    const conversations=sortConversations(scoped,pro);
     const requestedId=parts[2]?decodeURIComponent(parts[2]):'';
-    const selected=requestedId?conversations.find(c=>c.id===requestedId)||null:null;
+    const selected=requestedId?state.conversations.find(c=>c.id===requestedId)||null:null;
     if(selected)state.selected[kind]=selected.id;
     const content=selected
       ? `<section class="chatpro-page route-thread" data-kind="${kind}" data-selected="${esc(selected.id)}">
@@ -81,49 +83,71 @@
   }
   function sortConversations(conversations,pro){return [...conversations].sort((a,b)=>{const ma=metaFor(pro,a.id),mb=metaFor(pro,b.id);if(ma.pinned!==mb.pinned)return ma.pinned?-1:1;return Number(lastMessage(b)?.at||0)-Number(lastMessage(a)?.at||0);});}
   function railHeader(kind){
-    const description=kind==='group'?'Your study groups and course conversations.':kind==='unknown'?'Private identity-hidden conversations.':'People and direct conversations.';
-    const showHeader=kind==='group';
-    const showSearch=kind!=='group';
-    const showTools=kind==='private';
-    return `${showHeader?`<div class="chatpro-list-head"><div><h1>${esc(subLabel(kind))}</h1><p>${esc(description)}</p></div><button id="chatpro-new" class="chatpro-primary-action" title="New conversation" aria-label="New conversation">${icon('plus')}</button></div>`:''}
-      ${showSearch?`<div class="chatpro-search-row"><label class="chatpro-search">${icon('search')}<input id="chatpro-search" value="${esc(ui.query)}" placeholder="Search chats and people"></label>${showTools?`<button id="chatpro-rail-menu" class="chatpro-filter-button" title="Chat tools" aria-label="Chat tools">${icon('sliders')}</button>`:''}</div>`:''}`;
+    const placeholder=kind==='group'?'Search groups, topics, or people…':kind==='unknown'?'Search anonymous chats…':'Search chats and people…';
+    const categories=kind==='group'?`<div class='chatpro-topic-chips'><button class='active'>All</button><button>Computer Science</button><button>Math</button><button>Design</button><button>Business</button><button>More⌄</button></div>`:'';
+    return `<div class='chatpro-search-row'><label class='chatpro-search'>${icon('search')}<input id='chatpro-search' value='${esc(ui.query)}' placeholder='${esc(placeholder)}'></label><button id='chatpro-rail-menu' class='chatpro-filter-button' title='Chat tools' aria-label='Chat tools'>${icon('sliders')}</button></div>${categories}`;
   }
   function statusStrip(kind,state){if(kind==='unknown')return `<div class="chatpro-anon-banner"><strong>◌ Anonymous inbox</strong><span>Your profile identity stays hidden in this section. Report and block controls remain available.</span></div>`;const people=state.conversations.filter(c=>c.kind===kind).slice(0,6);return `<div class="chatpro-status-strip"><button class="chatpro-status-add"><span>＋</span><small>New</small></button>${people.map((c,i)=>`<button class="chatpro-status"><span class="ring ${i<3?'active':''}"><b>${esc(c.avatar||c.name?.[0]||'?')}</b></span><small>${esc((c.name||'').split(' ')[0])}</small></button>`).join('')}</div>`;}
   function filterBar(){return `<div class="chatpro-filters">${[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']].map(([id,label])=>`<button data-filter="${id}" class="${ui.filter===id?'active':''}">${label}</button>`).join('')}</div>`;}
   function conversationList(conversations,selectedId,pro){
     const q=ui.query.trim().toLowerCase();
-    const filtered=conversations.filter(c=>{const m=metaFor(pro,c.id);if(ui.filter==='archived'&&!m.archived)return false;if(ui.filter!=='archived'&&m.archived)return false;if(ui.filter==='unread'&&!m.unread&&!c.unread)return false;if(ui.filter==='starred'&&!Object.values(pro.starred[c.id]||{}).some(Boolean))return false;if(q&&!`${c.name} ${preview(lastMessage(c))}`.toLowerCase().includes(q))return false;return true;});
-    if(!filtered.length)return `<div class="chatpro-empty-list"><div>⌁</div><strong>No chats match</strong><span>Try another filter or search.</span></div>`;
+    const filtered=conversations.filter(c=>{
+      const m=metaFor(pro,c.id);
+      if(ui.filter==='archived'&&!m.archived)return false;
+      if(ui.filter!=='archived'&&m.archived)return false;
+      if(ui.filter==='unread'&&!m.unread&&!c.unread)return false;
+      if(ui.filter==='anonymous'&&c.kind!=='unknown')return false;
+      if(ui.filter==='pinned'&&!m.pinned)return false;
+      if(ui.filter==='course'&&!/(course|cs|math|exam|lecture|database|calculus)/i.test(`${c.topic||''} ${c.status||''} ${preview(lastMessage(c))}`))return false;
+      if(q&&!`${c.name} ${c.topic||''} ${preview(lastMessage(c))}`.toLowerCase().includes(q))return false;
+      return true;
+    });
+    if(!filtered.length)return `<div class='chatpro-empty-list'><div>⌁</div><strong>No chats match</strong><span>Try another filter or search.</span></div>`;
     return filtered.map(c=>conversationRow(c,c.id===selectedId,pro)).join('');
   }
   function conversationRow(c,active,pro){
     const m=lastMessage(c),meta=metaFor(pro,c.id),draft=pro.drafts[c.id],unread=Number(c.unread||0)+(meta.unread?1:0);
     const initial=esc(c.avatar||c.name?.[0]||'?');
-    return `<article class="chatpro-conversation ${active?'active':''}" data-open-chat="${esc(c.id)}">
-      <button class="chatpro-conv-main">
-        <span class="chatpro-avatar ${c.status==='online'?'online':''}">${initial}</span>
-        <span class="chatpro-conv-copy">
-          <span class="chatpro-conv-title"><strong>${esc(c.name)}</strong><span class="chatpro-title-icons">${meta.muted?icon('mute'):''}${meta.pinned?icon('pin'):''}</span></span>
-          <span class="chatpro-preview ${draft?'draft':''}">${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span>
+    const kindLabel=c.kind==='group'?'Group':c.kind==='unknown'?'Anonymous':'';
+    const tags=c.kind==='group'?['Files','Notes',/math/i.test(c.name)?'Quiz Prep':'Project']:c.kind==='unknown'?String(c.topic||'Study Tips · Midterms').split('·').map(x=>x.trim()).filter(Boolean).slice(0,3):[];
+    return `<article class='chatpro-conversation ${active?'active':''} kind-${esc(c.kind)}' data-open-chat='${esc(c.id)}' data-chat-kind='${esc(c.kind)}'>
+      <button class='chatpro-conv-main'>
+        <span class='chatpro-avatar ${c.status==='online'?'online':''}'>${initial}</span>
+        <span class='chatpro-conv-copy'>
+          <span class='chatpro-conv-title'><strong>${esc(c.name)}</strong>${kindLabel?`<em>${kindLabel}</em>`:''}<span class='chatpro-title-icons'>${meta.muted?icon('mute'):''}${meta.pinned?icon('pin'):''}</span></span>
+          <span class='chatpro-preview ${draft?'draft':''}'>${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span>
+          ${tags.length?`<span class='chatpro-conv-tags'>${tags.map(tag=>`<i>${esc(tag)}</i>`).join('')}</span>`:''}
         </span>
-        <span class="chatpro-conv-meta"><time>${m?rel(m.at):''}</time>${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span>
+        <span class='chatpro-conv-meta'><time>${m?rel(m.at):''}</time>${c.kind==='unknown'?`<small>${esc(c.status||'online')}</small>`:''}${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span>
       </button>
-      <button class="chatpro-conv-more" data-conv-more="${esc(c.id)}" aria-label="Conversation options">${icon('more')}</button>
+      <button class='chatpro-conv-more' data-conv-more='${esc(c.id)}' aria-label='Open conversation'>${icon('chevronRight')}</button>
     </article>`;
   }
 
-  function threadView(c,state,pro){const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;return `${threadHeader(c,state,pro)}${pinned?`<button class="chatpro-pinned" id="chatpro-pinned"><span>${icon('pin')}</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>${icon('chevronRight')}</b></button>`:''}${ui.search?threadSearch(c):''}<div class="chatpro-messages" id="chatpro-messages">${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;}
+  function threadView(c,state,pro){
+    const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;
+    return `${threadHeader(c,state,pro)}${threadContext(c)}${pinned?`<button class='chatpro-pinned' id='chatpro-pinned'><span>${icon('pin')}</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>${icon('chevronRight')}</b></button>`:''}${ui.search?threadSearch(c):''}<div class='chatpro-messages' id='chatpro-messages'>${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;
+  }
+  function threadContext(c){
+    if(c.kind==='group')return `<div class='chatpro-group-context'><nav><button class='active'>Chat</button><button>Files</button><button>Members</button></nav><div class='chatpro-course-card'><span>▤</span><div><small>CS 310</small><strong>Database Systems</strong><p>Shared resources, notes, and discussion for this study group.</p></div><button type='button'>View Course</button></div></div>`;
+    if(c.kind==='unknown')return `<div class='chatpro-anon-safety'><span>◆</span><div><small>Pinned by Dafatii</small><strong>Be kind. Keep it constructive.</strong><p>This is an anonymous space — support each other, respect different perspectives, and focus on learning.</p></div></div>`;
+    return '';
+  }
   function threadHeader(c,state,pro){
     const blocked=state.blocked.includes(c.id);
-    return `<div class="chatpro-thread-head">
-      <button class="chatpro-mobile-back" id="chatpro-mobile-back" aria-label="Back">${icon('back')}</button>
-      <button class="chatpro-person" id="chatpro-info"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button>
-      <div class="chatpro-head-actions"><button id="chatpro-call" title="Voice call" aria-label="Voice call">${icon('phone')}</button><button id="chatpro-video-call" title="Video call" aria-label="Video call">${icon('video')}</button><button id="chatpro-thread-search" title="Search in conversation" aria-label="Search">${icon('search')}</button>${c.kind==='unknown'?`<button id="chatpro-report" class="danger-text">Report</button>`:''}<button id="chatpro-info-button" title="Chat info" aria-label="Chat info">${icon('info')}</button></div>
+    const subtitle=c.kind==='unknown'?`Anonymous room · ${esc(c.status||'private identity')}`:esc(blocked?'blocked':c.status||c.topic||'Online');
+    return `<div class='chatpro-thread-head'>
+      <button class='chatpro-mobile-back' id='chatpro-mobile-back' aria-label='Back'>${icon('back')}</button>
+      <button class='chatpro-person' id='chatpro-info'><span class='chatpro-avatar large ${c.status==='online'?'online':''}'>${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${subtitle}</small></span></button>
+      <div class='chatpro-head-actions'><button id='chatpro-call' title='Voice call' aria-label='Voice call'>${icon('phone')}</button><button id='chatpro-thread-search' title='Search in conversation' aria-label='Search'>${icon('search')}</button>${c.kind==='unknown'?`<button id='chatpro-report' class='danger-text'>Report</button>`:''}<button id='chatpro-info-button' title='Chat options' aria-label='Chat options'>${icon('more')}</button></div>
     </div>`;
   }
   function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search">${icon('search')}<input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close" aria-label="Close search">${icon('close')}</button></div>`;}
   function messageTimeline(c,pro){if(!c.messages.length)return `<div class="chatpro-empty-thread"><div>✦</div><h2>No messages yet</h2><p>Start the conversation or share a study file.</p></div>`;let lastDay='';return c.messages.map(m=>{const day=fmtDay(m.at);const marker=day!==lastDay?`<div class="chatpro-day"><span>${esc(day)}</span></div>`:'';lastDay=day;return marker+messageRow(m,c,pro);}).join('');}
-  function messageRow(m,c,pro){const reply=m.replyTo?c.messages.find(x=>x.id===m.replyTo):null,starred=Boolean(pro.starred[c.id]?.[m.id]);return `<div class="chatpro-msg-row ${m.mine?'mine':'theirs'} ${ui.menuMessage===m.id?'menu-open':''}" data-message-id="${esc(m.id)}"><div class="chatpro-msg-wrap">${c.kind==='group'&&!m.mine?`<small class="chatpro-sender">${esc(m.sender||c.name)}</small>`:''}<div class="chatpro-bubble ${m.type&&m.type!=='text'?'media':''} ${m.deleted?'deleted':''}">${m.forwarded?'<div class="chatpro-forwarded">↪ Forwarded</div>':''}${reply?`<button class="chatpro-reply-quote" data-jump-message="${esc(reply.id)}"><strong>${esc(reply.mine?'You':reply.sender||c.name)}</strong><span>${esc(preview(reply))}</span></button>`:''}${renderMessage(m)}<div class="chatpro-msg-foot">${m.edited?'<span>edited</span>':''}${starred?'<span>★</span>':''}<time>${esc(fmtTime(m.at))}</time>${m.mine?`<span class="chatpro-status ${m.status==='read'?'read':''}">✓✓</span>`:''}</div></div>${renderReactions(m)}<div class="chatpro-hover-actions"><button data-quick-react="❤️">♡</button><button data-message-reply>↩</button><button data-message-more>⋮</button></div>${ui.menuMessage===m.id?messageMenu(m,c,starred):''}</div></div>`;}
+  function messageRow(m,c,pro){
+    const reply=m.replyTo?c.messages.find(x=>x.id===m.replyTo):null,starred=Boolean(pro.starred[c.id]?.[m.id]),sender=m.sender||c.name;
+    return `<div class='chatpro-msg-row ${m.mine?'mine':'theirs'} ${ui.menuMessage===m.id?'menu-open':''}' data-message-id='${esc(m.id)}'>${!m.mine?`<span class='chatpro-msg-avatar'>${esc(String(sender||'?')[0])}</span>`:''}<div class='chatpro-msg-wrap'>${c.kind!=='private'&&!m.mine?`<small class='chatpro-sender'>${esc(sender)}${c.kind==='unknown'?`<em>Anonymous</em>`:''}</small>`:''}<div class='chatpro-bubble ${m.type&&m.type!=='text'?'media':''} ${m.deleted?'deleted':''}'>${m.forwarded?'<div class="chatpro-forwarded">↪ Forwarded</div>':''}${reply?`<button class='chatpro-reply-quote' data-jump-message='${esc(reply.id)}'><strong>${esc(reply.mine?'You':reply.sender||c.name)}</strong><span>${esc(preview(reply))}</span></button>`:''}${renderMessage(m)}<div class='chatpro-msg-foot'>${m.edited?'<span>edited</span>':''}${starred?'<span>★</span>':''}<time>${esc(fmtTime(m.at))}</time>${m.mine?`<span class='chatpro-status ${m.status==='read'?'read':''}'>✓✓</span>`:''}</div></div>${renderReactions(m)}<div class='chatpro-hover-actions'><button data-quick-react='❤️'>♡</button><button data-message-reply>↩</button><button data-message-more>⋮</button></div>${ui.menuMessage===m.id?messageMenu(m,c,starred):''}</div></div>`;
+  }
   function renderMessage(m){if(m.deleted)return `<div class="chatpro-deleted">⊘ This message was deleted</div>`;if(m.type==='image')return `<img class="chatpro-image" src="${esc(m.data)}" alt="Shared image">${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='video')return `<video class="chatpro-video" src="${esc(m.data)}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='voice')return `<div class="chatpro-voice"><button>▶</button><audio src="${esc(m.data)}" controls preload="metadata"></audio><span>🎙</span></div>`;if(m.type==='file')return `<a class="chatpro-file" href="${esc(m.data)}" download="${esc(m.name||'document')}"><span>▤</span><div><strong>${esc(m.name||'Document')}</strong><small>${esc(m.sizeLabel||'File')}</small></div><b>⇩</b></a>`;if(m.type==='sticker')return `<div class="chatpro-sticker">${esc(m.text||'✨')}</div>`;if(m.type==='custom-sticker')return `<div class="chatpro-custom-sticker"><span>${esc(m.emoji||'✨')}</span><strong>${esc(m.text||'Study mode')}</strong></div>`;if(m.type==='gif')return `<img class="chatpro-gif" src="${esc(m.data)}" alt="GIF">`;if(m.type==='gif-maker')return `<div class="chatpro-made-gif"><span>${esc(m.frame1||'FOCUS')}</span><span>${esc(m.frame2||'DONE')}</span></div>`;if(m.type==='contact')return `<div class="chatpro-contact"><span>👤</span><div><strong>${esc(m.contactName||'Contact')}</strong><small>${esc(m.contactValue||'')}</small></div><button data-contact-save>Save</button></div>`;if(m.type==='location')return `<a class="chatpro-location" href="https://www.openstreetmap.org/?mlat=${Number(m.lat)}&mlon=${Number(m.lon)}#map=15/${Number(m.lat)}/${Number(m.lon)}" target="_blank" rel="noopener noreferrer"><span>📍</span><div><strong>Shared location</strong><small>${Number(m.lat).toFixed(4)}, ${Number(m.lon).toFixed(4)}</small></div></a>`;if(m.type==='poll')return pollView(m);return `<div class="chatpro-text">${linkify(esc(m.text||''))}</div>`;}
   function linkify(text){return text.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');}
   function pollView(m){const total=(m.options||[]).reduce((s,o)=>s+Number(o.votes||0),0)||1;return `<div class="chatpro-poll"><strong>📊 ${esc(m.question||'Poll')}</strong>${(m.options||[]).map((o,i)=>`<button data-poll-vote="${i}" class="${o.voted?'voted':''}"><span>${esc(o.text)}</span><b>${Math.round((Number(o.votes||0)/total)*100)}%</b><i style="--poll:${Math.round((Number(o.votes||0)/total)*100)}%"></i></button>`).join('')}</div>`;}
@@ -139,7 +163,7 @@
       <div class="chatpro-composer">
         <button id="chatpro-attach" title="Attach" aria-label="Attach">${icon('attach')}</button>
         <button id="chatpro-emoji" title="Emoji" aria-label="Emoji">${icon('smile')}</button>
-        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea>
+        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="${esc(c.kind==='unknown'?'Reply anonymously…':`Message ${c.name}…`)}">${esc(draft)}</textarea>
         <button id="chatpro-voice" title="Voice message" aria-label="Voice message">${icon('mic')}</button>
         <button id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
         <button id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
@@ -161,14 +185,23 @@
     document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.filter;render();});
     document.querySelectorAll('[data-chat-subpage]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.chatSubpage||'all';resetTransient();if(selectedId)setHash(chatThreadRoute(kind));else render();});
     document.getElementById('chat-app-search-top')?.addEventListener('click',()=>{const input=document.getElementById('chatpro-search');input?.focus();input?.select?.();});
-    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));
+    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;const rowKind=row.dataset.chatKind||kind;state.selected[rowKind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(rowKind,row.dataset.openChat));}));
     document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});
+    document.getElementById('chat-app-quick-new')?.addEventListener('click',()=>openNewChatSheet(kind,state));
     document.getElementById('chatpro-new')?.addEventListener('click',()=>openNewChatSheet(kind,state));
     document.getElementById('chatpro-rail-menu')?.addEventListener('click',()=>openRailMenu(kind));
     if(!c)return;
     bindThread(c,state,pro);
   }
-  function softRerender(){const list=document.getElementById('chatpro-list');if(!list)return;const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState(),conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);list.innerHTML=conversationList(conversations,'',pro);document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});}
+  function softRerender(){
+    const list=document.getElementById('chatpro-list');if(!list)return;
+    const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState();
+    const scope=kind==='private'?state.conversations:state.conversations.filter(c=>c.kind===kind);
+    const conversations=sortConversations(scope,pro);
+    list.innerHTML=conversationList(conversations,'',pro);
+    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;const rowKind=row.dataset.chatKind||kind;state.selected[rowKind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(rowKind,row.dataset.openChat));}));
+    document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});
+  }
   function resetTransient(){ui.info=false;ui.search=false;ui.searchQuery='';ui.menuMessage='';ui.replyTo='';ui.editing='';ui.attach=false;ui.emoji=false;ui.sticker=false;}
 
   function bindThread(c,state,pro){
