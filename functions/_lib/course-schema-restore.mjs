@@ -159,16 +159,8 @@ async function restoreIndexesAndSchoolGuards(db) {
   await run(db, 'CREATE INDEX IF NOT EXISTS course_audit_course_idx ON course_audit_log(course_id, created_at DESC)');
   await run(db, 'CREATE INDEX IF NOT EXISTS course_audit_actor_idx ON course_audit_log(actor_user_id, created_at DESC)');
   await run(db, 'CREATE INDEX IF NOT EXISTS files_course_status_idx ON files(course_id, status, created_at DESC)');
-  await run(db, `CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert
-    BEFORE INSERT ON course_memberships
-    WHEN NEW.role = 'student' AND NEW.status <> 'removed'
-      AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`);
-  await run(db, `CREATE TRIGGER IF NOT EXISTS block_school_student_course_update
-    BEFORE UPDATE OF role, status ON course_memberships
-    WHEN NEW.role = 'student' AND NEW.status <> 'removed'
-      AND EXISTS (SELECT 1 FROM account_profiles p WHERE p.user_id = NEW.user_id AND p.account_type = 'student' AND p.student_stage = 'school')
-    BEGIN SELECT RAISE(ABORT, 'SCHOOL_STUDENT_COURSES_DISABLED'); END`);
+  await run(db, 'DROP TRIGGER IF EXISTS block_school_student_course_insert');
+  await run(db, 'DROP TRIGGER IF EXISTS block_school_student_course_update');
   await run(db, `CREATE TRIGGER IF NOT EXISTS block_new_school_courses
     BEFORE INSERT ON courses WHEN NEW.stage = 'school'
     BEGIN SELECT RAISE(ABORT, 'SCHOOL_COURSES_REPLACED_BY_TEACHERS'); END`);

@@ -11,6 +11,7 @@ const gate = fs.readFileSync('functions/_lib/course-gate.mjs', 'utf8');
 const migration = fs.readFileSync('migrations/0005_school_teacher_system.sql', 'utf8');
 const enrollmentMigration = fs.readFileSync('migrations/0006_school_students_can_join_courses.sql', 'utf8');
 const courseContext = fs.readFileSync('course-context.js','utf8');
+const restore = fs.readFileSync('functions/_lib/course-schema-restore.mjs','utf8');
 const quietShell = fs.readFileSync('quiet-shell.js','utf8');
 const rootRoute = fs.readFileSync('functions/api/v1/courses.js', 'utf8');
 const nestedRoute = fs.readFileSync('functions/api/v1/courses/[[path]].js', 'utf8');
@@ -64,6 +65,8 @@ assert.ok(gate.includes("input?.stage === 'school'"), 'creating shared school-st
 assert.ok(rootRoute.includes('assertSameOrigin') && nestedRoute.includes('assertSameOrigin'), 'course gate routes must preserve same-origin mutation protection');
 assert.ok(enrollmentMigration.includes('DROP TRIGGER IF EXISTS block_school_student_course_insert') && enrollmentMigration.includes('DROP TRIGGER IF EXISTS block_school_student_course_update'), 'database migration must allow school students to join normal courses');
 assert.ok(server.includes("DROP TRIGGER IF EXISTS block_school_student_course_insert") && !server.includes("UPDATE course_memberships SET status = 'removed'"), 'runtime schema repair must stop removing school memberships');
+assert.ok(restore.includes("DROP TRIGGER IF EXISTS block_school_student_course_insert") && restore.includes("DROP TRIGGER IF EXISTS block_school_student_course_update"), 'legacy schema restoration must remove obsolete school enrollment blockers');
+assert.ok(!restore.includes("CREATE TRIGGER IF NOT EXISTS block_school_student_course_insert") && !restore.includes("CREATE TRIGGER IF NOT EXISTS block_school_student_course_update"), 'legacy schema restoration must never recreate obsolete school enrollment blockers');
 assert.ok(migration.includes('block_new_school_courses') && migration.includes("WHERE stage = 'school' AND status = 'active'"), 'legacy shared school courses must remain retired');
 
 console.log('school teacher flow regression tests passed');
