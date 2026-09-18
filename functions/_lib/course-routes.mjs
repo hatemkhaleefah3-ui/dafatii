@@ -1,7 +1,7 @@
 import { normalizeEmail, requireUser } from './auth.mjs';
 import {
   PERMISSIONS, accessCodeHash, actorFor, assertContentPermissions, audit, can, courseDto,
-  courseWithMembership, enrollmentCode, fullPermissions, noPermissions, permissionInput, publicActor,
+  courseWithMembership, enrollmentCode, ensureCourseDiscoverySchema, fullPermissions, noPermissions, permissionInput, publicActor,
   requireCourseView, requirePermission, requiredContentPermissions, validateCourseInput,
   validateCourseRecord, validateMemberPatch
 } from './courses.mjs';
@@ -56,6 +56,30 @@ async function ensureRepresenterAccount(db, userId, now = Date.now()) {
     ON CONFLICT(user_id) DO UPDATE SET account_type = 'representer', updated_at = excluded.updated_at`).bind(userId, now, now).run();
 }
 
+async function studentAcademicIdentity(db, userId) {
+  const row = await db.prepare('SELECT academic_level, academic_stage, academic_field, institution_name FROM student_academic_profiles WHERE user_id = ?').bind(userId).first();
+  if (row?.academic_level && row?.academic_stage) {
+    return {
+      academicLevel:String(row.academic_level), academicStage:String(row.academic_stage),
+      academicField:String(row.academic_field || ''), institutionName:String(row.institution_name || '')
+    };
+  }
+  const record = await db.prepare("SELECT value_json FROM records WHERE user_id = ? AND record_key = 'dafatii:studentProfile:v2' AND deleted = 0 LIMIT 1").bind(userId).first();
+  if (record?.value_json) {
+    try {
+      const value = JSON.parse(record.value_json);
+      if (value?.academicLevel && value?.academicStage) {
+        return {
+          academicLevel:String(value.academicLevel), academicStage:String(value.academicStage),
+          academicField:String(value.academicField || ''),
+          institutionName:String(value.institutionName || [value.universityName,value.collegeName].filter(Boolean).join(' · ') || '')
+        };
+      }
+    } catch {}
+  }
+  throw new HttpError(409, 'ACADEMIC_PROFILE_REQUIRED', 'Your academic level, stage and field are required before creating a Course.');
+}
+
 async function listCourses(context, currentActor) {
   const url = new URL(context.request.url);
   const scope = url.searchParams.get('scope') || 'available';
@@ -79,19 +103,44 @@ async function getCourse(context, currentActor, courseId) {
 
 async function createCourse(context, currentActor) {
   const postSchoolStudent = currentActor.accountType === 'student' && currentActor.studentStage === 'university';
-  if (!currentActor.isAdmin && currentActor.accountType !== 'representer' && !postSchoolStudent) {
-    throw new HttpError(403, 'COURSE_CREATION_NOT_ALLOWED', 'Course creation is available to post-school students, representers, and administrators.');
+  if (!currentActor.isAdmin && !postSchoolStudent) {
+    throw new HttpError(403, 'COURSE_CREATION_NOT_ALLOWED', 'Only administrators and students above school level can create Courses.');
   }
   const input = await readJson(context.request, 65536);
   const value = validateCourseInput(input);
+  if (!currentActor.isAdmin && value.visibility !== 'private') {
+    throw new HttpError(403, 'PUBLIC_COURSE_ADMIN_REQUIRED', 'Only administrators can create public Courses.');
+  }
+  if (currentActor.isAdmin && value.visibility === 'public' && value.learningField.length < 2) {
+    throw new HttpError(400, 'LEARNING_FIELD_REQUIRED', 'Public Courses require a learning field for student recommendations.');
+  }
+
   const owner = currentActor.isAdmin && input.ownerEmail ? await context.env.DB.prepare(`SELECT u.id, u.email_normalized, u.display_name,
       COALESCE(p.account_type, 'student') AS account_type, COALESCE(p.student_stage, 'university') AS student_stage
     FROM users u LEFT JOIN account_profiles p ON p.user_id = u.id
     WHERE u.email_normalized = ? AND u.status = ?`).bind(normalizeEmail(input.ownerEmail), 'active').first() : currentActor;
   if (!owner) throw new HttpError(404, 'USER_NOT_FOUND', 'The selected owner account was not found.');
-  if (owner.accountType === 'student' && owner.studentStage === 'school' || owner.account_type === 'student' && owner.student_stage === 'school') {
+  const ownerAccountType = owner.accountType ?? owner.account_type;
+  const ownerStudentStage = owner.studentStage ?? owner.student_stage;
+  if (ownerAccountType === 'student' && ownerStudentStage === 'school') {
     throw new HttpError(403, 'SCHOOL_STUDENT_COURSES_DISABLED', 'School student accounts cannot own Courses.');
   }
+
+  let academic = {
+    academicLevel:value.academicLevel || '', academicStage:value.academicStage || '',
+    academicField:value.academicField || '', institutionName:value.institution || ''
+  };
+  if (!currentActor.isAdmin) {
+    academic = await studentAcademicIdentity(context.env.DB, currentActor.id);
+    value.visibility = 'private';
+    value.stage = 'university';
+    value.learningField = '';
+    value.difficultyLevel = 'beginner';
+    value.institution = academic.institutionName || value.institution;
+  } else if (value.visibility === 'private' && ownerAccountType === 'student' && ownerStudentStage === 'university') {
+    try { academic = await studentAcademicIdentity(context.env.DB, owner.id); } catch {}
+  }
+
   const courseId = crypto.randomUUID(), code = await uniqueEnrollmentCode(context.env.DB);
   if (value.pricing === 'free') value.priceMinor = 0;
   if (value.pricing === 'paid' && value.priceMinor < 1) throw new HttpError(400, 'INVALID_PRICE', 'Paid courses require a positive price.');
@@ -99,13 +148,23 @@ async function createCourse(context, currentActor) {
   if (value.visibility === 'private') codeHash = await accessCodeHash(courseId, value.accessCode, context.env);
   const now = Date.now(), permissions = fullPermissions();
   const insertCourse = context.env.DB.prepare(`INSERT INTO courses
-    (id, enrollment_code, name, description, institution, stage, owner_user_id, status, pricing, price_minor, currency, visibility, join_policy, access_code_hash, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`).bind(courseId, code, value.name, value.description, value.institution, value.stage, owner.id, value.pricing, value.priceMinor, value.currency, value.visibility, value.joinPolicy, codeHash, now, now);
+    (id, enrollment_code, name, description, institution, stage, owner_user_id, status, pricing, price_minor, currency,
+     visibility, join_policy, access_code_hash, academic_level, academic_stage, academic_field, learning_field, difficulty_level,
+     created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(courseId, code, value.name, value.description, value.institution, value.stage, owner.id,
+      value.pricing, value.priceMinor, value.currency, value.visibility, value.joinPolicy, codeHash,
+      academic.academicLevel || '', academic.academicStage || '', academic.academicField || '',
+      value.learningField || '', value.difficultyLevel || 'beginner', now, now);
   const insertOwner = context.env.DB.prepare(`INSERT INTO course_memberships
     (course_id, user_id, role, status, can_add_content, can_edit_content, can_remove_content, can_manage_students, can_review_applications, can_manage_representers, can_manage_settings, invited_by, joined_at, created_at, updated_at)
     VALUES (?, ?, 'owner', 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(courseId, owner.id, ...PERMISSIONS.map(permission => permissions[permission]), currentActor.id, now, now, now);
   await context.env.DB.batch([insertCourse, insertOwner]);
-  await audit(context.env.DB, currentActor.id, 'course.created', { courseId, targetUserId: owner.id, metadata: { pricing: value.pricing, visibility: value.visibility, joinPolicy: value.joinPolicy } });
+  await audit(context.env.DB, currentActor.id, 'course.created', { courseId, targetUserId: owner.id, metadata: {
+    pricing:value.pricing, visibility:value.visibility, joinPolicy:value.joinPolicy,
+    academicLevel:academic.academicLevel || '', academicStage:academic.academicStage || '', academicField:academic.academicField || '',
+    learningField:value.learningField || '', difficultyLevel:value.difficultyLevel || 'beginner'
+  } });
   const row = await context.env.DB.prepare(`${COURSE_SELECT} WHERE c.id = ?`).bind(currentActor.id, courseId).first();
   logEvent('info', 'course.created', { userId: currentActor.id, courseId });
   return ok({ course: courseDto(row) }, 201);
@@ -115,22 +174,49 @@ async function updateCourse(context, currentActor, courseId) {
   courseId = validId(courseId);
   const current = await requirePermission(context.env.DB, currentActor, courseId, 'can_manage_settings');
   const input = await readJson(context.request, 65536), patch = validateCourseInput(input, { partial: true });
+  if (!currentActor.isAdmin && patch.visibility === 'public') {
+    throw new HttpError(403, 'PUBLIC_COURSE_ADMIN_REQUIRED', 'Only administrators can publish public Courses.');
+  }
   const next = {
     name: patch.name ?? current.name, description: patch.description ?? current.description,
     institution: patch.institution ?? current.institution, stage: patch.stage ?? current.stage,
     pricing: patch.pricing ?? current.pricing, priceMinor: patch.priceMinor ?? current.price_minor,
     currency: patch.currency ?? current.currency, visibility: patch.visibility ?? current.visibility,
-    joinPolicy: patch.joinPolicy ?? current.join_policy
+    joinPolicy: patch.joinPolicy ?? current.join_policy,
+    learningField: patch.learningField ?? current.learning_field ?? '',
+    difficultyLevel: patch.difficultyLevel ?? current.difficulty_level ?? 'beginner',
+    academicLevel: patch.academicLevel ?? current.academic_level ?? '',
+    academicStage: patch.academicStage ?? current.academic_stage ?? '',
+    academicField: patch.academicField ?? current.academic_field ?? ''
   };
+  if (!currentActor.isAdmin) {
+    next.visibility = current.visibility;
+    next.learningField = current.learning_field || '';
+    next.difficultyLevel = current.difficulty_level || 'beginner';
+    next.academicLevel = current.academic_level || '';
+    next.academicStage = current.academic_stage || '';
+    next.academicField = current.academic_field || '';
+    next.stage = current.stage;
+  }
+  if (next.visibility === 'public' && next.learningField.length < 2) {
+    throw new HttpError(400, 'LEARNING_FIELD_REQUIRED', 'Public Courses require a learning field for student recommendations.');
+  }
   if (next.pricing === 'free') next.priceMinor = 0;
   if (next.pricing === 'paid' && next.priceMinor < 1) throw new HttpError(400, 'INVALID_PRICE', 'Paid courses require a positive price.');
   let codeHash = current.access_code_hash;
   if (next.visibility === 'public') codeHash = null;
   else if (patch.accessCode !== undefined) codeHash = await accessCodeHash(courseId, patch.accessCode, context.env);
   else if (!codeHash) throw new HttpError(400, 'ACCESS_CODE_REQUIRED', 'A private course requires an access code.');
-  await context.env.DB.prepare(`UPDATE courses SET name = ?, description = ?, institution = ?, stage = ?, pricing = ?, price_minor = ?, currency = ?, visibility = ?, join_policy = ?, access_code_hash = ?, updated_at = ? WHERE id = ?`)
-    .bind(next.name, next.description, next.institution, next.stage, next.pricing, next.priceMinor, next.currency, next.visibility, next.joinPolicy, codeHash, Date.now(), courseId).run();
-  await audit(context.env.DB, currentActor.id, 'course.updated', { courseId, metadata: { pricing: next.pricing, visibility: next.visibility, joinPolicy: next.joinPolicy, accessCodeChanged: patch.accessCode !== undefined } });
+  await context.env.DB.prepare(`UPDATE courses SET name = ?, description = ?, institution = ?, stage = ?, pricing = ?, price_minor = ?, currency = ?,
+      visibility = ?, join_policy = ?, access_code_hash = ?, academic_level = ?, academic_stage = ?, academic_field = ?,
+      learning_field = ?, difficulty_level = ?, updated_at = ? WHERE id = ?`)
+    .bind(next.name, next.description, next.institution, next.stage, next.pricing, next.priceMinor, next.currency,
+      next.visibility, next.joinPolicy, codeHash, next.academicLevel, next.academicStage, next.academicField,
+      next.learningField, next.difficultyLevel, Date.now(), courseId).run();
+  await audit(context.env.DB, currentActor.id, 'course.updated', { courseId, metadata: {
+    pricing:next.pricing, visibility:next.visibility, joinPolicy:next.joinPolicy,
+    learningField:next.learningField, difficultyLevel:next.difficultyLevel, accessCodeChanged:patch.accessCode !== undefined
+  } });
   const row = await context.env.DB.prepare(`${COURSE_SELECT} WHERE c.id = ?`).bind(currentActor.id, courseId).first();
   return ok({ course: courseDto(row) });
 }
@@ -335,6 +421,7 @@ async function adminPatchUser(context, currentActor, targetUserId) {
 
 export async function dispatchCourseRoute(context, method, path) {
   if (!path.startsWith('courses') && !path.startsWith('admin')) return null;
+  await ensureCourseDiscoverySchema(context.env.DB);
   const currentActor = await actor(context);
   if (path.startsWith('admin/')) {
     const adminConsoleResponse = await dispatchAdminConsoleRoute(context, method, path, currentActor);

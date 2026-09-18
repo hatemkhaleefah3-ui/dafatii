@@ -41,11 +41,6 @@ const MAIN_NAV = {
   chat: ['Messages', 'Groups', 'Requests'],
 };
 
-const PRE_COURSE_ROUTES = new Set(['dashboard','change-course','school-teachers','study-rooms','profile','settings']);
-const PRE_COURSE_COPY = {
-  en:{dashboard:'Dashboard',courses:'Courses',teachers:'Teachers',rooms:'Study Rooms',profile:'Profile',settings:'Settings',welcome:'Welcome to Dafatii',waiting:'Your account is ready. Create a course or enroll in one to open the full study workspace.',pending:'Pending applications',available:'Available courses',openCourses:'Open courses',appearance:'Appearance',language:'Language',light:'Light',dark:'Dark',english:'English',arabic:'Arabic',account:'Account details',type:'Account type',stage:'Student stage',check:'Check enrollment status'},
-  ar:{dashboard:'لوحة التحكم',courses:'الدورات',teachers:'المدرسون',rooms:'غرف الدراسة',profile:'الملف الشخصي',settings:'الإعدادات',welcome:'مرحباً بك في دفاتري',waiting:'حسابك جاهز. أنشئ دورة أو سجّل في دورة لفتح مساحة الدراسة الكاملة.',pending:'طلبات قيد الانتظار',available:'الدورات المتاحة',openCourses:'فتح الدورات',appearance:'المظهر',language:'اللغة',light:'فاتح',dark:'داكن',english:'الإنجليزية',arabic:'العربية',account:'تفاصيل الحساب',type:'نوع الحساب',stage:'المرحلة الدراسية',check:'التحقق من حالة التسجيل'}
-};
 const LANDING_COPY = {
   ar:{home:'الرئيسية',about:'من نحن',contact:'تواصل معنا',join:'انضم إلينا',eyebrow:'حياتك الدراسية في مكان واحد',title:'دراسة أقل تشتتاً.',titleAccent:'تعلّم أكثر.',intro:'يجمع دفاتري المواد والدروس والجداول وغرف الدراسة والمحادثات في مساحة واحدة منظمة للمدرسة والجامعة والتعلّم المستقل.',start:'ابدأ الدراسة',explore:'استكشف المزايا',proofOne:'مساحة واحدة لكل دورة',proofTwo:'مصمم للتركيز بلا فوضى',today:'اليوم',workspace:'مساحة الدراسة',physics:'الفيزياء',calculus:'التفاضل والتكامل',upcoming:'القادم',focus:'وضع التركيز',ready:'جاهز عندما تكون جاهزاً.',materials:'المواد',reach:'كل شيء في متناولك.',designed:'مصمم حول الطالب',everything:'لكل شيء مكان.',calm:'واجهة هادئة لحياة دراسية معقدة.',planning:'التخطيط',community:'المجتمع',materialText:'نظّم المواد والملاحظات والمصادر بالطريقة التي تدرس بها فعلياً.',planningText:'ضع المحاضرات والاختبارات والمواعيد وجلسات الدراسة في جدول واحد مترابط.',communityText:'انتقل من الدراسة الفردية إلى الغرف والمحادثات المركزة عندما يفيد التعاون.',aboutTitle:'مساحة أكاديمية تبنيها أنت',aboutText:'دفاتري منصة دراسية تجمع المحتوى والتخطيط والتعاون وإدارة الدورات مع صلاحيات واضحة للطلاب والممثلين والمشرفين.',contactTitle:'تواصل مع فريق دفاتري',contactText:'للأسئلة والملاحظات والدعم، راسلنا وسنتابع طلبك.',contactAction:'إرسال بريد',cta:'فصلك الدراسي القادم يستحق نظاماً أوضح.'},
   en:{home:'Home',about:'About us',contact:'Contact us',join:'Join us',eyebrow:'Your study life, one place',title:'Study less scattered.',titleAccent:'Learn more.',intro:'Dafatii brings materials, subjects, schedules, rooms and conversations into one focused workspace for school, university and independent learners.',start:'Start studying',explore:'Explore features',proofOne:'One workspace for every course',proofTwo:'Built for focus, not clutter',today:'Today',workspace:'Study workspace',physics:'Physics',calculus:'Calculus',upcoming:'Upcoming',focus:'Focus mode',ready:'Ready when you are.',materials:'Materials',reach:'Everything in reach.',designed:'Designed around students',everything:'Everything has a place.',calm:'A calm interface for complex academic life.',planning:'Planning',community:'Community',materialText:'Keep subjects, notes and resources organized around the way you actually study.',planningText:'Put classes, exams, deadlines and study sessions on one coherent timeline.',communityText:'Move from solo study to focused rooms and conversations when collaboration helps.',aboutTitle:'An academic workspace you control',aboutText:'Dafatii brings content, planning, collaboration, and course administration together with clear permissions for students, representatives, and administrators.',contactTitle:'Contact the Dafatii team',contactText:'For questions, feedback, or support, email us and we will follow up.',contactAction:'Send email',cta:'Your next semester deserves a cleaner system.'}
@@ -294,36 +289,12 @@ function applyInterfaceLanguage(language=interfaceLanguage()){
   document.documentElement.dir=language==='ar'?'rtl':'ltr';
   window.DafatiiData?.writeString('dafatii:interface-language',language);
 }
-function preCourseContent(page,copy){
-  const courses=window.DafatiiCourses.list();
-  const pending=courses.filter(course=>['pending','payment_pending'].includes(course.membership?.status));
-  if(page==='change-course')return workspaceContent('change-course',['change-course'],'Courses');
-  if(page==='study-rooms'&&window.DafatiiStudyRooms)return window.DafatiiStudyRooms.view(['study-rooms',encodeURIComponent('My study rooms')]);
-  if(page==='profile'){
-    const user=window.DafatiiAuth.user||{};
-    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.profile)}</div><h1>${escapeHtml(copy.account)}</h1></div></div><div class="pre-course-detail-grid"><article><span>${escapeHtml(copy.account)}</span><strong>${escapeHtml(user.displayName||'')}</strong><p>${escapeHtml(user.email||'')}</p></article><article><span>${escapeHtml(copy.type)}</span><strong>${escapeHtml(user.accountType||'student')}</strong><p>${escapeHtml(copy.stage)} · ${escapeHtml(user.studentStage||'university')}</p></article></div></section>`;
-  }
-  if(page==='settings'){
-    const dark=document.documentElement.dataset.theme==='dark',language=interfaceLanguage();
-    return `<section class="pre-course-page"><div class="pre-course-heading"><div><div class="eyebrow">${escapeHtml(copy.settings)}</div><h1>${escapeHtml(copy.settings)}</h1></div></div><div class="pre-course-setting-grid"><article><span class="pre-course-setting-icon">${icon('appearance')}</span><div><h2>${escapeHtml(copy.appearance)}</h2><p>${escapeHtml(dark?copy.dark:copy.light)}</p></div><button class="btn btn-primary" data-extra="dark-mode">${escapeHtml(dark?copy.light:copy.dark)}</button></article><article><span class="pre-course-setting-icon">${icon('language')}</span><div><h2>${escapeHtml(copy.language)}</h2><p>${escapeHtml(language==='ar'?copy.arabic:copy.english)}</p></div><button class="btn btn-primary" data-interface-language="${language==='ar'?'en':'ar'}">${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></article></div></section>`;
-  }
-  return `<section class="pre-course-page"><div class="pre-course-hero"><div><div class="eyebrow">${escapeHtml(copy.dashboard)}</div><h1>${escapeHtml(copy.welcome)}</h1><p>${escapeHtml(copy.waiting)}</p><div class="pre-course-actions"><button class="btn btn-primary" data-pre-course-route="change-course">${escapeHtml(copy.openCourses)} →</button><button class="btn btn-ghost" id="course-status-refresh">${escapeHtml(copy.check)}</button></div></div><div class="pre-course-orbit">◇</div></div><div class="pre-course-stats"><article><strong>${pending.length}</strong><span>${escapeHtml(copy.pending)}</span></article><article><strong>${courses.length}</strong><span>${escapeHtml(copy.available)}</span></article></div></section>`;
-}
-function preCourseWorkspace(current){
-  const requested=current.split('/')[0],page=PRE_COURSE_ROUTES.has(requested)?requested:'dashboard';
-  if(page!==requested){setHash('dashboard');return;}
-  const language=interfaceLanguage(),copy=PRE_COURSE_COPY[language],dark=document.documentElement.dataset.theme==='dark';
-  const schoolAccount=window.DafatiiAuth?.user?.accountType==='student'&&window.DafatiiAuth?.user?.studentStage==='school';
-  const preNav=schoolAccount?[['dashboard',copy.dashboard],['school-teachers',copy.teachers],['change-course',copy.courses],['study-rooms',copy.rooms],['profile',copy.profile],['settings',copy.settings]]:[['dashboard',copy.dashboard],['change-course',copy.courses],['study-rooms',copy.rooms],['profile',copy.profile],['settings',copy.settings]];
-  app.innerHTML=`<div class="app-shell pre-course-shell"><header class="main-nav"><div class="inner">${brand()}<nav class="nav-center pre-course-nav">${preNav.map(([key,label])=>`<button class="nav-link ${page===key?'active':''}" data-pre-course-route="${key}">${icon(key==='school-teachers'?'subjects':key)}${escapeHtml(label)}</button>`).join('')}</nav><div class="user-chip"><span class="avatar">${escapeHtml((window.DafatiiAuth.user?.displayName||'D')[0])}</span><span>${escapeHtml(window.DafatiiAuth.user?.displayName||'Account')}</span></div></div></header><div class="pre-course-preferences"><button class="settings-action" data-extra="dark-mode">${icon('appearance')} ${escapeHtml(dark?copy.light:copy.dark)}</button><button class="settings-action" data-interface-language="${language==='ar'?'en':'ar'}">${icon('language')} ${escapeHtml(language==='ar'?copy.english:copy.arabic)}</button></div><main class="workspace-main">${preCourseContent(page,copy)}</main><div id="overlay-root"></div></div>`;
-  document.querySelectorAll('[data-pre-course-route]').forEach(button=>button.onclick=()=>setHash(button.dataset.preCourseRoute));
-  document.querySelectorAll('[data-interface-language]').forEach(button=>button.onclick=()=>{applyInterfaceLanguage(button.dataset.interfaceLanguage);render();});
-  document.querySelectorAll('[data-extra="dark-mode"]').forEach(button=>button.onclick=()=>{applyInterfaceTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');render();});
-  document.getElementById('course-status-refresh')?.addEventListener('click',async event=>{event.currentTarget.disabled=true;await window.DafatiiCourses.refresh();if(!window.DafatiiCourses.active().id){event.currentTarget.disabled=false;preCourseWorkspace('dashboard');}});
-}
-
 function workspace(current){
-  if(!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()){preCourseWorkspace(current);return;}
+  if(!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()){
+    if(window.DafatiiOnboarding?.recover?.())return;
+    app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Preparing onboarding…</h2></div></section></div>';
+    return;
+  }
   const parts = current.split('/');
   const page = parts[0];
   const inSubject = page === 'subjects' && parts[1] === 'subject';
@@ -561,7 +532,8 @@ function render(){
   if(r==='join'){ join(); return; }
   if(!state.authReady){ app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Checking your session…</h2><p>Your secure workspace is loading.</p></div></section></div>'; return; }
   if(!state.joined){ setHash('join'); return; }
-  if(!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()&&!PRE_COURSE_ROUTES.has(r.split('/')[0])){setHash('dashboard');return;}
+  if(window.DafatiiOnboarding?.blocks?.()){void window.DafatiiOnboarding.render();return;}
+  if(r==='onboarding'){setHash(window.DafatiiCourses.active().id||schoolManagedWorkspace()?'dashboard/Overview':'onboarding');return;}
   workspace(r);
 }
 
@@ -582,9 +554,8 @@ window.addEventListener('dafatii:coursechanged',()=>{
 });
 window.addEventListener('dafatii:coursesloaded',()=>{
   if(!state.authReady||!state.joined)return;
-  if(window.DafatiiCourses.active().id&&PRE_COURSE_ROUTES.has(route().split('/')[0])){
-    if(route()==='dashboard/Overview')render();else setHash('dashboard/Overview');
-  }
+  if(window.DafatiiOnboarding?.blocks?.()){render();return;}
+  if(window.DafatiiCourses.active().id&&route()==='onboarding')setHash('dashboard/Overview');
   else render();
 });
 window.addEventListener('dafatii:auth:changed',async event=>{

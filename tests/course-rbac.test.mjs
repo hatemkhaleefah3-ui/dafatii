@@ -6,7 +6,9 @@ const { assertContentPermissions, fullPermissions, noPermissions, permissionInpu
 
 assert.deepEqual(validateProfileInput({accountType:'representer',studentStage:'school'}),{accountType:'representer',studentStage:'school'});
 assert.throws(()=>validateProfileInput({accountType:'admin'}),error=>error.code==='INVALID_INPUT');
-assert.equal(validateCourseInput({name:'Biology',pricing:'paid',priceMinor:1250,visibility:'public',joinPolicy:'approval'}).priceMinor,1250);
+assert.equal(validateCourseInput({name:'Biology',pricing:'paid',priceMinor:1250,visibility:'public',joinPolicy:'approval',learningField:'Biology',difficultyLevel:'intermediate'}).priceMinor,1250);
+assert.equal(validateCourseInput({name:'Biology',learningField:'Life Sciences',difficultyLevel:'advanced'}).difficultyLevel,'advanced');
+assert.throws(()=>validateCourseInput({name:'Biology',difficultyLevel:'impossible'}),error=>error.code==='INVALID_DIFFICULTY_LEVEL');
 assert.throws(()=>validateCourseInput({name:'X'}),error=>error.code==='INVALID_COURSE_NAME');
 assert.deepEqual([...requiredContentPermissions(undefined,[{id:'a'}])],['can_add_content']);
 assert.deepEqual([...requiredContentPermissions([{id:'a',name:'A'}],[{id:'a',name:'B'},{id:'b'}])].sort(),['can_add_content','can_edit_content']);
@@ -19,13 +21,18 @@ assert.equal(permissionInput({can_manage_students:true}).can_manage_students,1);
 assert.equal(validateMemberPatch({role:'representer',status:'active'}).role,'representer');
 
 const migration=readFileSync(new URL('../migrations/0002_course_rbac.sql',import.meta.url),'utf8');
+const discoveryMigration=readFileSync(new URL('../migrations/0007_course_discovery_onboarding.sql',import.meta.url),'utf8');
 assert.match(migration,/CREATE TABLE course_memberships/);
 assert.match(migration,/can_manage_representers/);
 assert.match(migration,/ALTER TABLE files ADD COLUMN course_id/);
+for (const column of ['academic_level','academic_stage','academic_field','learning_field','difficulty_level']) assert.match(discoveryMigration,new RegExp(column));
 const routes=readFileSync(new URL('../functions/_lib/course-routes.mjs',import.meta.url),'utf8');
 assert.match(routes,/requirePermission/);
 assert.match(routes,/assertContentPermissions/);
 assert.match(routes,/SELF_LOCKOUT_REJECTED/);
+assert.match(routes,/PUBLIC_COURSE_ADMIN_REQUIRED/);
+assert.match(routes,/studentAcademicIdentity/);
+assert.match(routes,/ensureCourseDiscoverySchema/);
 const optionalRoute=readFileSync(new URL('../functions/api/v1/courses/[[path]].js',import.meta.url),'utf8');
 assert.match(optionalRoute,/child \? `courses\/\$\{child\}` : 'courses'/, 'bare /api/v1/courses must dispatch as courses, not courses/');
 assert.doesNotMatch(optionalRoute,/`courses\/\$\{joinedPath\(context\.params\?\.path\)\}`/, 'optional catch-all must not append a trailing slash for an empty path');

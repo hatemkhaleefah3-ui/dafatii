@@ -22,6 +22,29 @@ const memberStatuses = new Set(['pending','payment_pending','active','rejected',
 const pricingModes = new Set(['free','paid']);
 const visibilities = new Set(['public','private']);
 const joinPolicies = new Set(['direct','approval']);
+const difficultyLevels = new Set(['beginner','intermediate','advanced','expert']);
+let courseDiscoverySchemaPromise = null;
+
+export function ensureCourseDiscoverySchema(db) {
+  if (courseDiscoverySchemaPromise) return courseDiscoverySchemaPromise;
+  courseDiscoverySchemaPromise = (async () => {
+    const info = await db.prepare("PRAGMA table_info(courses)").all();
+    const columns = new Set((info.results || []).map(row => String(row.name)));
+    const additions = [
+      ['academic_level', "TEXT NOT NULL DEFAULT ''"],
+      ['academic_stage', "TEXT NOT NULL DEFAULT ''"],
+      ['academic_field', "TEXT NOT NULL DEFAULT ''"],
+      ['learning_field', "TEXT NOT NULL DEFAULT ''"],
+      ['difficulty_level', "TEXT NOT NULL DEFAULT 'beginner'"]
+    ];
+    for (const [name, definition] of additions) {
+      if (!columns.has(name)) await db.prepare(`ALTER TABLE courses ADD COLUMN ${name} ${definition}`).run();
+    }
+    await db.prepare("CREATE INDEX IF NOT EXISTS courses_learning_discovery_idx ON courses(status, visibility, learning_field, difficulty_level, updated_at DESC)").run();
+    await db.prepare("CREATE INDEX IF NOT EXISTS courses_academic_match_idx ON courses(status, academic_level, academic_stage, academic_field, updated_at DESC)").run();
+  })().catch(error => { courseDiscoverySchemaPromise = null; throw error; });
+  return courseDiscoverySchemaPromise;
+}
 
 const text = (value, maximum, fallback = '') => String(value ?? fallback).trim().normalize('NFC').slice(0, maximum);
 const enumValue = (value, allowed, fallback, code = 'INVALID_INPUT') => {
@@ -94,6 +117,11 @@ export function validateCourseInput(input = {}, { partial = false } = {}) {
   if (!partial || input.pricing !== undefined) value.pricing = enumValue(input.pricing, pricingModes, 'free');
   if (!partial || input.visibility !== undefined) value.visibility = enumValue(input.visibility, visibilities, 'public');
   if (!partial || input.joinPolicy !== undefined) value.joinPolicy = enumValue(input.joinPolicy, joinPolicies, 'approval');
+  if (!partial || input.learningField !== undefined) value.learningField = text(input.learningField, 80);
+  if (!partial || input.difficultyLevel !== undefined) value.difficultyLevel = enumValue(input.difficultyLevel, difficultyLevels, 'beginner', 'INVALID_DIFFICULTY_LEVEL');
+  if (!partial || input.academicLevel !== undefined) value.academicLevel = text(input.academicLevel, 80);
+  if (!partial || input.academicStage !== undefined) value.academicStage = text(input.academicStage, 80);
+  if (!partial || input.academicField !== undefined) value.academicField = text(input.academicField, 80);
   if (!partial || input.currency !== undefined) {
     value.currency = text(input.currency, 3, 'USD').toUpperCase();
     if (!/^[A-Z]{3}$/.test(value.currency)) throw new HttpError(400, 'INVALID_CURRENCY', 'Currency must be a three-letter code.');
@@ -128,6 +156,8 @@ export function courseDto(row) {
     institution: row.institution, stage: row.stage, status: row.status, pricing: row.pricing,
     priceMinor: row.price_minor, currency: row.currency, visibility: row.visibility,
     joinPolicy: row.join_policy, hasAccessCode: Boolean(row.access_code_hash), ownerUserId: row.owner_user_id,
+    academicLevel: row.academic_level || '', academicStage: row.academic_stage || '', academicField: row.academic_field || '',
+    learningField: row.learning_field || '', difficultyLevel: row.difficulty_level || 'beginner',
     memberCount: Number(row.member_count || 0), applicationCount: Number(row.application_count || 0),
     membership: membershipDto(row), createdAt: row.created_at, updatedAt: row.updated_at
   };

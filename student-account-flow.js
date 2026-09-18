@@ -2,6 +2,7 @@
   'use strict';
 
   const PROFILE_KEY = 'dafatii:studentProfile:v2';
+  const ONBOARDING_KEY = 'dafatii:onboarding:v1';
   const INITIAL_PIN_KEY = 'dafatii:studentInitialPin:v1';
   const allowedAvatarTypes = new Set(['image/jpeg','image/png','image/webp']);
   let signupStep = 1;
@@ -174,13 +175,15 @@
       const submit = form.querySelector('[type=submit]');
       submit.disabled = true; form.dataset.submitting = 'true'; status.textContent = t('creating');
       writeProfile(profile);
+      window.DafatiiData?.writeJSON?.(ONBOARDING_KEY,{version:1,required:true,primaryComplete:false,recommendationComplete:false,completed:false,createdAt:Date.now()});
       try {
         await window.DafatiiAuth.signup({ ...profile, password:passwordValue, pin });
         sessionStorage.setItem(INITIAL_PIN_KEY, pin);
         signupDraft = {}; signupStep = 1;
-        location.hash = 'profile';
+        location.hash = 'onboarding';
       } catch (error) {
         removeProfile();
+        window.DafatiiData?.remove?.(ONBOARDING_KEY);
         submit.disabled = false; delete form.dataset.submitting;
         status.textContent = `${error.message || 'Account creation failed.'}${error.code ? ` (${error.code})` : ''}`;
       }
