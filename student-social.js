@@ -2,7 +2,7 @@
   const ROOM_KEY = 'dafatii:studyRoomState:v1';
   const CHAT_KEY = 'dafatii:chatState:v1';
   const STUDY_SUBNAV = ['Public study rooms','Private study rooms','My study rooms'];
-  const CHAT_SUBNAV = ['Private chats','Groups','Unknown messages'];
+  const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];
   const MAX_IMAGE_BYTES = 900 * 1024;
   const MAX_VIDEO_BYTES = 1500 * 1024;
   const MAX_VOICE_BYTES = 800 * 1024;
@@ -27,6 +27,13 @@
     {id:'room-med-sprint',name:'Med School Sprint',subject:'Biology',visibility:'private',pin:'2468',description:'Fast recall rounds for anatomy, physiology and pharmacology. PIN required.',vibe:'High energy',members:93,online:12,capacity:24,streak:27,accent:'🧬',tags:['Recall','Flashcards','PIN']},
     {id:'room-ielts-circle',name:'IELTS Speaking Circle',subject:'English',visibility:'private',pin:'1188',description:'Timed speaking prompts, peer feedback and vocabulary drills in small groups.',vibe:'Social',members:76,online:9,capacity:16,streak:14,accent:'Aa',tags:['Speaking','Feedback','PIN']},
     {id:'room-secret-launch',name:'Project Launch Room',subject:'Engineering',visibility:'secret',code:'LAUNCH24',description:'Invite-only project sprint room.',vibe:'Build mode',members:18,online:6,capacity:20,streak:8,accent:'⌘',tags:['Secret','Project','Build']}
+  ];
+
+  const CHAT_FEED_SEEDS = [
+    {id:'post-exam-week',type:'announcement',author:'Dafatii',title:'Exam-week study rooms are open',excerpt:'Join subject-specific study rooms, keep your schedule updated, and use the shared course workspace to stay coordinated this week.',at:now()-55*60*1000,tags:['Exams','Study rooms']},
+    {id:'post-active-recall',type:'blog',author:'Learning team',title:'A practical active-recall routine for lecture-heavy courses',excerpt:'Turn every lecture into a short retrieval loop: close the material, write what you remember, check gaps, then repeat after a delay.',at:now()-6*60*60*1000,tags:['Study skills','Recall']},
+    {id:'post-course-updates',type:'announcement',author:'Course team',title:'Course announcements now live in Chats',excerpt:'Important course-wide updates and learning posts are collected here so they do not get lost between private and group conversations.',at:now()-25*60*60*1000,tags:['Courses','Updates']},
+    {id:'post-focus-sprint',type:'blog',author:'Student community',title:'Build a 45-minute focus sprint that you can repeat',excerpt:'Pick one concrete outcome, block distractions, work for 45 minutes, then record what moved before taking a real break.',at:now()-2*24*60*60*1000,tags:['Focus','Planning']}
   ];
 
   const CHAT_SEEDS = {
@@ -279,29 +286,90 @@
   function normalizeChatKind(sub){
     const value=String(sub||'').toLowerCase();
     if(value==='groups') return 'group';
-    if(value==='unknown messages') return 'unknown';
+    if(value==='anonymous'||value==='unknown messages') return 'unknown';
     return 'private';
+  }
+  const chatSectionForKind = kind => kind==='group'?'Groups':kind==='unknown'?'Anonymous':'Private chats';
+  const chatSectionSlug = section => encodeURIComponent(section);
+  const chatThreadRoute = (kind,id='') => `chat/${chatSectionSlug(chatSectionForKind(kind))}${id?'/'+encodeURIComponent(id):''}`;
+  function chatSection(parts){
+    const raw=decodeURIComponent(parts[1]||CHAT_SUBNAV[0]);
+    return CHAT_SUBNAV.find(item=>item.toLowerCase()===raw.toLowerCase())||CHAT_SUBNAV[0];
+  }
+  function chatAppMark(kind){
+    if(kind==='group')return '◎';
+    if(kind==='unknown')return '◌';
+    return '◯';
+  }
+  function chatAppNavItem(section,label,mark){
+    const active=section.toLowerCase()===label.toLowerCase();
+    return `<a class="chat-app-nav-item ${active?'active':''}" href="#chat/${chatSectionSlug(label)}" aria-current="${active?'page':'false'}"><span aria-hidden="true">${mark}</span><small>${esc(label==='Blogs & announcements'?'News':label)}</small></a>`;
+  }
+  function chatAppShell(section,body,{thread=false}={}){
+    const label=section==='Blogs & announcements'?'Blogs & announcements':section;
+    return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}">
+      <header class="chat-app-topbar">
+        <a class="chat-app-brand" href="#dashboard" aria-label="Dafatii dashboard"><span>D</span><strong>dafatii</strong></a>
+        <div class="chat-app-title"><small>Chats</small><strong>${esc(label)}</strong></div>
+        <button class="chat-app-menu" id="chat-app-menu" aria-label="Open chat menu" aria-expanded="false">☰</button>
+      </header>
+      <nav class="chat-app-subnav" aria-label="Chat pages">
+        ${CHAT_SUBNAV.map(item=>`<a class="${item===section?'active':''}" href="#chat/${chatSectionSlug(item)}">${esc(item)}</a>`).join('')}
+      </nav>
+      <aside class="chat-app-drawer" id="chat-app-drawer" aria-label="Chat app menu">
+        <div class="chat-app-drawer-head"><div><span>D</span><strong>Chat app</strong></div><button id="chat-app-drawer-close" aria-label="Close chat menu">×</button></div>
+        <nav>${CHAT_SUBNAV.map(item=>`<a class="${item===section?'active':''}" href="#chat/${chatSectionSlug(item)}">${esc(item)}</a>`).join('')}</nav>
+        <div class="chat-app-drawer-foot"><a href="#dashboard">← Return to dashboard</a><a href="#profile">Profile</a><a href="#settings">Settings</a></div>
+      </aside>
+      <button class="chat-app-drawer-backdrop" id="chat-app-drawer-backdrop" aria-label="Close chat menu"></button>
+      <main class="chat-app-stage">${body}</main>
+      <nav class="chat-app-bottom" aria-label="Chat app navigation">
+        <a class="chat-app-nav-item exit" href="#dashboard"><span aria-hidden="true">↩</span><small>Dashboard</small></a>
+        ${chatAppNavItem(section,'Private chats','◯')}
+        ${chatAppNavItem(section,'Groups','◎')}
+        ${chatAppNavItem(section,'Blogs & announcements','▤')}
+        ${chatAppNavItem(section,'Anonymous','◌')}
+      </nav>
+    </section>`;
+  }
+  function chatListView(kind,value,conversations){
+    const title=kind==='private'?'Private chats':kind==='group'?'Groups':'Anonymous';
+    const description=kind==='private'?'Direct conversations with students.':kind==='group'?'Course and study-group conversations.':'Identity-hidden conversations with report and block controls.';
+    return `<section class="chat-directory">
+      <div class="chat-directory-head"><div><div class="eyebrow">Chats</div><h1>${title}</h1><p>${description}</p></div><button class="chat-new" id="chat-new" aria-label="New conversation">＋</button></div>
+      <div class="chat-search"><span>⌕</span><input id="chat-search" placeholder="Search ${kind==='group'?'groups':'conversations'}"></div>
+      ${kind==='unknown'?'<div class="unknown-note"><strong>Anonymous by design</strong><p>Your profile name is hidden here. You can report or block any anonymous conversation.</p></div>':''}
+      <div class="chat-directory-list" id="chat-list">${conversations.length?conversations.map(c=>conversationRow(c,false,value)).join(''):`<div class="chat-directory-empty"><span>${chatAppMark(kind)}</span><h2>No conversations yet</h2><p>Start one with the button above.</p></div>`}</div>
+    </section>`;
+  }
+  function chatThreadPage(conversation,value){
+    return `<section class="chat-thread-page">
+      <div class="chat-thread-route-head"><a href="#${chatThreadRoute(conversation.kind)}" aria-label="Back to conversation list">←</a><div><small>${esc(chatSectionForKind(conversation.kind))}</small><strong>${esc(conversation.name)}</strong></div></div>
+      <div class="chat-thread">${threadView(conversation,value)}</div>
+    </section>`;
+  }
+  function chatFeedView(){
+    return `<section class="chat-feed-page">
+      <div class="chat-directory-head"><div><div class="eyebrow">Community</div><h1>Blogs & announcements</h1><p>Course updates, Dafatii announcements, and useful study posts in one feed.</p></div></div>
+      <div class="chat-feed-filters"><span>Latest</span><span>Announcements</span><span>Blogs</span></div>
+      <div class="chat-feed-grid">${CHAT_FEED_SEEDS.map(post=>`<article class="chat-feed-card ${post.type}">
+        <div class="chat-feed-card-top"><span>${post.type==='announcement'?'Announcement':'Blog'}</span><time>${relativeTime(post.at)}</time></div>
+        <h2>${esc(post.title)}</h2><p>${esc(post.excerpt)}</p>
+        <div class="chat-feed-author"><span>${esc((post.author||'D')[0])}</span><div><strong>${esc(post.author)}</strong><small>${post.type==='announcement'?'Official update':'Community post'}</small></div></div>
+        <div class="chat-feed-tags">${post.tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>
+      </article>`).join('')}</div>
+    </section>`;
   }
 
   function chatView(parts){
-    const sub=currentSub(parts,CHAT_SUBNAV);
-    const kind=normalizeChatKind(sub);
-    const value=chatState();
+    const section=chatSection(parts);
+    if(section==='Blogs & announcements')return chatAppShell(section,chatFeedView());
+    const kind=normalizeChatKind(section),value=chatState();
     const conversations=value.conversations.filter(c=>c.kind===kind);
-    let selectedId=value.selected[kind];
-    if(!conversations.some(c=>c.id===selectedId)) selectedId=conversations[0]?.id||'';
-    const selected=conversations.find(c=>c.id===selectedId)||null;
-    return `<section class="chat-page" data-chat-kind="${kind}">
-      <div class="chat-shell">
-        <aside class="chat-rail">
-          <div class="chat-rail-head"><div><div class="eyebrow">Chat</div><h1>${kind==='private'?'Private chats':kind==='group'?'Groups':'Unknown messages'}</h1></div><button class="chat-new" id="chat-new" aria-label="New conversation">＋</button></div>
-          <div class="chat-search"><span>⌕</span><input id="chat-search" placeholder="Search conversations"></div>
-          ${kind==='unknown'?'<div class="unknown-note"><strong>Anonymous by design</strong><p>Your display identity is hidden in this section. Report and block controls stay available.</p></div>':''}
-          <div class="chat-list" id="chat-list">${conversations.map(c=>conversationRow(c,c.id===selectedId,value)).join('')}</div>
-        </aside>
-        <div class="chat-thread">${selected?threadView(selected,value):emptyChatThread(kind)}</div>
-      </div>
-    </section>`;
+    const requestedId=parts[2]?decodeURIComponent(parts[2]):'';
+    const selected=requestedId?conversations.find(c=>c.id===requestedId)||null:null;
+    const body=selected?chatThreadPage(selected,value):chatListView(kind,value,conversations);
+    return chatAppShell(section,`<div class="chat-page" data-chat-kind="${kind}" data-chat-selected="${esc(selected?.id||'')}">${body}</div>`,{thread:Boolean(selected)});
   }
 
   function conversationRow(c,active,value){
@@ -364,20 +432,31 @@
   }
 
   function bindChat(){
+    const appRoot=document.querySelector('.chat-app-page'); if(!appRoot)return;
+    const drawer=document.getElementById('chat-app-drawer');
+    const menu=document.getElementById('chat-app-menu');
+    const closeDrawer=()=>{appRoot.classList.remove('drawer-open');menu?.setAttribute('aria-expanded','false');};
+    menu?.addEventListener('click',()=>{const open=appRoot.classList.toggle('drawer-open');menu.setAttribute('aria-expanded',String(open));});
+    document.getElementById('chat-app-drawer-close')?.addEventListener('click',closeDrawer);
+    document.getElementById('chat-app-drawer-backdrop')?.addEventListener('click',closeDrawer);
+    drawer?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeDrawer));
+
     const root=document.querySelector('.chat-page'); if(!root)return;
     const kind=root.dataset.chatKind;
     const value=chatState();
     document.querySelectorAll('[data-chat-open]').forEach(btn=>btn.addEventListener('click',()=>{
-      value.selected[kind]=btn.dataset.chatOpen; saveChatState(value); render();
+      value.selected[kind]=btn.dataset.chatOpen; saveChatState(value); setHash(chatThreadRoute(kind,btn.dataset.chatOpen));
     }));
     document.getElementById('chat-search')?.addEventListener('input',e=>{
       const query=e.target.value.trim().toLowerCase();
       document.querySelectorAll('.chat-conversation').forEach(row=>{row.hidden=query&&!row.textContent.toLowerCase().includes(query);});
     });
     document.getElementById('chat-new')?.addEventListener('click',()=>openNewConversationSheet(kind));
-    const selected=value.conversations.find(c=>c.id===value.selected[kind]&&c.kind===kind)||value.conversations.find(c=>c.kind===kind);
+    const selectedId=root.dataset.chatSelected||value.selected[kind]||'';
+    const selected=value.conversations.find(c=>c.id===selectedId&&c.kind===kind)||null;
     if(mediaRecorder&&mediaRecorder.state==='recording'&&recordingConversationId&&selected?.id!==recordingConversationId) cancelVoiceRecording();
     if(!selected)return;
+    value.selected[kind]=selected.id;
     bindMessageActions(selected,value);
     document.getElementById('chat-report')?.addEventListener('click',()=>{
       if(!value.reported.includes(selected.id))value.reported.push(selected.id); saveChatState(value); showToast('Anonymous conversation reported');
@@ -497,7 +576,7 @@
     const title=kind==='group'?'Create a group':kind==='unknown'?'Start unknown chat':'Start private chat';
     const label=kind==='group'?'Group name':kind==='unknown'?'Topic label':'Student name';
     root.innerHTML=`<div class="entity-sheet-overlay" id="chat-new-overlay"><section class="entity-sheet chat-maker-sheet"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Chat</div><h2>${title}</h2></div><button class="icon-btn" id="chat-new-close">×</button></div><form id="chat-new-form"><div class="field"><label>${label}</label><input id="chat-new-name" maxlength="60" required placeholder="${kind==='group'?'e.g. Organic Chem Crew':kind==='unknown'?'e.g. Lecture notes':'e.g. Sara'}"></div>${kind==='unknown'?'<p class="sr-sheet-help">A random anonymous alias is shown to both sides. Your profile name is not displayed in the thread.</p>':''}<button class="btn btn-primary entity-submit">${kind==='group'?'Create group':'Start chat'}</button></form></section></div>`;
-    const close=()=>{root.innerHTML='';};document.getElementById('chat-new-close').onclick=close;document.getElementById('chat-new-overlay').onclick=e=>{if(e.target.id==='chat-new-overlay')close();};document.getElementById('chat-new-form').onsubmit=e=>{e.preventDefault();const name=document.getElementById('chat-new-name').value.trim();if(!name)return;const value=chatState();const id=uid(kind);const display=kind==='unknown'?`Unknown #${Math.floor(1000+Math.random()*9000)}`:name;value.conversations.unshift({id,kind,name:display,topic:kind==='unknown'?name:'',avatar:kind==='group'?'◎':kind==='unknown'?'?':name[0].toUpperCase(),status:kind==='group'?'1 member · you':kind==='unknown'?'anonymous relay':'new chat',messages:[]});value.selected[kind]=id;saveChatState(value);close();render();};
+    const close=()=>{root.innerHTML='';};document.getElementById('chat-new-close').onclick=close;document.getElementById('chat-new-overlay').onclick=e=>{if(e.target.id==='chat-new-overlay')close();};document.getElementById('chat-new-form').onsubmit=e=>{e.preventDefault();const name=document.getElementById('chat-new-name').value.trim();if(!name)return;const value=chatState();const id=uid(kind);const display=kind==='unknown'?`Unknown #${Math.floor(1000+Math.random()*9000)}`:name;value.conversations.unshift({id,kind,name:display,topic:kind==='unknown'?name:'',avatar:kind==='group'?'◎':kind==='unknown'?'?':name[0].toUpperCase(),status:kind==='group'?'1 member · you':kind==='unknown'?'anonymous relay':'new chat',messages:[]});value.selected[kind]=id;saveChatState(value);close();setHash(chatThreadRoute(kind,id));};
   }
   window.DafatiiStudyRooms = Object.freeze({
     view: parts => studyRoomsView(parts),

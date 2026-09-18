@@ -1,0 +1,21 @@
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const ui=fs.readFileSync('student-social.js','utf8');
+const css=fs.readFileSync('student-social.css','utf8');
+const shell=fs.readFileSync('quiet-shell.js','utf8');
+const quiet=fs.readFileSync('quiet-design.css','utf8');
+const index=fs.readFileSync('index.html','utf8');
+
+assert.ok(ui.includes("const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];"), 'chat app must expose private/groups/blogs/anonymous destinations');
+assert.ok(ui.includes('function chatAppShell(') && ui.includes('class="chat-app-topbar"') && ui.includes('class="chat-app-subnav"') && ui.includes('class="chat-app-bottom"'), 'chat app must own its top bar, page sub-navigation, and special bottom dock');
+assert.ok(ui.includes('class="chat-app-drawer"') && ui.includes('id="chat-app-menu"'), 'chat app must include its own sidebar/drawer access');
+assert.ok(ui.includes('href="#dashboard"') && ui.includes('Return to dashboard'), 'chat app must provide explicit return paths to the main website');
+assert.ok(ui.includes('function chatFeedView()') && ui.includes('Blogs & announcements'), 'chat app must have a distinct blogs and announcements page');
+assert.ok(ui.includes('chatThreadRoute') && ui.includes('parts[2]') && ui.includes('data-chat-selected'), 'conversation list and conversation thread must be separate routes');
+assert.ok(ui.includes("setHash(chatThreadRoute(kind,btn.dataset.chatOpen))"), 'opening a chat card must navigate into its thread page');
+assert.ok(ui.includes("setHash(chatThreadRoute(kind,id))"), 'new conversations must open their own thread route');
+assert.ok(shell.includes("shell.classList.toggle('chat-app-host',current==='chat')"), 'shared shell must activate dedicated chat host mode');
+assert.ok(quiet.includes('.quiet-workspace.chat-app-host>.quiet-toolbar') && quiet.includes('.quiet-workspace.chat-app-host>.bottom-nav') && quiet.includes('display:none!important'), 'main workspace navigation must not overlap the chat app');
+for(const marker of ['.chat-app-topbar','.chat-app-subnav','.chat-app-drawer','.chat-app-bottom','.chat-directory','.chat-feed-grid','.chat-thread-page']) assert.ok(css.includes(marker), marker+' style missing');
+assert.ok(index.includes('student-social.js?v=20260918-2') && index.includes('student-social.css?v=20260918-2'), 'chat app assets must be cache-busted');
+console.log('chat app redesign tests passed');

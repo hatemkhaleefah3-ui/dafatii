@@ -204,3 +204,22 @@ html[data-device=tablet] .landing-language{align-self:end;justify-self:center}
     line-height:1;
   }
 }
+
+
+/* Dedicated Chat application host */
+.quiet-workspace.chat-app-host>.main-nav,
+.quiet-workspace.chat-app-host>.settings-nav,
+.quiet-workspace.chat-app-host>.sidebar,
+.quiet-workspace.chat-app-host>.sub-nav,
+.quiet-workspace.chat-app-host>.quiet-menu-backdrop,
+.quiet-workspace.chat-app-host>.quiet-sidebar,
+.quiet-workspace.chat-app-host>.quiet-toolbar,
+.quiet-workspace.chat-app-host>.bottom-nav,
+.quiet-workspace.chat-app-host>.quiet-return-button{display:none!important}
+.quiet-workspace.chat-app-host>.workspace-main{
+  margin:0!important;
+  padding:0!important;
+  width:100%!important;
+  max-width:none!important;
+  min-height:100dvh!important;
+}

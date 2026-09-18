@@ -24,11 +24,11 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=25/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=26/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
-assert.match(index, /quiet-shell\.js\?v=13/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
@@ -41,6 +41,19 @@ assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
 const quietShell = fs.readFileSync('quiet-shell.js', 'utf8');
 const quietDesign = fs.readFileSync('quiet-design.css', 'utf8');
+const studentSocial = fs.readFileSync('student-social.js', 'utf8');
+const studentSocialCss = fs.readFileSync('student-social.css', 'utf8');
+assert.match(index, /student-social\.css\?v=20260918-2/, 'the multi-page chat application stylesheet must be loaded');
+assert.match(index, /student-social\.js\?v=20260918-2/, 'the multi-page chat application controller must be loaded');
+assert.match(studentSocial, /CHAT_SUBNAV = \['Private chats','Groups','Blogs & announcements','Anonymous'\]/, 'Chat must expose the four dedicated app pages');
+assert.match(studentSocial, /chat-app-bottom/, 'Chat must render its own special bottom navigation');
+assert.match(studentSocial, /href="#dashboard"/, 'Chat app navigation must provide a direct return to Dashboard');
+assert.match(studentSocial, /function chatFeedView\(\)/, 'Chat must include a Blogs & announcements feed page');
+assert.match(studentSocial, /chatThreadRoute/, 'conversation cards must open dedicated nested thread routes');
+assert.match(quietShell, /shell\.classList\.toggle\('chat-app-host',current==='chat'\)/, 'the shared workspace shell must enter dedicated Chat app mode only on Chat routes');
+assert.match(quietDesign, /\.quiet-workspace\.chat-app-host>\.quiet-toolbar[\s\S]*\.quiet-workspace\.chat-app-host>\.bottom-nav[\s\S]*display:none!important/, 'ordinary workspace chrome must be suppressed inside the dedicated Chat app');
+assert.match(studentSocialCss, /\.chat-app-topbar/);assert.match(studentSocialCss, /\.chat-app-subnav/);assert.match(studentSocialCss, /\.chat-app-drawer/);assert.match(studentSocialCss, /\.chat-app-bottom/);
+
 assert.doesNotMatch(quietDesign, /Unified interaction system v8/, 'late override layers must not be appended to the canonical stylesheet');
 assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/s, 'mobile landing navigation must match the authenticated floating icon dock');
 assert.match(quietDesign, /@media\(min-width:768px\) and \(max-width:1199px\).*\.landing-nav\{position:fixed;inset-block:0;inset-inline-start:0/s, 'tablet landing navigation must use a side rail');
