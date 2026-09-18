@@ -210,6 +210,7 @@
     });
     town.addEventListener('input', () => renderTownMenu(true));
     town.addEventListener('focus', () => renderTownMenu(true));
+    toggle.addEventListener('mousedown', event => event.preventDefault());
     toggle.addEventListener('click', () => {
       if (!city.value) { city.focus(); return; }
       if (menu.hidden) renderTownMenu(true);
