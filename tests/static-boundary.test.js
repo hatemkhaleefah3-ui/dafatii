@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js', 'onboarding-flow.js'];
+const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'subject-redesign.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js', 'onboarding-flow.js'];
 for (const file of featureFiles) {
   const source = fs.readFileSync(file, 'utf8');
   assert.doesNotMatch(source, /fetch\s*\(\s*['"`]\/api\//, `${file} must not call backend endpoints directly`);
@@ -31,6 +31,8 @@ assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller mus
 assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
+assert.match(index, /subject-redesign\.css\?v=20260919-1/, 'the reference-driven Subjects presentation must be loaded');
+assert.match(index, /subject-redesign\.js\?v=20260919-1/, 'the reference-driven Subjects controller must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
