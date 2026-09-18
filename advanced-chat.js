@@ -53,7 +53,8 @@
 
   function proChatView(parts){
     const section=currentSub(parts),kind=kindFromSub(section);
-    if(ui.section!==section){ui.section=section;ui.filter='all';ui.query='';resetTransient();}
+    const defaultFilter=section==='Groups'?'joined':section==='Anonymous'?'trending':'all';
+    if(ui.section!==section){ui.section=section;ui.filter=defaultFilter;ui.query='';resetTransient();}
     const state=chatState(),pro=proState();
     processScheduled(state,pro);
     const scoped=kind==='private'?state.conversations:state.conversations.filter(c=>c.kind===kind);
