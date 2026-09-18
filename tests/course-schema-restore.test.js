@@ -16,6 +16,7 @@ assert.ok(!helper.includes('db.exec(`'), 'multiline db.exec must not be used bec
 assert.ok(middleware.includes('ensurePreDafaaCourseSchema') && middleware.includes("pathname.startsWith('/api/v1/')"), 'API middleware must run the compatibility restore');
 assert.ok(!middleware.includes('__rollback_diag'), 'temporary rollback diagnostics must not remain in production');
 assert.ok(!index.includes('dafaa-context.js') && !index.includes('dafaa-ui.js') && !index.includes('pre-dafaa.css'), 'active Dafaa UI assets must not remain after rollback');
-assert.ok(index.includes('course-context.js') && index.includes('course-ui.js') && index.includes('pre-course.css'), 'pre-request Course UI assets must be restored');
+assert.ok(index.includes('course-context.js') && index.includes('course-ui.js'), 'Course UI assets must remain restored');
+assert.ok(index.includes('onboarding-flow.js') && !index.includes('pre-course.css'), 'sequential onboarding must replace the obsolete pre-course stylesheet after the rollback');
 
 console.log('course schema rollback compatibility tests passed');

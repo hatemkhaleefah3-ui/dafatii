@@ -159,5 +159,9 @@
   window.addEventListener('dafatii:auth:changed',()=>{catalog=null;refreshedFor='';window.DafatiiSchoolWorkspaceReady=false;schedule();});
   window.addEventListener('dafatii:coursesloaded',schedule);
   window.addEventListener('dafatii:datahydrated',schedule);
+  window.DafatiiSchoolTeachers=Object.freeze({
+    async refresh(){catalog=null;const result=await load(true);syncSchoolWorkspace();return result;},
+    get catalog(){return catalog;}
+  });
   schedule();
 })();

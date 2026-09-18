@@ -53,16 +53,19 @@ assert.ok(backend.includes("path==='admin/teachers'") && backend.includes("path=
 assert.ok(courseRoutes.includes("currentActor.accountType === 'student' && currentActor.studentStage === 'university'"), 'only higher-education students may create Courses');
 assert.ok(courseRoutes.includes("SCHOOL_STUDENT_COURSES_DISABLED") && courseRoutes.includes("School student accounts cannot own Courses."), 'admins must not be able to assign Course ownership to school students');
 assert.ok(courseUi.includes("actor?.accountType==='student'&&actor?.studentStage==='university'"), 'Course creation UI must match server permission');
+assert.ok(!courseUi.includes("actor?.accountType==='representer'"), 'representers must not be able to create Courses');
+assert.ok(courseUi.includes("value=\"private\"") && courseUi.includes('academic level, stage and field are locked'), 'higher-education student Course creation must be private and identity-locked');
+assert.ok(courseRoutes.includes('PUBLIC_COURSE_ADMIN_REQUIRED') && courseRoutes.includes("value.visibility !== 'private'"), 'only administrators may create public Courses');
 assert.ok(!courseUi.includes('<option value="school">School</option>'), 'Course creation must not offer a school stage');
 
 assert.ok(courseContext.includes("GLOBAL_USER_KEYS") && courseContext.includes("'dafatii:studyRoomState:v1'") && courseContext.includes("'dafatii:studyRoomWorkspace:v1'"), 'Study Rooms must be user-scoped rather than Course-scoped');
 assert.ok(social.includes('window.DafatiiStudyRooms = Object.freeze'), 'Study Room UI must be reusable by students without an active Course');
-assert.ok(app.includes("'study-rooms'") && app.includes('window.DafatiiStudyRooms.view'), 'pre-Course/school shell must expose Study Rooms');
+assert.ok(!app.includes('preCourseWorkspace') && app.includes('DafatiiOnboarding?.blocks'), 'the obsolete pre-Course website must be replaced by the sequential onboarding gate');
 assert.ok(roles.includes("page==='admin'&&!window.__dafatiiAdminConsoleInstalled"), 'legacy Admin renderer must stay disabled when the new console owns the route');
 
 assert.ok(index.includes('admin-console.css?v=20260918-3'), 'Admin Console stylesheet must be loaded');
-assert.ok(index.includes('admin-console.js?v=20260918-3'), 'Admin Console script must be loaded');
-assert.ok(index.indexOf('admin-console.js?v=20260918-3') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
+assert.ok(index.includes('admin-console.js?v=20260918-4'), 'Admin Console script must be loaded');
+assert.ok(index.indexOf('admin-console.js?v=20260918-4') > index.indexOf('premium-workspace.js'), 'Admin Console must load after the premium workspace enhancer');
 assert.ok(index.includes('file-client.js?v=20260918-3'), 'Drive-backed teacher image upload client must be cache-busted');
 
 console.log('admin console and student creation regression tests passed');

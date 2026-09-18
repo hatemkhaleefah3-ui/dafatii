@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js'];
+const featureFiles = ['app.js', 'academic.js', 'calendar.js', 'student-suite.js', 'advanced-chat.js', 'study-room-workspace.js', 'course-context.js', 'course-ui.js', 'onboarding-flow.js'];
 for (const file of featureFiles) {
   const source = fs.readFileSync(file, 'utf8');
   assert.doesNotMatch(source, /fetch\s*\(\s*['"`]\/api\//, `${file} must not call backend endpoints directly`);
@@ -30,7 +30,10 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=12/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260918-3/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260918-4/, 'the cleaned subject interface must be loaded');
+assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
+assert.match(index, /onboarding-flow\.js\?v=20260918-1/, 'the sequential onboarding controller must be loaded');
+assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
 assert.match(index, /calendar\.js\?v=20260915-4/, 'the cleaned calendar interface must be loaded');
 assert.match(index, /calendar\.css\?v=20260915-4/, 'retired calendar toolbar styling must be removed from the active asset');
 assert.match(index, /role-panels\.js\?v=20260918-1/, 'the redesigned dashboard management entry must be loaded');
@@ -109,13 +112,11 @@ const app = fs.readFileSync('app.js', 'utf8');
 assert.doesNotMatch(app, /subject-back|data-subjects-back/, 'return controls must not remain embedded in sub-navigation');
 assert.doesNotMatch(app, /authOffline \? 'disabled'/, 'a failed startup check must not disable authentication');
 assert.match(app, /dataset\.submitting/, 'authentication errors must survive availability events');
-assert.match(app, /PRE_COURSE_ROUTES/, 'users without an active course need the limited navigation shell');
-assert.match(app, /pending','payment_pending/, 'pending enrollments must remain outside the full course workspace');
+assert.match(app, /DafatiiOnboarding\?\.blocks/, 'authenticated users who still need setup must be gated by sequential onboarding');
+assert.doesNotMatch(app, /PRE_COURSE_ROUTES|preCourseWorkspace|preCourseContent/, 'the obsolete pre-course website must be removed from the active app renderer');
 assert.match(app, /readString\('dafatii:interface-language'\)==='en'\?'en':'ar'/, 'Arabic must be the default interface language');
 assert.match(app, /function applyInterfaceTheme\(theme=interfaceTheme\(\)\)/, 'the selected theme must have one canonical application path');
-assert.match(app, /applyInterfaceLanguage\(button\.dataset\.interfaceLanguage\);render\(\)/, 'no-course language switching must rebuild the consolidated shell');
-assert.match(app, /querySelectorAll\('\[data-extra="dark-mode"\]'\).*applyInterfaceTheme/s, 'no-course theme controls must apply and persist the selected theme');
-assert.doesNotMatch(app, /applyInterfaceLanguage\(button\.dataset\.interfaceLanguage\);preCourseWorkspace\(page\)/, 'language switching must not bypass the consolidated shell');
+assert.doesNotMatch(app, /preCourseWorkspace/, 'language and theme controls must not revive the retired pre-course shell');
 assert.match(app, /data-landing-section="home"[^>]*aria-label[^>]*>\$\{icon\('nav-home'\)\}/, 'landing navigation must use the shared icon family with accessible labels');
 assert.match(app, /data-landing-section="about"/, 'the landing navigation must expose About us');
 assert.match(app, /data-landing-section="contact"/, 'the landing navigation must expose Contact us');
