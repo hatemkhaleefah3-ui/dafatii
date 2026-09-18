@@ -1,6 +1,7 @@
 (() => {
   const ROOM_KEY = 'dafatii:studyRoomState:v1';
   const CHAT_KEY = 'dafatii:chatState:v1';
+  const CHAT_POST_KEY = 'dafatii:chatCommunityPosts:v1';
   const STUDY_SUBNAV = ['Public study rooms','Private study rooms','My study rooms'];
   const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];
   const CHAT_SECTION_SUBPAGES = {
@@ -402,8 +403,12 @@
       <div class="chat-thread">${threadView(conversation,value)}</div>
     </section>`;
   }
+  function chatCommunityPosts(){
+    const value=read(CHAT_POST_KEY,[]);
+    return Array.isArray(value)?value:[];
+  }
   function chatFeedView(){
-    const posts=CHAT_FEED_SEEDS.filter(post=>{
+    const posts=[...chatCommunityPosts(),...CHAT_FEED_SEEDS].filter(post=>{
       if(chatFeedFilter==='announcement')return post.type==='announcement';
       if(chatFeedFilter==='blog')return post.type==='blog';
       if(chatFeedFilter==='study')return post.type==='blog'&&post.tags.some(tag=>/study|focus|recall|planning/i.test(tag));
@@ -411,6 +416,7 @@
     }).sort((a,b)=>b.at-a.at);
     return `<section class="chat-feed-page">
       <div class="chat-feed-intro"><div><small>Community</small><h1>Blogs & announcements</h1></div><p>Course updates, Dafatii announcements, and useful study posts in one focused feed.</p></div>
+      <button class="chat-feed-create" id="chat-feed-create" type="button" aria-label="Create community post" title="Create community post">${chatIcon('plus')}</button>
       <div class="chat-feed-grid">${posts.map(post=>`<article class="chat-feed-card ${post.type}">
         <div class="chat-feed-card-top"><span>${post.type==='announcement'?'Announcement':'Blog'}</span><time>${relativeTime(post.at)}</time></div>
         <h2>${esc(post.title)}</h2><p>${esc(post.excerpt)}</p>
@@ -418,6 +424,24 @@
         <div class="chat-feed-tags">${post.tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>
       </article>`).join('')}</div>
     </section>`;
+  }
+  function openCommunityPostSheet(){
+    const root=document.getElementById('overlay-root'); if(!root)return;
+    root.innerHTML=`<div class="entity-sheet-overlay" id="chat-post-overlay"><section class="entity-sheet chat-maker-sheet"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Community</div><h2>Create post</h2></div><button class="icon-btn" id="chat-post-close">×</button></div><form id="chat-post-form"><div class="field"><label>Title</label><input id="chat-post-title" maxlength="120" required placeholder="Post title"></div><div class="field"><label>Post</label><textarea id="chat-post-body" maxlength="600" rows="6" required placeholder="Share something useful with the community…"></textarea></div><div class="field"><label>Tags <span class="field-optional">Optional</span></label><input id="chat-post-tags" maxlength="100" placeholder="Study tips, Focus"></div><button class="btn btn-primary entity-submit">Publish post</button></form></section></div>`;
+    const close=()=>{root.innerHTML='';};
+    document.getElementById('chat-post-close').onclick=close;
+    document.getElementById('chat-post-overlay').onclick=e=>{if(e.target.id==='chat-post-overlay')close();};
+    document.getElementById('chat-post-form').onsubmit=e=>{
+      e.preventDefault();
+      const title=document.getElementById('chat-post-title').value.trim();
+      const excerpt=document.getElementById('chat-post-body').value.trim();
+      const tags=document.getElementById('chat-post-tags').value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,6);
+      if(!title||!excerpt)return;
+      const posts=chatCommunityPosts();
+      posts.unshift({id:uid('post'),type:'blog',author:'You',title,excerpt,at:now(),tags:tags.length?tags:['Community']});
+      if(!safeWrite(CHAT_POST_KEY,posts.slice(0,50)))return;
+      close(); chatFeedFilter='latest'; render(); showToast('Community post published');
+    };
   }
 
   function chatView(parts){
@@ -508,6 +532,7 @@
         chatFeedFilter=button.dataset.chatSubpage||'latest';
         render();
       }));
+      document.getElementById('chat-feed-create')?.addEventListener('click',openCommunityPostSheet);
       return;
     }
 

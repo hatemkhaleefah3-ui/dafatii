@@ -19,8 +19,8 @@ assert.ok(ui.includes("setHash(chatThreadRoute(kind,id))"), 'new conversations m
 assert.ok(shell.includes("shell.classList.toggle('chat-app-host',current==='chat')"), 'shared shell must activate dedicated chat host mode');
 assert.ok(quiet.includes('.quiet-workspace.chat-app-host>.quiet-toolbar') && quiet.includes('.quiet-workspace.chat-app-host>.bottom-nav') && quiet.includes('display:none!important'), 'main workspace navigation must not overlap the chat app');
 for(const marker of ['.chat-app-topbar','.chat-app-subnav','.chat-app-drawer','.chat-app-bottom','.chat-directory','.chat-feed-grid','.chat-thread-page']) assert.ok(css.includes(marker), marker+' style missing');
-assert.ok(index.includes('student-social.js?v=20260919-1') && index.includes('student-social.css?v=20260918-3'), 'chat app shell assets must be cache-busted');
-assert.ok(index.includes('advanced-chat.js?v=20260919-1') && index.includes('advanced-chat.css?v=20260918-3'), 'advanced chat integration assets must be cache-busted');
+assert.ok(index.includes('student-social.js?v=20260919-2') && index.includes('student-social.css?v=20260919-1'), 'chat app shell assets must be cache-busted');
+assert.ok(index.includes('advanced-chat.js?v=20260919-2') && index.includes('advanced-chat.css?v=20260918-3'), 'advanced chat integration assets must be cache-busted');
 assert.ok(ui.includes('window.DafatiiChatShell = Object.freeze'), 'student social must export the canonical Chat app shell for later chat enhancements');
 assert.ok(advanced.includes("if(section.toLowerCase()==='blogs & announcements')return previousWorkspaceContent"), 'advanced chat must defer Blogs & announcements to the canonical Chat feed');
 assert.ok(advanced.includes('window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected),subpage:ui.filter})'), 'advanced chat must render inside the canonical Chat app shell and pass the active contextual subpage');
@@ -45,5 +45,7 @@ assert.ok(advancedCss.includes('Premium messenger surfaces v4') && advancedCss.i
 assert.ok(css.includes('Premium Chat app v4') && css.includes('.chat-app-topbar') && css.includes('.chat-app-bottom'), 'all Chat chrome must use the premium v4 visual system');
 assert.ok(ui.includes('class="chat-app-topbar-spacer"') && !ui.includes('<a class="chat-app-brand"') && !ui.includes('id="chat-app-search-top"'), 'chat top bar must omit the redundant Dafatii brand and duplicate search action');
 assert.ok(ui.includes("anonymous:'<path d=\"M4 11h16M7 11l2-5h6l2 5\""), 'Anonymous navigation must use the revised incognito icon');
-assert.ok(advanced.includes("const showHeader=kind!=='private';"), 'private chat list must omit its redundant title and plus action');
+assert.ok(advanced.includes("const showHeader=kind==='group';") && advanced.includes("const showSearch=kind!=='group';") && advanced.includes("const showTools=kind==='private';"), 'Groups and Anonymous must expose only the controls marked to remain in the screenshots');
 assert.ok(advanced.includes('data-rail-action="new"'), 'new-chat creation must remain available from Chat tools after removing the private-list plus action');
+assert.ok(ui.includes('id="chat-feed-create"') && ui.includes('openCommunityPostSheet') && css.includes('.chat-feed-create'), 'Blogs & announcements must expose a visible create-post plus action');
+assert.ok(ui.includes("CHAT_POST_KEY = 'dafatii:chatCommunityPosts:v1'"), 'community posts created from the plus action must persist');
