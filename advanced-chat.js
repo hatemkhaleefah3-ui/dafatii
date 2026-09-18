@@ -2,7 +2,7 @@
   const CHAT_KEY='dafatii:chatState:v1';
   const PRO_KEY='dafatii:chatProState:v1';
   const MAX_IMAGE=1200*1024, MAX_VIDEO=2200*1024, MAX_DOC=1000*1024, MAX_VOICE=900*1024;
-  const SUBS=['Private chats','Groups','Unknown messages'];
+  const SUBS=['Private chats','Groups','Anonymous'];
   const now=()=>Date.now();
   const uid=p=>`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
   const esc=v=>escapeHtml(v??'');
@@ -26,9 +26,10 @@
   }
   function savePro(state){return write(PRO_KEY,state);}
   function metaFor(pro,id){return pro.meta[id]||(pro.meta[id]={pinned:false,archived:false,muted:false,unread:false});}
-  function kindFromSub(sub){const s=String(sub||'').toLowerCase();return s==='groups'?'group':s==='unknown messages'?'unknown':'private';}
-  function subLabel(kind){return kind==='group'?'Groups':kind==='unknown'?'Unknown messages':'Private chats';}
-  function currentSub(parts){return decodeURIComponent(parts.slice(1).join('/'))||SUBS[0];}
+  function kindFromSub(sub){const s=String(sub||'').toLowerCase();return s==='groups'?'group':(s==='anonymous'||s==='unknown messages')?'unknown':'private';}
+  function subLabel(kind){return kind==='group'?'Groups':kind==='unknown'?'Anonymous':'Private chats';}
+  function currentSub(parts){return decodeURIComponent(parts[1]||'')||SUBS[0];}
+  function chatThreadRoute(kind,id=''){return window.DafatiiChatShell?.threadRoute?.(kind,id)||`chat/${encodeURIComponent(subLabel(kind))}${id?'/'+encodeURIComponent(id):''}`;}
   function fmtTime(t){try{return new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}catch{return '';}}
   function fmtDay(t){const d=new Date(t),today=new Date(),y=new Date(Date.now()-86400000);if(d.toDateString()===today.toDateString())return 'Today';if(d.toDateString()===y.toDateString())return 'Yesterday';return d.toLocaleDateString([],{month:'short',day:'numeric'});}
   function rel(t){const m=Math.max(0,Math.floor((now()-Number(t||now()))/60000));if(m<1)return 'now';if(m<60)return `${m}m`;const h=Math.floor(m/60);if(h<24)return `${h}h`;return `${Math.floor(h/24)}d`;}
@@ -38,31 +39,46 @@
   function findConversation(state,id){return state.conversations.find(c=>c.id===id);}
 
   const previousWorkspaceContent=workspaceContent;
-  workspaceContent=function(page,parts,title){if(page==='chat')return proChatView(parts);return previousWorkspaceContent(page,parts,title);};
+  workspaceContent=function(page,parts,title){
+    if(page==='chat'){
+      const section=currentSub(parts);
+      if(section.toLowerCase()==='blogs & announcements')return previousWorkspaceContent(page,parts,title);
+      return proChatView(parts);
+    }
+    return previousWorkspaceContent(page,parts,title);
+  };
   const previousWorkspace=workspace;
   workspace=function(current){cancelVoiceIfLeaving(current);previousWorkspace(current);if(current.split('/')[0]==='chat')bindProChat();};
 
   function proChatView(parts){
-    const kind=kindFromSub(currentSub(parts));
+    const section=currentSub(parts),kind=kindFromSub(section);
     const state=chatState(),pro=proState();
     processScheduled(state,pro);
-    let conversations=state.conversations.filter(c=>c.kind===kind);
-    const selectedId=ensureSelected(state,kind,conversations);
-    const selected=findConversation(state,selectedId)||conversations[0]||null;
-    conversations=sortConversations(conversations,pro);
-    return `<section class="chatpro-page ${ui.mobileThread&&selected?'mobile-thread':''}" data-kind="${kind}" data-selected="${esc(selected?.id||'')}">
-      <div class="chatpro-shell">
-        <aside class="chatpro-rail">
-          ${railHeader(kind)}
-          ${statusStrip(kind,state)}
-          ${filterBar()}
-          <div class="chatpro-list" id="chatpro-list">${conversationList(conversations,selectedId,pro)}</div>
-        </aside>
-        <main class="chatpro-thread">${selected?threadView(selected,state,pro):emptyThread(kind)}</main>
-        ${selected&&ui.info?infoPanel(selected,state,pro):''}
-      </div>
-      <div id="chatpro-layer"></div>
-    </section>`;
+    const conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);
+    const requestedId=parts[2]?decodeURIComponent(parts[2]):'';
+    const selected=requestedId?conversations.find(c=>c.id===requestedId)||null:null;
+    if(selected)state.selected[kind]=selected.id;
+    const content=selected
+      ? `<section class="chatpro-page route-thread" data-kind="${kind}" data-selected="${esc(selected.id)}">
+          <div class="chatpro-route-head"><a href="#${chatThreadRoute(kind)}" aria-label="Back to ${esc(subLabel(kind))}">←</a><div><small>${esc(subLabel(kind))}</small><strong>${esc(selected.name)}</strong></div></div>
+          <div class="chatpro-shell thread-only">
+            <main class="chatpro-thread">${threadView(selected,state,pro)}</main>
+            ${ui.info?infoPanel(selected,state,pro):''}
+          </div>
+          <div id="chatpro-layer"></div>
+        </section>`
+      : `<section class="chatpro-page route-list" data-kind="${kind}" data-selected="">
+          <div class="chatpro-shell list-only">
+            <aside class="chatpro-rail">
+              ${railHeader(kind)}
+              ${statusStrip(kind,state)}
+              ${filterBar()}
+              <div class="chatpro-list" id="chatpro-list">${conversationList(conversations,'',pro)}</div>
+            </aside>
+          </div>
+          <div id="chatpro-layer"></div>
+        </section>`;
+    return window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected)})||content;
   }
   function sortConversations(conversations,pro){return [...conversations].sort((a,b)=>{const ma=metaFor(pro,a.id),mb=metaFor(pro,b.id);if(ma.pinned!==mb.pinned)return ma.pinned?-1:1;return Number(lastMessage(b)?.at||0)-Number(lastMessage(a)?.at||0);});}
   function railHeader(kind){return `<div class="chatpro-rail-head"><div><div class="eyebrow">Dafatii Chat</div><h1>${esc(subLabel(kind))}</h1></div><div class="chatpro-rail-actions"><button id="chatpro-new" title="New chat">＋</button><button id="chatpro-rail-menu" title="Chat menu">⋮</button></div></div><label class="chatpro-search"><span>⌕</span><input id="chatpro-search" value="${esc(ui.query)}" placeholder="Search chats and people"><kbd>⌘K</kbd></label>`;}
@@ -101,18 +117,18 @@
     const kind=page.dataset.kind;const selectedId=page.dataset.selected;let state=chatState(),pro=proState(),c=findConversation(state,selectedId);
     document.getElementById('chatpro-search')?.addEventListener('input',e=>{ui.query=e.target.value;softRerender();});
     document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.filter;render();});
-    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();ui.mobileThread=true;render();}));
+    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));
     document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});
     document.getElementById('chatpro-new')?.addEventListener('click',()=>openNewChatSheet(kind,state));
     document.getElementById('chatpro-rail-menu')?.addEventListener('click',()=>openRailMenu(kind));
     if(!c)return;
     bindThread(c,state,pro);
   }
-  function softRerender(){const list=document.getElementById('chatpro-list');if(!list)return;const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState(),conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);list.innerHTML=conversationList(conversations,page.dataset.selected,pro);document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();ui.mobileThread=true;render();}));document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});}
+  function softRerender(){const list=document.getElementById('chatpro-list');if(!list)return;const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState(),conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);list.innerHTML=conversationList(conversations,'',pro);document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});}
   function resetTransient(){ui.info=false;ui.search=false;ui.searchQuery='';ui.menuMessage='';ui.replyTo='';ui.editing='';ui.attach=false;ui.emoji=false;ui.sticker=false;}
 
   function bindThread(c,state,pro){
-    document.getElementById('chatpro-mobile-back')?.addEventListener('click',()=>{ui.mobileThread=false;render();});
+    document.getElementById('chatpro-mobile-back')?.addEventListener('click',()=>{resetTransient();setHash(chatThreadRoute(c.kind));});
     document.getElementById('chatpro-info')?.addEventListener('click',()=>{ui.info=!ui.info;render();});
     document.getElementById('chatpro-info-button')?.addEventListener('click',()=>{ui.info=!ui.info;render();});
     document.getElementById('chatpro-info-close')?.addEventListener('click',()=>{ui.info=false;render();});
@@ -175,10 +191,10 @@
   function toggleBlock(c,state){const i=state.blocked.indexOf(c.id);if(i>=0)state.blocked.splice(i,1);else state.blocked.push(c.id);saveChat(state);render();}
 
   function openConversationMenu(id,state,pro){const c=findConversation(state,id),meta=metaFor(pro,id),layer=document.getElementById('chatpro-layer');if(!c||!layer)return;layer.innerHTML=`<div class="chatpro-popover conv-pop"><button data-conv-action="pin">${meta.pinned?'Unpin':'Pin'} chat</button><button data-conv-action="mute">${meta.muted?'Unmute':'Mute notifications'}</button><button data-conv-action="unread">Mark as unread</button><button data-conv-action="archive">${meta.archived?'Unarchive':'Archive'}</button><button data-conv-action="delete" class="danger-text">Delete chat</button></div><div class="chatpro-layer-dismiss"></div>`;layer.querySelector('.chatpro-layer-dismiss').onclick=()=>layer.innerHTML='';layer.querySelectorAll('[data-conv-action]').forEach(b=>b.onclick=()=>{const a=b.dataset.convAction;if(a==='pin')meta.pinned=!meta.pinned;if(a==='mute')meta.muted=!meta.muted;if(a==='unread')meta.unread=true;if(a==='archive')meta.archived=!meta.archived;if(a==='delete'){if(confirm(`Delete ${c.name}?`))state.conversations=state.conversations.filter(x=>x.id!==id);saveChat(state);}savePro(pro);render();});}
-  function openRailMenu(kind){const layer=document.getElementById('chatpro-layer');if(!layer)return;layer.innerHTML=`<div class="chatpro-popover rail-pop"><button data-rail-action="new">New ${kind==='group'?'group':'chat'}</button><button data-rail-action="saved">Saved Messages</button><button data-rail-action="archived">Archived chats</button><button data-rail-action="readall">Mark all as read</button></div><div class="chatpro-layer-dismiss"></div>`;layer.querySelector('.chatpro-layer-dismiss').onclick=()=>layer.innerHTML='';layer.querySelectorAll('[data-rail-action]').forEach(b=>b.onclick=()=>{const a=b.dataset.railAction;if(a==='new')openNewChatSheet(kind,chatState());if(a==='saved'){const st=chatState();st.selected.private='saved-messages';saveChat(st);setHash(`chat/${encodeURIComponent('Private chats')}`);}if(a==='archived'){ui.filter='archived';render();}if(a==='readall'){const st=chatState(),p=proState();st.conversations.filter(c=>c.kind===kind).forEach(c=>{c.unread=0;metaFor(p,c.id).unread=false;});saveChat(st);savePro(p);render();}});}
+  function openRailMenu(kind){const layer=document.getElementById('chatpro-layer');if(!layer)return;layer.innerHTML=`<div class="chatpro-popover rail-pop"><button data-rail-action="new">New ${kind==='group'?'group':'chat'}</button><button data-rail-action="saved">Saved Messages</button><button data-rail-action="archived">Archived chats</button><button data-rail-action="readall">Mark all as read</button></div><div class="chatpro-layer-dismiss"></div>`;layer.querySelector('.chatpro-layer-dismiss').onclick=()=>layer.innerHTML='';layer.querySelectorAll('[data-rail-action]').forEach(b=>b.onclick=()=>{const a=b.dataset.railAction;if(a==='new')openNewChatSheet(kind,chatState());if(a==='saved'){const st=chatState();st.selected.private='saved-messages';saveChat(st);setHash(chatThreadRoute('private','saved-messages'));}if(a==='archived'){ui.filter='archived';render();}if(a==='readall'){const st=chatState(),p=proState();st.conversations.filter(c=>c.kind===kind).forEach(c=>{c.unread=0;metaFor(p,c.id).unread=false;});saveChat(st);savePro(p);render();}});}
 
   function sheet(inner,id='chatpro-sheet'){const root=document.getElementById('overlay-root');if(!root)return null;root.innerHTML=`<div class="entity-sheet-overlay" id="${id}-overlay"><section class="entity-sheet chatpro-sheet">${inner}</section></div>`;const close=()=>root.innerHTML='';root.querySelector('[data-sheet-close]')?.addEventListener('click',close);root.querySelector(`#${id}-overlay`)?.addEventListener('click',e=>{if(e.target.id===`${id}-overlay`)close();});return {root,close};}
-  function openNewChatSheet(kind,state){const title=kind==='group'?'Create group':kind==='unknown'?'New anonymous message':'New private chat';const label=kind==='group'?'Group name':kind==='unknown'?'Topic':'Student name';const s=sheet(`<div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Dafatii Chat</div><h2>${title}</h2></div><button class="icon-btn" data-sheet-close>×</button></div><form id="chatpro-new-form"><div class="field"><label>${label}</label><input id="chatpro-new-name" maxlength="70" required placeholder="${kind==='group'?'e.g. Calculus Night Crew':kind==='unknown'?'e.g. Lecture 6 notes':'e.g. Sara'}"></div>${kind==='group'?'<div class="field"><label>Members <span class="field-optional">Optional</span></label><input id="chatpro-new-members" maxlength="180" placeholder="Lina, Omar, Noor"></div>':''}${kind==='unknown'?'<p class="sr-sheet-help">Your normal display name is hidden in this conversation.</p>':''}<button class="btn btn-primary entity-submit">${kind==='group'?'Create group':'Start chat'}</button></form>`);if(!s)return;document.getElementById('chatpro-new-form').onsubmit=e=>{e.preventDefault();const raw=document.getElementById('chatpro-new-name').value.trim();if(!raw)return;const id=uid(kind),name=kind==='unknown'?`Unknown #${Math.floor(1000+Math.random()*9000)}`:raw,participants=kind==='group'?['You',...document.getElementById('chatpro-new-members').value.split(',').map(x=>x.trim()).filter(Boolean)]:undefined;state.conversations.unshift({id,kind,name,topic:kind==='unknown'?raw:'',avatar:kind==='group'?'◎':kind==='unknown'?'?':raw[0].toUpperCase(),status:kind==='group'?`${participants.length} members`:kind==='unknown'?'anonymous relay':'new chat',participants,messages:[]});state.selected[kind]=id;saveChat(state);s.close();ui.mobileThread=true;render();};}
+  function openNewChatSheet(kind,state){const title=kind==='group'?'Create group':kind==='unknown'?'New anonymous message':'New private chat';const label=kind==='group'?'Group name':kind==='unknown'?'Topic':'Student name';const s=sheet(`<div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Dafatii Chat</div><h2>${title}</h2></div><button class="icon-btn" data-sheet-close>×</button></div><form id="chatpro-new-form"><div class="field"><label>${label}</label><input id="chatpro-new-name" maxlength="70" required placeholder="${kind==='group'?'e.g. Calculus Night Crew':kind==='unknown'?'e.g. Lecture 6 notes':'e.g. Sara'}"></div>${kind==='group'?'<div class="field"><label>Members <span class="field-optional">Optional</span></label><input id="chatpro-new-members" maxlength="180" placeholder="Lina, Omar, Noor"></div>':''}${kind==='unknown'?'<p class="sr-sheet-help">Your normal display name is hidden in this conversation.</p>':''}<button class="btn btn-primary entity-submit">${kind==='group'?'Create group':'Start chat'}</button></form>`);if(!s)return;document.getElementById('chatpro-new-form').onsubmit=e=>{e.preventDefault();const raw=document.getElementById('chatpro-new-name').value.trim();if(!raw)return;const id=uid(kind),name=kind==='unknown'?`Unknown #${Math.floor(1000+Math.random()*9000)}`:raw,participants=kind==='group'?['You',...document.getElementById('chatpro-new-members').value.split(',').map(x=>x.trim()).filter(Boolean)]:undefined;state.conversations.unshift({id,kind,name,topic:kind==='unknown'?raw:'',avatar:kind==='group'?'◎':kind==='unknown'?'?':raw[0].toUpperCase(),status:kind==='group'?`${participants.length} members`:kind==='unknown'?'anonymous relay':'new chat',participants,messages:[]});state.selected[kind]=id;saveChat(state);s.close();resetTransient();setHash(chatThreadRoute(kind,id));};}
   function openContactSheet(c,state){const s=sheet(`<div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Attachment</div><h2>Share contact</h2></div><button class="icon-btn" data-sheet-close>×</button></div><form id="chatpro-contact-form"><div class="field"><label>Name</label><input id="chatpro-contact-name" required></div><div class="field"><label>Phone / username</label><input id="chatpro-contact-value" required></div><button class="btn btn-primary entity-submit">Send contact</button></form>`);if(!s)return;document.getElementById('chatpro-contact-form').onsubmit=e=>{e.preventDefault();appendMessage(c,state,{type:'contact',contactName:document.getElementById('chatpro-contact-name').value.trim(),contactValue:document.getElementById('chatpro-contact-value').value.trim()});s.close();};}
   function shareLocation(c,state){if(!navigator.geolocation){showToast('Location is unavailable in this browser');return;}showToast('Requesting your location…');navigator.geolocation.getCurrentPosition(pos=>appendMessage(c,state,{type:'location',lat:pos.coords.latitude,lon:pos.coords.longitude}),()=>showToast('Location permission was not granted'),{enableHighAccuracy:false,timeout:8000});}
   function openPollSheet(c,state){const s=sheet(`<div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Group tool</div><h2>Create poll</h2></div><button class="icon-btn" data-sheet-close>×</button></div><form id="chatpro-poll-form"><div class="field"><label>Question</label><input id="chatpro-poll-q" maxlength="140" required></div><div class="field"><label>Options</label><input id="chatpro-poll-options" placeholder="Option 1, Option 2, Option 3" required></div><button class="btn btn-primary entity-submit">Send poll</button></form>`);if(!s)return;document.getElementById('chatpro-poll-form').onsubmit=e=>{e.preventDefault();const question=document.getElementById('chatpro-poll-q').value.trim(),options=document.getElementById('chatpro-poll-options').value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,8);if(options.length<2){showToast('Add at least two options');return;}appendMessage(c,state,{type:'poll',question,options:options.map(text=>({text,votes:0,voted:false}))});s.close();};}
