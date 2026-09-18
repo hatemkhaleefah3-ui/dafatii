@@ -24,7 +24,7 @@
       profile:'Student profile', identity:'Academic identity', contact:'Contact', studentCard:'Student card', cardHint:'Tap the card to flip it.', accessId:'Student access ID', pin:'PIN', reveal:'Reveal ID', hide:'Hide ID', secret:'Secret credential',
       oneTime:'Save your sign-in credentials', oneTimeText:'Your PIN is shown only for this signup session. Store it somewhere private before hiding it.', saved:'I saved them',
       changePhoto:'Change profile picture', uploading:'Uploading photo…', photoError:'Could not update the profile picture.', noId:'Student ID is available for accounts created with the new signup flow.',
-      born:'Birth date', location:'Location', academicField:'Academic field', organization:'School / institution', phoneLabel:'Phone', emailLabel:'Email'
+      born:'Birth date', location:'Location', academicField:'Academic field', organization:'School / institution', phoneLabel:'Phone', emailLabel:'Email', iraq:'Iraq', selectCity:'Select city', townHint:'Choose a suggested town or type any town name.', townToggle:'Show town suggestions'
     },
     ar: {
       step:'الخطوة', previous:'السابق', next:'التالي', create:'إنشاء الحساب', fullName:'الاسم الكامل', birthDate:'تاريخ الميلاد', country:'الدولة', city:'المدينة', town:'البلدة / المنطقة',
@@ -40,9 +40,32 @@
       profile:'الملف الشخصي للطالب', identity:'الهوية الأكاديمية', contact:'التواصل', studentCard:'بطاقة الطالب', cardHint:'اضغط على البطاقة لقلبها.', accessId:'رقم دخول الطالب', pin:'PIN', reveal:'إظهار الرقم', hide:'إخفاء الرقم', secret:'بيانات سرية',
       oneTime:'احفظ بيانات تسجيل الدخول', oneTimeText:'يظهر رمز PIN في جلسة إنشاء الحساب هذه فقط. احفظه في مكان خاص قبل إخفائه.', saved:'تم الحفظ',
       changePhoto:'تغيير الصورة الشخصية', uploading:'جارٍ رفع الصورة…', photoError:'تعذر تحديث الصورة الشخصية.', noId:'رقم الطالب متاح للحسابات المنشأة بنظام التسجيل الجديد.',
-      born:'تاريخ الميلاد', location:'الموقع', academicField:'الفرع الدراسي', organization:'المدرسة / المؤسسة', phoneLabel:'الهاتف', emailLabel:'البريد الإلكتروني'
+      born:'تاريخ الميلاد', location:'الموقع', academicField:'الفرع الدراسي', organization:'المدرسة / المؤسسة', phoneLabel:'الهاتف', emailLabel:'البريد الإلكتروني', iraq:'العراق', selectCity:'اختر المدينة', townHint:'اختر بلدة مقترحة أو اكتب اسم أي بلدة.', townToggle:'عرض اقتراحات البلدات'
     }
   };
+
+  const IRAQ_LOCATIONS = Object.freeze([
+    { value:'Baghdad', ar:'بغداد', towns:['Baghdad','Karrada','Kadhimiya','Adhamiya','Mansour','Sadr City','Dora','Abu Ghraib','Taji','Mahmudiya','Madain'] },
+    { value:'Basra', ar:'البصرة', towns:['Basra','Abu Al-Khasib','Al-Zubair','Shatt Al-Arab','Qurna','Al-Madina','Al-Faw'] },
+    { value:'Nineveh', ar:'نينوى', towns:['Mosul','Tal Afar','Hamdaniya','Qaraqosh','Sinjar','Bartella','Bashiqa'] },
+    { value:'Erbil', ar:'أربيل', towns:['Erbil','Ankawa','Shaqlawa','Soran','Koya','Mergasor','Choman'] },
+    { value:'Najaf', ar:'النجف', towns:['Najaf','Kufa','Manathira','Mishkhab','Haydariya','Abbasiya'] },
+    { value:'Karbala', ar:'كربلاء', towns:['Karbala','Hindiyah','Ain al-Tamr','Al-Hur','Husayniyah'] },
+    { value:'Kirkuk', ar:'كركوك', towns:['Kirkuk','Hawija','Daquq','Dibis','Altun Kupri','Taza'] },
+    { value:'Sulaymaniyah', ar:'السليمانية', towns:['Sulaymaniyah','Chamchamal','Ranya','Kalar','Penjwin','Dukan','Darbandikhan'] },
+    { value:'Duhok', ar:'دهوك', towns:['Duhok','Zakho','Amedi','Akre','Semel','Bardarash'] },
+    { value:'Anbar', ar:'الأنبار', towns:['Ramadi','Fallujah','Hit','Haditha','Rutba','Al-Qaim','Khalidiyah','Habbaniyah'] },
+    { value:'Babil', ar:'بابل', towns:['Hillah','Musayyib','Mahawil','Hashimiyah','Al-Qasim','Iskandariya'] },
+    { value:'Diyala', ar:'ديالى', towns:['Baqubah','Khanaqin','Muqdadiyah','Khalis','Balad Ruz','Mandali'] },
+    { value:'Dhi Qar', ar:'ذي قار', towns:['Nasiriyah','Shatra','Suq al-Shuyukh','Rifai','Qalat Sukkar','Chibayish'] },
+    { value:'Maysan', ar:'ميسان', towns:['Amarah','Ali al-Sharqi','Ali al-Gharbi','Majar al-Kabir','Qalat Saleh','Kumait'] },
+    { value:'Muthanna', ar:'المثنى', towns:['Samawah','Rumaitha','Khidr','Salman','Warka'] },
+    { value:'Al-Qadisiyah', ar:'القادسية', towns:['Diwaniyah','Afak','Shamiya','Hamza','Ghammas','Shinafiya'] },
+    { value:'Salah al-Din', ar:'صلاح الدين', towns:['Tikrit','Samarra','Balad','Baiji','Dujail','Shirqat','Dhuluiya'] },
+    { value:'Wasit', ar:'واسط', towns:['Kut','Al-Hay','Suwaira','Numaniyah','Badra','Aziziya','Zurbatiyah'] }
+  ]);
+  const iraqLocation = city => IRAQ_LOCATIONS.find(item => item.value === city) || null;
+  const cityLabel = item => language() === 'ar' ? item.ar : item.value;
 
   const levels = Object.freeze({
     primary_school: { label:'primary', stages:['sixth'], fields:null, org:'school' },
@@ -81,6 +104,29 @@
   function field(name, label, input) { return `<div class="field student-flow-field"><label>${esc(label)}</label>${input.replace('<input ', `<input name="${name}" `).replace('<select ', `<select name="${name}" `)}</div>`; }
   const option = (value, label, selected = false) => `<option value="${esc(value)}"${selected ? ' selected' : ''}>${esc(label)}</option>`;
   const valueOf = (name, fallback = '') => signupDraft[name] ?? fallback;
+  function townOptions(city, query = '') {
+    const location = iraqLocation(city);
+    const needle = String(query || '').trim().toLowerCase();
+    const towns = location ? location.towns : [];
+    const filtered = needle ? towns.filter(name => name.toLowerCase().includes(needle)) : towns;
+    return filtered.map(name => `<button type="button" role="option" data-town-value="${esc(name)}">${esc(name)}</button>`).join('');
+  }
+  function locationStep() {
+    const selectedCity = valueOf('city');
+    const cityOptions = IRAQ_LOCATIONS.map(item => option(item.value, cityLabel(item), item.value === selectedCity)).join('');
+    return `${progress()}<div class="student-flow-step">
+      ${field('country', t('country'), `<select autocomplete="country-name" required>${option('Iraq', t('iraq'), true)}</select>`)}
+      ${field('city', t('city'), `<select autocomplete="address-level1" required>${option('', t('selectCity'), !selectedCity)}${cityOptions}</select>`)}
+      <div class="field student-flow-field"><label>${esc(t('town'))}</label>
+        <div class="student-flow-combobox" data-town-combobox>
+          <input name="town" autocomplete="address-level2" maxlength="120" value="${esc(valueOf('town'))}" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="student-town-options" required>
+          <button type="button" class="student-flow-combobox-toggle" data-town-toggle aria-label="${esc(t('townToggle'))}" aria-expanded="false">⌄</button>
+          <div class="student-flow-combobox-menu" id="student-town-options" data-town-menu role="listbox" hidden>${townOptions(selectedCity, valueOf('town'))}</div>
+        </div>
+        <p class="student-flow-hint">${esc(t('townHint'))}</p>
+      </div>
+    </div>`;
+  }
 
   function progress() {
     return `<div class="student-flow-progress" aria-label="${esc(t('step'))} ${signupStep} / 5"><div>${[1,2,3,4,5].map(step => `<span class="${step === signupStep ? 'active' : step < signupStep ? 'done' : ''}"></span>`).join('')}</div><strong>${esc(t('step'))} ${signupStep} / 5</strong></div>`;
@@ -106,7 +152,7 @@
 
   function signupBody() {
     if (signupStep === 1) return `${progress()}<div class="student-flow-step">${field('displayName', t('fullName'), `<input autocomplete="name" maxlength="100" value="${esc(valueOf('displayName'))}" required>`)}${field('birthDate', t('birthDate'), `<input type="date" autocomplete="bday" value="${esc(valueOf('birthDate'))}" required>`)}</div>`;
-    if (signupStep === 2) return `${progress()}<div class="student-flow-step">${field('country', t('country'), `<input autocomplete="country-name" maxlength="120" value="${esc(valueOf('country'))}" required>`)}${field('city', t('city'), `<input autocomplete="address-level2" maxlength="120" value="${esc(valueOf('city'))}" required>`)}${field('town', t('town'), `<input autocomplete="address-level3" maxlength="120" value="${esc(valueOf('town'))}" required>`)}</div>`;
+    if (signupStep === 2) return locationStep();
     if (signupStep === 3) {
       const levelValue = levels[valueOf('academicLevel')] ? valueOf('academicLevel') : 'primary_school';
       return `${progress()}<div class="student-flow-step">${field('academicLevel', t('level'), `<select required>${Object.entries(levels).map(([key,rule]) => option(key, t(rule.label), key === levelValue)).join('')}</select>`)}<div class="academic-dependent">${dependentAcademic(levelValue)}</div></div>`;
@@ -134,9 +180,59 @@
     }
   }
 
+  function bindLocationStep(form) {
+    const country = form.elements.country;
+    const city = form.elements.city;
+    const town = form.elements.town;
+    const combo = form.querySelector('[data-town-combobox]');
+    const menu = form.querySelector('[data-town-menu]');
+    const toggle = form.querySelector('[data-town-toggle]');
+    if (country) country.value = 'Iraq';
+    if (!city || !town || !combo || !menu || !toggle) return;
+    const closeMenu = () => {
+      menu.hidden = true;
+      town.setAttribute('aria-expanded','false');
+      toggle.setAttribute('aria-expanded','false');
+    };
+    const renderTownMenu = (open = true) => {
+      menu.innerHTML = townOptions(city.value, town.value);
+      const hasOptions = Boolean(menu.children.length);
+      menu.hidden = !open || !hasOptions;
+      const expanded = open && hasOptions;
+      town.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-expanded', String(expanded));
+    };
+    city.addEventListener('change', () => {
+      signupDraft.city = city.value;
+      signupDraft.town = '';
+      town.value = '';
+      renderTownMenu(false);
+    });
+    town.addEventListener('input', () => renderTownMenu(true));
+    town.addEventListener('focus', () => renderTownMenu(true));
+    toggle.addEventListener('click', () => {
+      if (!city.value) { city.focus(); return; }
+      if (menu.hidden) renderTownMenu(true);
+      else closeMenu();
+    });
+    menu.addEventListener('mousedown', event => event.preventDefault());
+    menu.addEventListener('click', event => {
+      const item = event.target.closest('[data-town-value]');
+      if (!item) return;
+      town.value = item.dataset.townValue || '';
+      signupDraft.town = town.value;
+      closeMenu();
+      town.focus();
+    });
+    document.addEventListener('pointerdown', event => {
+      if (!combo.contains(event.target)) closeMenu();
+    }, { once:true, capture:true });
+  }
+
   function renderSignup(form) {
     form.dataset.studentFlowBound = 'signup';
     form.innerHTML = `${signupBody()}${actions()}`;
+    if (signupStep === 2) bindLocationStep(form);
     const level = form.elements.academicLevel;
     if (level) level.onchange = () => {
       signupDraft.academicLevel = level.value;
