@@ -221,34 +221,55 @@
     const subject=draft.subjects?.[0]||emptyTeacherDraft().subjects[0];
     return `<form id="admin-teacher-form"><div class="admin-teacher-profile-form">
       <div class="admin-teacher-picture-preview" id="admin-teacher-picture-preview">${draft.imageUrl?`<img src="${esc(draft.imageUrl)}" alt="">`:`<span>${esc((draft.displayName||'T').slice(0,1).toUpperCase())}</span>`}</div>
-      <div class="admin-teacher-profile-fields"><div class="field"><label>${esc(tx('Teacher profile picture','صورة المدرس'))}</label><input id="admin-teacher-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" ${adding&&!draft.imageUrl?'required':''}><small>${esc(tx('PNG, JPEG, WebP or GIF, up to 220 KB.','PNG أو JPEG أو WebP أو GIF، حتى 220 كيلوبايت.'))}</small></div>
+      <div class="admin-teacher-profile-fields"><div class="field"><label>${esc(tx('Teacher profile picture','صورة المدرس'))}</label><input id="admin-teacher-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" ${adding&&!draft.imageUrl?'required':''}><small>${esc(tx('PNG, JPEG, WebP or GIF. Stored privately in Google Drive with no Dafatii profile-picture size cap.','PNG أو JPEG أو WebP أو GIF. تُحفظ بشكل خاص في Google Drive دون حد حجم لصورة الملف من دفاتري.'))}</small></div>
       <div class="field"><label>${esc(tx('Teacher name','اسم المدرس'))}</label><input id="admin-teacher-name" value="${esc(draft.displayName||'')}" required maxlength="100"></div>
       <div class="field"><label>${esc(tx('Subject','المادة'))}</label><select id="admin-teacher-subject" required>${SUBJECTS.map(([id,en,arabicName])=>`<option value="${id}" ${id===subject.id?'selected':''}>${esc(ar()?arabicName:en)}</option>`).join('')}</select></div></div>
     </div><button class="btn btn-primary auth-submit">${esc(adding?tx('Add teacher','إضافة المدرس'):tx('Save profile','حفظ الملف'))}</button><p class="auth-note" id="admin-teacher-status"></p></form>`;
   }
 
-  function readTeacherPicture(file){
-    return new Promise((resolve,reject)=>{
-      if(!file)return resolve('');
-      if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type))return reject(new Error(tx('Use a PNG, JPEG, WebP or GIF image.','استخدم صورة PNG أو JPEG أو WebP أو GIF.')));
-      if(file.size>220*1024)return reject(new Error(tx('Teacher picture must be 220 KB or smaller.','يجب ألا تتجاوز صورة المدرس 220 كيلوبايت.')));
-      const reader=new FileReader();reader.onerror=()=>reject(new Error(tx('Could not read the selected picture.','تعذر قراءة الصورة المحددة.')));reader.onload=()=>resolve(String(reader.result||''));reader.readAsDataURL(file);
-    });
+  function validateTeacherPicture(file){
+    if(!file)return null;
+    if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type))throw new Error(tx('Use a PNG, JPEG, WebP or GIF image.','استخدم صورة PNG أو JPEG أو WebP أو GIF.'));
+    return file;
   }
 
   function openTeacherEditor(teacher=null){
     const adding=!teacher,draft=teacher?clone(teacher):emptyTeacherDraft();if(!draft.subjects?.length)draft.subjects=emptyTeacherDraft().subjects;
     const close=overlay(adding?tx('Add teacher','إضافة مدرس'):tx('Edit teacher profile','تعديل ملف المدرس'),teacherProfileEditorHtml(draft,adding));
     const picture=document.getElementById('admin-teacher-image-file');
-    picture.onchange=async()=>{const status=document.getElementById('admin-teacher-status');try{draft.imageUrl=await readTeacherPicture(picture.files?.[0]);document.getElementById('admin-teacher-picture-preview').innerHTML=draft.imageUrl?`<img src="${esc(draft.imageUrl)}" alt="">`:'';status.textContent='';}catch(error){picture.value='';status.textContent=error.message;}};
+    let selectedPicture=null,previewUrl='';
+    picture.onchange=()=>{
+      const status=document.getElementById('admin-teacher-status');
+      try{
+        selectedPicture=validateTeacherPicture(picture.files?.[0]);
+        if(previewUrl)URL.revokeObjectURL(previewUrl);
+        previewUrl=selectedPicture?URL.createObjectURL(selectedPicture):'';
+        document.getElementById('admin-teacher-picture-preview').innerHTML=previewUrl?`<img src="${esc(previewUrl)}" alt="">`:draft.imageUrl?`<img src="${esc(draft.imageUrl)}" alt="">`:'';
+        status.textContent='';
+      }catch(error){selectedPicture=null;picture.value='';status.textContent=error.message;}
+    };
     document.getElementById('admin-teacher-form').onsubmit=async e=>{
-      e.preventDefault();const displayName=document.getElementById('admin-teacher-name').value.trim(),subjectId=document.getElementById('admin-teacher-subject').value,status=document.getElementById('admin-teacher-status');
-      if(!draft.imageUrl){status.textContent=tx('Add a teacher profile picture.','أضف صورة للمدرس.');return;}status.textContent=tx('Saving…','جارٍ الحفظ…');
+      e.preventDefault();
+      const displayName=document.getElementById('admin-teacher-name').value.trim(),subjectId=document.getElementById('admin-teacher-subject').value,status=document.getElementById('admin-teacher-status');
+      if(adding&&!selectedPicture){status.textContent=tx('Add a teacher profile picture.','أضف صورة للمدرس.');return;}
       const previous=draft.subjects?.[0],meta=SUBJECTS.find(item=>item[0]===subjectId)||SUBJECTS[0],subject={id:subjectId,name:meta[1],fameScore:Number(previous?.fameScore||0),chapters:previous?.id===subjectId?clone(previous.chapters||[]):[]};
-      try{await window.DafatiiApi.request(adding?'/admin/teachers':`/admin/teachers/${teacher.id}`,{method:adding?'POST':'PATCH',body:{displayName,imageUrl:draft.imageUrl,subjects:[subject]}});close();data.loaded=false;await load(true);}catch(error){status.textContent=error.message;}
+      let uploaded=null;
+      try{
+        const body={displayName,subjects:[subject]};
+        if(selectedPicture){
+          status.textContent=tx('Uploading profile picture to Google Drive…','جارٍ رفع صورة المدرس إلى Google Drive…');
+          uploaded=await window.DafatiiFiles.upload(selectedPicture,{purpose:'teacher-profile',onProgress:progress=>{status.textContent=tx(`Uploading profile picture… ${Math.round(progress.ratio*100)}%`,`جارٍ رفع صورة المدرس… ${Math.round(progress.ratio*100)}٪`);}});
+          body.imageFileId=uploaded.id;
+        }else status.textContent=tx('Saving…','جارٍ الحفظ…');
+        await window.DafatiiApi.request(adding?'/admin/teachers':`/admin/teachers/${teacher.id}`,{method:adding?'POST':'PATCH',body});
+        if(previewUrl)URL.revokeObjectURL(previewUrl);
+        close();data.loaded=false;await load(true);
+      }catch(error){
+        if(uploaded?.id)void window.DafatiiFiles.delete(uploaded.id).catch(()=>{});
+        status.textContent=error.message;
+      }
     };
   }
-
   function contentDraftFor(teacher){
     if(!teacherContentDraft||teacherContentDraft.teacherId!==teacher.id){const source=teacher.subjects?.[0]||emptyTeacherDraft().subjects[0];teacherContentDraft={teacherId:teacher.id,subject:clone(source)};}
     return teacherContentDraft;
