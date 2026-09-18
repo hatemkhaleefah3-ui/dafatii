@@ -162,7 +162,7 @@
       <div class="chatpro-composer">
         <button id="chatpro-attach" title="Attach" aria-label="Attach">${icon('attach')}</button>
         <button id="chatpro-emoji" title="Emoji" aria-label="Emoji">${icon('smile')}</button>
-        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea>
+        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="${esc(c.kind===\'unknown\'?\'Reply anonymously…\':`Message ${c.name}…`)}">${esc(draft)}</textarea>
         <button id="chatpro-voice" title="Voice message" aria-label="Voice message">${icon('mic')}</button>
         <button id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
         <button id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
