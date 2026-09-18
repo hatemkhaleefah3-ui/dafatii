@@ -4,7 +4,7 @@
   const KEY='dafatii:onboarding:v1';
   const LEVELS=['beginner','intermediate','advanced','expert'];
   const SUBJECT_ICONS={arabic:'✎',english:'Aa',math:'∑',chemistry:'🧪',physics:'⚛',biology:'🧬',islamic_book:'📚'};
-  let teacherCatalog=null,teacherStep=0,view='auto',chosenField='',chosenLevel='',busy=false,message='',waitingCourseId='';
+  let teacherCatalog=null,teacherStep=0,view='auto',chosenField='',chosenLevel='',busy=false,message='',waitingCourseId='',resolving=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const user=()=>window.DafatiiAuth?.user||null;
@@ -299,21 +299,32 @@
   async function render(force=false){
     if(!blocks())return false;
     if(location.hash!=='#onboarding'){location.hash='onboarding';return true;}
-    if(force){teacherCatalog=null;view='auto';}
+    if(force){teacherCatalog=null;view='auto';message='';}
     draw();
-    if(view==='auto'){
+
+    const needsResolve=view==='auto'||((view==='teachers'||view==='teacher-error')&&!teacherCatalog);
+    if(!needsResolve)return true;
+    if(resolving)return true;
+
+    resolving=(async()=>{
       busy=true;
       try{
-        // New accounts can render Process 1 without Course discovery. Only resume/recovery states need server Course state first.
-        const record=read();
-        if(isHigher()&&(record?.legacyRecovery||record?.primaryComplete))await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
+        if(view==='auto'){
+          // New accounts can render Process 1 without Course discovery. Only resume/recovery states need server Course state first.
+          const record=read();
+          if(isHigher()&&(record?.legacyRecovery||record?.primaryComplete))await withDeadline(window.DafatiiCourses?.refresh?.(),'Course setup');
+        }
         await determineView();
+      }catch(error){
+        message=error.message||String(error);
+        view='teacher-error';
+      }finally{
+        busy=false;
+        resolving=null;
+        draw();
       }
-      catch(error){message=error.message||String(error);view='teacher-error';}
-      busy=false;draw();
-    }else if((view==='teachers'||view==='teacher-error')&&!teacherCatalog){
-      busy=true;draw();try{await determineView();}catch(error){message=error.message||String(error);view='teacher-error';}busy=false;draw();
-    }
+    })();
+    await resolving;
     return true;
   }
 

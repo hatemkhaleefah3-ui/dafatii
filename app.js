@@ -542,9 +542,12 @@ window.addEventListener('dafatii:auth:availability',()=>{
   if(route()==='join'&&!document.getElementById('auth-form')?.dataset.submitting) join();
 });
 window.addEventListener('online',()=>{ if(window.DafatiiAuth?.availability==='offline') window.DafatiiAuth.current(); });
-window.addEventListener('dafatii:datahydrated',()=>{
+window.addEventListener('dafatii:datahydrated',async()=>{
   state.subjects = loadSubjects();
   state.lectures = loadLectures();
+  if(state.joined&&!window.DafatiiOnboarding?.blocks?.()&&!window.DafatiiCourses.active().id){
+    try{await window.DafatiiCourses.refresh();}catch(error){console.warn('Course access unavailable.',error.code||error.message);}
+  }
   render();
 });
 window.addEventListener('dafatii:coursechanged',()=>{
@@ -558,12 +561,15 @@ window.addEventListener('dafatii:coursesloaded',()=>{
   if(window.DafatiiCourses.active().id&&route()==='onboarding')setHash('dashboard/Overview');
   else render();
 });
-window.addEventListener('dafatii:auth:changed',async event=>{
+window.addEventListener('dafatii:auth:changed',event=>{
   state.joined=Boolean(event.detail.user);state.authReady=true;
-  if(state.joined){try{await window.DafatiiCourses.refresh();}catch(error){console.warn('Course access unavailable.',error.code||error.message);}}
+  // Student Course state is resolved after data hydration so onboarding can own a new signup without competing schema/API work.
+  if(state.joined&&event.detail.user?.accountType!=='student'){
+    window.DafatiiCourses.refresh().catch(error=>console.warn('Course access unavailable.',error.code||error.message));
+  }
   render();
 });
 window.addEventListener('dafatii:coursewriteerror',event=>{showToast(event.detail.error?.message||'Course change was not saved.');state.subjects=loadSubjects();state.lectures=loadLectures();render();});
 window.addEventListener('DOMContentLoaded',()=>{applyInterfaceTheme();applyInterfaceLanguage();if(!location.hash)location.hash='landing';else render();});
-setInterval(()=>{if(state.joined&&!window.DafatiiCourses.active().id&&document.visibilityState==='visible')window.DafatiiCourses.refresh().catch(()=>{});},60000);
-window.addEventListener('focus',()=>{if(state.joined&&!window.DafatiiCourses.active().id)window.DafatiiCourses.refresh().catch(()=>{});});
+setInterval(()=>{if(state.joined&&!window.DafatiiOnboarding?.blocks?.()&&!window.DafatiiCourses.active().id&&document.visibilityState==='visible')window.DafatiiCourses.refresh().catch(()=>{});},60000);
+window.addEventListener('focus',()=>{if(state.joined&&!window.DafatiiOnboarding?.blocks?.()&&!window.DafatiiCourses.active().id)window.DafatiiCourses.refresh().catch(()=>{});});
