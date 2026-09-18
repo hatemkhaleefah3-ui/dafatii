@@ -6,8 +6,9 @@
   const now=()=>Date.now();
   const uid=p=>`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
   const esc=v=>escapeHtml(v??'');
+  const icon=(name,extra='')=>window.DafatiiChatShell?.icon?.(name,extra)||'';
   let voiceRecorder=null,voiceStream=null,voiceChunks=[],voiceConversationId='';
-  const ui={filter:'all',query:'',info:false,search:false,searchQuery:'',menuMessage:'',replyTo:'',editing:'',attach:false,emoji:false,sticker:false,mobileThread:false};
+  const ui={section:'',filter:'all',query:'',info:false,search:false,searchQuery:'',menuMessage:'',replyTo:'',editing:'',attach:false,emoji:false,sticker:false,mobileThread:false};
 
   function read(key,fallback){return window.DafatiiCourses.readJSON(key,fallback);}
   function write(key,value){try{window.DafatiiCourses.writeJSON(key,value);return true;}catch{showToast('Browser storage is full. Remove large chat media and try again.');return false;}}
@@ -52,6 +53,7 @@
 
   function proChatView(parts){
     const section=currentSub(parts),kind=kindFromSub(section);
+    if(ui.section!==section){ui.section=section;ui.filter='all';ui.query='';resetTransient();}
     const state=chatState(),pro=proState();
     processScheduled(state,pro);
     const conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);
@@ -60,7 +62,6 @@
     if(selected)state.selected[kind]=selected.id;
     const content=selected
       ? `<section class="chatpro-page route-thread" data-kind="${kind}" data-selected="${esc(selected.id)}">
-          <div class="chatpro-route-head"><a href="#${chatThreadRoute(kind)}" aria-label="Back to ${esc(subLabel(kind))}">←</a><div><small>${esc(subLabel(kind))}</small><strong>${esc(selected.name)}</strong></div></div>
           <div class="chatpro-shell thread-only">
             <main class="chatpro-thread">${threadView(selected,state,pro)}</main>
             ${ui.info?infoPanel(selected,state,pro):''}
@@ -71,17 +72,19 @@
           <div class="chatpro-shell list-only">
             <aside class="chatpro-rail">
               ${railHeader(kind)}
-              ${statusStrip(kind,state)}
-              ${filterBar()}
               <div class="chatpro-list" id="chatpro-list">${conversationList(conversations,'',pro)}</div>
             </aside>
           </div>
           <div id="chatpro-layer"></div>
         </section>`;
-    return window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected)})||content;
+    return window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected),subpage:ui.filter})||content;
   }
   function sortConversations(conversations,pro){return [...conversations].sort((a,b)=>{const ma=metaFor(pro,a.id),mb=metaFor(pro,b.id);if(ma.pinned!==mb.pinned)return ma.pinned?-1:1;return Number(lastMessage(b)?.at||0)-Number(lastMessage(a)?.at||0);});}
-  function railHeader(kind){return `<div class="chatpro-rail-head"><div><div class="eyebrow">Dafatii Chat</div><h1>${esc(subLabel(kind))}</h1></div><div class="chatpro-rail-actions"><button id="chatpro-new" title="New chat">＋</button><button id="chatpro-rail-menu" title="Chat menu">⋮</button></div></div><label class="chatpro-search"><span>⌕</span><input id="chatpro-search" value="${esc(ui.query)}" placeholder="Search chats and people"><kbd>⌘K</kbd></label>`;}
+  function railHeader(kind){
+    const description=kind==='group'?'Your study groups and course conversations.':kind==='unknown'?'Private identity-hidden conversations.':'People and direct conversations.';
+    return `<div class="chatpro-list-head"><div><h1>${esc(subLabel(kind))}</h1><p>${esc(description)}</p></div><button id="chatpro-new" class="chatpro-primary-action" title="New conversation" aria-label="New conversation">${icon('plus')}</button></div>
+      <div class="chatpro-search-row"><label class="chatpro-search">${icon('search')}<input id="chatpro-search" value="${esc(ui.query)}" placeholder="Search chats and people"></label><button id="chatpro-rail-menu" class="chatpro-filter-button" title="Chat tools" aria-label="Chat tools">${icon('sliders')}</button></div>`;
+  }
   function statusStrip(kind,state){if(kind==='unknown')return `<div class="chatpro-anon-banner"><strong>◌ Anonymous inbox</strong><span>Your profile identity stays hidden in this section. Report and block controls remain available.</span></div>`;const people=state.conversations.filter(c=>c.kind===kind).slice(0,6);return `<div class="chatpro-status-strip"><button class="chatpro-status-add"><span>＋</span><small>New</small></button>${people.map((c,i)=>`<button class="chatpro-status"><span class="ring ${i<3?'active':''}"><b>${esc(c.avatar||c.name?.[0]||'?')}</b></span><small>${esc((c.name||'').split(' ')[0])}</small></button>`).join('')}</div>`;}
   function filterBar(){return `<div class="chatpro-filters">${[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']].map(([id,label])=>`<button data-filter="${id}" class="${ui.filter===id?'active':''}">${label}</button>`).join('')}</div>`;}
   function conversationList(conversations,selectedId,pro){
@@ -90,22 +93,58 @@
     if(!filtered.length)return `<div class="chatpro-empty-list"><div>⌁</div><strong>No chats match</strong><span>Try another filter or search.</span></div>`;
     return filtered.map(c=>conversationRow(c,c.id===selectedId,pro)).join('');
   }
-  function conversationRow(c,active,pro){const m=lastMessage(c),meta=metaFor(pro,c.id),draft=pro.drafts[c.id],unread=Number(c.unread||0)+(meta.unread?1:0);return `<article class="chatpro-conversation ${active?'active':''}" data-open-chat="${esc(c.id)}"><button class="chatpro-conv-main"><span class="chatpro-avatar ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span class="chatpro-conv-copy"><span class="chatpro-conv-title"><strong>${esc(c.name)}</strong>${meta.muted?'<i title="Muted">⌁</i>':''}${meta.pinned?'<i title="Pinned">⌖</i>':''}</span><span class="chatpro-preview ${draft?'draft':''}">${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span></span><span class="chatpro-conv-meta"><time>${m?rel(m.at):''}</time>${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span></button><button class="chatpro-conv-more" data-conv-more="${esc(c.id)}" aria-label="Conversation options">⋮</button></article>`;}
+  function conversationRow(c,active,pro){
+    const m=lastMessage(c),meta=metaFor(pro,c.id),draft=pro.drafts[c.id],unread=Number(c.unread||0)+(meta.unread?1:0);
+    const initial=esc(c.avatar||c.name?.[0]||'?');
+    return `<article class="chatpro-conversation ${active?'active':''}" data-open-chat="${esc(c.id)}">
+      <button class="chatpro-conv-main">
+        <span class="chatpro-avatar ${c.status==='online'?'online':''}">${initial}</span>
+        <span class="chatpro-conv-copy">
+          <span class="chatpro-conv-title"><strong>${esc(c.name)}</strong><span class="chatpro-title-icons">${meta.muted?icon('mute'):''}${meta.pinned?icon('pin'):''}</span></span>
+          <span class="chatpro-preview ${draft?'draft':''}">${draft?`Draft: ${esc(draft)}`:esc(preview(m))}</span>
+        </span>
+        <span class="chatpro-conv-meta"><time>${m?rel(m.at):''}</time>${unread?`<b>${unread>99?'99+':unread}</b>`:''}</span>
+      </button>
+      <button class="chatpro-conv-more" data-conv-more="${esc(c.id)}" aria-label="Conversation options">${icon('more')}</button>
+    </article>`;
+  }
 
-  function threadView(c,state,pro){const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;return `${threadHeader(c,state,pro)}${pinned?`<button class="chatpro-pinned" id="chatpro-pinned"><span>⌖</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>›</b></button>`:''}${ui.search?threadSearch(c):''}<div class="chatpro-messages" id="chatpro-messages">${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;}
-  function threadHeader(c,state,pro){const blocked=state.blocked.includes(c.id);return `<div class="chatpro-thread-head"><button class="chatpro-mobile-back" id="chatpro-mobile-back">‹</button><button class="chatpro-person" id="chatpro-info"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button><div class="chatpro-head-actions"><button id="chatpro-call" title="Voice call">☎</button><button id="chatpro-video-call" title="Video call">▣</button><button id="chatpro-thread-search" title="Search in conversation">⌕</button>${c.kind==='unknown'?`<button id="chatpro-report" class="danger-text">Report</button>`:''}<button id="chatpro-info-button" title="Chat info">ⓘ</button></div></div>`;}
-  function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search"><span>⌕</span><input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close">×</button></div>`;}
+  function threadView(c,state,pro){const blocked=state.blocked.includes(c.id),settings=pro.chatSettings[c.id]||{},pinned=settings.pinnedMessageId?c.messages.find(m=>m.id===settings.pinnedMessageId):null;return `${threadHeader(c,state,pro)}${pinned?`<button class="chatpro-pinned" id="chatpro-pinned"><span>${icon('pin')}</span><div><strong>Pinned message</strong><small>${esc(preview(pinned))}</small></div><b>${icon('chevronRight')}</b></button>`:''}${ui.search?threadSearch(c):''}<div class="chatpro-messages" id="chatpro-messages">${messageTimeline(c,pro)}</div>${blocked?blockedBar(c):composer(c,pro)}`;}
+  function threadHeader(c,state,pro){
+    const blocked=state.blocked.includes(c.id);
+    return `<div class="chatpro-thread-head">
+      <button class="chatpro-mobile-back" id="chatpro-mobile-back" aria-label="Back">${icon('back')}</button>
+      <button class="chatpro-person" id="chatpro-info"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button>
+      <div class="chatpro-head-actions"><button id="chatpro-call" title="Voice call" aria-label="Voice call">${icon('phone')}</button><button id="chatpro-video-call" title="Video call" aria-label="Video call">${icon('video')}</button><button id="chatpro-thread-search" title="Search in conversation" aria-label="Search">${icon('search')}</button>${c.kind==='unknown'?`<button id="chatpro-report" class="danger-text">Report</button>`:''}<button id="chatpro-info-button" title="Chat info" aria-label="Chat info">${icon('info')}</button></div>
+    </div>`;
+  }
+  function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search">${icon('search')}<input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close" aria-label="Close search">${icon('close')}</button></div>`;}
   function messageTimeline(c,pro){if(!c.messages.length)return `<div class="chatpro-empty-thread"><div>✦</div><h2>No messages yet</h2><p>Start the conversation or share a study file.</p></div>`;let lastDay='';return c.messages.map(m=>{const day=fmtDay(m.at);const marker=day!==lastDay?`<div class="chatpro-day"><span>${esc(day)}</span></div>`:'';lastDay=day;return marker+messageRow(m,c,pro);}).join('');}
   function messageRow(m,c,pro){const reply=m.replyTo?c.messages.find(x=>x.id===m.replyTo):null,starred=Boolean(pro.starred[c.id]?.[m.id]);return `<div class="chatpro-msg-row ${m.mine?'mine':'theirs'} ${ui.menuMessage===m.id?'menu-open':''}" data-message-id="${esc(m.id)}"><div class="chatpro-msg-wrap">${c.kind==='group'&&!m.mine?`<small class="chatpro-sender">${esc(m.sender||c.name)}</small>`:''}<div class="chatpro-bubble ${m.type&&m.type!=='text'?'media':''} ${m.deleted?'deleted':''}">${m.forwarded?'<div class="chatpro-forwarded">↪ Forwarded</div>':''}${reply?`<button class="chatpro-reply-quote" data-jump-message="${esc(reply.id)}"><strong>${esc(reply.mine?'You':reply.sender||c.name)}</strong><span>${esc(preview(reply))}</span></button>`:''}${renderMessage(m)}<div class="chatpro-msg-foot">${m.edited?'<span>edited</span>':''}${starred?'<span>★</span>':''}<time>${esc(fmtTime(m.at))}</time>${m.mine?`<span class="chatpro-status ${m.status==='read'?'read':''}">✓✓</span>`:''}</div></div>${renderReactions(m)}<div class="chatpro-hover-actions"><button data-quick-react="❤️">♡</button><button data-message-reply>↩</button><button data-message-more>⋮</button></div>${ui.menuMessage===m.id?messageMenu(m,c,starred):''}</div></div>`;}
   function renderMessage(m){if(m.deleted)return `<div class="chatpro-deleted">⊘ This message was deleted</div>`;if(m.type==='image')return `<img class="chatpro-image" src="${esc(m.data)}" alt="Shared image">${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='video')return `<video class="chatpro-video" src="${esc(m.data)}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='voice')return `<div class="chatpro-voice"><button>▶</button><audio src="${esc(m.data)}" controls preload="metadata"></audio><span>🎙</span></div>`;if(m.type==='file')return `<a class="chatpro-file" href="${esc(m.data)}" download="${esc(m.name||'document')}"><span>▤</span><div><strong>${esc(m.name||'Document')}</strong><small>${esc(m.sizeLabel||'File')}</small></div><b>⇩</b></a>`;if(m.type==='sticker')return `<div class="chatpro-sticker">${esc(m.text||'✨')}</div>`;if(m.type==='custom-sticker')return `<div class="chatpro-custom-sticker"><span>${esc(m.emoji||'✨')}</span><strong>${esc(m.text||'Study mode')}</strong></div>`;if(m.type==='gif')return `<img class="chatpro-gif" src="${esc(m.data)}" alt="GIF">`;if(m.type==='gif-maker')return `<div class="chatpro-made-gif"><span>${esc(m.frame1||'FOCUS')}</span><span>${esc(m.frame2||'DONE')}</span></div>`;if(m.type==='contact')return `<div class="chatpro-contact"><span>👤</span><div><strong>${esc(m.contactName||'Contact')}</strong><small>${esc(m.contactValue||'')}</small></div><button data-contact-save>Save</button></div>`;if(m.type==='location')return `<a class="chatpro-location" href="https://www.openstreetmap.org/?mlat=${Number(m.lat)}&mlon=${Number(m.lon)}#map=15/${Number(m.lat)}/${Number(m.lon)}" target="_blank" rel="noopener noreferrer"><span>📍</span><div><strong>Shared location</strong><small>${Number(m.lat).toFixed(4)}, ${Number(m.lon).toFixed(4)}</small></div></a>`;if(m.type==='poll')return pollView(m);return `<div class="chatpro-text">${linkify(esc(m.text||''))}</div>`;}
   function linkify(text){return text.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');}
   function pollView(m){const total=(m.options||[]).reduce((s,o)=>s+Number(o.votes||0),0)||1;return `<div class="chatpro-poll"><strong>📊 ${esc(m.question||'Poll')}</strong>${(m.options||[]).map((o,i)=>`<button data-poll-vote="${i}" class="${o.voted?'voted':''}"><span>${esc(o.text)}</span><b>${Math.round((Number(o.votes||0)/total)*100)}%</b><i style="--poll:${Math.round((Number(o.votes||0)/total)*100)}%"></i></button>`).join('')}</div>`;}
   function renderReactions(m){const r=Object.entries(m.reactions||{}).filter(([,n])=>n>0);return r.length?`<div class="chatpro-reactions">${r.map(([e,n])=>`<button data-reaction="${esc(e)}">${esc(e)} ${n}</button>`).join('')}</div>`:'';}
-  function messageMenu(m,c,starred){return `<div class="chatpro-msg-menu"><button data-message-action="reply">↩ Reply</button><button data-message-action="forward">↪ Forward</button><button data-message-action="star">${starred?'☆ Unstar':'★ Star'}</button><button data-message-action="pin">⌖ Pin</button>${m.type==='text'&&!m.deleted?'<button data-message-action="copy">⧉ Copy</button>':''}${m.mine&&m.type==='text'&&!m.deleted?'<button data-message-action="edit">✎ Edit</button>':''}<button data-message-action="delete" class="danger-text">⌫ Delete</button></div>`;}
-  function blockedBar(c){return `<div class="chatpro-blocked"><span>⊘ You blocked this anonymous conversation.</span><button id="chatpro-unblock">Unblock</button></div>`;}
+  function messageMenu(m,c,starred){return `<div class="chatpro-msg-menu"><button data-message-action="reply">${icon('reply')}<span>Reply</span></button><button data-message-action="forward">${icon('forward')}<span>Forward</span></button><button data-message-action="star">${icon('star')}<span>${starred?'Unstar':'Star'}</span></button><button data-message-action="pin">${icon('pin')}<span>Pin</span></button>${m.type==='text'&&!m.deleted?`<button data-message-action="copy">${icon('copy')}<span>Copy</span></button>`:''}${m.mine&&m.type==='text'&&!m.deleted?`<button data-message-action="edit">${icon('edit')}<span>Edit</span></button>`:''}<button data-message-action="delete" class="danger-text">${icon('trash')}<span>Delete</span></button></div>`;}
+  function blockedBar(c){return `<div class="chatpro-blocked"><span>${icon('block')} You blocked this anonymous conversation.</span><button id="chatpro-unblock">Unblock</button></div>`;}
 
-  function composer(c,pro){const reply=ui.replyTo?c.messages.find(m=>m.id===ui.replyTo):null,editing=ui.editing?c.messages.find(m=>m.id===ui.editing):null,draft=editing?.text??pro.drafts[c.id]??'';return `<div class="chatpro-composer-zone">${reply||editing?`<div class="chatpro-compose-context"><span>${editing?'✎':'↩'}</span><div><strong>${editing?'Edit message':`Reply to ${reply?.mine?'yourself':reply?.sender||c.name}`}</strong><small>${esc(editing?.text||preview(reply))}</small></div><button id="chatpro-context-close">×</button></div>`:''}${ui.attach?attachmentMenu(c):''}${ui.emoji?emojiPicker():''}${ui.sticker?stickerPanel():''}<div class="chatpro-composer"><button id="chatpro-attach" title="Attach">＋</button><button id="chatpro-emoji" title="Emoji">☺</button><textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea><button id="chatpro-voice" title="Voice message">🎙</button><button id="chatpro-schedule" title="Schedule message">◷</button><button id="chatpro-send" class="send" title="Send">➤</button></div><input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" hidden></div>`;}
-  function attachmentMenu(c){return `<div class="chatpro-attach-menu"><button data-attach-kind="media"><span>▧</span><b>Photos & videos</b></button><button data-attach-kind="document"><span>▤</span><b>Document</b></button><button data-attach-kind="contact"><span>👤</span><b>Contact</b></button><button data-attach-kind="location"><span>📍</span><b>Location</b></button>${c.kind==='group'?'<button data-attach-kind="poll"><span>📊</span><b>Poll</b></button>':''}<button data-attach-kind="sticker"><span>✨</span><b>Sticker / GIF</b></button></div>`;}
+  function composer(c,pro){
+    const reply=ui.replyTo?c.messages.find(m=>m.id===ui.replyTo):null,editing=ui.editing?c.messages.find(m=>m.id===ui.editing):null,draft=editing?.text??pro.drafts[c.id]??'';
+    return `<div class="chatpro-composer-zone">
+      ${reply||editing?`<div class="chatpro-compose-context"><span>${editing?'Edit':'Reply'}</span><div><strong>${editing?'Edit message':`Reply to ${reply?.mine?'yourself':reply?.sender||c.name}`}</strong><small>${esc(editing?.text||preview(reply))}</small></div><button id="chatpro-context-close" aria-label="Close">${icon('close')}</button></div>`:''}
+      ${ui.attach?attachmentMenu(c):''}${ui.emoji?emojiPicker():''}${ui.sticker?stickerPanel():''}
+      <div class="chatpro-composer">
+        <button id="chatpro-attach" title="Attach" aria-label="Attach">${icon('attach')}</button>
+        <button id="chatpro-emoji" title="Emoji" aria-label="Emoji">${icon('smile')}</button>
+        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea>
+        <button id="chatpro-voice" title="Voice message" aria-label="Voice message">${icon('mic')}</button>
+        <button id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
+        <button id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
+      </div>
+      <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" hidden>
+    </div>`;
+  }
+  function attachmentMenu(c){return `<div class="chatpro-attach-menu"><button data-attach-kind="media"><span>${icon('image')}</span><b>Photos & videos</b></button><button data-attach-kind="document"><span>${icon('file')}</span><b>Document</b></button><button data-attach-kind="contact"><span>${icon('user')}</span><b>Contact</b></button><button data-attach-kind="location"><span>${icon('location')}</span><b>Location</b></button>${c.kind==='group'?`<button data-attach-kind="poll"><span>${icon('poll')}</span><b>Poll</b></button>`:''}<button data-attach-kind="sticker"><span>${icon('star')}</span><b>Sticker / GIF</b></button></div>`;}
   function emojiPicker(){const e=['😀','😂','🥹','😍','😭','😤','🤯','😴','🫡','🤝','❤️','🔥','💯','✅','⚡','🎓','📚','🧠','☕','🚀','🧪','📐','🎯','🙌','👀','✨','🥳','🤍','👍','👎'];return `<div class="chatpro-emoji-picker"><div class="chatpro-picker-head"><strong>Emoji</strong><button data-close-picker>×</button></div><div>${e.map(x=>`<button data-insert-emoji="${x}">${x}</button>`).join('')}</div></div>`;}
   function stickerPanel(){const s=['📚','🧠','🔥','😭','😂','💯','🫡','⚡','☕','🎓','✅','🤝','😴','🚀'];return `<div class="chatpro-sticker-panel"><div class="chatpro-picker-head"><strong>Stickers & GIFs</strong><button data-close-picker>×</button></div><div class="chatpro-provider"><button data-provider="https://giphy.com/search/study">GIPHY ↗</button><button data-provider="https://tenor.com/search/study-gifs">Tenor ↗</button></div><div class="chatpro-sticker-grid">${s.map(x=>`<button data-send-sticker="${x}">${x}</button>`).join('')}</div><div class="chatpro-gif-entry"><input id="chatpro-gif-url" placeholder="Paste direct GIF URL"><button id="chatpro-gif-send">Send GIF</button></div><button class="chatpro-make" id="chatpro-make-sticker">＋ Make sticker</button></div>`;}
 
@@ -117,6 +156,8 @@
     const kind=page.dataset.kind;const selectedId=page.dataset.selected;let state=chatState(),pro=proState(),c=findConversation(state,selectedId);
     document.getElementById('chatpro-search')?.addEventListener('input',e=>{ui.query=e.target.value;softRerender();});
     document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.filter;render();});
+    document.querySelectorAll('[data-chat-subpage]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.chatSubpage||'all';resetTransient();if(selectedId)setHash(chatThreadRoute(kind));else render();});
+    document.getElementById('chat-app-search-top')?.addEventListener('click',()=>{const input=document.getElementById('chatpro-search');input?.focus();input?.select?.();});
     document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));
     document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});
     document.getElementById('chatpro-new')?.addEventListener('click',()=>openNewChatSheet(kind,state));

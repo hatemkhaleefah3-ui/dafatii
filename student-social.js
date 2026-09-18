@@ -3,6 +3,13 @@
   const CHAT_KEY = 'dafatii:chatState:v1';
   const STUDY_SUBNAV = ['Public study rooms','Private study rooms','My study rooms'];
   const CHAT_SUBNAV = ['Private chats','Groups','Blogs & announcements','Anonymous'];
+  const CHAT_SECTION_SUBPAGES = {
+    'Private chats':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']],
+    'Groups':[['all','All groups'],['unread','Unread'],['starred','Starred'],['archived','Archived']],
+    'Blogs & announcements':[['latest','Latest'],['announcement','Announcements'],['blog','Blogs'],['study','Study tips']],
+    'Anonymous':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']]
+  };
+  let chatFeedFilter='latest';
   const MAX_IMAGE_BYTES = 900 * 1024;
   const MAX_VIDEO_BYTES = 1500 * 1024;
   const MAX_VOICE_BYTES = 800 * 1024;
@@ -296,39 +303,87 @@
     const raw=decodeURIComponent(parts[1]||CHAT_SUBNAV[0]);
     return CHAT_SUBNAV.find(item=>item.toLowerCase()===raw.toLowerCase())||CHAT_SUBNAV[0];
   }
-  function chatAppMark(kind){
-    if(kind==='group')return '◎';
-    if(kind==='unknown')return '◌';
-    return '◯';
+  const CHAT_ICON_PATHS = {
+    menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+    search:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>',
+    user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4.1 3.1-6.2 7-6.2S18.2 15.9 19 20"/>',
+    back:'<path d="M19 12H5m6-6-6 6 6 6"/>',
+    chat:'<path d="M5.5 17.5 4 21l4.4-1.4A8.5 8.5 0 1 0 5.5 17.5Z"/>',
+    groups:'<path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/><path d="M17 11a3 3 0 1 0 0-6m4 15v-1.5a4 4 0 0 0-3-3.9"/>',
+    news:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h4M14 13h2M8 16h8"/>',
+    anonymous:'<path d="M8 9.5a4 4 0 1 1 8 0V11l2.5 3.5V20h-13v-5.5L8 11V9.5Z"/><path d="M9.5 15.5h5"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+    pin:'<path d="m9 4 6 0-1 5 3 3H7l3-3-1-5Z"/><path d="M12 12v8"/>',
+    mute:'<path d="M5 10v4h3l4 3V7L8 10H5Z"/><path d="m17 9 4 4m0-4-4 4"/>',
+    phone:'<path d="M6.5 4.5 9 8l-1.5 2a14 14 0 0 0 6.5 6.5L16 15l3.5 2.5c.7.5.8 1.5.2 2.1l-1 1c-.8.8-2 1.1-3 .6C8.9 18.3 5.7 15.1 2.8 8.3c-.5-1-.2-2.2.6-3l1-1c.6-.6 1.6-.5 2.1.2Z"/>',
+    video:'<rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
+    attach:'<path d="m8.5 12.5 6.8-6.8a3 3 0 1 1 4.2 4.2l-8.7 8.7a5 5 0 0 1-7.1-7.1l8.6-8.6"/><path d="m7 14 7.3-7.3"/>',
+    smile:'<circle cx="12" cy="12" r="9"/><path d="M8.5 10h.01M15.5 10h.01M8 14c1 1.5 2.3 2.2 4 2.2S15 15.5 16 14"/>',
+    mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    send:'<path d="m4 5 16 7-16 7 3-7-3-7Z"/><path d="M7 12h13"/>',
+    reply:'<path d="m10 8-5 4 5 4v-3c5 0 7 1 9 4-1-6-4-8-9-8V8Z"/>',
+    forward:'<path d="m14 8 5 4-5 4v-3c-5 0-7 1-9 4 1-6 4-8 9-8V8Z"/>',
+    star:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
+    archive:'<path d="M4 7h16v13H4V7Z"/><path d="M3 4h18v3H3V4Zm6 7h6"/>',
+    copy:'<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    edit:'<path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.5 7.5 3 3"/>',
+    trash:'<path d="M5 7h14M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5M14 11v5"/>',
+    image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 20"/>',
+    file:'<path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h5M9 13h6M9 17h5"/>',
+    location:'<path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/>',
+    poll:'<path d="M5 20V10M12 20V4M19 20v-7"/>',
+    stop:'<rect x="7" y="7" width="10" height="10" rx="1"/>',
+    block:'<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+    chevronRight:'<path d="m9 5 7 7-7 7"/>',
+    close:'<path d="m6 6 12 12M18 6 6 18"/>',
+    more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
+  };
+  function chatIcon(name,extra=''){
+    return `<svg class="chat-icon ${extra}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${CHAT_ICON_PATHS[name]||''}</svg>`;
   }
-  function chatAppNavItem(section,label,mark){
+  function chatSubpages(section){return CHAT_SECTION_SUBPAGES[section]||CHAT_SECTION_SUBPAGES['Private chats'];}
+  function chatAppNavItem(section,label,iconName){
     const active=section.toLowerCase()===label.toLowerCase();
-    return `<a class="chat-app-nav-item ${active?'active':''}" href="#chat/${chatSectionSlug(label)}" aria-current="${active?'page':'false'}"><span aria-hidden="true">${mark}</span><small>${esc(label==='Blogs & announcements'?'News':label)}</small></a>`;
+    return `<a class="chat-app-nav-item ${active?'active':''}" href="#chat/${chatSectionSlug(label)}" aria-current="${active?'page':'false'}"><span aria-hidden="true">${chatIcon(iconName)}</span><small>${esc(label==='Blogs & announcements'?'Blogs':label==='Private chats'?'Private':label)}</small></a>`;
   }
-  function chatAppShell(section,body,{thread=false}={}){
-    const label=section==='Blogs & announcements'?'Blogs & announcements':section;
-    return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}">
+  function chatAppShell(section,body,{thread=false,subpage=''}={}){
+    const user=window.DafatiiAuth?.user;
+    const avatar=esc((user?.displayName||'D').trim().slice(0,1).toUpperCase()||'D');
+    const subpages=chatSubpages(section);
+    const activeSubpage=subpage||subpages[0]?.[0]||'';
+    return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}">
       <header class="chat-app-topbar">
-        <a class="chat-app-brand" href="#dashboard" aria-label="Dafatii dashboard"><span>D</span><strong>dafatii</strong></a>
-        <div class="chat-app-title"><small>Chats</small><strong>${esc(label)}</strong></div>
-        <button class="chat-app-menu" id="chat-app-menu" aria-label="Open chat menu" aria-expanded="false">☰</button>
+        <button class="chat-app-menu" id="chat-app-menu" aria-label="Open Chat menu" aria-expanded="false">${chatIcon('menu')}</button>
+        <a class="chat-app-brand" href="#chat/${chatSectionSlug(section)}" aria-label="Dafatii Chat home"><span class="chat-app-logo-mark">D</span><span class="chat-app-brand-copy"><strong>Dafatii</strong><small>People · Connect</small></span></a>
+        <div class="chat-app-top-actions">
+          <button class="chat-app-search-top" id="chat-app-search-top" aria-label="Search this Chat page">${chatIcon('search')}</button>
+          <a class="chat-app-profile" href="#profile" aria-label="Profile"><span>${avatar}</span></a>
+        </div>
       </header>
-      <nav class="chat-app-subnav" aria-label="Chat pages">
-        ${CHAT_SUBNAV.map(item=>`<a class="${item===section?'active':''}" href="#chat/${chatSectionSlug(item)}">${esc(item)}</a>`).join('')}
+      <nav class="chat-app-subnav" aria-label="${esc(section)} subpages">
+        ${subpages.map(([id,label])=>`<button type="button" data-chat-subpage="${esc(id)}" class="${id===activeSubpage?'active':''}" aria-current="${id===activeSubpage?'page':'false'}">${esc(label)}</button>`).join('')}
       </nav>
       <aside class="chat-app-drawer" id="chat-app-drawer" aria-label="Chat app menu">
-        <div class="chat-app-drawer-head"><div><span>D</span><strong>Chat app</strong></div><button id="chat-app-drawer-close" aria-label="Close chat menu">×</button></div>
-        <nav>${CHAT_SUBNAV.map(item=>`<a class="${item===section?'active':''}" href="#chat/${chatSectionSlug(item)}">${esc(item)}</a>`).join('')}</nav>
-        <div class="chat-app-drawer-foot"><a href="#dashboard">← Return to dashboard</a><a href="#profile">Profile</a><a href="#settings">Settings</a></div>
+        <div class="chat-app-drawer-head"><div><span class="chat-app-logo-mark">D</span><div><strong>Dafatii Chat</strong><small>People · Connect</small></div></div><button id="chat-app-drawer-close" aria-label="Close Chat menu">${chatIcon('close')}</button></div>
+        <nav>
+          <a class="${section==='Private chats'?'active':''}" href="#chat/${chatSectionSlug('Private chats')}">${chatIcon('chat')}<span>Private chats</span></a>
+          <a class="${section==='Groups'?'active':''}" href="#chat/${chatSectionSlug('Groups')}">${chatIcon('groups')}<span>Groups</span></a>
+          <a class="${section==='Blogs & announcements'?'active':''}" href="#chat/${chatSectionSlug('Blogs & announcements')}">${chatIcon('news')}<span>Blogs & announcements</span></a>
+          <a class="${section==='Anonymous'?'active':''}" href="#chat/${chatSectionSlug('Anonymous')}">${chatIcon('anonymous')}<span>Anonymous</span></a>
+        </nav>
+        <div class="chat-app-drawer-foot"><a href="#dashboard">${chatIcon('back')}<span>Return to dashboard</span></a><a href="#profile">${chatIcon('user')}<span>Profile</span></a></div>
       </aside>
-      <button class="chat-app-drawer-backdrop" id="chat-app-drawer-backdrop" aria-label="Close chat menu"></button>
+      <button class="chat-app-drawer-backdrop" id="chat-app-drawer-backdrop" aria-label="Close Chat menu"></button>
       <main class="chat-app-stage">${body}</main>
       <nav class="chat-app-bottom" aria-label="Chat app navigation">
-        <a class="chat-app-nav-item exit" href="#dashboard"><span aria-hidden="true">↩</span><small>Dashboard</small></a>
-        ${chatAppNavItem(section,'Private chats','◯')}
-        ${chatAppNavItem(section,'Groups','◎')}
-        ${chatAppNavItem(section,'Blogs & announcements','▤')}
-        ${chatAppNavItem(section,'Anonymous','◌')}
+        <a class="chat-app-nav-item exit" href="#dashboard"><span aria-hidden="true">${chatIcon('back')}</span><small>Dashboard</small></a>
+        ${chatAppNavItem(section,'Private chats','chat')}
+        ${chatAppNavItem(section,'Groups','groups')}
+        ${chatAppNavItem(section,'Blogs & announcements','news')}
+        ${chatAppNavItem(section,'Anonymous','anonymous')}
       </nav>
     </section>`;
   }
@@ -349,10 +404,15 @@
     </section>`;
   }
   function chatFeedView(){
+    const posts=CHAT_FEED_SEEDS.filter(post=>{
+      if(chatFeedFilter==='announcement')return post.type==='announcement';
+      if(chatFeedFilter==='blog')return post.type==='blog';
+      if(chatFeedFilter==='study')return post.type==='blog'&&post.tags.some(tag=>/study|focus|recall|planning/i.test(tag));
+      return true;
+    }).sort((a,b)=>b.at-a.at);
     return `<section class="chat-feed-page">
-      <div class="chat-directory-head"><div><div class="eyebrow">Community</div><h1>Blogs & announcements</h1><p>Course updates, Dafatii announcements, and useful study posts in one feed.</p></div></div>
-      <div class="chat-feed-filters"><span>Latest</span><span>Announcements</span><span>Blogs</span></div>
-      <div class="chat-feed-grid">${CHAT_FEED_SEEDS.map(post=>`<article class="chat-feed-card ${post.type}">
+      <div class="chat-feed-intro"><div><small>Community</small><h1>Blogs & announcements</h1></div><p>Course updates, Dafatii announcements, and useful study posts in one focused feed.</p></div>
+      <div class="chat-feed-grid">${posts.map(post=>`<article class="chat-feed-card ${post.type}">
         <div class="chat-feed-card-top"><span>${post.type==='announcement'?'Announcement':'Blog'}</span><time>${relativeTime(post.at)}</time></div>
         <h2>${esc(post.title)}</h2><p>${esc(post.excerpt)}</p>
         <div class="chat-feed-author"><span>${esc((post.author||'D')[0])}</span><div><strong>${esc(post.author)}</strong><small>${post.type==='announcement'?'Official update':'Community post'}</small></div></div>
@@ -363,7 +423,7 @@
 
   function chatView(parts){
     const section=chatSection(parts);
-    if(section==='Blogs & announcements')return chatAppShell(section,chatFeedView());
+    if(section==='Blogs & announcements')return chatAppShell(section,chatFeedView(),{subpage:chatFeedFilter});
     const kind=normalizeChatKind(section),value=chatState();
     const conversations=value.conversations.filter(c=>c.kind===kind);
     const requestedId=parts[2]?decodeURIComponent(parts[2]):'';
@@ -440,6 +500,17 @@
     document.getElementById('chat-app-drawer-close')?.addEventListener('click',closeDrawer);
     document.getElementById('chat-app-drawer-backdrop')?.addEventListener('click',closeDrawer);
     drawer?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeDrawer));
+    document.getElementById('chat-app-search-top')?.addEventListener('click',()=>{
+      const input=document.getElementById('chatpro-search')||document.getElementById('chat-search');
+      input?.focus();input?.select?.();
+    });
+    if(appRoot.dataset.chatSection==='Blogs & announcements'){
+      document.querySelectorAll('[data-chat-subpage]').forEach(button=>button.addEventListener('click',()=>{
+        chatFeedFilter=button.dataset.chatSubpage||'latest';
+        render();
+      }));
+      return;
+    }
 
     const root=document.querySelector('.chat-page'); if(!root)return;
     const kind=root.dataset.chatKind;
@@ -587,7 +658,9 @@
     feed: () => chatFeedView(),
     threadRoute: (kind,id='') => chatThreadRoute(kind,id),
     sectionForKind: kind => chatSectionForKind(kind),
-    sections: [...CHAT_SUBNAV]
+    sections: [...CHAT_SUBNAV],
+    subpages: section => chatSubpages(section),
+    icon: (name,extra='') => chatIcon(name,extra)
   });
 
 })();
