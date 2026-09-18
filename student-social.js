@@ -582,5 +582,12 @@
     view: parts => studyRoomsView(parts),
     bind: () => bindStudyRooms()
   });
+  window.DafatiiChatShell = Object.freeze({
+    render: (section,body,options={}) => chatAppShell(section,body,options),
+    feed: () => chatFeedView(),
+    threadRoute: (kind,id='') => chatThreadRoute(kind,id),
+    sectionForKind: kind => chatSectionForKind(kind),
+    sections: [...CHAT_SUBNAV]
+  });
 
 })();
