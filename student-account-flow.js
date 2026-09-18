@@ -224,9 +224,7 @@
       closeMenu();
       town.focus();
     });
-    document.addEventListener('pointerdown', event => {
-      if (!combo.contains(event.target)) closeMenu();
-    }, { once:true, capture:true });
+    town.addEventListener('blur', () => setTimeout(closeMenu, 120));
   }
 
   function renderSignup(form) {
