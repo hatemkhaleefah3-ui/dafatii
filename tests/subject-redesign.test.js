@@ -7,8 +7,8 @@ const css=fs.readFileSync('subject-redesign.css','utf8');
 
 assert.match(index,/subject-redesign\.css\?v=20260919-1/,'reference-driven Subjects CSS must load');
 assert.match(index,/subject-redesign\.js\?v=20260919-1/,'reference-driven Subjects controller must load');
-assert.ok(index.indexOf('subject-redesign.css?v=20260919-1') > index.indexOf('admin-console.css?v=20260918-3'),'Subjects CSS must load after existing presentation layers');
-assert.ok(index.indexOf('subject-redesign.js?v=20260919-1') > index.indexOf('admin-console.js?v=20260918-4'),'Subjects controller must wrap the final existing workspace renderer');
+assert.ok(index.indexOf('subject-redesign.css?v=20260919-2') > index.indexOf('admin-console.css?v=20260918-3'),'Subjects CSS must load after existing presentation layers');
+assert.ok(index.indexOf('subject-redesign.js?v=20260919-2') > index.indexOf('admin-console.js?v=20260918-4'),'Subjects controller must wrap the final existing workspace renderer');
 
 assert.ok(ui.includes("MAIN_NAV.subjects = ['All subjects','Lectures','Exams','Assignments'];"),'Subjects navigation must match the supplied four-tab reference');
 for(const fn of ['subjectListViewRedesign','subjectOverviewView','subjectLecturesView','subjectExamsView','subjectAssignmentsView']) assert.ok(ui.includes('function '+fn+'('),fn+' missing');
@@ -17,6 +17,9 @@ assert.ok(ui.includes('subject-r-search')&&ui.includes('subject-r-sort'),'My Sub
 assert.ok(ui.includes('subject-r-progress')&&ui.includes('subject-r-card-meta'),'Subject cards must expose progress and academic metadata');
 assert.ok(ui.includes('subject-r-hero')&&ui.includes('subject-r-outline')&&ui.includes('subject-r-results'),'Subject Overview must include hero, chapter outline, and results');
 assert.ok(ui.includes('openExamRedesign')&&ui.includes('openAssignmentRedesign')&&ui.includes('openAddContent'),'reference actions must be functional rather than decorative');
+assert.ok(ui.includes("[['all','All'],['recorded','Recorded']]"),'Lectures must only expose All and Recorded filters');
+assert.ok(!ui.includes("[['all','All'],['upcoming','Upcoming'],['completed','Completed'],['recorded','Recorded']]"),'Upcoming and Completed lecture filters must stay removed');
+assert.ok(!/function lectureCard[\s\S]*?subject-r-status/.test(ui),'Lecture cards must not render Upcoming or Completed status badges');
 assert.ok(ui.includes("const managed = () => typeof schoolManagedWorkspace === 'function' && schoolManagedWorkspace();")&&ui.includes('const editable = () => !managed();'),'managed school workspaces must retain readonly behavior');
 assert.ok(ui.includes("if(editable()){openLectureSheet")&&ui.includes("if(lecture?.link)"),'readonly school subject lectures must open links instead of edit controls');
 assert.ok(ui.includes("window.DafatiiSubjectRedesign = Object.freeze"),'Subjects redesign must expose a stable integration surface');
