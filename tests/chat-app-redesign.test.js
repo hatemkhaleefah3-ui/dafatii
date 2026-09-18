@@ -19,8 +19,8 @@ assert.ok(ui.includes("setHash(chatThreadRoute(kind,id))"), 'new conversations m
 assert.ok(shell.includes("shell.classList.toggle('chat-app-host',current==='chat')"), 'shared shell must activate dedicated chat host mode');
 assert.ok(quiet.includes('.quiet-workspace.chat-app-host>.quiet-toolbar') && quiet.includes('.quiet-workspace.chat-app-host>.bottom-nav') && quiet.includes('display:none!important'), 'main workspace navigation must not overlap the chat app');
 for(const marker of ['.chat-app-topbar','.chat-app-subnav','.chat-app-drawer','.chat-app-bottom','.chat-directory','.chat-feed-grid','.chat-thread-page']) assert.ok(css.includes(marker), marker+' style missing');
-assert.ok(index.includes('student-social.js?v=20260918-3') && index.includes('student-social.css?v=20260918-2'), 'chat app shell assets must be cache-busted');
-assert.ok(index.includes('advanced-chat.js?v=20260918-2') && index.includes('advanced-chat.css?v=20260918-2'), 'advanced chat integration assets must be cache-busted');
+assert.ok(index.includes('student-social.js?v=20260918-4') && index.includes('student-social.css?v=20260918-3'), 'chat app shell assets must be cache-busted');
+assert.ok(index.includes('advanced-chat.js?v=20260918-3') && index.includes('advanced-chat.css?v=20260918-3'), 'advanced chat integration assets must be cache-busted');
 assert.ok(ui.includes('window.DafatiiChatShell = Object.freeze'), 'student social must export the canonical Chat app shell for later chat enhancements');
 assert.ok(advanced.includes("if(section.toLowerCase()==='blogs & announcements')return previousWorkspaceContent"), 'advanced chat must defer Blogs & announcements to the canonical Chat feed');
 assert.ok(advanced.includes('window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected)})'), 'advanced chat must render inside the canonical Chat app shell rather than replacing it');
@@ -29,3 +29,17 @@ assert.ok(advanced.includes('class="chatpro-shell list-only"') && advanced.inclu
 assert.ok(advanced.includes('setHash(chatThreadRoute(kind,row.dataset.openChat))'), 'advanced conversation cards must navigate to nested thread routes');
 assert.ok(advancedCss.includes('.chat-app-stage .chatpro-shell.list-only') && advancedCss.includes('.chat-app-stage .chatpro-shell.thread-only'), 'advanced chat must be sized inside the dedicated Chat app chrome');
 console.log('chat app redesign tests passed');
+
+assert.ok(ui.includes("const CHAT_SECTION_SUBPAGES = {") && ui.includes("'Private chats':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']]"), 'Private chats must expose its own contextual subpages under the top bar');
+assert.ok(ui.includes("'Groups':[['all','All groups'],['unread','Unread'],['starred','Starred'],['archived','Archived']]"), 'Groups must expose its own contextual subpages');
+assert.ok(ui.includes("'Blogs & announcements':[['latest','Latest'],['announcement','Announcements'],['blog','Blogs'],['study','Study tips']]"), 'Blogs must expose feed-specific subpages');
+assert.ok(ui.includes("'Anonymous':[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']]"), 'Anonymous must expose its own contextual subpages');
+assert.ok(ui.includes('data-chat-subpage=') && ui.includes('chatSubpages(section)'), 'the row below the top bar must render contextual subpage controls, not duplicate main Chat navigation');
+assert.ok(ui.includes("chatAppNavItem(section,'Private chats','chat')") && ui.includes("chatAppNavItem(section,'Groups','groups')") && ui.includes("chatAppNavItem(section,'Blogs & announcements','news')") && ui.includes("chatAppNavItem(section,'Anonymous','anonymous')"), 'the bottom dock must remain the main Chat navigation');
+assert.ok(ui.includes("const CHAT_ICON_PATHS = {") && ui.includes("function chatIcon(name"), 'Chat must use one consistent SVG icon system');
+assert.ok(advanced.includes("const icon=(name,extra='')=>window.DafatiiChatShell?.icon?.(name,extra)||'';"), 'advanced chat must consume the canonical SVG icon family');
+assert.ok(advanced.includes("subpage:ui.filter"), 'advanced list filters must drive the contextual top subnav');
+assert.ok(advanced.includes("document.querySelectorAll('[data-chat-subpage]')"), 'advanced list subpages must be interactive');
+assert.ok(!advanced.includes("${statusStrip(kind,state)}") && !advanced.includes("${filterBar()}"), 'premium list pages must not duplicate contextual subnavigation with stories or a second filter bar');
+assert.ok(advancedCss.includes('Premium messenger surfaces v4') && advancedCss.includes('.chatpro-conversation+.chatpro-conversation:before'), 'conversation list must use the premium simplified row design');
+assert.ok(css.includes('Premium Chat app v4') && css.includes('.chat-app-topbar') && css.includes('.chat-app-bottom'), 'all Chat chrome must use the premium v4 visual system');
