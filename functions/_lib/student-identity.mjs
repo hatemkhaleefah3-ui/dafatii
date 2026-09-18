@@ -25,6 +25,7 @@ export const normalizePhone = value => {
 
 function birthDate(value) {
   const text = String(value || '').trim();
+  if (!text) return '';
   const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) throw new HttpError(400, 'INVALID_BIRTH_DATE', 'Birth date is invalid.');
   const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
