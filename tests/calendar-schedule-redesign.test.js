@@ -19,7 +19,7 @@ assert.ok(!ui.includes('planner-loop-arrow') && !ui.includes('data-planner-mode-
 assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const entries=read(SCHEDULE_KEY,[])') && ui.includes("notes:'Recurring weekly timetable'"), 'existing weekly schedule data must project into matching dated schedule cells');
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-table') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
-assert.ok(index.includes('calendar.js?v=20260918-3') && index.includes('calendar.css?v=20260918-3'), 'schedule redesign assets must be cache-busted');
+assert.ok(index.includes('calendar.js?v=20260918-4') && index.includes('calendar.css?v=20260918-3'), 'schedule redesign assets must be cache-busted');
 console.log('calendar schedule redesign tests passed');
 
 assert.ok(ui.includes('legacyPlannerSnapshot') && ui.includes('__dafatii:course-cache:'), 'planner migration must recover any locally cached pre-fix planner data without resubmitting it as Course content');
