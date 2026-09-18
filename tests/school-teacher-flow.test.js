@@ -26,10 +26,11 @@ assert.ok(ui.includes('data-school-previous') && ui.includes('data-school-next')
 assert.ok(ui.includes('step>=catalog.subjects.length-1') || ui.includes('step >= catalog.subjects.length - 1'), 'final step must finish the flow');
 assert.ok(ui.includes('teacher.fameScore') && ui.includes('teacher.selectionCount'), 'teacher cards must expose popularity ordering signals');
 assert.ok(css.includes('.school-stepper') && css.includes('.school-teacher-card'), 'school teacher UI styles missing');
-assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-5'), 'school teacher behavior must be cache-busted for the school-course integration');
+assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-6'), 'school teacher behavior must be cache-busted for the school-course integration');
 assert.ok(ui.includes("value === 'school-teachers'") && !ui.includes("value === 'change-course' ||"), 'teacher selection must have its own route and must not replace the real Courses page');
 assert.ok(ui.includes('if(!ALLOWED.has(current) || !teacherRoute(current))return;'), 'teacher renderer must stay out of unrelated routes');
 assert.ok(ui.includes("if(!teacherRoute(route()))return;"), 'teacher enhancement must be inert outside dashboard and teacher picker once the catalog is registered');
+assert.ok(ui.includes("if(route()==='onboarding')return;"), 'legacy school workspace enhancer must stay inert while full-screen onboarding owns teacher selection');
 assert.ok(ui.includes("if(!catalog){") && ui.includes("void load(false).then") && ui.includes("current==='change-course'") && ui.includes("active?.()?.isSchoolProgram"), 'school catalog must register the prepared course in the background even when a normal joined course is active');
 assert.ok(ui.includes(".observe(appRoot,{childList:true});"), 'teacher observer must watch only top-level workspace replacements');
 assert.ok(!ui.includes('subtree:true'), 'teacher observer must not watch every profile descendant mutation');
