@@ -204,3 +204,17 @@
   .chat-app-top-actions{gap:5px}.chat-app-brand{gap:7px}.chat-app-stage{padding-inline:6px}.chat-app-subnav{gap:4px}.chat-app-subnav button{padding-inline:11px}
 }
 @media(prefers-reduced-motion:reduce){.chat-app-drawer,.chat-app-nav-item,.chat-app-subnav button,.chat-app-menu,.chat-app-search-top{transition:none}}
+
+/* Screenshot-directed Chat controls */
+.chat-feed-page{position:relative}
+.chat-feed-create{
+  position:fixed;z-index:79;inset-inline-end:max(18px,env(safe-area-inset-right));
+  bottom:calc(var(--chat-dock-height,70px) + max(26px,env(safe-area-inset-bottom)));
+  width:54px;height:54px;border:0;border-radius:18px;display:grid;place-items:center;
+  background:var(--accent);color:#fff;box-shadow:0 14px 34px color-mix(in srgb,var(--accent) 28%,transparent);
+  cursor:pointer;transition:transform .16s ease,filter .16s ease
+}
+.chat-feed-create:hover{filter:brightness(1.04)}
+.chat-feed-create:active{transform:scale(.96)}
+.chat-feed-create .chat-icon{width:24px;height:24px}
+@media(max-width:760px){.chat-feed-create{width:52px;height:52px;border-radius:17px;bottom:calc(66px + max(22px,env(safe-area-inset-bottom)))}}
