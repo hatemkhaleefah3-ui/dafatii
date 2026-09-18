@@ -20,6 +20,8 @@ assert.ok(ui.includes("function registerSchoolProgram()") && ui.includes("Dafati
 assert.ok(ui.includes("Public Course discovery") && ui.includes("data-recommend-intent=\"yes\""), 'public Course discovery must be deferred until Q1 is answered Yes');
 assert.ok(app.includes("event.detail.user?.accountType!=='student'") && app.includes("!window.DafatiiOnboarding?.blocks?.()"), 'student auth/focus/background events must not start Course refresh while onboarding owns the session');
 assert.ok(ui.includes("foundationChoice") && ui.includes("data-foundation-create") && ui.includes("data-foundation-join"), 'higher-education onboarding must begin with create-or-join');
+assert.ok(ui.includes("if(view==='recommend-intent')return recommendationIntent();"), 'Q1 recommendation intent state must render its own screen instead of falling through');
+assert.ok(!ui.includes('Preparing your next step'), 'onboarding must not hide unknown states behind an indefinite generic loader');
 assert.ok(ui.includes('Do you want to learn new things?') && ui.includes('What do you want to learn?') && ui.includes('What is your current level in'), 'public-course recommendation must implement Q1, Q2 and Q3');
 assert.ok(ui.includes("course.visibility==='public'") && ui.includes("course.learningField") && ui.includes("course.difficultyLevel===chosenLevel"), 'recommendations must be derived from admin public-course fields and chosen learner level');
 assert.ok(ui.includes("LEVELS=['beginner','intermediate','advanced','expert']"), 'Q3 must expose explicit current-learning levels');
@@ -28,7 +30,7 @@ assert.ok(routes.includes('studentAcademicIdentity') && routes.includes("value.s
 assert.ok(routes.includes("currentActor.accountType === 'student' && currentActor.studentStage === 'university'"), 'school students and representers must not create Courses');
 assert.ok(courses.includes('academic_level') && courses.includes('academic_stage') && courses.includes('academic_field') && courses.includes('learning_field') && courses.includes('difficulty_level'), 'Course DTO/schema must expose academic and recommendation dimensions');
 assert.ok(!app.includes('preCourseWorkspace') && !app.includes('PRE_COURSE_ROUTES'), 'old pre-course website must be absent from the active renderer');
-assert.ok(index.includes('onboarding-flow.js?v=20260918-5') && index.includes('onboarding-flow.css?v=20260918-1') && !index.includes('pre-course.css'), 'only the new full-screen onboarding assets should be active');
+assert.ok(index.includes('onboarding-flow.js?v=20260918-6') && index.includes('onboarding-flow.css?v=20260918-1') && !index.includes('pre-course.css'), 'only the new full-screen onboarding assets should be active');
 assert.ok(css.includes('.onboarding-page') && css.includes('.onboarding-card'), 'onboarding must use a dedicated full-screen process UI');
 
 console.log('sequential onboarding regression tests passed');
