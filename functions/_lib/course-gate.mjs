@@ -2,7 +2,7 @@ import { requireUser } from './auth.mjs';
 import { actorFor } from './courses.mjs';
 import { dispatchCourseRoute } from './course-routes.mjs';
 import { attachCourseStudyTypes, ensureCourseStudyTypeSchema, normalizeCourseStudyType, setCourseStudyType } from './course-study-types.mjs';
-import { HttpError, ok } from './http.mjs';
+import { HttpError, ok, readJson } from './http.mjs';
 import { ensureSchoolTeacherSchema } from './school-teachers.mjs';
 
 export async function dispatchCourseWithEducationGate(context, path) {
@@ -15,7 +15,7 @@ export async function dispatchCourseWithEducationGate(context, path) {
   const updateCourse = method === 'PATCH' && /^courses\/[0-9a-f-]{36}$/i.test(path);
   let requestedStudyType = null;
   if (createCourse || updateCourse) {
-    const input = await context.request.clone().json().catch(() => ({}));
+    const input = await readJson(context.request.clone(), 65536);
     if (input?.stage === 'school') throw new HttpError(400, 'SCHOOL_COURSES_DISABLED', 'School education uses the teacher-selection system. Courses are for post-school education.');
     if (createCourse || Object.prototype.hasOwnProperty.call(input || {}, 'studyType')) requestedStudyType = normalizeCourseStudyType(input?.studyType, 'courses');
   }
