@@ -24,16 +24,21 @@ function requireAdmin(actor){
   if(!actor?.isAdmin)throw new HttpError(403,'ADMIN_REQUIRED','Administrator access is required.');
 }
 
-function normalizeImageUrl(value){
-  const raw=String(value??'').trim();
-  if(!raw)return '';
-  if(raw.length>320000)throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image is too large.');
-  if(/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(raw))return raw;
-  let url;try{url=new URL(raw);}catch{throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image is invalid.');}
-  if(!['https:','http:'].includes(url.protocol))throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image must use http or https.');
-  return url.href;
-}
+const TEACHER_IMAGE_TYPES=new Set(['image/png','image/jpeg','image/webp','image/gif']);
+const teacherImageUrl=fileId=>`/api/v1/school/teacher-images/${fileId}`;
 
+async function resolveTeacherImage(context,actor,imageFileId,{required=false,current=''}={}){
+  if(imageFileId===undefined||imageFileId===null||imageFileId===''){
+    if(required&&!current)throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile picture is required.');
+    return current;
+  }
+  if(!isUuid(imageFileId))throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile picture identifier is invalid.');
+  const file=await context.env.DB.prepare('SELECT id,user_id,object_key,content_type,status FROM files WHERE id=?').bind(imageFileId).first();
+  if(!file||file.user_id!==actor.id||file.status!=='available'||!String(file.object_key||'').startsWith('drive/')||String(file.object_key||'').startsWith('drive/pending/')||!TEACHER_IMAGE_TYPES.has(String(file.content_type||'').toLowerCase())){
+    throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile picture must be an available Google Drive image uploaded by the current administrator.');
+  }
+  return teacherImageUrl(file.id);
+}
 function normalizeTeacherContent(input={}){
   const subjects=Array.isArray(input.subjects)?input.subjects:[];
   if(subjects.length!==1)throw new HttpError(400,'INVALID_TEACHER_CONTENT','Every teacher must have exactly one school subject.');
@@ -102,13 +107,12 @@ async function listTeachers(context){
   return ok({teachers:(result.results||[]).map(teacherDto)});
 }
 
-async function createTeacher(context){
+async function createTeacher(context,actor){
   await ensureSchema(context.env.DB);
   const input=await readJson(context.request,524288);
   const displayName=clean(input.displayName,100);
   if(displayName.length<2)throw new HttpError(400,'INVALID_DISPLAY_NAME','Teacher name is required.');
-  const imageUrl=normalizeImageUrl(input.imageUrl);
-  if(!imageUrl)throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile picture is required.');
+  const imageUrl=await resolveTeacherImage(context,actor,input.imageFileId,{required:true});
   const content=normalizeTeacherContent(input);
   const now=Date.now(),teacherId=crypto.randomUUID();
   const managedEmail=`managed-teacher-${teacherId}@internal.dafatii.invalid`,managedPasswordHash=`managed-teacher:${teacherId}`;
@@ -121,7 +125,7 @@ async function createTeacher(context){
   return ok({teacher:teacherDto(row)},201);
 }
 
-async function updateTeacher(context,teacherId){
+async function updateTeacher(context,actor,teacherId){
   await ensureSchema(context.env.DB);
   if(!isUuid(teacherId))throw new HttpError(400,'INVALID_TEACHER','Teacher identifier is invalid.');
   const current=await context.env.DB.prepare('SELECT content_json,image_url,status FROM school_teacher_profiles WHERE teacher_user_id=?').bind(teacherId).first();
@@ -131,7 +135,7 @@ async function updateTeacher(context,teacherId){
   const existingUser=await context.env.DB.prepare('SELECT display_name FROM users WHERE id=?').bind(teacherId).first();
   const displayName=input.displayName===undefined?existingUser?.display_name:clean(input.displayName,100);
   if(String(displayName||'').length<2)throw new HttpError(400,'INVALID_DISPLAY_NAME','Teacher name is required.');
-  const imageUrl=input.imageUrl===undefined?String(current.image_url||''):normalizeImageUrl(input.imageUrl);
+  const imageUrl=await resolveTeacherImage(context,actor,input.imageFileId,{current:String(current.image_url||'')});
   const status=input.status===undefined?String(current.status||'active'):String(input.status);
   if(!['active','removed'].includes(status))throw new HttpError(400,'INVALID_TEACHER_STATUS','Teacher status is invalid.');
   const now=Date.now();
@@ -210,9 +214,9 @@ export async function dispatchAdminConsoleRoute(context,method,path,actor){
   requireAdmin(actor);
   if(method==='POST'&&path==='admin/users')return createStudent(context);
   if(method==='GET'&&path==='admin/teachers')return listTeachers(context);
-  if(method==='POST'&&path==='admin/teachers')return createTeacher(context);
+  if(method==='POST'&&path==='admin/teachers')return createTeacher(context,actor);
   const teacher=path.match(/^admin\/teachers\/([0-9a-f-]{36})$/i);
-  if(teacher&&method==='PATCH')return updateTeacher(context,teacher[1]);
+  if(teacher&&method==='PATCH')return updateTeacher(context,actor,teacher[1]);
   if(teacher&&method==='DELETE')return deleteTeacher(context,teacher[1]);
   if(method==='GET'&&path==='admin/study-rooms')return listStudyRooms(context);
   const room=path.match(/^admin\/study-rooms\/([0-9a-f-]{36})\/(.+)$/i);

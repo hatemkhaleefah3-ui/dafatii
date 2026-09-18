@@ -5,7 +5,7 @@ import { actorFor, publicActor, requireCourseView, requirePermission } from '../
 import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driveObjectId, inspectDrivePrefix, isDriveObject, readDriveMetadata, startDriveUpload, streamDriveFile, validDriveId, verifyDriveMetadata } from '../../_lib/drive.mjs';
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
-import { isUuid, objectKey, positiveIntegerSetting, validateRecord, validateUpload } from '../../_lib/policy.mjs';
+import { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } from '../../_lib/policy.mjs';
 import { translateInterfaceText } from '../../_lib/translate.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
@@ -13,6 +13,14 @@ const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVA
 const routePath = request => new URL(request.url).pathname.replace(/^\/api\/v1\/?/, '');
 const usesDrive = env => String(env.STORAGE_PROVIDER || 'gcs').toLowerCase() === 'drive';
 const uploadSessionKey = fileId => `upload-sessions/${fileId}.json`;
+const TEACHER_IMAGE_TYPES = new Set(['image/png','image/jpeg','image/webp','image/gif']);
+function validateTeacherProfileUpload(input) {
+  const size = Number(input?.size);
+  const contentType = String(input?.contentType || '').toLowerCase().split(';')[0].trim();
+  if (!Number.isSafeInteger(size) || size <= 0) throw new HttpError(400, 'INVALID_FILE_SIZE', 'File size must be a positive integer.');
+  if (!TEACHER_IMAGE_TYPES.has(contentType)) throw new HttpError(415, 'FILE_TYPE_NOT_ALLOWED', 'Teacher profile pictures must be PNG, JPEG, WebP, or GIF.');
+  return { size, contentType, filename: sanitizeFilename(input.filename) };
+}
 
 async function writeR2Manifest(env, file) {
   if (!env.R2_STORAGE) return;
@@ -116,29 +124,35 @@ async function mutate(context, user) {
 
 async function uploadInit(context, user) {
   const raw = await readJson(context.request, 32768);
-  const input = validateUpload(raw, context.env);
+  const teacherProfile = String(raw.purpose || '') === 'teacher-profile';
+  if (teacherProfile && !user.isAdmin) throw new HttpError(403, 'ADMIN_REQUIRED', 'Administrator access is required for teacher profile uploads.');
+  const input = teacherProfile ? validateTeacherProfileUpload(raw) : validateUpload(raw, context.env);
   const courseId = raw.courseId ? String(raw.courseId) : null;
+  if (teacherProfile && courseId) throw new HttpError(400, 'INVALID_UPLOAD_PURPOSE', 'Teacher profile pictures cannot belong to a Course.');
   if (courseId) { if (!isUuid(courseId)) throw new HttpError(400, 'INVALID_IDENTIFIER', 'Course identifier is invalid.'); await requirePermission(context.env.DB, user, courseId, 'can_add_content'); }
   const uploadLimit = positiveIntegerSetting(context.env.UPLOAD_INIT_LIMIT, 60, { maximum: 10000 });
-  const quota = positiveIntegerSetting(context.env.USER_STORAGE_QUOTA_BYTES, 10737418240);
   const now = Date.now();
   const recent = await context.env.DB.prepare("SELECT COUNT(*) AS count FROM files WHERE user_id = ? AND created_at > ?").bind(user.id, now - 3600000).first();
   if (Number(recent?.count || 0) >= uploadLimit) throw new HttpError(429, 'UPLOAD_RATE_LIMITED', 'Upload initialization limit reached.');
-  const usage = await context.env.DB.prepare("SELECT COALESCE(SUM(CASE WHEN status = 'pending' THEN expected_size ELSE actual_size END), 0) AS bytes FROM files WHERE user_id = ? AND status IN ('pending', 'available', 'quarantined', 'delete_failed')").bind(user.id).first();
-  if (Number(usage?.bytes || 0) + input.size > quota) throw new HttpError(413, 'STORAGE_QUOTA_EXCEEDED', 'Account storage quota would be exceeded.');
+  if (!teacherProfile) {
+    const quota = positiveIntegerSetting(context.env.USER_STORAGE_QUOTA_BYTES, 10737418240);
+    const usage = await context.env.DB.prepare("SELECT COALESCE(SUM(CASE WHEN status = 'pending' THEN expected_size ELSE actual_size END), 0) AS bytes FROM files WHERE user_id = ? AND status IN ('pending', 'available', 'quarantined', 'delete_failed')").bind(user.id).first();
+    if (Number(usage?.bytes || 0) + input.size > quota) throw new HttpError(413, 'STORAGE_QUOTA_EXCEEDED', 'Account storage quota would be exceeded.');
+  }
   const fileId = crypto.randomUUID();
-  const key = usesDrive(context.env) ? `drive/pending/${fileId}` : objectKey(user.id, fileId);
+  const driveUpload = teacherProfile || usesDrive(context.env);
+  const key = driveUpload ? `drive/pending/${fileId}` : objectKey(user.id, fileId);
   const expiresAt = now + 15 * 60 * 1000;
   await context.env.DB.prepare(`INSERT INTO files
     (id, user_id, course_id, object_key, original_filename, content_type, expected_size, status, upload_expires_at, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`).bind(fileId, user.id, courseId, key, input.filename, input.contentType, input.size, expiresAt, now, now).run();
   try {
-    if (usesDrive(context.env)) {
+    if (driveUpload) {
       if (!context.env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'R2 upload-session storage is not configured.');
       const file = { id: fileId, user_id: user.id, course_id: courseId, object_key: key, original_filename: input.filename, content_type: input.contentType, expected_size: input.size };
       const uploadUrl = await startDriveUpload(context.env, file, user.id);
-      await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt }), { httpMetadata: { contentType: 'application/json' } });
-      logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', size: input.size, contentType: input.contentType });
+      await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt, purpose: teacherProfile ? 'teacher-profile' : null }), { httpMetadata: { contentType: 'application/json' } });
+      logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', purpose: teacherProfile ? 'teacher-profile' : null, size: input.size, contentType: input.contentType });
       return ok({ fileId, upload: { url: `/api/v1/files/${fileId}/upload`, method: 'PUT', provider: 'drive-proxy', chunkSize: 8388608, expiresAt, headers: { 'Content-Type': input.contentType } } }, 201);
     }
     const signed = await signedObjectUrl(context.env, key, 'PUT', { expires: 900, contentType: input.contentType, contentLength: input.size, fileId, query: { ifGenerationMatch: '0' } });
@@ -146,11 +160,10 @@ async function uploadInit(context, user) {
     return ok({ fileId, upload: { url: signed.url, method: 'PUT', expiresAt, headers: { 'Content-Type': input.contentType, 'x-goog-meta-dafatii-file-id': fileId } } }, 201);
   } catch (error) {
     await context.env.DB.prepare("UPDATE files SET status = 'upload_failed', last_error = ?, updated_at = ? WHERE id = ? AND user_id = ?").bind('storage_init_failed', Date.now(), fileId, user.id).run();
-    logEvent('error', 'storage.upload_init_failed', { userId: user.id, fileId, provider: usesDrive(context.env) ? 'drive' : 'gcs' });
+    logEvent('error', 'storage.upload_init_failed', { userId: user.id, fileId, provider: driveUpload ? 'drive' : 'gcs' });
     throw error;
   }
 }
-
 async function uploadDriveChunk(context, user, fileId) {
   const file = await ownedFile(context.env.DB, user.id, fileId, ['pending']);
   if (!isDriveObject(file.object_key) || !context.env.R2_STORAGE) throw new HttpError(404, 'UPLOAD_NOT_FOUND', 'Upload session was not found.');
