@@ -5,6 +5,10 @@
   const SCHEDULE_NOTES_KEY = 'dafatii:scheduleNotes';
   const LEGACY_PLANNER_KEY = 'dafatii:schedulePlanner:v1';
   const PLANNER_KEY = 'dafatii:schedulePlanner:v2';
+  const plannerScopeId = () => String(window.DafatiiCourses?.active?.()?.id || 'no-course').replace(/[^A-Za-z0-9_.-]/g,'-').slice(0,80) || 'no-course';
+  const plannerPersonalKey = version => `dafatii:planner-course:${plannerScopeId()}:v${version}`;
+  const plannerRead = (version,fallback) => window.DafatiiData.readJSON(plannerPersonalKey(version),fallback);
+  const plannerWrite = (version,value) => window.DafatiiData.writeJSON(plannerPersonalKey(version),value);
   const PLANNER_MODES = ['day','week','month','year'];
   const PLANNER_TABS = ['tasks','schedule','todos','goals','attendance'];
   let plannerMode = 'day';
@@ -93,10 +97,35 @@
     if(key.startsWith('year:'))return `${key.slice(5)}-01-01`;
     return dateKey(new Date());
   }
+  function parseStoredJSON(key){
+    try{const raw=localStorage.getItem(key);return raw===null?null:JSON.parse(raw);}catch{return null;}
+  }
+  function legacyPlannerSnapshot(baseKey){
+    const activeId=String(window.DafatiiCourses?.active?.()?.id||'');
+    const suffix=String(baseKey).replace(/^dafatii:/,'');
+    const candidates=[
+      activeId?`__dafatii:course-cache:${activeId}:${baseKey}`:'',
+      `dafatii:school-course:${suffix}`,
+      baseKey
+    ].filter(Boolean);
+    for(const key of candidates){
+      const value=parseStoredJSON(key);
+      if(value&&typeof value==='object')return value;
+    }
+    return null;
+  }
   function plannerState(){
-    const current=read(PLANNER_KEY,null);
+    const current=plannerRead(2,null);
     if(current?.version===2&&Array.isArray(current.items))return current;
-    const legacy=read(LEGACY_PLANNER_KEY,{});
+
+    const stagedV2=legacyPlannerSnapshot(PLANNER_KEY);
+    if(stagedV2?.version===2&&Array.isArray(stagedV2.items)){
+      const next={...stagedV2,version:2,updatedAt:Number(stagedV2.updatedAt||Date.now()),migratedFrom:stagedV2.migratedFrom||PLANNER_KEY};
+      plannerWrite(2,next);
+      return next;
+    }
+
+    const legacy=plannerRead(1,null)||legacyPlannerSnapshot(LEGACY_PLANNER_KEY)||{};
     const items=[];
     if(legacy&&typeof legacy==='object'&&!Array.isArray(legacy)){
       Object.entries(legacy).forEach(([key,bucket])=>{
@@ -116,11 +145,11 @@
       });
     }
     const next={version:2,items,updatedAt:Date.now(),migratedFrom:items.length?LEGACY_PLANNER_KEY:null};
-    write(PLANNER_KEY,next);
+    plannerWrite(2,next);
     return next;
   }
   const plannerItems=()=>plannerState().items;
-  function savePlannerItems(items){write(PLANNER_KEY,{version:2,items,updatedAt:Date.now()});}
+  function savePlannerItems(items){plannerWrite(2,{version:2,items,updatedAt:Date.now()});}
   const dateFromKey = key => {
     const [year,month,day]=String(key).split('-').map(Number);
     return new Date(year,Math.max(0,(month||1)-1),Math.max(1,day||1));
