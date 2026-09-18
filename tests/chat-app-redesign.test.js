@@ -23,7 +23,7 @@ assert.ok(index.includes('student-social.js?v=20260918-4') && index.includes('st
 assert.ok(index.includes('advanced-chat.js?v=20260918-3') && index.includes('advanced-chat.css?v=20260918-3'), 'advanced chat integration assets must be cache-busted');
 assert.ok(ui.includes('window.DafatiiChatShell = Object.freeze'), 'student social must export the canonical Chat app shell for later chat enhancements');
 assert.ok(advanced.includes("if(section.toLowerCase()==='blogs & announcements')return previousWorkspaceContent"), 'advanced chat must defer Blogs & announcements to the canonical Chat feed');
-assert.ok(advanced.includes('window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected)})'), 'advanced chat must render inside the canonical Chat app shell rather than replacing it');
+assert.ok(advanced.includes('window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected),subpage:ui.filter})'), 'advanced chat must render inside the canonical Chat app shell and pass the active contextual subpage');
 assert.ok(advanced.includes("const requestedId=parts[2]?decodeURIComponent(parts[2]):''"), 'advanced chat list and thread must use separate nested routes');
 assert.ok(advanced.includes('class="chatpro-shell list-only"') && advanced.includes('class="chatpro-shell thread-only"'), 'advanced chat must render route-specific list and thread shells');
 assert.ok(advanced.includes('setHash(chatThreadRoute(kind,row.dataset.openChat))'), 'advanced conversation cards must navigate to nested thread routes');
