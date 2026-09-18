@@ -192,7 +192,15 @@
     if(!c)return;
     bindThread(c,state,pro);
   }
-  function softRerender(){const list=document.getElementById('chatpro-list');if(!list)return;const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState(),conversations=sortConversations(state.conversations.filter(c=>c.kind===kind),pro);list.innerHTML=conversationList(conversations,'',pro);document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;state.selected[kind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(kind,row.dataset.openChat));}));document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});}
+  function softRerender(){
+    const list=document.getElementById('chatpro-list');if(!list)return;
+    const page=document.querySelector('.chatpro-page'),kind=page.dataset.kind,state=chatState(),pro=proState();
+    const scope=kind==='private'?state.conversations:state.conversations.filter(c=>c.kind===kind);
+    const conversations=sortConversations(scope,pro);
+    list.innerHTML=conversationList(conversations,'',pro);
+    document.querySelectorAll('[data-open-chat]').forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-conv-more]'))return;const rowKind=row.dataset.chatKind||kind;state.selected[rowKind]=row.dataset.openChat;const meta=metaFor(pro,row.dataset.openChat);meta.unread=false;const conv=findConversation(state,row.dataset.openChat);if(conv)conv.unread=0;saveChat(state);savePro(pro);resetTransient();setHash(chatThreadRoute(rowKind,row.dataset.openChat));}));
+    document.querySelectorAll('[data-conv-more]').forEach(b=>b.onclick=e=>{e.stopPropagation();openConversationMenu(b.dataset.convMore,state,pro);});
+  }
   function resetTransient(){ui.info=false;ui.search=false;ui.searchQuery='';ui.menuMessage='';ui.replyTo='';ui.editing='';ui.attach=false;ui.emoji=false;ui.sticker=false;}
 
   function bindThread(c,state,pro){
