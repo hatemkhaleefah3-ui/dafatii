@@ -82,12 +82,9 @@
   }
   function sortConversations(conversations,pro){return [...conversations].sort((a,b)=>{const ma=metaFor(pro,a.id),mb=metaFor(pro,b.id);if(ma.pinned!==mb.pinned)return ma.pinned?-1:1;return Number(lastMessage(b)?.at||0)-Number(lastMessage(a)?.at||0);});}
   function railHeader(kind){
-    const description=kind==='group'?'Your study groups and course conversations.':kind==='unknown'?'Private identity-hidden conversations.':'People and direct conversations.';
-    const showHeader=kind==='group';
-    const showSearch=kind!=='group';
-    const showTools=kind==='private';
-    return `${showHeader?`<div class="chatpro-list-head"><div><h1>${esc(subLabel(kind))}</h1><p>${esc(description)}</p></div><button id="chatpro-new" class="chatpro-primary-action" title="New conversation" aria-label="New conversation">${icon('plus')}</button></div>`:''}
-      ${showSearch?`<div class="chatpro-search-row"><label class="chatpro-search">${icon('search')}<input id="chatpro-search" value="${esc(ui.query)}" placeholder="Search chats and people"></label>${showTools?`<button id="chatpro-rail-menu" class="chatpro-filter-button" title="Chat tools" aria-label="Chat tools">${icon('sliders')}</button>`:''}</div>`:''}`;
+    const placeholder=kind==='group'?'Search groups, topics, or people…':kind==='unknown'?'Search anonymous chats…':'Search chats and people…';
+    const categories=kind==='group'?`<div class='chatpro-topic-chips'><button class='active'>All</button><button>Computer Science</button><button>Math</button><button>Design</button><button>Business</button><button>More⌄</button></div>`:'';
+    return `<div class='chatpro-search-row'><label class='chatpro-search'>${icon('search')}<input id='chatpro-search' value='${esc(ui.query)}' placeholder='${esc(placeholder)}'></label><button id='chatpro-rail-menu' class='chatpro-filter-button' title='Chat tools' aria-label='Chat tools'>${icon('sliders')}</button></div>${categories}`;
   }
   function statusStrip(kind,state){if(kind==='unknown')return `<div class="chatpro-anon-banner"><strong>◌ Anonymous inbox</strong><span>Your profile identity stays hidden in this section. Report and block controls remain available.</span></div>`;const people=state.conversations.filter(c=>c.kind===kind).slice(0,6);return `<div class="chatpro-status-strip"><button class="chatpro-status-add"><span>＋</span><small>New</small></button>${people.map((c,i)=>`<button class="chatpro-status"><span class="ring ${i<3?'active':''}"><b>${esc(c.avatar||c.name?.[0]||'?')}</b></span><small>${esc((c.name||'').split(' ')[0])}</small></button>`).join('')}</div>`;}
   function filterBar(){return `<div class="chatpro-filters">${[['all','All'],['unread','Unread'],['starred','Starred'],['archived','Archived']].map(([id,label])=>`<button data-filter="${id}" class="${ui.filter===id?'active':''}">${label}</button>`).join('')}</div>`;}
