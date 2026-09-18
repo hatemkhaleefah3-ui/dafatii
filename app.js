@@ -191,44 +191,35 @@ function join(){
   };
 }
 
+function schoolManagedWorkspace(){return Boolean(window.DafatiiSchoolWorkspaceReady&&window.DafatiiAuth?.user?.accountType==='student'&&window.DafatiiAuth?.user?.studentStage==='school');}
+
 function subjectListView(){
+  const managed=schoolManagedWorkspace();
   const cards = state.subjects.length ? state.subjects.map(subjectCard).join('') : `
     <div class="subjects-empty">
-      <div class="subjects-empty-icon">${icon('add')}</div>
+      <div class="subjects-empty-icon">${icon('subjects')}</div>
       <h2>No subjects yet</h2>
-      <p>Add your first subject to start organizing materials.</p>
-      <button class="btn btn-primary" id="subjects-empty-add">Add subject</button>
+      <p>${managed?'Your selected teachers have not published subject content yet.':'Add your first subject to start organizing materials.'}</p>
+      ${managed?'':'<button class="btn btn-primary" id="subjects-empty-add">Add subject</button>'}
     </div>`;
   return `
-    <section class="subjects-page">
+    <section class="subjects-page ${managed?'school-managed-subjects':''}">
       <div class="subjects-head">
-        <div>
-          <div class="eyebrow">Subjects</div>
-          <h1>My subjects</h1>
-        </div>
-        <button class="subject-add" id="subject-add" aria-label="Add subject"><span>${icon('add')}</span><strong>Add subject</strong></button>
+        <div><div class="eyebrow">Subjects</div><h1>My subjects</h1></div>
+        ${managed?'':`<button class="subject-add" id="subject-add" aria-label="Add subject"><span>${icon('add')}</span><strong>Add subject</strong></button>`}
       </div>
       <div class="subjects-grid">${cards}</div>
     </section>`;
 }
 
 function subjectCard(subject){
+  const managed=schoolManagedWorkspace();
   return `
-    <div class="subject-swipe" data-subject-id="${escapeHtml(subject.id)}">
-      <button class="subject-swipe-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}<span>Edit</span></button>
-      <button class="subject-swipe-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}<span>Delete</span></button>
+    <div class="subject-swipe ${managed?'school-managed-card':''}" data-subject-id="${escapeHtml(subject.id)}">
+      ${managed?'':`<button class="subject-swipe-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}<span>Edit</span></button><button class="subject-swipe-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}<span>Delete</span></button>`}
       <article class="subject-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(subject.name)}">
-        <div class="subject-card-top">
-          <div class="subject-icon">${escapeHtml(subject.icon)}</div>
-          <div class="subject-desktop-actions">
-            <button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button>
-            <button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button>
-          </div>
-        </div>
-        <div class="subject-card-copy">
-          <h2>${escapeHtml(subject.name)}</h2>
-          <p>Open subject →</p>
-        </div>
+        <div class="subject-card-top"><div class="subject-icon">${escapeHtml(subject.icon)}</div>${managed?'':`<div class="subject-desktop-actions"><button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button><button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button></div>`}</div>
+        <div class="subject-card-copy"><h2>${escapeHtml(subject.name)}</h2>${managed&&subject.teacherName?`<small>${escapeHtml(subject.teacherName)}</small>`:''}<p>Open subject →</p></div>
       </article>
     </div>`;
 }
@@ -243,40 +234,30 @@ function subjectDetailView(subject, tab){
 }
 
 function lectureListView(subject){
-  const lectures = subjectLectures(subject.id);
+  const managed=schoolManagedWorkspace(),lectures = subjectLectures(subject.id);
   const cards = lectures.length ? lectures.map(l=>lectureCard(subject, l)).join('') : `
     <div class="subjects-empty lecture-empty">
-      <div class="subjects-empty-icon">${icon('add')}</div>
+      <div class="subjects-empty-icon">${icon('subjects')}</div>
       <h2>No lectures yet</h2>
-      <p>Add your first lecture for ${escapeHtml(subject.name)}.</p>
-      <button class="btn btn-primary" id="lectures-empty-add">Add lecture</button>
+      <p>${managed?'This teacher has not published lectures for this chapter yet.':`Add your first lecture for ${escapeHtml(subject.name)}.`}</p>
+      ${managed?'':'<button class="btn btn-primary" id="lectures-empty-add">Add lecture</button>'}
     </div>`;
   return `
-    <section class="subjects-page lectures-page">
-      <div class="subjects-head">
-        <div>
-          <div class="eyebrow">${escapeHtml(subject.name)} · Lectures</div>
-          <h1>Lectures</h1>
-        </div>
-        <button class="subject-add" id="lecture-add" aria-label="Add lecture"><span>${icon('add')}</span><strong>Add lecture</strong></button>
-      </div>
+    <section class="subjects-page lectures-page ${managed?'school-managed-subjects':''}">
+      <div class="subjects-head"><div><div class="eyebrow">${escapeHtml(subject.name)} · Lectures</div><h1>Lectures</h1></div>${managed?'':`<button class="subject-add" id="lecture-add" aria-label="Add lecture"><span>${icon('add')}</span><strong>Add lecture</strong></button>`}</div>
       <div class="subjects-grid">${cards}</div>
     </section>`;
 }
 
 function lectureCard(subject, lecture){
-  const hasLink = Boolean(String(lecture.link || '').trim());
+  const hasLink = Boolean(String(lecture.link || '').trim()),managed=schoolManagedWorkspace();
   return `
-    <div class="subject-swipe lecture-swipe" data-lecture-id="${escapeHtml(lecture.id)}" data-subject-id="${escapeHtml(subject.id)}">
-      <button class="subject-swipe-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}<span>Edit</span></button>
-      <button class="subject-swipe-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}<span>Delete</span></button>
+    <div class="subject-swipe lecture-swipe ${managed?'school-managed-card':''}" data-lecture-id="${escapeHtml(lecture.id)}" data-subject-id="${escapeHtml(subject.id)}">
+      ${managed?'':`<button class="subject-swipe-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}<span>Edit</span></button><button class="subject-swipe-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}<span>Delete</span></button>`}
       <article class="subject-card lecture-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(lecture.name)}">
         <div class="subject-card-top">
           <div class="subject-icon">${escapeHtml(lecture.icon || '▶')}</div>
-          <div class="subject-desktop-actions">
-            <button class="subject-mini-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}</button>
-            <button class="subject-mini-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}</button>
-          </div>
+          ${managed?'':`<div class="subject-desktop-actions"><button class="subject-mini-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}</button><button class="subject-mini-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}</button></div>`}
         </div>
         <div class="subject-card-copy">
           <h2>${escapeHtml(lecture.name)}</h2>
@@ -340,7 +321,7 @@ function preCourseWorkspace(current){
 }
 
 function workspace(current){
-  if(!window.DafatiiCourses.active().id){preCourseWorkspace(current);return;}
+  if(!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()){preCourseWorkspace(current);return;}
   const parts = current.split('/');
   const page = parts[0];
   const inSubject = page === 'subjects' && parts[1] === 'subject';
@@ -414,12 +395,13 @@ function bindWorkspace(subject){
 }
 
 function bindSubjects(){
-  document.getElementById('subject-add')?.addEventListener('click',()=>openSubjectSheet());
-  document.getElementById('subjects-empty-add')?.addEventListener('click',()=>openSubjectSheet());
-  document.querySelectorAll('[data-edit-subject]').forEach(btn=>btn.addEventListener('click',e=>{
+  const managed=schoolManagedWorkspace();
+  if(!managed)document.getElementById('subject-add')?.addEventListener('click',()=>openSubjectSheet());
+  if(!managed)document.getElementById('subjects-empty-add')?.addEventListener('click',()=>openSubjectSheet());
+  if(!managed)document.querySelectorAll('[data-edit-subject]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); openSubjectSheet(btn.dataset.editSubject);
   }));
-  document.querySelectorAll('[data-delete-subject]').forEach(btn=>btn.addEventListener('click',e=>{
+  if(!managed)document.querySelectorAll('[data-delete-subject]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); deleteSubject(btn.dataset.deleteSubject);
   }));
   document.querySelectorAll('.subject-swipe[data-subject-id]').forEach(wrap=>{
@@ -427,17 +409,18 @@ function bindSubjects(){
     const card=wrap.querySelector('.subject-card');
     card.addEventListener('click',()=>setHash(`subjects/subject/${encodeURIComponent(id)}/lectures`));
     card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setHash(`subjects/subject/${encodeURIComponent(id)}/lectures`);}});
-    bindSwipe(card,()=>openSubjectSheet(id),()=>deleteSubject(id));
+    if(!managed)bindSwipe(card,()=>openSubjectSheet(id),()=>deleteSubject(id));
   });
 }
 
 function bindLectures(subject){
-  document.getElementById('lecture-add')?.addEventListener('click',()=>openLectureSheet(subject));
-  document.getElementById('lectures-empty-add')?.addEventListener('click',()=>openLectureSheet(subject));
-  document.querySelectorAll('[data-edit-lecture]').forEach(btn=>btn.addEventListener('click',e=>{
+  const managed=schoolManagedWorkspace();
+  if(!managed)document.getElementById('lecture-add')?.addEventListener('click',()=>openLectureSheet(subject));
+  if(!managed)document.getElementById('lectures-empty-add')?.addEventListener('click',()=>openLectureSheet(subject));
+  if(!managed)document.querySelectorAll('[data-edit-lecture]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); openLectureSheet(subject, btn.dataset.editLecture);
   }));
-  document.querySelectorAll('[data-delete-lecture]').forEach(btn=>btn.addEventListener('click',e=>{
+  if(!managed)document.querySelectorAll('[data-delete-lecture]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); deleteLecture(subject, btn.dataset.deleteLecture);
   }));
   document.querySelectorAll('.lecture-swipe').forEach(wrap=>{
@@ -447,7 +430,7 @@ function bindLectures(subject){
     const open=()=>openLectureLink(lecture);
     card.addEventListener('click',open);
     card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
-    bindSwipe(card,()=>openLectureSheet(subject,id),()=>deleteLecture(subject,id));
+    if(!managed)bindSwipe(card,()=>openLectureSheet(subject,id),()=>deleteLecture(subject,id));
   });
 }
 
@@ -576,7 +559,7 @@ function render(){
   if(r==='join'){ join(); return; }
   if(!state.authReady){ app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Checking your session…</h2><p>Your secure workspace is loading.</p></div></section></div>'; return; }
   if(!state.joined){ setHash('join'); return; }
-  if(!window.DafatiiCourses.active().id&&!PRE_COURSE_ROUTES.has(r.split('/')[0])){setHash('dashboard');return;}
+  if(!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()&&!PRE_COURSE_ROUTES.has(r.split('/')[0])){setHash('dashboard');return;}
   workspace(r);
 }
 

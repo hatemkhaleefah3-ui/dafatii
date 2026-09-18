@@ -26,6 +26,7 @@
   };
 
   const data={overview:null,users:[],teachers:[],courses:[],rooms:[],loading:false,error:'',loaded:false};
+  let teacherContentDraft=null;
   const ar=()=>document.documentElement.lang==='ar';
   const tx=(en,arabic)=>ar()?arabic:en;
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -37,6 +38,7 @@
     const tab=decodeURIComponent(raw||'overview');
     return TABS.some(item=>item[0]===tab)?tab:'overview';
   };
+  const adminTeacherId=()=>{const parts=route().split('/');return parts[0]==='admin'&&parts[1]==='teachers'&&parts[2]?decodeURIComponent(parts[2]):'';};
   const subjectLabel=id=>{const item=SUBJECTS.find(s=>s[0]===id);return item?(ar()?item[2]:item[1]):id;};
 
   function nav(){
@@ -100,19 +102,21 @@
   }
 
   function teacherCard(teacher){
-    const subjectCount=teacher.subjects?.length||0;
-    const chapters=(teacher.subjects||[]).reduce((sum,s)=>sum+(s.chapters?.length||0),0);
-    const lectures=(teacher.subjects||[]).reduce((sum,s)=>sum+(s.chapters||[]).reduce((x,c)=>x+(c.lectures?.length||0),0),0);
+    const subject=teacher.subjects?.[0];
+    const chapters=subject?.chapters?.length||0;
+    const lectures=(subject?.chapters||[]).reduce((sum,chapter)=>sum+(chapter.lectures?.length||0),0);
     return `<article class="admin-teacher-card ${teacher.status==='removed'?'removed':''}" data-admin-teacher="${esc(teacher.id)}">
-      <div class="admin-teacher-avatar">${teacher.imageUrl?`<img src="${esc(teacher.imageUrl)}" alt="">`:`<span>${esc((teacher.displayName||'T').slice(0,1).toUpperCase())}</span>`}</div>
-      <div class="admin-teacher-copy"><h3>${esc(teacher.displayName)} ${teacher.status==='removed'?`<small class="admin-teacher-status">${esc(tx('Removed','مزال'))}</small>`:''}</h3><p>${esc(teacher.email)}</p><div>${(teacher.subjects||[]).map(s=>`<span>${esc(subjectLabel(s.id))}</span>`).join('')}</div></div>
-      <div class="admin-teacher-stats"><span><strong>${subjectCount}</strong>${esc(tx('subjects','مواد'))}</span><span><strong>${chapters}</strong>${esc(tx('chapters','فصول'))}</span><span><strong>${lectures}</strong>${esc(tx('lectures','محاضرات'))}</span></div>
-      <div class="admin-teacher-actions"><button class="btn btn-ghost btn-small" data-teacher-edit="${esc(teacher.id)}">${esc(tx('Edit','تعديل'))}</button><button class="btn btn-ghost btn-small" data-teacher-status="${esc(teacher.id)}" data-status="${teacher.status==='removed'?'active':'removed'}">${esc(teacher.status==='removed'?tx('Restore','إرجاع'):tx('Remove','إزالة'))}</button><button class="btn btn-danger btn-small" data-teacher-delete="${esc(teacher.id)}">${esc(tx('Delete','حذف'))}</button></div>
+      <button class="admin-teacher-open" type="button" data-teacher-open="${esc(teacher.id)}" aria-label="${esc(tx('Open teacher content','فتح محتوى المدرس'))}">
+        <span class="admin-teacher-avatar">${teacher.imageUrl?`<img src="${esc(teacher.imageUrl)}" alt="">`:`<span>${esc((teacher.displayName||'T').slice(0,1).toUpperCase())}</span>`}</span>
+        <span class="admin-teacher-copy"><h3>${esc(teacher.displayName)} ${teacher.status==='removed'?`<small class="admin-teacher-status">${esc(tx('Removed','مزال'))}</small>`:''}</h3><p>${esc(subject?subjectLabel(subject.id):tx('No subject','بلا مادة'))}</p></span>
+        <span class="admin-teacher-stats"><span><strong>${chapters}</strong>${esc(tx('chapters','فصول'))}</span><span><strong>${lectures}</strong>${esc(tx('lectures','محاضرات'))}</span></span>
+      </button>
+      <div class="admin-teacher-actions"><button class="btn btn-ghost btn-small" data-teacher-edit="${esc(teacher.id)}">${esc(tx('Edit profile','تعديل الملف'))}</button><button class="btn btn-ghost btn-small" data-teacher-status="${esc(teacher.id)}" data-status="${teacher.status==='removed'?'active':'removed'}">${esc(teacher.status==='removed'?tx('Restore','إرجاع'):tx('Remove','إزالة'))}</button><button class="btn btn-danger btn-small" data-teacher-delete="${esc(teacher.id)}">${esc(tx('Delete','حذف'))}</button></div>
     </article>`;
   }
 
   function teachersView(){
-    return shell(`<div class="admin-console-section-head"><div><div class="eyebrow">${esc(tx('School directory','دليل المدرسة'))}</div><h2>${esc(tx('Teachers','المدرسون'))}</h2><p>${esc(tx('Each teacher can publish subjects, chapters, and lectures. Adding a teacher links an existing registered Dafatii account to the teacher directory.','يمكن لكل مدرس نشر مواد وفصول ومحاضرات. إضافة مدرس تربط حساب دفاتري مسجلاً مسبقاً بدليل المدرسين.'))}</p></div><button class="btn btn-primary" id="admin-add-teacher">＋ ${esc(tx('Add teacher','إضافة مدرس'))}</button></div>
+    return shell(`<div class="admin-console-section-head"><div><div class="eyebrow">${esc(tx('School directory','دليل المدرسة'))}</div><h2>${esc(tx('Teachers','المدرسون'))}</h2><p>${esc(tx('Create the teacher profile with a picture, name and exactly one subject. Open a teacher card to manage chapters and lecture videos.','أنشئ ملف المدرس بصورة واسم ومادة واحدة فقط. افتح بطاقة المدرس لإدارة الفصول ومحاضرات الفيديو.'))}</p></div><button class="btn btn-primary" id="admin-add-teacher">＋ ${esc(tx('Add teacher','إضافة مدرس'))}</button></div>
       <div class="admin-teacher-grid">${data.teachers.length?data.teachers.map(teacherCard).join(''):`<div class="admin-console-empty">${esc(tx('No teachers have been added yet.','لم تتم إضافة مدرسين بعد.'))}</div>`}</div>`);
   }
 
@@ -131,7 +135,11 @@
     const tab=adminTab()||'overview';
     if(!data.loaded)return shell(`<div class="admin-console-loading"><span></span><strong>${esc(tx('Loading Admin Console…','جارٍ تحميل لوحة المشرف…'))}</strong></div>`);
     if(tab==='students')return studentsView();
-    if(tab==='teachers')return teachersView();
+    if(tab==='teachers'){
+      const teacherId=adminTeacherId();
+      if(teacherId){const teacher=data.teachers.find(item=>item.id===teacherId);return teacher?teacherContentView(teacher):teachersView();}
+      teacherContentDraft=null;return teachersView();
+    }
     if(tab==='courses')return coursesView();
     if(tab==='study-rooms')return roomsView();
     return overviewView();
@@ -206,58 +214,78 @@
     };
   }
 
-  function emptyTeacherDraft(){return{displayName:'',imageUrl:'',subjects:[]};}
+  function emptyTeacherDraft(){const first=SUBJECTS[0];return{displayName:'',imageUrl:'',subjects:[{id:first[0],name:first[1],fameScore:0,chapters:[]}]};}
   const clone=value=>JSON.parse(JSON.stringify(value));
 
-  function teacherEditorHtml(draft,adding){
-    return `<form id="admin-teacher-form">${adding?`<div class="field"><label>${esc(tx('Registered account email','بريد الحساب المسجل'))}</label><input name="email" type="email" required></div>`:''}
-      <div class="suite-form-grid"><div class="field"><label>${esc(tx('Teacher name','اسم المدرس'))}</label><input id="admin-teacher-name" value="${esc(draft.displayName||'')}" required maxlength="100"></div><div class="field"><label>${esc(tx('Profile image URL','رابط صورة الملف'))}</label><input id="admin-teacher-image" type="url" value="${esc(draft.imageUrl||'')}" placeholder="https://…"></div></div>
-      <div class="teacher-editor-subjects" id="teacher-editor-subjects"></div>
-      <button type="button" class="btn btn-ghost" id="teacher-add-subject">＋ ${esc(tx('Add subject','إضافة مادة'))}</button>
-      <button class="btn btn-primary auth-submit">${esc(adding?tx('Add teacher','إضافة المدرس'):tx('Save teacher','حفظ المدرس'))}</button><p class="auth-note" id="admin-teacher-status"></p>
-    </form>`;
+  function teacherProfileEditorHtml(draft,adding){
+    const subject=draft.subjects?.[0]||emptyTeacherDraft().subjects[0];
+    return `<form id="admin-teacher-form"><div class="admin-teacher-profile-form">
+      <div class="admin-teacher-picture-preview" id="admin-teacher-picture-preview">${draft.imageUrl?`<img src="${esc(draft.imageUrl)}" alt="">`:`<span>${esc((draft.displayName||'T').slice(0,1).toUpperCase())}</span>`}</div>
+      <div class="admin-teacher-profile-fields"><div class="field"><label>${esc(tx('Teacher profile picture','صورة المدرس'))}</label><input id="admin-teacher-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" ${adding&&!draft.imageUrl?'required':''}><small>${esc(tx('PNG, JPEG, WebP or GIF, up to 220 KB.','PNG أو JPEG أو WebP أو GIF، حتى 220 كيلوبايت.'))}</small></div>
+      <div class="field"><label>${esc(tx('Teacher name','اسم المدرس'))}</label><input id="admin-teacher-name" value="${esc(draft.displayName||'')}" required maxlength="100"></div>
+      <div class="field"><label>${esc(tx('Subject','المادة'))}</label><select id="admin-teacher-subject" required>${SUBJECTS.map(([id,en,arabicName])=>`<option value="${id}" ${id===subject.id?'selected':''}>${esc(ar()?arabicName:en)}</option>`).join('')}</select></div></div>
+    </div><button class="btn btn-primary auth-submit">${esc(adding?tx('Add teacher','إضافة المدرس'):tx('Save profile','حفظ الملف'))}</button><p class="auth-note" id="admin-teacher-status"></p></form>`;
+  }
+
+  function readTeacherPicture(file){
+    return new Promise((resolve,reject)=>{
+      if(!file)return resolve('');
+      if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type))return reject(new Error(tx('Use a PNG, JPEG, WebP or GIF image.','استخدم صورة PNG أو JPEG أو WebP أو GIF.')));
+      if(file.size>220*1024)return reject(new Error(tx('Teacher picture must be 220 KB or smaller.','يجب ألا تتجاوز صورة المدرس 220 كيلوبايت.')));
+      const reader=new FileReader();reader.onerror=()=>reject(new Error(tx('Could not read the selected picture.','تعذر قراءة الصورة المحددة.')));reader.onload=()=>resolve(String(reader.result||''));reader.readAsDataURL(file);
+    });
   }
 
   function openTeacherEditor(teacher=null){
-    const adding=!teacher,draft=teacher?clone(teacher):emptyTeacherDraft();
-    const close=overlay(adding?tx('Add teacher','إضافة مدرس'):tx('Edit teacher','تعديل المدرس'),teacherEditorHtml(draft,adding));
-    const host=document.getElementById('teacher-editor-subjects');
-    const renderSubjects=()=>{
-      host.innerHTML=(draft.subjects||[]).map((subject,si)=>`<section class="teacher-editor-subject" data-subject-index="${si}">
-        <header><strong>${esc(subjectLabel(subject.id))}</strong><label>${esc(tx('Popularity','الشهرة'))}<input type="number" min="0" max="100000" value="${Number(subject.fameScore||0)}" data-fame="${si}"></label><button type="button" data-remove-teacher-subject="${si}">×</button></header>
-        <div class="teacher-editor-chapters">${(subject.chapters||[]).map((chapter,ci)=>`<article class="teacher-editor-chapter"><div class="teacher-editor-chapter-head"><input value="${esc(chapter.name)}" data-chapter-name="${si}:${ci}" placeholder="${esc(tx('Chapter name','اسم الفصل'))}" required><button type="button" data-remove-chapter="${si}:${ci}">×</button></div><div class="teacher-editor-lectures">${(chapter.lectures||[]).map((lecture,li)=>`<div class="teacher-editor-lecture"><input value="${esc(lecture.name)}" data-lecture-name="${si}:${ci}:${li}" placeholder="${esc(tx('Lecture name','اسم المحاضرة'))}" required><input value="${esc(lecture.link||'')}" data-lecture-link="${si}:${ci}:${li}" placeholder="https://…"><button type="button" data-remove-lecture="${si}:${ci}:${li}">×</button></div>`).join('')}</div><button type="button" class="btn btn-ghost btn-small" data-add-lecture="${si}:${ci}">＋ ${esc(tx('Lecture','محاضرة'))}</button></article>`).join('')}</div>
-        <button type="button" class="btn btn-ghost btn-small" data-add-chapter="${si}">＋ ${esc(tx('Chapter','فصل'))}</button>
-      </section>`).join('')||`<div class="admin-console-empty compact">${esc(tx('Add the teacher’s first subject.','أضف أول مادة للمدرس.'))}</div>`;
-      bindTeacherDraft();
-    };
-    const syncInputs=()=>{
-      document.querySelectorAll('[data-fame]').forEach(input=>{const s=draft.subjects[Number(input.dataset.fame)];if(s)s.fameScore=Number(input.value)||0;});
-      document.querySelectorAll('[data-chapter-name]').forEach(input=>{const [s,c]=input.dataset.chapterName.split(':').map(Number);if(draft.subjects[s]?.chapters[c])draft.subjects[s].chapters[c].name=input.value;});
-      document.querySelectorAll('[data-lecture-name]').forEach(input=>{const [s,c,l]=input.dataset.lectureName.split(':').map(Number);if(draft.subjects[s]?.chapters[c]?.lectures[l])draft.subjects[s].chapters[c].lectures[l].name=input.value;});
-      document.querySelectorAll('[data-lecture-link]').forEach(input=>{const [s,c,l]=input.dataset.lectureLink.split(':').map(Number);if(draft.subjects[s]?.chapters[c]?.lectures[l])draft.subjects[s].chapters[c].lectures[l].link=input.value;});
-    };
-    const bindTeacherDraft=()=>{
-      document.querySelectorAll('[data-remove-teacher-subject]').forEach(btn=>btn.onclick=()=>{syncInputs();draft.subjects.splice(Number(btn.dataset.removeTeacherSubject),1);renderSubjects();});
-      document.querySelectorAll('[data-add-chapter]').forEach(btn=>btn.onclick=()=>{syncInputs();draft.subjects[Number(btn.dataset.addChapter)].chapters.push({id:crypto.randomUUID(),name:tx('New chapter','فصل جديد'),lectures:[]});renderSubjects();});
-      document.querySelectorAll('[data-remove-chapter]').forEach(btn=>btn.onclick=()=>{syncInputs();const [s,c]=btn.dataset.removeChapter.split(':').map(Number);draft.subjects[s].chapters.splice(c,1);renderSubjects();});
-      document.querySelectorAll('[data-add-lecture]').forEach(btn=>btn.onclick=()=>{syncInputs();const [s,c]=btn.dataset.addLecture.split(':').map(Number);draft.subjects[s].chapters[c].lectures.push({id:crypto.randomUUID(),name:tx('New lecture','محاضرة جديدة'),link:''});renderSubjects();});
-      document.querySelectorAll('[data-remove-lecture]').forEach(btn=>btn.onclick=()=>{syncInputs();const [s,c,l]=btn.dataset.removeLecture.split(':').map(Number);draft.subjects[s].chapters[c].lectures.splice(l,1);renderSubjects();});
-    };
-    document.getElementById('teacher-add-subject').onclick=()=>{
-      syncInputs();const available=SUBJECTS.find(item=>!draft.subjects.some(subject=>subject.id===item[0]));
-      if(!available)return;draft.subjects.push({id:available[0],name:available[1],fameScore:0,chapters:[]});renderSubjects();
-    };
-    renderSubjects();
+    const adding=!teacher,draft=teacher?clone(teacher):emptyTeacherDraft();if(!draft.subjects?.length)draft.subjects=emptyTeacherDraft().subjects;
+    const close=overlay(adding?tx('Add teacher','إضافة مدرس'):tx('Edit teacher profile','تعديل ملف المدرس'),teacherProfileEditorHtml(draft,adding));
+    const picture=document.getElementById('admin-teacher-image-file');
+    picture.onchange=async()=>{const status=document.getElementById('admin-teacher-status');try{draft.imageUrl=await readTeacherPicture(picture.files?.[0]);document.getElementById('admin-teacher-picture-preview').innerHTML=draft.imageUrl?`<img src="${esc(draft.imageUrl)}" alt="">`:'';status.textContent='';}catch(error){picture.value='';status.textContent=error.message;}};
     document.getElementById('admin-teacher-form').onsubmit=async e=>{
-      e.preventDefault();syncInputs();draft.displayName=document.getElementById('admin-teacher-name').value.trim();draft.imageUrl=document.getElementById('admin-teacher-image').value.trim();
-      const status=document.getElementById('admin-teacher-status');status.textContent=tx('Saving…','جارٍ الحفظ…');
-      const body={displayName:draft.displayName,imageUrl:draft.imageUrl,subjects:draft.subjects};
-      if(adding)body.email=new FormData(e.currentTarget).get('email');
-      try{
-        await window.DafatiiApi.request(adding?'/admin/teachers':`/admin/teachers/${teacher.id}`,{method:adding?'POST':'PATCH',body});
-        close();data.loaded=false;await load(true);
-      }catch(error){status.textContent=error.message;}
+      e.preventDefault();const displayName=document.getElementById('admin-teacher-name').value.trim(),subjectId=document.getElementById('admin-teacher-subject').value,status=document.getElementById('admin-teacher-status');
+      if(!draft.imageUrl){status.textContent=tx('Add a teacher profile picture.','أضف صورة للمدرس.');return;}status.textContent=tx('Saving…','جارٍ الحفظ…');
+      const previous=draft.subjects?.[0],meta=SUBJECTS.find(item=>item[0]===subjectId)||SUBJECTS[0],subject={id:subjectId,name:meta[1],fameScore:Number(previous?.fameScore||0),chapters:previous?.id===subjectId?clone(previous.chapters||[]):[]};
+      try{await window.DafatiiApi.request(adding?'/admin/teachers':`/admin/teachers/${teacher.id}`,{method:adding?'POST':'PATCH',body:{displayName,imageUrl:draft.imageUrl,subjects:[subject]}});close();data.loaded=false;await load(true);}catch(error){status.textContent=error.message;}
     };
+  }
+
+  function contentDraftFor(teacher){
+    if(!teacherContentDraft||teacherContentDraft.teacherId!==teacher.id){const source=teacher.subjects?.[0]||emptyTeacherDraft().subjects[0];teacherContentDraft={teacherId:teacher.id,subject:clone(source)};}
+    return teacherContentDraft;
+  }
+
+  function teacherContentView(teacher){
+    const draft=contentDraftFor(teacher),subject=draft.subject,chapters=subject.chapters||[];
+    const chapterHtml=chapters.length?chapters.map((chapter,ci)=>`<article class="admin-content-chapter" data-content-chapter="${ci}">
+      <header class="admin-content-chapter-head"><div class="field"><label>${esc(tx('Chapter name','اسم الفصل'))}</label><input data-content-chapter-name="${ci}" value="${esc(chapter.name||'')}" maxlength="120" required></div><div class="admin-content-chapter-actions"><label class="btn btn-ghost btn-small admin-import-button">${esc(tx('Import Excel','استيراد Excel'))}<input type="file" hidden data-content-import="${ci}" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"></label><button class="btn btn-danger btn-small" type="button" data-content-remove-chapter="${ci}">${esc(tx('Delete chapter','حذف الفصل'))}</button></div></header>
+      <div class="admin-content-table-wrap"><table class="admin-content-table"><thead><tr><th>${esc(tx('Lecture name','اسم المحاضرة'))}</th><th>${esc(tx('YouTube video link','رابط فيديو يوتيوب'))}</th><th></th></tr></thead><tbody>${(chapter.lectures||[]).map((lecture,li)=>`<tr><td><input data-content-lecture-name="${ci}:${li}" value="${esc(lecture.name||'')}" maxlength="160" required></td><td><input data-content-lecture-link="${ci}:${li}" type="url" value="${esc(lecture.link||'')}" placeholder="https://youtube.com/watch?v=…"></td><td><button type="button" class="icon-btn" data-content-remove-lecture="${ci}:${li}" aria-label="${esc(tx('Remove lecture','حذف المحاضرة'))}">×</button></td></tr>`).join('')}</tbody></table></div>
+      <button type="button" class="btn btn-ghost btn-small" data-content-add-lecture="${ci}">＋ ${esc(tx('Add lecture','إضافة محاضرة'))}</button></article>`).join(''):`<div class="admin-console-empty compact">${esc(tx('Add the first chapter, then add lectures manually or import them from Excel.','أضف الفصل الأول، ثم أضف المحاضرات يدوياً أو استوردها من Excel.'))}</div>`;
+    return shell(`<div class="admin-teacher-content-page"><div class="admin-content-toolbar"><button class="btn btn-ghost" type="button" data-teacher-content-back>← ${esc(tx('Teachers','المدرسون'))}</button><button class="btn btn-primary" type="button" data-save-teacher-content>${esc(tx('Save content','حفظ المحتوى'))}</button></div>
+      <header class="admin-content-teacher"><div class="admin-teacher-avatar">${teacher.imageUrl?`<img src="${esc(teacher.imageUrl)}" alt="">`:esc((teacher.displayName||'T').slice(0,1))}</div><div><div class="eyebrow">${esc(subjectLabel(subject.id))}</div><h2>${esc(teacher.displayName)}</h2><p>${esc(tx('Organize this subject by chapter. Each lecture has a name and a YouTube video link. Excel import reads exactly the first two columns.','نظّم هذه المادة حسب الفصل. لكل محاضرة اسم ورابط فيديو يوتيوب. يستورد Excel أول عمودين فقط.'))}</p></div></header>
+      <div class="admin-content-actions"><button class="btn btn-primary" type="button" data-content-add-chapter>＋ ${esc(tx('Add chapter','إضافة فصل'))}</button><span id="admin-content-status" class="auth-note"></span></div><div class="admin-content-chapters">${chapterHtml}</div></div>`);
+  }
+
+  function syncTeacherContentInputs(draft){
+    document.querySelectorAll('[data-content-chapter-name]').forEach(input=>{const chapter=draft.subject.chapters?.[Number(input.dataset.contentChapterName)];if(chapter)chapter.name=input.value;});
+    document.querySelectorAll('[data-content-lecture-name]').forEach(input=>{const [c,l]=input.dataset.contentLectureName.split(':').map(Number);if(draft.subject.chapters?.[c]?.lectures?.[l])draft.subject.chapters[c].lectures[l].name=input.value;});
+    document.querySelectorAll('[data-content-lecture-link]').forEach(input=>{const [c,l]=input.dataset.contentLectureLink.split(':').map(Number);if(draft.subject.chapters?.[c]?.lectures?.[l])draft.subject.chapters[c].lectures[l].link=input.value;});
+  }
+  function normalizeYoutubeLink(value){const raw=String(value||'').trim();if(!raw)return '';let url;try{url=new URL(raw);}catch{return '';}const host=url.hostname.toLowerCase().replace(/^www\./,'');return url.protocol==='https:'&&(host==='youtu.be'||host==='youtube.com'||host.endsWith('.youtube.com'))?url.href:'';}
+  async function importChapterSpreadsheet(file,draft,chapterIndex){
+    if(!file)return;if(!window.XLSX)throw new Error(tx('Excel import is not available yet. Reload the page and try again.','استيراد Excel غير متاح الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
+    const bytes=await file.arrayBuffer(),workbook=window.XLSX.read(bytes,{type:'array'}),sheet=workbook.Sheets[workbook.SheetNames[0]],rows=window.XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,defval:''}),parsed=[];
+    rows.forEach((row,index)=>{const name=String(row?.[0]||'').trim(),rawLink=String(row?.[1]||'').trim();if(!name&&!rawLink)return;if(index===0&&/lecture|محاضرة/i.test(name)&&/youtube|video|link|رابط|يوتيوب/i.test(rawLink))return;const link=normalizeYoutubeLink(rawLink);if(!name||!link)throw new Error(tx(`Invalid row ${index+1}. Column A must be the lecture name and column B must be a valid HTTPS YouTube link.`,`الصف ${index+1} غير صالح. العمود A لاسم المحاضرة والعمود B لرابط يوتيوب HTTPS صالح.`));parsed.push({id:crypto.randomUUID(),name,link});});
+    if(!parsed.length)throw new Error(tx('The spreadsheet has no lecture rows to import.','لا يحتوي الملف على صفوف محاضرات للاستيراد.'));const chapter=draft.subject.chapters?.[chapterIndex];if(!chapter)return;const combined=[...(chapter.lectures||[]),...parsed],seen=new Set();chapter.lectures=combined.filter(item=>{const key=`${String(item.name).trim().toLowerCase()}\0${String(item.link).trim()}`;if(seen.has(key))return false;seen.add(key);return true;});
+  }
+  function bindTeacherContent(teacher){
+    const draft=contentDraftFor(teacher);
+    document.querySelector('[data-teacher-content-back]')?.addEventListener('click',()=>{teacherContentDraft=null;location.hash='admin/teachers';});
+    document.querySelector('[data-content-add-chapter]')?.addEventListener('click',()=>{syncTeacherContentInputs(draft);draft.subject.chapters=draft.subject.chapters||[];draft.subject.chapters.push({id:crypto.randomUUID(),name:tx('New chapter','فصل جديد'),lectures:[]});render();});
+    document.querySelectorAll('[data-content-remove-chapter]').forEach(button=>button.onclick=()=>{syncTeacherContentInputs(draft);draft.subject.chapters.splice(Number(button.dataset.contentRemoveChapter),1);render();});
+    document.querySelectorAll('[data-content-add-lecture]').forEach(button=>button.onclick=()=>{syncTeacherContentInputs(draft);const chapter=draft.subject.chapters?.[Number(button.dataset.contentAddLecture)];if(chapter){chapter.lectures=chapter.lectures||[];chapter.lectures.push({id:crypto.randomUUID(),name:'',link:''});render();}});
+    document.querySelectorAll('[data-content-remove-lecture]').forEach(button=>button.onclick=()=>{syncTeacherContentInputs(draft);const [c,l]=button.dataset.contentRemoveLecture.split(':').map(Number);draft.subject.chapters?.[c]?.lectures?.splice(l,1);render();});
+    document.querySelectorAll('[data-content-import]').forEach(input=>input.onchange=async()=>{const status=document.getElementById('admin-content-status');syncTeacherContentInputs(draft);status.textContent=tx('Importing…','جارٍ الاستيراد…');try{await importChapterSpreadsheet(input.files?.[0],draft,Number(input.dataset.contentImport));render();}catch(error){status.textContent=error.message;input.value='';}});
+    document.querySelector('[data-save-teacher-content]')?.addEventListener('click',async()=>{const status=document.getElementById('admin-content-status');syncTeacherContentInputs(draft);for(const chapter of draft.subject.chapters||[]){if(!String(chapter.name||'').trim()){status.textContent=tx('Every chapter needs a name.','كل فصل يحتاج اسماً.');return;}for(const lecture of chapter.lectures||[]){const link=normalizeYoutubeLink(lecture.link);if(!String(lecture.name||'').trim()||!link){status.textContent=tx('Every lecture needs a name and a valid HTTPS YouTube link.','كل محاضرة تحتاج اسماً ورابط يوتيوب HTTPS صالحاً.');return;}lecture.link=link;}}status.textContent=tx('Saving…','جارٍ الحفظ…');try{await window.DafatiiApi.request(`/admin/teachers/${teacher.id}`,{method:'PATCH',body:{subjects:[draft.subject]}});teacherContentDraft=null;data.loaded=false;await load(true);}catch(error){status.textContent=error.message;}});
   }
 
   async function patchStudent(id,body){
@@ -273,7 +301,9 @@
     document.querySelectorAll('[data-student-status]').forEach(button=>button.onclick=async()=>{try{await patchStudent(button.dataset.studentStatus,{status:button.dataset.status});}catch(error){data.error=error.message;render();}});
     document.querySelectorAll('[data-student-delete]').forEach(button=>button.onclick=async()=>{if(!confirm(tx('Soft-delete this student account?','حذف حساب الطالب بشكل منطقي؟')))return;try{await patchStudent(button.dataset.studentDelete,{status:'deleted'});}catch(error){data.error=error.message;render();}});
     document.getElementById('admin-add-teacher')?.addEventListener('click',()=>openTeacherEditor());
-    document.querySelectorAll('[data-teacher-edit]').forEach(button=>button.onclick=()=>openTeacherEditor(data.teachers.find(t=>t.id===button.dataset.teacherEdit)));
+    document.querySelectorAll('[data-teacher-open]').forEach(button=>button.onclick=()=>{teacherContentDraft=null;location.hash=`admin/teachers/${encodeURIComponent(button.dataset.teacherOpen)}`;});
+    document.querySelectorAll('[data-teacher-edit]').forEach(button=>button.onclick=event=>{event.stopPropagation();openTeacherEditor(data.teachers.find(t=>t.id===button.dataset.teacherEdit));});
+    const contentTeacherId=adminTeacherId();if(contentTeacherId){const contentTeacher=data.teachers.find(item=>item.id===contentTeacherId);if(contentTeacher)bindTeacherContent(contentTeacher);}
     document.querySelectorAll('[data-teacher-status]').forEach(button=>button.onclick=async()=>{try{await window.DafatiiApi.request(`/admin/teachers/${button.dataset.teacherStatus}`,{method:'PATCH',body:{status:button.dataset.status}});data.loaded=false;await load(true);}catch(error){data.error=error.message;render();}});
     document.querySelectorAll('[data-teacher-delete]').forEach(button=>button.onclick=async()=>{if(!confirm(tx('Permanently delete this teacher directory profile and content?','حذف ملف المدرس ومحتواه من الدليل نهائياً؟')))return;try{await window.DafatiiApi.request(`/admin/teachers/${button.dataset.teacherDelete}`,{method:'DELETE'});data.loaded=false;await load(true);}catch(error){data.error=error.message;render();}});
     document.getElementById('admin-create-course')?.addEventListener('click',()=>{location.hash='change-course';});

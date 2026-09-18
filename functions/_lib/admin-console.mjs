@@ -1,4 +1,4 @@
-import { createUser, normalizeEmail } from './auth.mjs';
+import { createUser } from './auth.mjs';
 import { HttpError, ok, readJson } from './http.mjs';
 import { ensureSchoolTeacherSchema, SCHOOL_SUBJECTS } from './school-teachers.mjs';
 import { isUuid } from './policy.mjs';
@@ -25,17 +25,18 @@ function requireAdmin(actor){
 }
 
 function normalizeImageUrl(value){
-  const raw=clean(value,2048);
+  const raw=String(value??'').trim();
   if(!raw)return '';
-  let url;
-  try{url=new URL(raw);}catch{throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image URL is invalid.');}
-  if(!['https:','http:'].includes(url.protocol))throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image URL must use http or https.');
+  if(raw.length>320000)throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image is too large.');
+  if(/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(raw))return raw;
+  let url;try{url=new URL(raw);}catch{throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image is invalid.');}
+  if(!['https:','http:'].includes(url.protocol))throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile image must use http or https.');
   return url.href;
 }
 
 function normalizeTeacherContent(input={}){
   const subjects=Array.isArray(input.subjects)?input.subjects:[];
-  if(subjects.length>7)throw new HttpError(400,'INVALID_TEACHER_CONTENT','A teacher can have at most seven school subjects.');
+  if(subjects.length!==1)throw new HttpError(400,'INVALID_TEACHER_CONTENT','Every teacher must have exactly one school subject.');
   const seen=new Set();
   const normalized=subjects.map((subject,index)=>{
     const id=String(subject?.id||subject?.subject||'').trim();
@@ -83,7 +84,7 @@ function teacherDto(row){
   const content=safeJson(row.content_json)||{subjects:[]};
   return {
     id:row.teacher_user_id,
-    email:row.email_normalized,
+    email:String(row.email_normalized||'').endsWith('@internal.dafatii.invalid')?'':row.email_normalized,
     displayName:row.display_name,
     imageUrl:row.image_url||'',
     subjects:Array.isArray(content.subjects)?content.subjects:[],
@@ -103,22 +104,20 @@ async function listTeachers(context){
 
 async function createTeacher(context){
   await ensureSchema(context.env.DB);
-  const input=await readJson(context.request,262144);
-  const email=normalizeEmail(input.email);
-  const user=await context.env.DB.prepare("SELECT id,email_normalized,display_name FROM users WHERE email_normalized = ? AND status = 'active'").bind(email).first();
-  if(!user)throw new HttpError(404,'USER_NOT_FOUND','Register the teacher account before adding it to the teacher directory.');
-  const exists=await context.env.DB.prepare('SELECT 1 AS present FROM school_teacher_profiles WHERE teacher_user_id = ?').bind(user.id).first();
-  if(exists)throw new HttpError(409,'TEACHER_EXISTS','This teacher is already in the directory.');
-  const displayName=clean(input.displayName,100)||user.display_name;
+  const input=await readJson(context.request,524288);
+  const displayName=clean(input.displayName,100);
+  if(displayName.length<2)throw new HttpError(400,'INVALID_DISPLAY_NAME','Teacher name is required.');
   const imageUrl=normalizeImageUrl(input.imageUrl);
+  if(!imageUrl)throw new HttpError(400,'INVALID_TEACHER_IMAGE','Teacher profile picture is required.');
   const content=normalizeTeacherContent(input);
-  const now=Date.now();
-  await context.env.DB.prepare('UPDATE users SET display_name = ?, updated_at = ? WHERE id = ?').bind(displayName,now,user.id).run();
-  await context.env.DB.prepare("INSERT INTO school_teacher_profiles (teacher_user_id,image_url,content_json,status,created_at,updated_at) VALUES (?,?,?,'active',?,?)")
-    .bind(user.id,imageUrl,JSON.stringify(content),now,now).run();
-  await syncAssignments(context.env.DB,user.id,content,now);
-  const row=await context.env.DB.prepare(`SELECT p.teacher_user_id,p.image_url,p.content_json,p.status,p.updated_at,u.email_normalized,u.display_name
-    FROM school_teacher_profiles p JOIN users u ON u.id=p.teacher_user_id WHERE p.teacher_user_id=?`).bind(user.id).first();
+  const now=Date.now(),teacherId=crypto.randomUUID();
+  const managedEmail=`managed-teacher-${teacherId}@internal.dafatii.invalid`,managedPasswordHash=`managed-teacher:${teacherId}`;
+  await context.env.DB.batch([
+    context.env.DB.prepare('INSERT INTO users (id,email_normalized,password_hash,display_name,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)').bind(teacherId,managedEmail,managedPasswordHash,displayName,'active',now,now),
+    context.env.DB.prepare("INSERT INTO school_teacher_profiles (teacher_user_id,image_url,content_json,status,created_at,updated_at) VALUES (?,?,?,'active',?,?)").bind(teacherId,imageUrl,JSON.stringify(content),now,now)
+  ]);
+  await syncAssignments(context.env.DB,teacherId,content,now);
+  const row=await context.env.DB.prepare(`SELECT p.teacher_user_id,p.image_url,p.content_json,p.status,p.updated_at,u.email_normalized,u.display_name FROM school_teacher_profiles p JOIN users u ON u.id=p.teacher_user_id WHERE p.teacher_user_id=?`).bind(teacherId).first();
   return ok({teacher:teacherDto(row)},201);
 }
 
@@ -127,7 +126,7 @@ async function updateTeacher(context,teacherId){
   if(!isUuid(teacherId))throw new HttpError(400,'INVALID_TEACHER','Teacher identifier is invalid.');
   const current=await context.env.DB.prepare('SELECT content_json,image_url,status FROM school_teacher_profiles WHERE teacher_user_id=?').bind(teacherId).first();
   if(!current)throw new HttpError(404,'TEACHER_NOT_FOUND','Teacher was not found.');
-  const input=await readJson(context.request,262144);
+  const input=await readJson(context.request,524288);
   const content=input.subjects===undefined?(safeJson(current.content_json)||{subjects:[]}):normalizeTeacherContent(input);
   const existingUser=await context.env.DB.prepare('SELECT display_name FROM users WHERE id=?').bind(teacherId).first();
   const displayName=input.displayName===undefined?existingUser?.display_name:clean(input.displayName,100);

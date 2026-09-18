@@ -23,7 +23,7 @@ assert.ok(ui.includes('data-school-previous') && ui.includes('data-school-next')
 assert.ok(ui.includes('step>=catalog.subjects.length-1') || ui.includes('step >= catalog.subjects.length - 1'), 'final step must finish the flow');
 assert.ok(ui.includes('teacher.fameScore') && ui.includes('teacher.selectionCount'), 'teacher cards must expose popularity ordering signals');
 assert.ok(css.includes('.school-stepper') && css.includes('.school-teacher-card'), 'school teacher UI styles missing');
-assert.ok(index.includes('school-teacher-flow.css?v=20260918-1') && index.includes('school-teacher-flow.js?v=20260918-1'), 'school teacher assets must be loaded with the interaction-fix cache version');
+assert.ok(index.includes('school-teacher-flow.css?v=20260918-2') && index.includes('school-teacher-flow.js?v=20260918-2'), 'school teacher assets must be loaded with the interaction-fix cache version');
 assert.ok(ui.includes('if(!ALLOWED.has(current) || !teacherRoute(current))return;'), 'teacher renderer must stay out of profile/settings/signup routes');
 assert.ok(ui.includes("if(!teacherRoute(route()))return;"), 'teacher enhancement must be inert outside dashboard and teacher picker');
 assert.ok(ui.includes(".observe(appRoot,{childList:true});"), 'teacher observer must watch only top-level workspace replacements');
@@ -33,6 +33,11 @@ assert.ok(!ui.includes("if(!ALLOWED.has(current)){location.hash='dashboard';retu
 assert.ok(server.includes('ORDER BY a.fame_score DESC, selection_count DESC'), 'teacher directory must sort by fame and student selections');
 assert.ok(server.includes('school_teacher_profiles') && server.includes('image_url') && server.includes('chapters'), 'teacher catalog must expose managed profile images and subject chapters');
 assert.ok(ui.includes('teacher?.imageUrl') && ui.includes('<img src='), 'school teacher picker must render managed teacher profile images');
+assert.ok(ui.includes('window.DafatiiSchoolWorkspaceReady=ready') && ui.includes('state.subjects=nextSubjects') && ui.includes('state.lectures=nextLectures'), 'completed teacher selection must hydrate the normal seven-subject workspace');
+assert.ok(ui.includes("location.hash=catalog.complete?'subjects/All%20subjects':'dashboard'"), 'finishing teacher selection must open the normal Subjects workspace');
+const app = fs.readFileSync('app.js','utf8');
+assert.ok(app.includes('schoolManagedWorkspace()') && app.includes("!window.DafatiiCourses.active().id&&!schoolManagedWorkspace()"), 'complete school teacher setup must bypass the pre-course shell');
+assert.ok(app.includes('school-managed-card') && app.includes("managed?'':"), 'teacher-owned school subjects and lectures must be read-only in the normal workspace');
 assert.ok(server.includes('academic_level = ?') && server.includes('academic_stage = ?') && server.includes('academic_field = ?'), 'teacher directory must filter academic identity');
 assert.ok(server.includes('school_teacher_selections') && server.includes('PRIMARY KEY (student_user_id, subject)'), 'one teacher selection per subject must be enforced');
 assert.ok(schoolRoute.includes("method === 'GET' && path === 'teachers'") && schoolRoute.includes("method === 'PUT'"), 'teacher catalog/select API routes missing');
