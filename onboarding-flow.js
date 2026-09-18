@@ -219,10 +219,11 @@
     if(view==='create')return createCourseView();
     if(view==='join')return joinCourseView();
     if(view==='waiting')return waitingView();
+    if(view==='recommend-intent')return recommendationIntent();
     if(view==='recommend-field')return fieldView();
     if(view==='recommend-level')return levelView();
     if(view==='recommend-results')return recommendationResults();
-    return shell('<section class="onboarding-section"><div class="onboarding-loader"></div><h1>Preparing your next step…</h1></section>',1,1,2);
+    return errorView('We could not determine the next onboarding step. Tap Try again.');
   }
 
   function bind(){
