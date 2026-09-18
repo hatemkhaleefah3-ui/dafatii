@@ -11,7 +11,7 @@
 
   const copy = {
     en: {
-      step:'Step', previous:'Previous', next:'Next', create:'Create account', fullName:'Full name',
+      step:'Step', previous:'Previous', next:'Next', create:'Create account', fullName:'Full name', birthDate:'Birth date', country:'Country', city:'City', town:'Town',
       level:'Academic level', stage:'Stage', field:'Field', schoolName:'School name', institutionName:'Institution name', universityName:'University name', collegeName:'College name',
       gender:'Gender', male:'Male', female:'Female', notSay:'Prefer not to say', email:'Email', phone:'Phone number (optional)', phoneHint:'Use a country code for phone sign-in, for example +964…',
       password:'Password', repeatPassword:'Repeat password', passwordHint:'Use at least 12 characters. A longer passphrase or a mix of letters, numbers, and symbols is recommended.',
@@ -24,10 +24,10 @@
       profile:'Student profile', identity:'Academic identity', contact:'Contact', studentCard:'Student card', cardHint:'Tap the card to flip it.', accessId:'Student access ID', pin:'PIN', reveal:'Reveal ID', hide:'Hide ID', secret:'Secret credential',
       oneTime:'Save your sign-in credentials', oneTimeText:'Your PIN is shown only for this signup session. Store it somewhere private before hiding it.', saved:'I saved them',
       changePhoto:'Change profile picture', uploading:'Uploading photo…', photoError:'Could not update the profile picture.', noId:'Student ID is available for accounts created with the new signup flow.',
-      born:'Birth date', academicField:'Academic field', organization:'School / institution', phoneLabel:'Phone', emailLabel:'Email'
+      born:'Birth date', location:'Location', academicField:'Academic field', organization:'School / institution', phoneLabel:'Phone', emailLabel:'Email'
     },
     ar: {
-      step:'الخطوة', previous:'السابق', next:'التالي', create:'إنشاء الحساب', fullName:'الاسم الكامل',
+      step:'الخطوة', previous:'السابق', next:'التالي', create:'إنشاء الحساب', fullName:'الاسم الكامل', birthDate:'تاريخ الميلاد', country:'الدولة', city:'المدينة', town:'البلدة / المنطقة',
       level:'المستوى الدراسي', stage:'المرحلة', field:'الفرع', schoolName:'اسم المدرسة', institutionName:'اسم المعهد / المؤسسة', universityName:'اسم الجامعة', collegeName:'اسم الكلية',
       gender:'الجنس', male:'ذكر', female:'أنثى', notSay:'أفضل عدم الإجابة', email:'البريد الإلكتروني', phone:'رقم الهاتف (اختياري)', phoneHint:'استخدم رمز الدولة لتسجيل الدخول بالهاتف، مثال +964…',
       password:'كلمة المرور', repeatPassword:'أعد كتابة كلمة المرور', passwordHint:'استخدم 12 محرفاً على الأقل. يفضّل عبارة مرور أطول أو مزيجاً من الحروف والأرقام والرموز.',
@@ -40,7 +40,7 @@
       profile:'الملف الشخصي للطالب', identity:'الهوية الأكاديمية', contact:'التواصل', studentCard:'بطاقة الطالب', cardHint:'اضغط على البطاقة لقلبها.', accessId:'رقم دخول الطالب', pin:'PIN', reveal:'إظهار الرقم', hide:'إخفاء الرقم', secret:'بيانات سرية',
       oneTime:'احفظ بيانات تسجيل الدخول', oneTimeText:'يظهر رمز PIN في جلسة إنشاء الحساب هذه فقط. احفظه في مكان خاص قبل إخفائه.', saved:'تم الحفظ',
       changePhoto:'تغيير الصورة الشخصية', uploading:'جارٍ رفع الصورة…', photoError:'تعذر تحديث الصورة الشخصية.', noId:'رقم الطالب متاح للحسابات المنشأة بنظام التسجيل الجديد.',
-      born:'تاريخ الميلاد', academicField:'الفرع الدراسي', organization:'المدرسة / المؤسسة', phoneLabel:'الهاتف', emailLabel:'البريد الإلكتروني'
+      born:'تاريخ الميلاد', location:'الموقع', academicField:'الفرع الدراسي', organization:'المدرسة / المؤسسة', phoneLabel:'الهاتف', emailLabel:'البريد الإلكتروني'
     }
   };
 
@@ -83,7 +83,7 @@
   const valueOf = (name, fallback = '') => signupDraft[name] ?? fallback;
 
   function progress() {
-    return `<div class="student-flow-progress" aria-label="${esc(t('step'))} ${signupStep} / 4"><div>${[1,2,3,4].map(step => `<span class="${step === signupStep ? 'active' : step < signupStep ? 'done' : ''}"></span>`).join('')}</div><strong>${esc(t('step'))} ${signupStep} / 4</strong></div>`;
+    return `<div class="student-flow-progress" aria-label="${esc(t('step'))} ${signupStep} / 5"><div>${[1,2,3,4,5].map(step => `<span class="${step === signupStep ? 'active' : step < signupStep ? 'done' : ''}"></span>`).join('')}</div><strong>${esc(t('step'))} ${signupStep} / 5</strong></div>`;
   }
 
   function dependentAcademic(levelKey) {
@@ -105,17 +105,18 @@
   }
 
   function signupBody() {
-    if (signupStep === 1) return `${progress()}<div class="student-flow-step">${field('displayName', t('fullName'), `<input autocomplete="name" maxlength="100" value="${esc(valueOf('displayName'))}" required>`)}</div>`;
-    if (signupStep === 2) {
+    if (signupStep === 1) return `${progress()}<div class="student-flow-step">${field('displayName', t('fullName'), `<input autocomplete="name" maxlength="100" value="${esc(valueOf('displayName'))}" required>`)}${field('birthDate', t('birthDate'), `<input type="date" autocomplete="bday" value="${esc(valueOf('birthDate'))}" required>`)}</div>`;
+    if (signupStep === 2) return `${progress()}<div class="student-flow-step">${field('country', t('country'), `<input autocomplete="country-name" maxlength="120" value="${esc(valueOf('country'))}" required>`)}${field('city', t('city'), `<input autocomplete="address-level2" maxlength="120" value="${esc(valueOf('city'))}" required>`)}${field('town', t('town'), `<input autocomplete="address-level3" maxlength="120" value="${esc(valueOf('town'))}" required>`)}</div>`;
+    if (signupStep === 3) {
       const levelValue = levels[valueOf('academicLevel')] ? valueOf('academicLevel') : 'primary_school';
       return `${progress()}<div class="student-flow-step">${field('academicLevel', t('level'), `<select required>${Object.entries(levels).map(([key,rule]) => option(key, t(rule.label), key === levelValue)).join('')}</select>`)}<div class="academic-dependent">${dependentAcademic(levelValue)}</div></div>`;
     }
-    if (signupStep === 3) return `${progress()}<div class="student-flow-step">${field('gender', t('gender'), `<select required>${option('male',t('male'),valueOf('gender','male')==='male')}${option('female',t('female'),valueOf('gender')==='female')}${option('prefer_not_to_say',t('notSay'),valueOf('gender')==='prefer_not_to_say')}</select>`)}${field('email', t('email'), `<input type="email" autocomplete="email" maxlength="254" value="${esc(valueOf('email'))}" required>`)}${field('phone', t('phone'), `<input type="tel" autocomplete="tel" maxlength="32" value="${esc(valueOf('phone'))}" placeholder="+964…">`)}<p class="student-flow-hint">${esc(t('phoneHint'))}</p></div>`;
+    if (signupStep === 4) return `${progress()}<div class="student-flow-step">${field('gender', t('gender'), `<select required>${option('male',t('male'),valueOf('gender','male')==='male')}${option('female',t('female'),valueOf('gender')==='female')}${option('prefer_not_to_say',t('notSay'),valueOf('gender')==='prefer_not_to_say')}</select>`)}${field('email', t('email'), `<input type="email" autocomplete="email" maxlength="254" value="${esc(valueOf('email'))}" required>`)}${field('phone', t('phone'), `<input type="tel" autocomplete="tel" maxlength="32" value="${esc(valueOf('phone'))}" placeholder="+964…">`)}<p class="student-flow-hint">${esc(t('phoneHint'))}</p></div>`;
     return `${progress()}<div class="student-flow-step">${field('password', t('password'), `<input type="password" autocomplete="new-password" minlength="12" maxlength="256" required>`)}${field('passwordConfirm', t('repeatPassword'), `<input type="password" autocomplete="new-password" minlength="12" maxlength="256" required>`)}<div class="password-strength" data-password-strength="weak"><span></span><span></span><span></span><strong>${esc(t('weak'))}</strong></div><p class="student-flow-hint">${esc(t('passwordHint'))}</p></div>`;
   }
 
   function actions() {
-    return `<div class="student-flow-actions">${signupStep > 1 ? `<button type="button" class="btn btn-ghost" data-student-previous>← ${esc(t('previous'))}</button>` : '<span></span>'}<button class="btn btn-primary auth-submit" type="submit">${esc(signupStep === 4 ? t('create') : t('next'))} ${signupStep === 4 ? '' : '→'}</button></div>`;
+    return `<div class="student-flow-actions">${signupStep > 1 ? `<button type="button" class="btn btn-ghost" data-student-previous>← ${esc(t('previous'))}</button>` : '<span></span>'}<button class="btn btn-primary auth-submit" type="submit">${esc(signupStep === 5 ? t('create') : t('next'))} ${signupStep === 5 ? '' : '→'}</button></div>`;
   }
 
   function capture(form) {
@@ -124,7 +125,7 @@
       if (key === 'password' || key === 'passwordConfirm') continue;
       signupDraft[key] = String(value);
     }
-    if (signupStep === 2) {
+    if (signupStep === 3) {
       const level = signupDraft.academicLevel;
       const rule = levels[level];
       if (!rule?.fields) signupDraft.academicField = '';
@@ -158,7 +159,7 @@
       event.preventDefault();
       if (!form.reportValidity()) return;
       const status = document.getElementById('auth-status');
-      if (signupStep < 4) {
+      if (signupStep < 5) {
         capture(form);
         signupStep += 1;
         renderSignup(form);
@@ -243,7 +244,7 @@
           </button>
           ${studentId ? `<button class="student-reveal-id" type="button" data-reveal-student-id>${esc(t('reveal'))}</button>` : `<p class="student-profile-muted">${esc(t('noId'))}</p>`}
         </section>
-        <section class="student-profile-details"><article><span>${esc(t('identity'))}</span><dl><div><dt>${esc(t('level'))}</dt><dd>${esc(levelLabel(profile) || '—')}</dd></div><div><dt>${esc(t('stage'))}</dt><dd>${esc(stageLabel(profile?.academicStage) || '—')}</dd></div>${fieldText ? `<div><dt>${esc(t('academicField'))}</dt><dd>${esc(fieldText)}</dd></div>` : ''}<div><dt>${esc(t('organization'))}</dt><dd>${esc(organization || '—')}</dd></div>${profile?.birthDate ? `<div><dt>${esc(t('born'))}</dt><dd>${esc(profile.birthDate)}</dd></div>` : ''}</dl></article><article><span>${esc(t('contact'))}</span><dl><div><dt>${esc(t('emailLabel'))}</dt><dd>${esc(user.email || profile?.email || '—')}</dd></div><div><dt>${esc(t('phoneLabel'))}</dt><dd>${esc(profile?.phone || '—')}</dd></div></dl></article></section>
+        <section class="student-profile-details"><article><span>${esc(t('identity'))}</span><dl><div><dt>${esc(t('level'))}</dt><dd>${esc(levelLabel(profile) || '—')}</dd></div><div><dt>${esc(t('stage'))}</dt><dd>${esc(stageLabel(profile?.academicStage) || '—')}</dd></div>${fieldText ? `<div><dt>${esc(t('academicField'))}</dt><dd>${esc(fieldText)}</dd></div>` : ''}<div><dt>${esc(t('organization'))}</dt><dd>${esc(organization || '—')}</dd></div>${profile?.birthDate ? `<div><dt>${esc(t('born'))}</dt><dd>${esc(profile.birthDate)}</dd></div>` : ''}${[profile?.town,profile?.city,profile?.country].filter(Boolean).length ? `<div><dt>${esc(t('location'))}</dt><dd>${esc([profile?.town,profile?.city,profile?.country].filter(Boolean).join(' · '))}</dd></div>` : ''}</dl></article><article><span>${esc(t('contact'))}</span><dl><div><dt>${esc(t('emailLabel'))}</dt><dd>${esc(user.email || profile?.email || '—')}</dd></div><div><dt>${esc(t('phoneLabel'))}</dt><dd>${esc(profile?.phone || '—')}</dd></div></dl></article></section>
       </div>
       <p class="student-photo-status" role="status" data-student-photo-status></p>
     </section>`;
