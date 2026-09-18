@@ -7,7 +7,7 @@ const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(ui.includes("const PLANNER_MODES = ['day','week','month','year']"), 'schedule must expose day/week/month/year time scales');
 assert.ok(ui.includes('data-planner-loop="mode"') && ui.includes('data-planner-loop="period"'), 'schedule needs two independent horizontal looping selectors');
-assert.ok(ui.includes("[-3,-2,-1,0,1,2,3]") && ui.includes('addDate(plannerDate,plannerMode'), 'period selector must generate an endless moving window around the selected date');
+assert.ok(ui.includes("[-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7]") && ui.includes('addDate(plannerDate,plannerMode'), 'period selector must generate a wide endless moving window around the selected date');
 assert.ok(ui.includes("PLANNER_TABS = ['tasks','schedule','todos','goals','attendance']"), 'each selected period needs task, schedule, todo, goal and attendance content');
 assert.ok(ui.includes("const PLANNER_KEY = 'dafatii:schedulePlanner:v1'") && course.includes("'dafatii:schedulePlanner:v1'"), 'planner content must be persisted in the active course scope');
 assert.ok(ui.includes('savePlannerBucket') && ui.includes('periodKey(plannerMode,plannerDate)'), 'each selected date/range must store its own content bucket');
