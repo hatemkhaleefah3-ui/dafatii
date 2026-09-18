@@ -13,6 +13,7 @@ assert.throws(()=>validateCourseInput({name:'X'}),error=>error.code==='INVALID_C
 assert.deepEqual([...requiredContentPermissions(undefined,[{id:'a'}])],['can_add_content']);
 assert.deepEqual([...requiredContentPermissions([{id:'a',name:'A'}],[{id:'a',name:'B'},{id:'b'}])].sort(),['can_add_content','can_edit_content']);
 assert.deepEqual([...requiredContentPermissions([{id:'a'}],[])],['can_remove_content']);
+assert.deepEqual([...requiredContentPermissions([{id:'a'}],undefined,true)],['can_remove_content']);
 const row={membership_status:'active',membership_role:'representer',...noPermissions(),can_add_content:1};
 assert.doesNotThrow(()=>assertContentPermissions(row,{isAdmin:false},new Set(['can_add_content'])));
 assert.throws(()=>assertContentPermissions(row,{isAdmin:false},new Set(['can_remove_content'])),error=>error.status===403);
@@ -33,6 +34,9 @@ assert.match(routes,/SELF_LOCKOUT_REJECTED/);
 assert.match(routes,/PUBLIC_COURSE_ADMIN_REQUIRED/);
 assert.match(routes,/studentAcademicIdentity/);
 assert.match(routes,/ensureCourseDiscoverySchema/);
+const gate=readFileSync(new URL('../functions/_lib/course-gate.mjs',import.meta.url),'utf8');
+assert.match(gate,/readJson\(context\.request\.clone\(\), 65536\)/, 'course create/update gate must preserve the bounded request parser');
+assert.doesNotMatch(gate,/context\.request\.clone\(\)\.json\(\)/, 'course gate must not parse an unbounded cloned request body');
 const optionalRoute=readFileSync(new URL('../functions/api/v1/courses/[[path]].js',import.meta.url),'utf8');
 assert.match(optionalRoute,/child \? `courses\/\$\{child\}` : 'courses'/, 'bare /api/v1/courses must dispatch as courses, not courses/');
 assert.doesNotMatch(optionalRoute,/`courses\/\$\{joinedPath\(context\.params\?\.path\)\}`/, 'optional catch-all must not append a trailing slash for an empty path');
