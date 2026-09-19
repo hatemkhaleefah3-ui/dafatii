@@ -254,46 +254,117 @@
   async function bindLiveChat(current){
     const root=document.querySelector('.live-chat-app');if(!root)return;
     const parts=current.split('/'),section=sectionFromParts(parts),id=parts[2]?decodeURIComponent(parts[2]):'';
-    if(section==='blogs'&&!cache.posts&&!cache.loading){await loadPosts();render();return;}
-    if(section!=='blogs'&&!id&&!cache.lists&&!cache.loading){await loadLists();render();return;}
-    if(id&&!cache.messages.has(id)){await loadThread(id);render();return;}
+
+    if(section==='blogs'&&!cache.posts&&!cache.loading&&!cache.error){await loadPosts();render();return;}
+    if(section!=='blogs'&&!id&&!cache.lists&&!cache.loading&&!cache.error){await loadLists();render();return;}
+    if(id&&!cache.messages.has(id)&&!cache.error){await loadThread(id);render();return;}
+
     if(id){
       const data=cache.messages.get(id);
-      if(data?.conversation?.kind==='group'&&ui.threadTab==='members'&&!cache.members.has(id)){await loadMembers(id);render();return;}
+      if(!data){
+        document.getElementById('live-chat-retry')?.addEventListener('click',async()=>{cache.error='';await loadThread(id,true);render();});
+        return;
+      }
+      if(data.conversation?.kind==='group'&&ui.threadTab==='members'&&!cache.members.has(id)&&!cache.error){await loadMembers(id);render();return;}
+      if(data.conversation?.kind==='group'&&ui.threadTab==='members'&&!cache.members.has(id)&&cache.error){
+        document.getElementById('live-chat-retry')?.addEventListener('click',async()=>{cache.error='';await loadMembers(id,true);render();});
+      }
       bindThread(id,data);
-      refreshTimer=setInterval(async()=>{await loadThread(id,true);if(route()===current)render();},8000);
+      refreshTimer=setInterval(async()=>{
+        const composing=document.activeElement?.id==='live-message-input';
+        await loadThread(id,true);
+        if(route()===current&&!composing)render();
+      },8000);
       return;
     }
 
     document.querySelectorAll('[data-live-filter]').forEach(button=>button.addEventListener('click',()=>{ui.filter[section]=button.dataset.liveFilter;render();}));
     document.querySelectorAll('[data-group-scope]').forEach(button=>button.addEventListener('click',()=>{ui.groupScope=button.dataset.groupScope;render();}));
-    document.getElementById('live-chat-search')?.addEventListener('input',event=>{ui.query[section]=event.target.value;render();});
+    document.getElementById('live-chat-search')?.addEventListener('input',event=>{
+      ui.query[section]=event.target.value;
+      const q=event.target.value.trim().toLowerCase();
+      const selector=section==='blogs'?'.live-post-card':'.live-chat-card';
+      document.querySelectorAll(selector).forEach(card=>{card.hidden=Boolean(q)&&!card.textContent.toLowerCase().includes(q);});
+    });
     document.getElementById('live-chat-saved')?.addEventListener('click',()=>{cache.postsSavedOnly=!cache.postsSavedOnly;render();});
     document.getElementById('live-chat-new')?.addEventListener('click',()=>openCreateSheet(section));
-    document.getElementById('live-chat-retry')?.addEventListener('click',async()=>{cache.error='';if(section==='blogs'){cache.posts=null;await loadPosts(true);}else{cache.lists=null;await loadLists(true);}render();});
-    document.querySelectorAll('[data-join-conversation]').forEach(button=>button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await api('/social/conversations/'+encodeURIComponent(button.dataset.joinConversation)+'/join',{method:'POST',body:{}});await loadLists(true);render();}catch(error){showToast(error.message||'Could not join this group.');button.disabled=false;}}));
-    document.querySelectorAll('[data-save-post]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{const result=await api('/social/posts/'+encodeURIComponent(button.dataset.savePost)+'/save',{method:'POST',body:{}});const post=cache.posts?.find(p=>p.id===button.dataset.savePost);if(post)post.saved=result.saved;render();}catch(error){showToast(error.message||'Could not save this post.');button.disabled=false;}}));
-    refreshTimer=setInterval(async()=>{if(section==='blogs')await loadPosts(true);else await loadLists(true);if(route()===current)render();},15000);
+    document.getElementById('live-chat-retry')?.addEventListener('click',async()=>{
+      cache.error='';
+      if(section==='blogs'){cache.posts=null;await loadPosts(true);}
+      else{cache.lists=null;await loadLists(true);}
+      render();
+    });
+    document.querySelectorAll('[data-join-conversation]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();button.disabled=true;
+      try{
+        await api('/social/conversations/'+encodeURIComponent(button.dataset.joinConversation)+'/join',{method:'POST',body:{}});
+        await loadLists(true);render();
+      }catch(error){showToast(error.message||'Could not join this group.');button.disabled=false;}
+    }));
+    document.querySelectorAll('[data-save-post]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+        const result=await api('/social/posts/'+encodeURIComponent(button.dataset.savePost)+'/save',{method:'POST',body:{}});
+        const post=cache.posts?.find(p=>p.id===button.dataset.savePost);if(post)post.saved=result.saved;render();
+      }catch(error){showToast(error.message||'Could not save this post.');button.disabled=false;}
+    }));
+    refreshTimer=setInterval(async()=>{
+      const searching=document.activeElement?.id==='live-chat-search';
+      if(section==='blogs')await loadPosts(true);else await loadLists(true);
+      if(route()===current&&!searching)render();
+    },15000);
   }
 
   function bindThread(id,data){
     if(!data)return;
     const c=data.conversation;
-    document.querySelectorAll('[data-thread-tab]').forEach(button=>button.addEventListener('click',async()=>{ui.threadTab=button.dataset.threadTab;if(ui.threadTab==='members'&&!cache.members.has(id))await loadMembers(id);render();}));
+    document.querySelectorAll('[data-thread-tab]').forEach(button=>button.addEventListener('click',async()=>{
+      ui.threadTab=button.dataset.threadTab;
+      cache.error='';
+      if(ui.threadTab==='members'&&!cache.members.has(id))await loadMembers(id);
+      render();
+    }));
     document.getElementById('live-thread-more')?.addEventListener('click',()=>openConversationOptions(c));
+    document.getElementById('live-thread-join')?.addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;
+      try{
+        await api('/social/conversations/'+encodeURIComponent(id)+'/join',{method:'POST',body:{}});
+        cache.messages.delete(id);await Promise.all([loadThread(id,true),loadLists(true)]);render();
+      }catch(error){showToast(error.message||'Could not join this conversation.');button.disabled=false;}
+    });
     const input=document.getElementById('live-message-input');
     const send=async()=>{
-      const text=input?.value.trim();if(!text)return;
+      const text=input?.value.trim();if(!text||input?.dataset.sending==='1')return;
+      if(input)input.dataset.sending='1';
       const button=document.getElementById('live-send');if(button)button.disabled=true;
-      try{await api('/social/conversations/'+encodeURIComponent(id)+'/messages',{method:'POST',body:{type:'text',text}});input.value='';await loadThread(id,true);await loadLists(true);render();}
-      catch(error){showToast(error.message||'Message could not be sent.');if(button)button.disabled=false;}
+      try{
+        await api('/social/conversations/'+encodeURIComponent(id)+'/messages',{method:'POST',body:{type:'text',text}});
+        if(input){input.value='';delete input.dataset.sending;}
+        await loadThread(id,true);await loadLists(true);render();
+      }catch(error){
+        showToast(error.message||'Message could not be sent.');
+        if(input)delete input.dataset.sending;
+        if(button)button.disabled=false;
+      }
     };
     document.getElementById('live-send')?.addEventListener('click',send);
     input?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void send();}});
     input?.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(140,input.scrollHeight)+'px';});
     document.getElementById('live-poll')?.addEventListener('click',()=>openPollSheet(id));
-    document.querySelectorAll('[data-live-reaction]').forEach(button=>button.addEventListener('click',async()=>{try{await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/reactions',{method:'POST',body:{emoji:button.dataset.liveReaction}});await loadThread(id,true);render();}catch(error){showToast(error.message||'Reaction could not be saved.');}}));
-    document.querySelectorAll('[data-live-poll]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/poll',{method:'POST',body:{optionIndex:Number(button.dataset.livePoll)}});await loadThread(id,true);render();}catch(error){showToast(error.message||'Vote could not be saved.');button.disabled=false;}}));
+    document.querySelectorAll('[data-live-reaction]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+        await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/reactions',{method:'POST',body:{emoji:button.dataset.liveReaction}});
+        await loadThread(id,true);render();
+      }catch(error){showToast(error.message||'Reaction could not be saved.');button.disabled=false;}
+    }));
+    document.querySelectorAll('[data-live-poll]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{
+        await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/poll',{method:'POST',body:{optionIndex:Number(button.dataset.livePoll)}});
+        await loadThread(id,true);render();
+      }catch(error){showToast(error.message||'Vote could not be saved.');button.disabled=false;}
+    }));
     requestAnimationFrame(()=>{const box=document.getElementById('live-messages');if(box)box.scrollTop=box.scrollHeight;});
   }
 
