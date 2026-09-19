@@ -188,6 +188,17 @@
     }).join('');
   }
   const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals',attendance:'Attendance'}[tab]||tab);
+  const plannerTypeMeta = Object.freeze({
+    tasks:{label:'Task',plural:'Tasks',icon:'✓'},
+    schedule:{label:'Schedule item',plural:'Schedule',icon:'◷'},
+    todos:{label:'To-do',plural:'To do',icon:'☑'},
+    goals:{label:'Goal',plural:'Goals',icon:'◇'},
+    attendance:{label:'Attendance',plural:'Attendance',icon:'◎'}
+  });
+  const plannerTypeLabel = type => plannerTypeMeta[type]?.label || tabLabel(type);
+  const plannerTypeIcon = type => plannerTypeMeta[type]?.icon || '•';
+  const priorityLabel = value => ({high:'High priority',medium:'Medium priority',low:'Low priority'}[value]||'');
+
   function recurringForDate(date){
     if(plannerTab!=='schedule')return [];
     const entries=read(SCHEDULE_KEY,[]);
@@ -203,14 +214,25 @@
     const own=canonicalItemsForDate(date,plannerTab);
     return plannerTab==='schedule'?[...own,...recurringForDate(date)]:own;
   }
-  function plannerCompactItem(item){
-    const done=Boolean(item.done),meta=[item.time,item.location,item.status].filter(Boolean).join(' · ');
-    return `<article class="planner-table-item ${done?'done':''} ${item.recurring?'recurring':''}" data-planner-entry-id="${esc(item.id)}">
-      <div><strong>${esc(item.title||tabLabel(item.type||plannerTab))}</strong>${meta?`<small>${esc(meta)}</small>`:''}</div>
-      ${!item.recurring&&item.type!=='schedule'&&item.type!=='attendance'?`<button class="planner-mini-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`:''}
-      ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'item')}"></button><button class="planner-mini-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button>`:''}
+  function plannerCompactItem(item,context='compact'){
+    const done=Boolean(item.done),type=item.type||plannerTab,priority=String(item.priority||'medium');
+    const meta=[item.time,item.location,item.status].filter(Boolean).join(' · ');
+    const progress=type==='goals'?Math.max(0,Math.min(100,Number(item.progress||0))):0;
+    const notes=String(item.notes||'').trim();
+    return `<article class="planner-table-item planner-item-${esc(type)} ${done?'done':''} ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}">
+      <span class="planner-item-icon" aria-hidden="true">${esc(plannerTypeIcon(type))}</span>
+      <div class="planner-item-main">
+        <div class="planner-item-title-row"><strong>${esc(item.title||plannerTypeLabel(type))}</strong>${priority&&type!=='schedule'&&type!=='attendance'?`<i class="planner-priority ${esc(priority)}" title="${esc(priorityLabel(priority))}"></i>`:''}</div>
+        ${meta?`<small class="planner-item-meta">${esc(meta)}</small>`:''}
+        ${notes&&context!=='week'?`<p>${esc(notes)}</p>`:''}
+        ${type==='goals'?`<div class="planner-goal-progress" aria-label="Goal progress ${progress}%"><span style="--goal-progress:${progress}%"></span><b>${progress}%</b></div>`:''}
+      </div>
+      ${!item.recurring&&type!=='schedule'&&type!=='attendance'?`<button class="planner-mini-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`:''}
+      ${!item.recurring&&type==='goals'&&!done?`<button class="planner-progress-step" data-planner-progress="${esc(item.id)}" aria-label="Increase goal progress by 10 percent">+10</button>`:''}
+      ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'item')}">×</button>`:''}
     </article>`;
   }
+
   function plannerCellBody(date){
     const items=visibleItemsForDate(date);
     return items.length?items.map(plannerCompactItem).join(''):`<span class="planner-cell-empty">No ${esc(tabLabel(plannerTab).toLowerCase())}</span>`;
@@ -225,19 +247,32 @@
       const slot=items.filter(item=>itemHour(item)===hour);
       return `<div class="planner-hour-row" data-planner-slot-date="${key}" data-planner-slot-time="${pad(hour)}:00">
         <div class="planner-hour-label">${formatHour(hour)}</div>
-        <div class="planner-hour-content">${slot.length?slot.map(plannerCompactItem).join(''):'<span class="planner-cell-empty">Free</span>'}</div>
-        <button class="planner-cell-add" data-planner-cell-add data-date="${key}" data-time="${pad(hour)}:00" aria-label="Add item at ${formatHour(hour)}">＋</button>
+        <div class="planner-hour-content">${slot.length?slot.map(item=>plannerCompactItem(item,'day')).join(''):'<span class="planner-cell-empty">Free</span>'}</div>
       </div>`;
     }).join('')}</div>`;
   }
-  function weekTable(){
-    const start=weekStart(plannerDate),days=Array.from({length:7},(_,index)=>addDate(start,'day',index));
-    return `<div class="planner-table-scroll"><div class="planner-table planner-week-table">${days.map(date=>`<section class="planner-period-cell">
-      <button class="planner-period-cell-head" data-planner-open-date="${dateKey(date)}"><strong>${esc(dayName(date,'short'))}</strong><span>${esc(monthName(date,'short'))} ${date.getDate()}</span></button>
-      <div class="planner-period-cell-body">${plannerCellBody(date)}</div>
-      <button class="planner-cell-add" data-planner-cell-add data-date="${dateKey(date)}" data-time="09:00">＋ Add</button>
-    </section>`).join('')}</div></div>`;
+
+  function weekHours(days){
+    const base=new Set(Array.from({length:18},(_,index)=>index+6));
+    for(const date of days)for(const item of visibleItemsForDate(date))base.add(itemHour(item));
+    return [...base].filter(hour=>hour>=0&&hour<=23).sort((a,b)=>a-b);
   }
+
+  function weekTable(){
+    const start=weekStart(plannerDate),days=Array.from({length:7},(_,index)=>addDate(start,'day',index)),hours=weekHours(days);
+    return `<div class="planner-table-scroll planner-week-scroll"><div class="planner-week-grid" style="--week-days:7">
+      <div class="planner-week-corner">Time</div>
+      ${days.map(date=>`<button class="planner-week-day ${sameDay(date,new Date())?'today':''}" data-planner-open-date="${dateKey(date)}"><strong>${esc(dayName(date,'short'))}</strong><span>${esc(monthName(date,'short'))} ${date.getDate()}</span></button>`).join('')}
+      ${hours.map(hour=>{
+        const time=`${pad(hour)}:00`;
+        return `<div class="planner-week-time">${formatHour(hour)}</div>${days.map(date=>{
+          const slot=visibleItemsForDate(date).filter(item=>itemHour(item)===hour);
+          return `<div class="planner-week-slot" data-planner-slot-date="${dateKey(date)}" data-planner-slot-time="${time}">${slot.length?slot.map(item=>plannerCompactItem(item,'week')).join(''):'<span class="planner-week-free" aria-hidden="true"></span>'}</div>`;
+        }).join('')}`;
+      }).join('')}
+    </div></div>`;
+  }
+
   function monthTable(){
     const year=plannerDate.getFullYear(),month=plannerDate.getMonth(),daysInMonth=new Date(year,month+1,0).getDate();
     return `<div class="planner-table planner-month-table">${Array.from({length:30},(_,index)=>{
@@ -248,7 +283,6 @@
       return `<section class="planner-period-cell">
         <button class="planner-period-cell-head" data-planner-open-date="${dateKey(date)}"><strong>${include31?'Days 30–31':`Day ${day}`}</strong><span>${esc(dayName(date,'short'))} · ${esc(monthName(date,'short'))} ${include31?'30–31':day}</span></button>
         <div class="planner-period-cell-body">${items.length?items.map(plannerCompactItem).join(''):`<span class="planner-cell-empty">No ${esc(tabLabel(plannerTab).toLowerCase())}</span>`}</div>
-        <button class="planner-cell-add" data-planner-cell-add data-date="${dateKey(date)}" data-time="09:00">＋</button>
       </section>`;
     }).join('')}</div>`;
   }
@@ -260,7 +294,6 @@
       return `<section class="planner-period-cell planner-month-cell">
         <button class="planner-period-cell-head" data-planner-open-month="${year}-${pad(month+1)}"><strong>${esc(monthName(first))}</strong><span>${items.length} ${esc(tabLabel(plannerTab).toLowerCase())}</span></button>
         <div class="planner-period-cell-body">${items.length?items.slice(0,6).map(plannerCompactItem).join(''):`<span class="planner-cell-empty">No ${esc(tabLabel(plannerTab).toLowerCase())}</span>`}${items.length>6?`<small class="planner-more-count">+${items.length-6} more</small>`:''}</div>
-        <button class="planner-cell-add" data-planner-cell-add data-date="${dateKey(first)}" data-time="09:00">＋</button>
       </section>`;
     }).join('')}</div>`;
   }
@@ -274,7 +307,10 @@
   function scheduleView(){
     const selected=periodLabel(plannerMode,plannerDate);
     return `<section class="calendar-page planner-page" data-planner-mode="${plannerMode}">
-      <div class="planner-head"><div><div class="eyebrow">Schedule</div><h1>Your schedule</h1><p>One dated item flows through every scale: day, week, month and year.</p></div><button class="subject-add planner-add" data-planner-add><span>＋</span><strong>Add</strong></button></div>
+      <div class="planner-head"><div><div class="eyebrow">Schedule</div><h1>Your schedule</h1><p>Plan tasks, classes, to-dos, goals and attendance in one connected timeline.</p></div></div>
+      <div class="planner-add-proxies" aria-hidden="true">
+        ${PLANNER_TABS.map(type=>`<button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${type}" aria-label="Add ${esc(plannerTypeLabel(type))}"></button>`).join('')}
+      </div>
       <div class="planner-loop-shell planner-mode-shell">
         <div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Time scale">${modeLoop()}</div>
       </div>
@@ -283,7 +319,7 @@
       </div>
       <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
       <nav class="planner-content-tabs" aria-label="Schedule content">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
-      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${esc(selected.primary)}</h2></div><button class="planner-inline-add" data-planner-add>＋ Add ${esc(tabLabel(plannerTab))}</button></div>${scheduleContent()}</section>
+      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${esc(selected.primary)}</h2></div><small class="planner-content-help">${plannerMode==='week'?'Days across the top · time down the side':'Use Manage Content to add, edit or delete items'}</small></div>${scheduleContent()}</section>
     </section>`;
   }
 
@@ -444,10 +480,7 @@
   function bindSchedule(){
     const rerender=()=>render();
     document.querySelectorAll('[data-planner-tab]').forEach(button=>button.addEventListener('click',()=>{plannerTab=button.dataset.plannerTab;rerender();}));
-    document.querySelectorAll('[data-planner-add]').forEach(button=>button.addEventListener('click',()=>openPlannerEntrySheet()));
-    document.querySelectorAll('[data-planner-cell-add]').forEach(button=>button.addEventListener('click',event=>{
-      event.stopPropagation();openPlannerEntrySheet(button.dataset.date||'',button.dataset.time||'09:00');
-    }));
+    document.querySelectorAll('[data-planner-add-type]').forEach(button=>button.addEventListener('click',()=>openPlannerEntrySheet('','09:00','',button.dataset.plannerAddType||plannerTab)));
     document.querySelectorAll('[data-planner-open-date]').forEach(button=>button.addEventListener('click',()=>{
       plannerDate=dateFromKey(button.dataset.plannerOpenDate);plannerMode='day';rerender();
     }));
@@ -457,7 +490,15 @@
     }));
     document.querySelectorAll('[data-planner-toggle]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;
-      item.done=!item.done;savePlannerItems(items);rerender();
+      item.done=!item.done;
+      if(item.type==='goals'&&item.done)item.progress=100;
+      savePlannerItems(items);rerender();
+    }));
+    document.querySelectorAll('[data-planner-progress]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerProgress);if(!item||item.type!=='goals')return;
+      item.progress=Math.min(100,Math.max(0,Number(item.progress||0)+10));
+      item.done=item.progress>=100;
+      savePlannerItems(items);rerender();
     }));
     document.querySelectorAll('[data-planner-edit]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();openPlannerEntrySheet('','',button.dataset.plannerEdit);
@@ -474,21 +515,29 @@
     if(plannerMode==='month')return dateKey(new Date(plannerDate.getFullYear(),plannerDate.getMonth(),1));
     return dateKey(new Date(plannerDate.getFullYear(),0,1));
   }
-  function openPlannerEntrySheet(dateOverride='',timeOverride='09:00',editId=''){
+  function openPlannerEntrySheet(dateOverride='',timeOverride='09:00',editId='',typeOverride=''){
     const root=document.getElementById('overlay-root');if(!root)return;
     const allItems=plannerItems(),editing=editId?allItems.find(item=>item.id===editId):null;
-    const selected=periodLabel(plannerMode,plannerDate),type=editing?.type||plannerTab;
+    const requestedType=PLANNER_TABS.includes(typeOverride)?typeOverride:plannerTab;
+    const type=editing?.type||requestedType;
+    const selected=periodLabel(plannerMode,plannerDate);
     const chosenDate=editing?.date||dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(editing?.time||timeOverride);
     const title=editing?'Edit':'Add';
-    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(tabLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(tabLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
-      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Study for 90 minutes':type==='attendance'?'Physics lecture':'Study session'}"></div>
-      <div class="calendar-form-grid"><div class="field"><label>Date</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
-      ${type==='schedule'?`<div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}"></div>`:''}
+    const dateLabel=type==='goals'?'Target date':type==='tasks'||type==='todos'?'Due date':'Date';
+    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
+      <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${type==='tasks'?'A focused piece of work':type==='todos'?'A quick action to remember':type==='goals'?'A measurable outcome with progress':type==='schedule'?'A dated event or study session':'Track attendance for a class or event'}</small></div></div>
+      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Complete calculus revision':type==='attendance'?'Physics lecture':'Study session'}"></div>
+      <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
+      ${type==='tasks'||type==='todos'||type==='goals'?`<div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div>`:''}
+      ${type==='goals'?`<div class="field"><label>Progress</label><div class="planner-progress-field"><input name="progress" type="range" min="0" max="100" step="5" value="${Math.max(0,Math.min(100,Number(editing?.progress||0)))}"><output id="planner-progress-output">${Math.max(0,Math.min(100,Number(editing?.progress||0)))}%</output></div></div>`:''}
+      ${type==='schedule'?`<div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}" placeholder="Optional room or place"></div>`:''}
       ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
-      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional">${esc(editing?.notes||'')}</textarea></div>
-      <button class="btn btn-primary" type="submit">${editing?'Save changes':'Add'}</button>
+      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional context, checklist or reminder">${esc(editing?.notes||'')}</textarea></div>
+      <button class="btn btn-primary" type="submit">${editing?'Save changes':`Add ${esc(plannerTypeLabel(type))}`}</button>
     </form></section></div>`;
     const close=()=>closeOverlay();
+    const progressInput=document.querySelector('#planner-entry-form [name="progress"]'),progressOutput=document.getElementById('planner-progress-output');
+    progressInput?.addEventListener('input',()=>{if(progressOutput)progressOutput.value=`${progressInput.value}%`;});
     document.getElementById('planner-entry-close').onclick=close;
     document.getElementById('planner-entry-overlay').onclick=event=>{if(event.target.id==='planner-entry-overlay')close();};
     document.getElementById('planner-entry-form').onsubmit=event=>{
@@ -497,14 +546,22 @@
         id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
         date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()
       };
-      if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
+      if(!payload.title||!/^d{4}-d{2}-d{2}$/.test(payload.date))return;
       if(type==='schedule')payload.location=String(form.get('location')||'').trim();
       else if(type==='attendance')payload.status=String(form.get('status')||'present');
-      else payload.done=Boolean(editing?.done);
+      else{
+        payload.priority=String(form.get('priority')||editing?.priority||'medium');
+        payload.done=Boolean(editing?.done);
+        if(type==='goals'){
+          payload.progress=Math.max(0,Math.min(100,Number(form.get('progress')||editing?.progress||0)));
+          payload.done=payload.progress>=100;
+        }
+      }
       if(editing){
         const index=items.findIndex(item=>item.id===editing.id);
         if(index>=0)items[index]=payload;else items.push(payload);
       }else items.push(payload);
+      plannerTab=type;
       savePlannerItems(items);close();render();
     };
   }
