@@ -197,3 +197,58 @@
   .chatpro-conversation{grid-template-columns:minmax(0,1fr) 36px}.chatpro-conv-main{grid-template-columns:48px minmax(0,1fr) auto}.chatpro-avatar{width:46px;height:46px}.chatpro-conv-title strong{font-size:14px}.chatpro-preview{font-size:11px}.chatpro-conv-meta time{font-size:9px}
   .chat-app-stage .chatpro-shell.thread-only,.chat-app-stage .chatpro-shell.thread-only:has(.chatpro-info){height:calc(100dvh - 198px);border-radius:16px}.chatpro-thread-head{min-height:60px;padding:7px}.chatpro-head-actions button{width:34px;height:34px}.chatpro-head-actions button:nth-of-type(2){display:none}.chatpro-composer #chatpro-emoji{display:none}
 }
+
+/* Full-screen conversation route */
+.chat-app-page.thread-open .chat-app-stage .chatpro-shell.thread-only,
+.chat-app-page.thread-open .chat-app-stage .chatpro-shell.thread-only:has(.chatpro-info){
+  width:100%;max-width:none;height:100dvh;min-height:0;margin:0;
+  grid-template-columns:minmax(0,1fr);
+  border:0;border-radius:0;box-shadow:none;overflow:hidden;
+}
+.chat-app-page.thread-open .chatpro-thread{
+  height:100dvh;min-height:0;
+  display:grid!important;
+  grid-template-rows:auto auto auto minmax(0,1fr) auto;
+}
+.chat-app-page.thread-open .chatpro-thread-head{
+  min-height:68px;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));
+  justify-content:flex-start;
+  border-bottom:1px solid color-mix(in srgb,var(--line) 78%,transparent);
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  backdrop-filter:blur(18px);z-index:8;
+}
+.chat-app-page.thread-open .chatpro-mobile-back{
+  display:grid!important;place-items:center;flex:none;
+}
+.chat-app-page.thread-open .chatpro-person{
+  flex:1;justify-content:flex-start;
+}
+.chat-app-page.thread-open .chatpro-head-actions{
+  display:none!important;
+}
+.chat-app-page.thread-open .chatpro-messages{
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding-bottom:18px;
+}
+.chat-app-page.thread-open .chatpro-composer-zone,
+.chat-app-page.thread-open .chatpro-blocked{
+  z-index:8;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--surface) 97%,transparent);
+  backdrop-filter:blur(18px);
+}
+.chat-app-page.thread-open .chatpro-composer-zone{
+  border-top:1px solid color-mix(in srgb,var(--line) 78%,transparent);
+}
+.chat-app-page.thread-open .chatpro-info{
+  position:fixed;inset-block:0;inset-inline-end:0;z-index:95;
+  width:min(360px,94vw);border-inline-start:1px solid var(--line);
+  box-shadow:-18px 0 50px rgba(0,0,0,.18);
+}
+@media(max-width:560px){
+  .chat-app-page.thread-open .chatpro-thread-head{min-height:62px;padding-inline:8px}
+  .chat-app-page.thread-open .chatpro-person .chatpro-avatar.large{width:42px;height:42px}
+  .chat-app-page.thread-open .chatpro-messages{padding:12px 8px 16px}
+  .chat-app-page.thread-open .chatpro-composer-zone{padding:7px 7px max(7px,env(safe-area-inset-bottom))}
+}
+
