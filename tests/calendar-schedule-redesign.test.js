@@ -16,6 +16,7 @@ assert.ok(ui.includes('function weekHours(days)') && ui.includes('planner-week-c
 assert.ok(!ui.includes('data-planner-cell-add'), 'planner tables must not expose per-cell add buttons; adding is centralized in Manage Content');
 assert.ok(ui.includes('data-planner-add-type') && ui.includes("plannerTypeMeta = Object.freeze"), 'planner must expose typed add proxies for task, to-do, goal, schedule and attendance');
 assert.ok(ui.includes('data-planner-progress') && ui.includes("name=\"priority\"") && ui.includes("name=\"progress\""), 'tasks/to-dos/goals must support premium functional priority, completion and goal progress controls');
+assert.ok(ui.includes("/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)"), 'planner add/edit forms must accept valid ISO dates');
 assert.ok(css.includes('.planner-week-grid') && css.includes('.planner-week-time') && css.includes('.planner-item-goals') && css.includes('.planner-goal-progress'), 'week timetable and premium planner item states must be styled');
 assert.ok(ui.includes("plannerMode='day'") && ui.includes("plannerMode='month'"), 'aggregate tables must drill into the same dated data across time scales');
 assert.ok(ui.includes('centeredPlannerItem') && ui.includes("track.addEventListener('scroll'") && ui.includes("track.addEventListener('scrollend'"), 'scroll position must select the item nearest the center of each rail');
@@ -24,7 +25,7 @@ assert.ok(!ui.includes('planner-loop-arrow') && !ui.includes('data-planner-mode-
 assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const entries=read(SCHEDULE_KEY,[])') && ui.includes("notes:'Recurring weekly timetable'"), 'existing weekly schedule data must project into matching dated schedule cells');
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-grid') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
-assert.ok(index.includes('calendar.js?v=20260919-6') && index.includes('calendar.css?v=20260919-4'), 'schedule redesign assets must be cache-busted');
+assert.ok(index.includes('calendar.js?v=20260919-7') && index.includes('calendar.css?v=20260919-4'), 'schedule redesign assets must be cache-busted');
 console.log('calendar schedule redesign tests passed');
 
 assert.ok(ui.includes('legacyPlannerSnapshot') && ui.includes('__dafatii:course-cache:'), 'planner migration must recover any locally cached pre-fix planner data without resubmitting it as Course content');
