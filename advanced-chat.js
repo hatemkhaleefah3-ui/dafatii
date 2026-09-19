@@ -138,7 +138,7 @@
       const image=m.fileId
         ? `<button type="button" class="chatpro-media-open" data-chat-open-file="${esc(m.fileId)}" aria-label="Open ${esc(m.name||'image')}"><img class="chatpro-image" data-chat-file-id="${esc(m.fileId)}" alt="Shared image"></button>`
         : `<img class="chatpro-image" src="${esc(m.data||'')}" alt="Shared image">`;
-      return image+${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''};
+      return image+(m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:'');
     }
     if(m.type==='video')return m.fileId
       ? `<video class="chatpro-video" data-chat-file-id="${esc(m.fileId)}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`
