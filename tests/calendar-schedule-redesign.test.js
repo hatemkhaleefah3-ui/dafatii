@@ -2,6 +2,7 @@ const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const ui=fs.readFileSync('calendar.js','utf8');
 const css=fs.readFileSync('calendar.css','utf8');
+const app=fs.readFileSync('app.js','utf8');
 const course=fs.readFileSync('course-context.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
@@ -21,6 +22,7 @@ assert.ok(ui.includes('function plannerPeriodBounds()') && ui.includes('function
 assert.ok(!ui.includes('<div class="planner-head">') && !ui.includes('planner-date-control-label') && !ui.includes('planner-date-controls'), 'planner page title/description and framed date-picker holder/labels must be removed');
 assert.ok(ui.indexOf('planner-mode-shell') < ui.indexOf('planner-content-tabs') && ui.indexOf('planner-date-shell') < ui.indexOf('planner-content-tabs'), 'both date pickers must render above the planner subpage bar');
 assert.ok(ui.includes('planner-tab-icon') && ui.includes('planner-tab-label'), 'planner subpage bar must render dedicated icon and label structure for every section');
+assert.ok(app.includes("page==='calendar'?'':`<div class=\"sub-nav\"><div class=\"sub-inner\">"), 'calendar page must remove the outer global sub-navigation while preserving it elsewhere');
 assert.ok(!ui.includes('planner-task-dashboard') && !ui.includes('planner-todo-group'), 'retired task dashboard and old grouped to-do subpage markup must be removed from the renderer');
 assert.ok(ui.includes("if(plannerTab==='schedule')return scheduleTableContent()") && ui.includes("if(plannerTab==='tasks')return tasksSubpage()") && ui.includes("if(plannerTab==='todos')return todosSubpage()") && ui.includes("if(plannerTab==='goals')return goalsSubpage()"), 'only Schedule may render the timetable; tasks, to-do and goals must use dedicated subpage renderers');
 assert.ok(ui.includes('function tasksSubpage()') && ui.includes('function todosSubpage()') && ui.includes('function goalsSubpage()'), 'task, to-do and goal sections must have purpose-built premium subpages');
