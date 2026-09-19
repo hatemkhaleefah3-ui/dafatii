@@ -124,7 +124,9 @@ async function mutate(context, user) {
 
 async function uploadInit(context, user) {
   const raw = await readJson(context.request, 32768);
-  const teacherProfile = String(raw.purpose || '') === 'teacher-profile';
+  const purpose = String(raw.purpose || '');
+  const teacherProfile = purpose === 'teacher-profile';
+  const chatAttachment = purpose === 'chat-attachment';
   if (teacherProfile && !user.isAdmin) throw new HttpError(403, 'ADMIN_REQUIRED', 'Administrator access is required for teacher profile uploads.');
   const input = teacherProfile ? validateTeacherProfileUpload(raw) : validateUpload(raw, context.env);
   const courseId = raw.courseId ? String(raw.courseId) : null;
@@ -140,7 +142,7 @@ async function uploadInit(context, user) {
     if (Number(usage?.bytes || 0) + input.size > quota) throw new HttpError(413, 'STORAGE_QUOTA_EXCEEDED', 'Account storage quota would be exceeded.');
   }
   const fileId = crypto.randomUUID();
-  const driveUpload = teacherProfile || usesDrive(context.env);
+  const driveUpload = teacherProfile || chatAttachment || usesDrive(context.env);
   const key = driveUpload ? `drive/pending/${fileId}` : objectKey(user.id, fileId);
   const expiresAt = now + 15 * 60 * 1000;
   await context.env.DB.prepare(`INSERT INTO files
@@ -151,8 +153,8 @@ async function uploadInit(context, user) {
       if (!context.env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'R2 upload-session storage is not configured.');
       const file = { id: fileId, user_id: user.id, course_id: courseId, object_key: key, original_filename: input.filename, content_type: input.contentType, expected_size: input.size };
       const uploadUrl = await startDriveUpload(context.env, file, user.id);
-      await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt, purpose: teacherProfile ? 'teacher-profile' : null }), { httpMetadata: { contentType: 'application/json' } });
-      logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', purpose: teacherProfile ? 'teacher-profile' : null, size: input.size, contentType: input.contentType });
+      await context.env.R2_STORAGE.put(uploadSessionKey(fileId), JSON.stringify({ uploadUrl, userId: user.id, expiresAt, purpose: purpose || null }), { httpMetadata: { contentType: 'application/json' } });
+      logEvent('info', 'file.upload_initialized', { userId: user.id, fileId, provider: 'drive', purpose: purpose || null, size: input.size, contentType: input.contentType });
       return ok({ fileId, upload: { url: `/api/v1/files/${fileId}/upload`, method: 'PUT', provider: 'drive-proxy', chunkSize: 8388608, expiresAt, headers: { 'Content-Type': input.contentType } } }, 201);
     }
     const signed = await signedObjectUrl(context.env, key, 'PUT', { expires: 900, contentType: input.contentType, contentLength: input.size, fileId, query: { ifGenerationMatch: '0' } });
