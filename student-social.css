@@ -101,22 +101,21 @@
 .chat-app-topbar{
   position:sticky;top:0;z-index:60;
   min-height:74px;
-  display:grid;grid-template-columns:46px minmax(0,1fr) auto;
-  align-items:center;gap:12px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:10px clamp(14px,3vw,28px);
   border-bottom:1px solid var(--chat-line);
   background:color-mix(in srgb,var(--surface) 94%,transparent);
   backdrop-filter:blur(20px) saturate(130%);
   box-shadow:0 1px 0 rgba(0,0,0,.015);
 }
-.chat-app-menu,.chat-app-search-top{
+.chat-app-menu{
   display:grid;place-items:center;
   width:44px;height:44px;border:0;border-radius:15px;
   background:var(--surface-2);color:var(--text);
   cursor:pointer;transition:background .16s ease,transform .16s ease;
 }
-.chat-app-menu:hover,.chat-app-search-top:hover{background:var(--chat-soft)}
-.chat-app-menu:active,.chat-app-search-top:active{transform:scale(.96)}
+.chat-app-menu:hover{background:var(--chat-soft)}
+.chat-app-menu:active{transform:scale(.96)}
 .chat-app-brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;min-width:0;width:max-content}
 .chat-app-logo-mark{
   width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
@@ -128,8 +127,24 @@
 .chat-app-brand-copy strong{font:850 19px/1.05 Manrope,sans-serif;letter-spacing:-.025em}
 .chat-app-brand-copy small{margin-top:4px;color:var(--muted);font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.24em;white-space:nowrap}
 .chat-app-top-actions{display:flex;align-items:center;gap:8px}
-.chat-app-profile{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;padding:3px;background:var(--surface);border:1px solid var(--chat-line);box-shadow:0 5px 18px rgba(0,0,0,.05);text-decoration:none}
+.chat-app-profile{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;padding:3px;background:var(--surface);border:1px solid var(--chat-line);box-shadow:0 5px 18px rgba(0,0,0,.05);cursor:pointer}
 .chat-app-profile>span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--chat-soft);color:var(--accent);font:850 15px Manrope,sans-serif}
+.chat-app-profile-popover{
+  position:absolute;top:calc(100% + 8px);inset-inline-end:clamp(10px,3vw,28px);z-index:95;
+  width:min(330px,calc(100vw - 20px));padding:16px;
+  border:1px solid var(--chat-line);border-radius:20px;background:var(--surface);
+  box-shadow:0 20px 60px rgba(0,0,0,.16);
+}
+.chat-app-profile-popover[hidden]{display:none}
+.chat-app-profile-summary{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--chat-line)}
+.chat-app-profile-summary>span{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--chat-soft);color:var(--accent);font:850 19px Manrope,sans-serif}
+.chat-app-profile-summary>div{min-width:0}.chat-app-profile-summary small,.chat-app-profile-summary strong,.chat-app-profile-summary p{display:block}
+.chat-app-profile-summary small{color:var(--accent);font:800 10px Manrope,sans-serif;text-transform:uppercase;letter-spacing:.09em}
+.chat-app-profile-summary strong{margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:850 17px Manrope,sans-serif}
+.chat-app-profile-summary p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.chat-app-profile-popover dl{display:grid;gap:9px;margin:13px 0 0}
+.chat-app-profile-popover dl>div{display:grid;grid-template-columns:minmax(78px,.75fr) minmax(0,1.25fr);gap:12px;align-items:baseline}
+.chat-app-profile-popover dt{color:var(--muted);font-size:11px}.chat-app-profile-popover dd{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:end;font-size:12px;font-weight:700}
 .chat-app-subnav{
   position:sticky;top:74px;z-index:55;
   display:flex;align-items:center;gap:6px;
@@ -194,7 +209,7 @@
 .chat-feed-page{max-width:900px;margin:0 auto}.chat-feed-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin:2px 0 18px}.chat-feed-intro small{display:block;color:var(--accent);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.12em}.chat-feed-intro h1{margin:5px 0 0;font:850 clamp(28px,4vw,42px)/1.05 Manrope,sans-serif;letter-spacing:-.04em}.chat-feed-intro p{max-width:430px;margin:0;color:var(--muted);font-size:13px;line-height:1.55}
 .chat-feed-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.chat-feed-card{display:flex;flex-direction:column;min-height:240px;padding:18px;border:1px solid var(--chat-line);border-radius:20px;background:var(--surface);box-shadow:0 8px 26px rgba(0,0,0,.035)}.chat-feed-card.announcement{background:linear-gradient(145deg,var(--chat-soft),var(--surface));border-color:color-mix(in srgb,var(--accent) 22%,var(--line))}.chat-feed-card h2{font:800 19px/1.25 Manrope,sans-serif;letter-spacing:-.02em}.chat-feed-card>p{font-size:13px}.chat-feed-card-top span{background:var(--surface-2);color:var(--accent)}
 @media(max-width:760px){
-  .chat-app-topbar{min-height:66px;padding:8px 10px;grid-template-columns:42px minmax(0,1fr) auto}.chat-app-menu,.chat-app-search-top{width:40px;height:40px;border-radius:13px}.chat-app-logo-mark{width:38px;height:38px;border-radius:12px}.chat-app-brand-copy strong{font-size:17px}.chat-app-brand-copy small{display:none}.chat-app-profile{width:40px;height:40px}
+  .chat-app-topbar{min-height:66px;padding:8px 10px}.chat-app-menu{width:40px;height:40px;border-radius:13px}.chat-app-profile{width:40px;height:40px}.chat-app-profile-popover{top:calc(100% + 6px);inset-inline-end:10px;width:min(320px,calc(100vw - 20px));border-radius:18px}
   .chat-app-subnav{top:66px;padding:7px 10px}.chat-app-subnav button{padding:8px 13px;font-size:11px}
   .chat-app-stage{padding:16px 8px 26px}
   .chat-app-bottom{width:min(calc(100% - 18px),470px);height:66px;padding:5px;border-radius:27px}.chat-app-nav-item{height:54px}.chat-app-nav-item>small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.chat-app-nav-item .chat-icon{width:22px;height:22px}
@@ -203,4 +218,4 @@
 @media(max-width:420px){
   .chat-app-top-actions{gap:5px}.chat-app-brand{gap:7px}.chat-app-stage{padding-inline:6px}.chat-app-subnav{gap:4px}.chat-app-subnav button{padding-inline:11px}
 }
-@media(prefers-reduced-motion:reduce){.chat-app-drawer,.chat-app-nav-item,.chat-app-subnav button,.chat-app-menu,.chat-app-search-top{transition:none}}
+@media(prefers-reduced-motion:reduce){.chat-app-drawer,.chat-app-nav-item,.chat-app-subnav button,.chat-app-menu{transition:none}}
