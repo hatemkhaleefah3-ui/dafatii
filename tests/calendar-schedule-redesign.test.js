@@ -13,6 +13,7 @@ assert.ok(ui.includes('<strong>\${labels[mode]}</strong>'), 'range options must 
 assert.ok(!ui.includes('<small>\${esc(label.meta)}</small>'), 'date items must omit the third-line Today/year metadata');
 assert.ok(ui.includes("secondary:''") && ui.includes("label.secondary?`<span>\${esc(label.secondary)}</span>`:''") && !ui.includes("secondary:'Week'") && !ui.includes("secondary:'Year'"), 'week and year rails must not render redundant captions beneath their values');
 assert.ok(ui.includes("plannerTypeIconName = Object.freeze({tasks:'check',schedule:'clock',todos:'representer',goals:'star'})"), 'planner section dock must use the shared primary-navigation icon system');
+assert.ok(!ui.includes('esc(plannerTypeIcon(') && ui.includes('${plannerTypeIcon(tab)}'), 'trusted shared SVG icons must render as markup instead of escaped source text');
 assert.ok(ui.includes("[-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7]") && ui.includes('addDate(plannerDate,plannerMode'), 'period selector must generate a wide endless moving window around the selected date');
 assert.ok(ui.includes("PLANNER_TABS = ['tasks','schedule','todos','goals']"), 'planner must expose only Tasks, Schedule, To-do and Goals');
 assert.ok(ui.includes("const LEGACY_PLANNER_KEY = 'dafatii:schedulePlanner:v1'") && ui.includes("const PLANNER_KEY = 'dafatii:schedulePlanner:v2'") && ui.includes('plannerPersonalKey') && ui.includes('window.DafatiiData.writeJSON(plannerPersonalKey(version),value)') && !course.includes("'dafatii:schedulePlanner:v2'"), 'planner must use a personal per-course synced record instead of shared Course content');
@@ -62,7 +63,7 @@ assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const e
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
 assert.ok(css.includes('body .quiet-workspace>.workspace-main>.planner-page') && css.includes('margin-top:58px!important'), 'planner must clear the fixed Calendar toolbar so the mode rail is fully visible');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-grid') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
-assert.ok(index.includes('calendar.js?v=20260919-18') && index.includes('calendar.css?v=20260919-15'), 'schedule redesign assets must be cache-busted');
+assert.ok(index.includes('calendar.js?v=20260919-19') && index.includes('calendar.css?v=20260919-15'), 'schedule redesign assets must be cache-busted');
 console.log('calendar schedule redesign tests passed');
 
 assert.ok(ui.includes('legacyPlannerSnapshot') && ui.includes('__dafatii:course-cache:'), 'planner migration must recover any locally cached pre-fix planner data without resubmitting it as Course content');
