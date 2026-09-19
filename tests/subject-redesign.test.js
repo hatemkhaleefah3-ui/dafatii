@@ -26,6 +26,10 @@ assert.ok(ui.includes("if(canContent('edit_content')){openLectureSheet")&&ui.inc
 assert.ok(ui.includes('function openChapterSheet(')&&ui.includes('data-edit-chapter'),'chapter control must edit and persist the subject chapter');
 assert.ok(ui.includes('function openExamDetails(')&&ui.includes('function openAssignmentDetails('),'readonly exam and assignment rows must open useful detail sheets');
 assert.ok(ui.includes("canPlan('remove_content')"),'delete controls must require remove permission rather than generic edit access');
+assert.ok(ui.includes("ASSIGNMENT_PROGRESS_KEY = 'dafatii:assignmentProgress:v1'"),'student assignment progress must use a personal synced record instead of mutating shared course content');
+assert.ok(ui.includes('function effectiveAssignment(')&&ui.includes('function openAssignmentProgress('),'student assignment rows must merge and edit personal progress');
+assert.ok(ui.includes('saveAssignmentProgress(assignment.id'),'assignment Open/Submit controls must persist student status and submission notes');
+assert.ok(ui.includes("tracksPersonalAssignmentProgress())&&!assignmentDone(a)"),'students with active course membership must receive a functional assignment Open control');
 assert.ok(ui.includes("window.DafatiiSubjectRedesign = Object.freeze"),'Subjects redesign must expose a stable integration surface');
 
 for(const marker of ['.subject-r-tabs','.subject-r-card','.subject-r-hero','.subject-r-filterbar','.subject-r-wide-action','.subject-r-chapter-button','.subject-r-readonly']) assert.ok(css.includes(marker),marker+' style missing');
