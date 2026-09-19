@@ -42,6 +42,14 @@ CREATE TABLE IF NOT EXISTS social_reactions (
   PRIMARY KEY (message_id,user_id,emoji)
 );
 
+CREATE TABLE IF NOT EXISTS social_poll_votes (
+  message_id TEXT NOT NULL REFERENCES social_messages(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  option_index INTEGER NOT NULL CHECK (option_index >= 0 AND option_index < 8),
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (message_id,user_id)
+);
+
 CREATE TABLE IF NOT EXISTS social_posts (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
