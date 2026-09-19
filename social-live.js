@@ -287,6 +287,7 @@
     input?.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(140,input.scrollHeight)+'px';});
     document.getElementById('live-poll')?.addEventListener('click',()=>openPollSheet(id));
     document.querySelectorAll('[data-live-reaction]').forEach(button=>button.addEventListener('click',async()=>{try{await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/reactions',{method:'POST',body:{emoji:button.dataset.liveReaction}});await loadThread(id,true);render();}catch(error){showToast(error.message||'Reaction could not be saved.');}}));
+    document.querySelectorAll('[data-live-poll]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await api('/social/conversations/'+encodeURIComponent(id)+'/messages/'+encodeURIComponent(button.dataset.messageId)+'/poll',{method:'POST',body:{optionIndex:Number(button.dataset.livePoll)}});await loadThread(id,true);render();}catch(error){showToast(error.message||'Vote could not be saved.');button.disabled=false;}}));
     requestAnimationFrame(()=>{const box=document.getElementById('live-messages');if(box)box.scrollTop=box.scrollHeight;});
   }
 
