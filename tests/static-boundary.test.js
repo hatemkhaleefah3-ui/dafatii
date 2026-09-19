@@ -30,7 +30,7 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260919-2/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260919-3/, 'the cleaned subject interface must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
@@ -146,6 +146,10 @@ assert.doesNotMatch(app, /class="subject-swipe[^\"]*" data-subject-id=/, 'Subjec
 assert.doesNotMatch(app, /subject-swipe-action[^\n]*data-(?:edit|delete)-subject/, 'Subjects cards must not render swipe edit/delete actions');
 assert.match(app, /class="subject-card-wrap[^\"]*" data-subject-id=/, 'Subjects cards must use a fixed non-swipe wrapper');
 assert.match(app, /subject-card-footer/,'Subjects cards need a dedicated metadata and open-action footer');
+assert.doesNotMatch(app, /class="subject-swipe lecture-swipe/, 'Lecture cards must not use the swipe container');
+assert.doesNotMatch(app, /subject-swipe-action[^\n]*data-(?:edit|delete)-lecture/, 'Lecture cards must not render swipe edit/delete actions');
+assert.match(app, /class="lecture-card-wrap[^\"]*" data-lecture-id=/, 'Lecture cards must use a fixed non-swipe wrapper');
+assert.doesNotMatch(app, /DafatiiSwipe\?\.bind/, 'The app renderer must not bind swipe gestures to cards');
 assert.doesNotMatch(app, /study-unit-card-switcher|data-study-unit-select/,'Subjects cards must not contain chapter or study-unit switchers');
 const calendarUi = fs.readFileSync('calendar.js', 'utf8');
 const calendarCss = fs.readFileSync('calendar.css', 'utf8');

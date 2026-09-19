@@ -253,8 +253,7 @@ function lectureListView(subject){
 function lectureCard(subject, lecture){
   const hasLink = Boolean(String(lecture.link || '').trim()),managed=schoolManagedWorkspace();
   return `
-    <div class="subject-swipe lecture-swipe ${managed?'school-managed-card':''}" data-lecture-id="${escapeHtml(lecture.id)}" data-subject-id="${escapeHtml(subject.id)}">
-      ${managed?'':`<button class="subject-swipe-action edit" data-edit-lecture="${escapeHtml(lecture.id)}" aria-label="Edit ${escapeHtml(lecture.name)}">${icon('edit')}<span>Edit</span></button><button class="subject-swipe-action delete" data-delete-lecture="${escapeHtml(lecture.id)}" aria-label="Delete ${escapeHtml(lecture.name)}">${icon('trash')}<span>Delete</span></button>`}
+    <div class="lecture-card-wrap ${managed?'school-managed-card':''}" data-lecture-id="${escapeHtml(lecture.id)}" data-subject-id="${escapeHtml(subject.id)}">
       <article class="subject-card lecture-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(lecture.name)}">
         <div class="subject-card-top">
           <div class="subject-icon">${escapeHtml(lecture.icon || '▶')}</div>
@@ -401,20 +400,16 @@ function bindLectures(subject){
   if(!managed)document.querySelectorAll('[data-delete-lecture]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); deleteLecture(subject, btn.dataset.deleteLecture);
   }));
-  document.querySelectorAll('.lecture-swipe').forEach(wrap=>{
+  document.querySelectorAll('.lecture-card-wrap').forEach(wrap=>{
     const id=wrap.dataset.lectureId;
     const lecture=subjectLectures(subject.id).find(l=>l.id===id);
     const card=wrap.querySelector('.lecture-card');
     const open=()=>openLectureLink(lecture);
     card.addEventListener('click',open);
     card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
-    if(!managed)bindSwipe(card,()=>openLectureSheet(subject,id),()=>deleteLecture(subject,id));
   });
 }
 
-function bindSwipe(card){
-  window.DafatiiSwipe?.bind(card);
-}
 
 function openSubjectSheet(subjectId=''){
   const subject=state.subjects.find(s=>s.id===subjectId);
