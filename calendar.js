@@ -633,12 +633,32 @@
     document.querySelectorAll('[data-planner-toggle]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;
       item.done=!item.done;
-      if(item.type==='goals')item.progress=item.done?100:Math.min(90,Number(item.progress||0));
+      if(item.type==='tasks')item.taskState=item.done?'done':'backlog';
+      if(item.type==='goals'){
+        const target=goalTarget(item);
+        item.goalCurrent=item.done?target:Math.min(goalCurrent(item),Math.max(0,target-1));
+        item.progress=goalProgress(item);
+      }
+      savePlannerItems(items);rerender();
+    }));
+    document.querySelectorAll('[data-planner-task-state]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerTaskState);if(!item||item.type!=='tasks'||item.done)return;
+      item.taskState=['backlog','doing'].includes(button.dataset.nextState)?button.dataset.nextState:'backlog';
+      savePlannerItems(items);rerender();
+    }));
+    document.querySelectorAll('[data-planner-todo-tomorrow]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerTodoTomorrow);if(!item||item.type!=='todos'||item.done)return;
+      item.date=dateKey(addDate(new Date(),'day',1));savePlannerItems(items);rerender();
+    }));
+    document.querySelectorAll('[data-planner-goal-step]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerGoalStep);if(!item||item.type!=='goals'||item.done)return;
+      const target=goalTarget(item),step=target<=10?1:Math.max(1,Math.round(target/10));
+      item.goalCurrent=Math.min(target,goalCurrent(item)+step);item.progress=goalProgress(item);item.done=item.goalCurrent>=target;
       savePlannerItems(items);rerender();
     }));
     document.querySelectorAll('[data-planner-progress]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerProgress);if(!item||item.type!=='goals')return;
-      item.progress=Math.min(100,Math.max(0,Number(item.progress||0)+10));item.done=item.progress>=100;
+      const target=goalTarget(item);item.goalCurrent=Math.min(target,goalCurrent(item)+Math.max(1,target/10));item.progress=goalProgress(item);item.done=item.progress>=100;
       savePlannerItems(items);rerender();
     }));
     document.querySelectorAll('[data-planner-edit]').forEach(button=>button.addEventListener('click',event=>{
