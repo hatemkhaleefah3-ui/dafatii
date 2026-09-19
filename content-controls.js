@@ -129,12 +129,11 @@
     const actions = state.actions.add || [];
 
     if (route.startsWith('calendar/schedule')) {
-      const order=['tasks','todos','goals','schedule','attendance'];
+      const control=actions.find(candidate=>candidate.dataset?.plannerAddType);
+      if(!control)return [];
+      const type=String(control.dataset.plannerAddType||'schedule');
       const labels={tasks:'Task',todos:'To-do',goals:'Goal',schedule:'Schedule item',attendance:'Attendance'};
-      return order.map(type=>{
-        const control=actions.find(candidate=>candidate.dataset?.plannerAddType===type);
-        return control?{control,label:labels[type],type}:null;
-      }).filter(Boolean);
+      return [{control,label:labels[type]||'Item',type}];
     }
 
     const contextual = control => control.matches?.('.planner-cell-add,.planner-inline-add,.cal-add-axis,[data-planner-cell-add],[data-add-axis]');
@@ -315,8 +314,8 @@
       `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">${escapeHtml(typeIcons[entry.type]||'＋')}</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>${entry.type?'Create '+escapeHtml(entry.label.toLowerCase()):'Open form'}</small></span><b>›</b></button>`
     ).join('');
     const scheduleChooser=routeName().toLowerCase().startsWith('calendar/schedule');
-    sheet.querySelector('header h2').textContent = scheduleChooser ? 'Choose item type' : 'Choose what to add';
-    sheet.querySelector('.dcc-sheet-note').textContent = scheduleChooser ? 'Task, to-do, goal, schedule item or attendance.' : 'Choose one add form for this page.';
+    sheet.querySelector('header h2').textContent = scheduleChooser ? 'Add to this section' : 'Choose what to add';
+    sheet.querySelector('.dcc-sheet-note').textContent = scheduleChooser ? 'The active planner section controls which form opens.' : 'Choose one add form for this page.';
     actions.querySelectorAll('[data-dcc-add-index]').forEach(button => button.addEventListener('click',() => {
       const entry = adds[Number(button.dataset.dccAddIndex)];
       if (!entry) return;
