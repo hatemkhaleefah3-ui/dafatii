@@ -11,8 +11,8 @@
 
   const isArabic = () => (document.documentElement.lang || '').toLowerCase().startsWith('ar');
   const copy = () => isArabic()
-    ? { title:'جارٍ تجهيز الملف', waiting:'يرجى الانتظار حتى يصبح الملف جاهزاً بالكامل.', pinch:'استخدم إصبعين للتكبير والتصغير. انقر نقراً مزدوجاً للعودة إلى 100٪.' }
-    : { title:'Preparing file', waiting:'Please wait until the file is completely ready.', pinch:'Pinch to zoom. Double-click or double-tap to return to 100%.' };
+    ? { title:'جارٍ تجهيز الملف', waiting:'يرجى الانتظار حتى يصبح الملف جاهزاً بالكامل.', pinch:'استخدم إصبعين للتكبير والتصغير. انقر نقراً مزدوجاً للعودة إلى تكبير 0٪.' }
+    : { title:'Preparing file', waiting:'Please wait until the file is completely ready.', pinch:'Pinch to zoom. Double-click or double-tap to return to 0% magnification.' };
 
   function fileKey(value) {
     return value == null ? '' : String(value);
@@ -179,6 +179,7 @@
       if(target?.closest?.('button,a,input,textarea,select,[contenteditable="true"]'))return;
       event?.preventDefault?.();
       controls.resetZoom();
+      root.dataset.readerMagnification = '0';
       root.classList.remove('reader-chrome-hidden');
     };
 
