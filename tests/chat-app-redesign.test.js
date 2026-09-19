@@ -21,8 +21,8 @@ assert.ok(ui.includes("setHash(chatThreadRoute(kind,id))"), 'new conversations m
 assert.ok(shell.includes("shell.classList.toggle('chat-app-host',current.split('/')[0]==='chat')"), 'shared shell must activate dedicated chat host mode for list and nested thread routes');
 assert.ok(quiet.includes('.quiet-workspace.chat-app-host>.quiet-toolbar') && quiet.includes('.quiet-workspace.chat-app-host>.bottom-nav') && quiet.includes('display:none!important'), 'main workspace navigation must not overlap the chat app');
 for(const marker of ['.chat-app-topbar','.chat-app-profile-popover','.chat-app-subnav','.chat-app-drawer','.chat-app-bottom','.chat-directory','.chat-feed-grid','.chat-thread-page']) assert.ok(css.includes(marker), marker+' style missing');
-assert.ok(index.includes('student-social.js?v=20260919-1') && index.includes('student-social.css?v=20260919-3'), 'chat app shell assets must be cache-busted');
-assert.ok(index.includes('advanced-chat.js?v=20260919-2') && index.includes('advanced-chat.css?v=20260919-3'), 'advanced chat integration assets must be cache-busted');
+assert.ok(index.includes('student-social.js?v=20260919-1') && index.includes('student-social.css?v=20260919-4'), 'chat app shell assets must be cache-busted');
+assert.ok(index.includes('advanced-chat.js?v=20260919-3') && index.includes('advanced-chat.css?v=20260919-4'), 'advanced chat integration assets must be cache-busted');
 assert.ok(ui.includes('window.DafatiiChatShell = Object.freeze'), 'student social must export the canonical Chat app shell for later chat enhancements');
 assert.ok(advanced.includes("if(section.toLowerCase()==='blogs & announcements')return previousWorkspaceContent"), 'advanced chat must defer Blogs & announcements to the canonical Chat feed');
 assert.ok(advanced.includes('window.DafatiiChatShell?.render?.(section,content,{thread:Boolean(selected),subpage:ui.filter})'), 'advanced chat must render inside the canonical Chat app shell and pass the active contextual subpage');
@@ -32,10 +32,15 @@ assert.ok(advanced.includes('setHash(chatThreadRoute(kind,row.dataset.openChat))
 assert.ok(advanced.includes('aria-label="Back to chats"') && !advanced.includes('class="chatpro-head-actions"'), 'thread header must contain only the return control and conversation profile');
 assert.ok(css.includes('.chat-app-page.thread-open>.chat-app-topbar') && css.includes('.chat-app-page.thread-open>.chat-app-bottom') && css.includes('display:none!important'), 'thread routes must hide the Chat app chrome');
 assert.ok(advancedCss.includes('.chat-app-page.thread-open .chat-app-stage .chatpro-shell.thread-only') && advancedCss.includes('position:absolute;inset:0') && advancedCss.includes('.chat-app-page.thread-open .chatpro-composer-zone'), 'thread routes must fill the locked viewport with header/messages/composer layout');
-assert.ok(css.includes('position:fixed;inset:0;z-index:90') && advancedCss.includes('position:relative;inset:auto;z-index:12'), 'open-thread viewport must be fixed while the composer remains the final grid row');
+assert.ok(css.includes('height:var(--chat-viewport-height,100dvh)') && css.includes('z-index:200') && advancedCss.includes('height:100%;min-height:0'), 'open-thread viewport must stay above website chrome and fill the visual viewport');
 assert.ok(advancedCss.includes('backdrop-filter:blur(26px) saturate(150%)') && advancedCss.includes('box-shadow:0 12px 34px'), 'fixed composer must use the premium glass/pill treatment');
 assert.ok(advanced.includes('data-chat-composer') && advanced.includes("zone?.addEventListener('pointerdown',keepComposerInteractionLocal)") && advanced.includes("zone?.addEventListener('focusin',keepComposerInteractionLocal)"), 'composer interactions must not bubble into outer workspace navigation');
 assert.ok(advanced.includes('type="button" id="chatpro-attach"') && advanced.includes('type="button" id="chatpro-send"') && advanced.includes('enterkeyhint="send"'), 'composer controls must have explicit non-submit semantics and mobile send intent');
+assert.ok(advanced.includes("threadPage?.addEventListener('click',event=>event.stopPropagation())"), 'thread clicks must not bubble into outer website navigation');
+assert.ok(advanced.includes('function syncThreadViewport()') && advanced.includes("window.visualViewport?.addEventListener('resize',syncThreadViewport)"), 'thread must track the mobile visual viewport so the composer stays at the real bottom');
+assert.ok(advanced.includes("window.DafatiiFiles.upload(file,{purpose:'chat-attachment'})"), 'chat image and document uploads must use the authenticated file backend');
+assert.ok(advanced.includes("storage:'google-drive'") && advanced.includes('data-chat-file-id'), 'chat messages must store stable Drive-backed file IDs instead of browser data URLs');
+assert.ok(!advanced.includes('MAX_IMAGE=') && !advanced.includes('MAX_DOC='), 'chat attachments must no longer be constrained by localStorage media limits');
 assert.ok(advancedCss.includes('.chat-app-stage .chatpro-shell.list-only') && advancedCss.includes('.chat-app-stage .chatpro-shell.thread-only'), 'advanced chat must be sized inside the dedicated Chat app chrome');
 console.log('chat app redesign tests passed');
 
