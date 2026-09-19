@@ -113,9 +113,8 @@
   function threadHeader(c,state,pro){
     const blocked=state.blocked.includes(c.id);
     return `<div class="chatpro-thread-head">
-      <button class="chatpro-mobile-back" id="chatpro-mobile-back" aria-label="Back">${icon('back')}</button>
-      <button class="chatpro-person" id="chatpro-info"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button>
-      <div class="chatpro-head-actions"><button id="chatpro-call" title="Voice call" aria-label="Voice call">${icon('phone')}</button><button id="chatpro-video-call" title="Video call" aria-label="Video call">${icon('video')}</button><button id="chatpro-thread-search" title="Search in conversation" aria-label="Search">${icon('search')}</button>${c.kind==='unknown'?`<button id="chatpro-report" class="danger-text">Report</button>`:''}<button id="chatpro-info-button" title="Chat info" aria-label="Chat info">${icon('info')}</button></div>
+      <button class="chatpro-mobile-back" id="chatpro-mobile-back" aria-label="Back to chats">${icon('back')}</button>
+      <button class="chatpro-person" id="chatpro-info" aria-label="Open ${esc(c.name)} profile"><span class="chatpro-avatar large ${c.status==='online'?'online':''}">${esc(c.avatar||c.name?.[0]||'?')}</span><span><strong>${esc(c.name)}</strong><small>${esc(blocked?'blocked':c.status||c.topic||'last seen recently')}</small></span></button>
     </div>`;
   }
   function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search">${icon('search')}<input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close" aria-label="Close search">${icon('close')}</button></div>`;}
