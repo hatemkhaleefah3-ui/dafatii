@@ -1430,3 +1430,28 @@ body .quiet-workspace>.workspace-main>.planner-page{
     box-shadow:none!important
   }
 }
+
+
+/* Planner v17 — read-only item detail card */
+.planner-detail-trigger{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.planner-detail-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:3px}
+.planner-item-detail-overlay{padding-inline:12px}
+.planner-item-detail-sheet{width:min(560px,calc(100vw - 24px));max-width:560px;overflow:hidden}
+.planner-item-detail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;color:var(--muted);font:800 11px/1 Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.planner-item-detail-card{display:grid;gap:18px;padding:18px;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:24px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 97%,#fff),color-mix(in srgb,var(--surface-2) 55%,var(--surface)));box-shadow:0 18px 46px rgba(17,30,55,.08)}
+.planner-item-detail-head{display:flex;align-items:center;gap:13px}
+.planner-item-detail-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:17px;background:color-mix(in srgb,var(--accent) 11%,var(--surface));color:var(--accent)}
+.planner-item-detail-icon .ui-icon{width:25px;height:25px}
+.planner-item-detail-head small{display:block;margin-bottom:5px;color:var(--muted);font:800 10px/1 Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.planner-item-detail-head h2{margin:0;color:var(--text);font:850 24px/1.12 Manrope,sans-serif;letter-spacing:-.035em;overflow-wrap:anywhere}
+.planner-item-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.planner-item-detail-row{min-width:0;padding:12px;border:1px solid color-mix(in srgb,var(--line) 76%,transparent);border-radius:15px;background:color-mix(in srgb,var(--surface) 82%,transparent)}
+.planner-item-detail-row span,.planner-item-detail-notes>span{display:block;margin-bottom:6px;color:var(--muted);font:750 9px/1 Manrope,sans-serif;letter-spacing:.07em;text-transform:uppercase}
+.planner-item-detail-row strong{display:block;color:var(--text);font:800 13px/1.35 Manrope,sans-serif;overflow-wrap:anywhere}
+.planner-item-detail-notes{padding-top:15px;border-top:1px solid color-mix(in srgb,var(--line) 72%,transparent)}
+.planner-item-detail-notes p{margin:0;color:var(--text);font:650 14px/1.65 Manrope,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:520px){
+  .planner-item-detail-sheet{width:calc(100vw - 12px);max-width:calc(100vw - 12px)}
+  .planner-item-detail-card{padding:15px;border-radius:21px}
+  .planner-item-detail-grid{grid-template-columns:1fr 1fr}
+}
