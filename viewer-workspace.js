@@ -16,7 +16,7 @@
       reviewPoints:'Quickly review key points.', testUnderstanding:'Test your understanding.', exploreDeeper:'Explore and learn deeper.',
       scrollDirection:'Scroll direction', scrollHelp:'Choose how to navigate pages.', theme:'Theme', light:'Light', dark:'Dark',
       fontSize:'Font size', small:'Small', medium:'Medium', large:'Large', zoom:'Zoom', pageBehavior:'Page behavior',
-      continuousScroll:'Continuous scroll', paged:'Paged', tools:'Reader tools'
+      continuousScroll:'Continuous scroll', paged:'Paged', tools:'Reader tools', chooseNotesSource:'Choose notes source', lectureSource:'Lecture notes', lectureSourceHelp:'Notes attached to this lecture.', myNotesHelp:'Your personal notes for this lecture.', addNoteTitle:'Add a note', visibility:'Visibility', public:'Public', personal:'Personal', publicHelp:'Visible to other students', personalHelp:'Only you can see this note', publishNote:'Publish note', publicUnavailable:'Public note sharing is not configured yet.', noLectureNotes:'No lecture notes have been added yet.', noteSaved:'Note saved.'
     },
     ar: {
       settings:'إعدادات القارئ', interactive:'المحاضرة التفاعلية', flashcards:'البطاقات التعليمية', exam:'الاختبار', mcqs:'أسئلة اختيار من متعدد', questionAnswer:'سؤال وجواب',
@@ -30,7 +30,7 @@
       reviewPoints:'راجع النقاط المهمة بسرعة.', testUnderstanding:'اختبر مدى فهمك.', exploreDeeper:'استكشف وتعلّم بعمق أكبر.',
       scrollDirection:'اتجاه التمرير', scrollHelp:'اختر طريقة التنقل بين الصفحات.', theme:'المظهر', light:'فاتح', dark:'داكن',
       fontSize:'حجم المحتوى', small:'صغير', medium:'متوسط', large:'كبير', zoom:'التكبير', pageBehavior:'سلوك الصفحات',
-      continuousScroll:'تمرير مستمر', paged:'صفحة بصفحة', tools:'أدوات القارئ'
+      continuousScroll:'تمرير مستمر', paged:'صفحة بصفحة', tools:'أدوات القارئ', chooseNotesSource:'اختر مصدر الملاحظات', lectureSource:'ملاحظات المحاضرة', lectureSourceHelp:'الملاحظات المرفقة بهذه المحاضرة.', myNotesHelp:'ملاحظاتك الشخصية لهذه المحاضرة.', addNoteTitle:'أضف ملاحظة', visibility:'الخصوصية', public:'عام', personal:'شخصي', publicHelp:'مرئية للطلاب الآخرين', personalHelp:'يمكنك أنت فقط رؤية هذه الملاحظة', publishNote:'نشر الملاحظة', publicUnavailable:'مشاركة الملاحظات العامة غير مفعلة حالياً.', noLectureNotes:'لا توجد ملاحظات للمحاضرة حتى الآن.', noteSaved:'تم حفظ الملاحظة.'
     }
   };
 
@@ -363,33 +363,146 @@
   }
   function vimeoId(value) { try { const url=new URL(value); if(!/(^|\.)vimeo\.com$/i.test(url.hostname))return ''; return (url.pathname.match(/\/(\d+)(?:$|\/)/)||[])[1]||''; } catch { return ''; } }
 
+  function openVideoNotesSource(root, context, selected, onSelect) {
+    const options=[
+      { id:'lecture', icon:'file', title:t('lectureSource'), help:t('lectureSourceHelp') },
+      { id:'personal', icon:'edit', title:t('personalNotes'), help:t('myNotesHelp') }
+    ];
+    const backdrop=sheet(root,t('chooseNotesSource'),`
+      <div class="video-source-list">
+        ${options.map(option=>`<button type="button" data-video-source="${option.id}" class="${selected===option.id?'active':''}"><span class="video-source-icon">${icon(option.icon,option.id==='lecture'?'▤':'✎')}</span><span><strong>${esc(option.title)}</strong><small>${esc(option.help)}</small></span><span class="video-source-radio" aria-hidden="true"></span></button>`).join('')}
+      </div>`);
+    backdrop.querySelectorAll('[data-video-source]').forEach(button=>button.onclick=()=>{
+      backdrop.remove();
+      onSelect?.(button.dataset.videoSource);
+    });
+  }
+
   async function openVideo(context = {}) {
     let url = context.url || '';
     if (!url && context.fileId) url = await window.DafatiiFiles.getViewUrl(context.fileId);
     if (!url) throw new Error('Video URL is unavailable.');
+
     const yt = youtubeId(url), vm = vimeoId(url);
     const embed = yt ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt)}?rel=0&playsinline=1` : vm ? `https://player.vimeo.com/video/${encodeURIComponent(vm)}?playsinline=1` : '';
     const root = document.createElement('div');
     root.className = 'dafatii-immersive-viewer video-workspace';
     const title = context.lecture?.name || context.metadata?.filename || t('video');
-    root.innerHTML = `<section class="immersive-viewer-shell" role="dialog" aria-modal="true"><button class="immersive-close" type="button" aria-label="${esc(t('close'))}">×</button><div class="immersive-title"><span>${esc(t('video'))}</span><strong>${esc(title)}</strong></div><div class="video-workspace-stage">${embed ? `<iframe src="${esc(embed)}" title="${esc(title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>` : `<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div><aside class="video-notes-pane"><span>${esc(t('notes'))}</span><p data-video-notes-copy>${esc(context.lecture?.notes || t('noNotes'))}</p></aside></section>`;
-    document.body.append(root);
-    const shell = root.querySelector('.immersive-viewer-shell');
-    const close = () => root.remove();
-    root.querySelector('.immersive-close').onclick = close;
-    root.addEventListener('click', event => { if (event.target === root) close(); });
-    const notePane = root.querySelector('.video-notes-pane');
     const ctx = { ...context, url };
-    mountDock(root, ctx, {
-      notes:true,
-      close,
-      download: context.fileId ? async () => { location.assign(await window.DafatiiFiles.getViewUrl(context.fileId, { download:true })); } : null,
-      fullscreen: () => shell.requestFullscreen?.(),
-      getPage: () => null
+    let selectedSource = context.lecture?.notes ? 'lecture' : 'personal';
+    let visibility = 'personal';
+
+    root.innerHTML = `<section class="immersive-viewer-shell video-reader-shell" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <header class="video-reader-topbar">
+        <button class="video-reader-exit" type="button" aria-label="${esc(t('close'))}">×</button>
+        <button class="video-reader-examine" type="button"><span class="video-reader-examine-icon">${icon('star','✦')}</span><span>${esc(t('examine'))}</span></button>
+      </header>
+      <div class="video-reader-scroll">
+        <div class="video-workspace-stage">${embed ? `<iframe src="${esc(embed)}" title="${esc(title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>` : `<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div>
+        <section class="video-reader-heading"><h1>${esc(title)}</h1></section>
+        <section class="video-reader-notes" aria-label="${esc(t('notes'))}">
+          <div class="video-notes-source-row">
+            <div><span>${esc(t('notes'))}</span><strong data-video-source-title></strong></div>
+            <button type="button" data-video-source-button><span data-video-source-button-label></span>${icon('arrow-right','›')}</button>
+          </div>
+          <div class="video-notes-region" data-video-notes-region></div>
+          <form class="video-note-composer" data-video-note-form>
+            <label class="video-note-field"><span>${esc(t('addNoteTitle'))}</span><textarea maxlength="500" placeholder="${esc(t('notePlaceholder'))}"></textarea><small><span data-video-note-count>0</span>/500</small></label>
+            <div class="video-note-toolbar">
+              <button type="button" class="video-note-source-control" data-video-source-button-bottom>${icon('file','▤')}<span><small>${esc(t('chooseNotesSource'))}</small><strong data-video-source-bottom-label></strong></span>${icon('arrow-right','›')}</button>
+              <div class="video-note-visibility" role="group" aria-label="${esc(t('visibility'))}">
+                <button type="button" data-video-visibility="public"><span class="video-visibility-icon">${icon('globe','◎')}</span><span><strong>${esc(t('public'))}</strong><small>${esc(t('publicHelp'))}</small></span></button>
+                <button type="button" data-video-visibility="personal" class="active"><span class="video-visibility-icon">${icon('lock','▣')}</span><span><strong>${esc(t('personal'))}</strong><small>${esc(t('personalHelp'))}</small></span></button>
+              </div>
+            </div>
+            <button class="video-note-publish" type="submit">${esc(t('publishNote'))}</button>
+          </form>
+        </section>
+      </div>
+    </section>`;
+    document.body.append(root);
+
+    const shell = root.querySelector('.video-reader-shell');
+    const scroll = root.querySelector('.video-reader-scroll');
+    const textarea = root.querySelector('.video-note-composer textarea');
+    const close = () => root.remove();
+
+    function sourceLabel() {
+      return selectedSource === 'lecture' ? t('lectureSource') : t('personalNotes');
+    }
+    function renderNotes() {
+      const region=root.querySelector('[data-video-notes-region]');
+      const label=sourceLabel();
+      root.querySelector('[data-video-source-title]').textContent=label;
+      root.querySelector('[data-video-source-button-label]').textContent=label;
+      root.querySelector('[data-video-source-bottom-label]').textContent=label;
+
+      if (selectedSource === 'lecture') {
+        const notes=String(context.lecture?.notes || '').trim();
+        region.innerHTML = notes
+          ? `<article class="video-notes-card video-notes-card-lecture"><div class="video-notes-card-badge">${icon('file','▤')}</div><div><strong>${esc(t('lectureSource'))}</strong><p>${esc(notes)}</p></div></article>`
+          : `<div class="video-notes-empty">${esc(t('noLectureNotes'))}</div>`;
+        return;
+      }
+
+      const list=notesFor(ctx).slice().reverse();
+      region.innerHTML=list.length
+        ? `<div class="video-personal-note-list">${list.map(item=>`<article data-video-note-id="${esc(item.id)}"><p>${esc(item.text)}</p><div>${item.page?`<span>${esc(t('page'))} ${item.page}</span>`:''}<time>${new Date(item.createdAt).toLocaleString(lang()==='ar'?'ar-IQ':'en')}</time><button type="button" data-video-note-delete="${esc(item.id)}">${esc(t('remove'))}</button></div></article>`).join('')}</div>`
+        : `<div class="video-notes-empty">${esc(t('noNotes'))}</div>`;
+      region.querySelectorAll('[data-video-note-delete]').forEach(button=>button.onclick=()=>{
+        removeNote(ctx,button.dataset.videoNoteDelete);
+        renderNotes();
+      });
+    }
+
+    const chooseSource=()=>openVideoNotesSource(root,ctx,selectedSource,next=>{selectedSource=next;renderNotes();});
+    root.querySelector('[data-video-source-button]').onclick=chooseSource;
+    root.querySelector('[data-video-source-button-bottom]').onclick=chooseSource;
+    root.querySelector('.video-reader-exit').onclick=close;
+    root.querySelector('.video-reader-examine').onclick=()=>openExamine(root,ctx,{close});
+    root.addEventListener('click',event=>{if(event.target===root)close();});
+
+    root.querySelectorAll('[data-video-visibility]').forEach(button=>button.onclick=()=>{
+      visibility=button.dataset.videoVisibility;
+      root.querySelectorAll('[data-video-visibility]').forEach(item=>item.classList.toggle('active',item===button));
     });
-    const dock = root.querySelector('.viewer-bottom-dock');
-    const toggle = document.createElement('button'); toggle.type='button'; toggle.className='viewer-note-toggle'; toggle.textContent='▤'; toggle.setAttribute('aria-label',t('notes'));
-    toggle.onclick=()=>notePane.classList.toggle('collapsed'); dock.insertBefore(toggle,dock.lastElementChild);
+    textarea.addEventListener('input',()=>{root.querySelector('[data-video-note-count]').textContent=String(textarea.value.length);});
+
+    root.querySelector('[data-video-note-form]').onsubmit=event=>{
+      event.preventDefault();
+      const text=textarea.value.trim();
+      if(!text)return;
+      if(visibility==='public'){
+        const publishEvent=new CustomEvent('dafatii:viewer-note-publish',{cancelable:true,detail:{text,visibility,lecture:ctx.lecture||null,fileId:ctx.fileId||null,url:ctx.url||null}});
+        window.dispatchEvent(publishEvent);
+        if(!publishEvent.defaultPrevented){
+          if(typeof showToast==='function')showToast(t('publicUnavailable'));
+          return;
+        }
+        textarea.value='';
+        root.querySelector('[data-video-note-count]').textContent='0';
+        if(typeof showToast==='function')showToast(t('noteSaved'));
+        return;
+      }
+      addNote(ctx,text,null);
+      textarea.value='';
+      root.querySelector('[data-video-note-count]').textContent='0';
+      selectedSource='personal';
+      renderNotes();
+      if(typeof showToast==='function')showToast(t('noteSaved'));
+    };
+
+    let chromeTimer=0,lastTop=0;
+    const showChrome=()=>{root.classList.remove('video-chrome-hidden');clearTimeout(chromeTimer);chromeTimer=setTimeout(()=>root.classList.add('video-chrome-hidden'),1800);};
+    scroll.addEventListener('scroll',()=>{
+      if(Math.abs(scroll.scrollTop-lastTop)>3)root.classList.add('video-chrome-hidden');
+      lastTop=scroll.scrollTop;
+      clearTimeout(chromeTimer);
+      chromeTimer=setTimeout(()=>root.classList.remove('video-chrome-hidden'),650);
+    },{passive:true});
+    shell.addEventListener('pointerdown',showChrome,{passive:true});
+
+    renderNotes();
     root.querySelector('video')?.play?.().catch(() => {});
     return root;
   }
