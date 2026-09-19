@@ -338,7 +338,7 @@
     if (!eligible()) {
       trigger.hidden = true;
       closeSheet();
-      exitEdit();
+      if (state.editMode) exitEdit();
       return;
     }
     trigger.hidden = deleteActive || state.editMode;
