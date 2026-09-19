@@ -3,6 +3,7 @@
   const EXAMS_KEY = 'dafatii:examSchedule';
   const SCHEDULE_KEY = 'dafatii:weeklySchedule';
   const RECENT_KEY = 'dafatii:subjectRecent:v1';
+  const ASSIGNMENT_PROGRESS_KEY = 'dafatii:assignmentProgress:v1';
   const ui = { search:'', sort:'name', lectureFilter:'all', examFilter:'all', assignmentFilter:'all' };
   const DAY = 86400000;
   const esc = value => escapeHtml(value ?? '');
@@ -25,6 +26,28 @@
     } : {assignments:[]};
   }
   function saveSuite(value){ write(SUITE_KEY,value); }
+  function assignmentProgress(){
+    const value=read(ASSIGNMENT_PROGRESS_KEY,{});
+    return value&&typeof value==='object'&&value.courses&&typeof value.courses==='object'?value:{courses:{}};
+  }
+  function assignmentScope(){ return String(window.DafatiiCourses?.active?.()?.id||'personal'); }
+  function assignmentProgressFor(id){
+    const value=assignmentProgress();
+    return value.courses?.[assignmentScope()]?.[id]||null;
+  }
+  function saveAssignmentProgress(id,progress){
+    const value=assignmentProgress(),scope=assignmentScope();
+    value.courses[scope]=value.courses[scope]&&typeof value.courses[scope]==='object'?value.courses[scope]:{};
+    value.courses[scope][id]={status:progress.status,submissionNote:String(progress.submissionNote||'').slice(0,2000),submittedAt:progress.status==='done'?(progress.submittedAt||now()):null,updatedAt:now()};
+    write(ASSIGNMENT_PROGRESS_KEY,value);
+    return value.courses[scope][id];
+  }
+  function tracksPersonalAssignmentProgress(){ return !schoolProgram()&&!canPlan('edit_content')&&Boolean(window.DafatiiCourses?.active?.()?.membership?.status==='active'); }
+  function effectiveAssignment(assignment){
+    if(!tracksPersonalAssignmentProgress())return assignment;
+    const progress=assignmentProgressFor(assignment.id);
+    return progress?{...assignment,status:progress.status||'todo',completedAt:progress.submittedAt||null,submissionNote:progress.submissionNote||''}:assignment;
+  }
   function exams(){
     const value=read(EXAMS_KEY,[]);
     return Array.isArray(value)?value:[];
@@ -34,7 +57,7 @@
     const value=read(SCHEDULE_KEY,[]);
     return Array.isArray(value)?value:[];
   }
-  function subjectAssignments(subjectId){ return suite().assignments.filter(a=>a.subjectId===subjectId); }
+  function subjectAssignments(subjectId){ return suite().assignments.filter(a=>a.subjectId===subjectId).map(effectiveAssignment); }
   function subjectExams(subject){
     return exams().filter(e=>e.subjectId===subject.id || (!e.subjectId && String(e.subject||'').toLowerCase()===String(subject.name||'').toLowerCase()));
   }
@@ -204,7 +227,7 @@
     </section>`;
   }
   function aggregateAssignmentsView(){
-    const v=suite(),rows=v.assignments.map(a=>({assignment:a,subject:state.subjects.find(s=>s.id===a.subjectId)}));
+    const v=suite(),rows=v.assignments.map(a=>({assignment:effectiveAssignment(a),subject:state.subjects.find(s=>s.id===a.subjectId)}));
     return `<section class="subject-redesign-page">
       ${pageTitle('Assignments','Track tasks, due dates, and submissions across all subjects.')}
       ${mainTabs('assignments')}
@@ -316,7 +339,7 @@
     const status=assignmentDone(a)?'Submitted':a.status==='doing'?'In progress':isDueSoon(a)?'Due soon':'Not started';
     return `<article class="subject-r-row assignment ${overdue?'overdue':''}" data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id||'')}">
       <div class="subject-r-row-main"><h2>${esc(a.title)}</h2><small class="${overdue?'danger':''}">${a.dueDate?`${overdue?'Overdue':'Due'} ${esc(dateLabel(a.dueDate))}${a.dueTime?`, ${esc(a.dueTime)}`:''}`:'No due date'}</small><p>${showSubject?`${esc(subject.name)} · `:''}${esc(a.notes||'No extra notes.')}</p></div>
-      <div class="subject-r-row-badges"><span class="subject-r-status ${assignmentDone(a)?'done':a.status==='doing'?'progress':isDueSoon(a)?'danger':'muted'}">${status}</span><b class="priority ${esc(a.priority||'medium')}">${esc((a.priority||'medium')[0].toUpperCase()+(a.priority||'medium').slice(1))}</b>${canPlan('edit_content')&&!assignmentDone(a)?'<button class="subject-r-open" type="button">Open</button>':''}</div>
+      <div class="subject-r-row-badges"><span class="subject-r-status ${assignmentDone(a)?'done':a.status==='doing'?'progress':isDueSoon(a)?'danger':'muted'}">${status}</span><b class="priority ${esc(a.priority||'medium')}">${esc((a.priority||'medium')[0].toUpperCase()+(a.priority||'medium').slice(1))}</b>${(canPlan('edit_content')||tracksPersonalAssignmentProgress())&&!assignmentDone(a)?'<button class="subject-r-open" type="button">Open</button>':''}</div>
     </article>`;
   }
   function formatNumber(value){ return Number.isInteger(value)?String(value):Number(value).toFixed(1); }
@@ -509,9 +532,20 @@
     return `${String(h).padStart(2,'0')}:${m[2]}`;
   }
 
+  function openAssignmentProgress(subject,assignment){
+    const current=effectiveAssignment(assignment),root=document.getElementById('overlay-root');if(!root)return;
+    const currentStatus=current.status==='doing'?'doing':current.status==='done'?'done':'todo';
+    root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-progress-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)} · Assignment</div><h2>${esc(assignment.title)}</h2></div><button class="icon-btn" id="subject-r-progress-close">×</button></div><form id="subject-r-progress-form"><div class="subject-r-readonly"><div><small>Due</small><strong>${esc(assignment.dueDate?dateLabel(assignment.dueDate)+(assignment.dueTime?' · '+assignment.dueTime:''):'No due date')}</strong></div><div><small>Requirements</small><strong>${esc(assignment.notes||'No extra notes.')}</strong></div></div><div class="field"><label>Your status</label><select id="subject-r-progress-status"><option value="todo" ${currentStatus==='todo'?'selected':''}>Not started</option><option value="doing" ${currentStatus==='doing'?'selected':''}>In progress</option><option value="done" ${currentStatus==='done'?'selected':''}>Submitted</option></select></div><div class="field"><label>Submission note <span class="field-optional">optional</span></label><textarea id="subject-r-progress-note" maxlength="2000" rows="5" placeholder="Add a note about your work or submission…">${esc(current.submissionNote||'')}</textarea></div><button class="btn btn-primary entity-submit" type="submit">Save progress</button></form></section></div>`;
+    const close=()=>{root.innerHTML='';};
+    document.getElementById('subject-r-progress-close').onclick=close;
+    document.getElementById('subject-r-progress-overlay').onclick=e=>{if(e.target.id==='subject-r-progress-overlay')close();};
+    document.getElementById('subject-r-progress-form').onsubmit=e=>{e.preventDefault();const status=document.getElementById('subject-r-progress-status').value;saveAssignmentProgress(assignment.id,{status,submissionNote:document.getElementById('subject-r-progress-note').value.trim(),submittedAt:current.completedAt||null});close();render();};
+  }
+
   function openAssignmentRedesign(subject,assignmentId=''){
     const value=suite(),assignment=value.assignments.find(a=>a.id===assignmentId);
-    if(assignment ? !canPlan('edit_content') : !canPlan('add_content')){ if(assignment)openAssignmentDetails(subject,assignment); return; }
+    if(assignment&&!canPlan('edit_content')){ if(tracksPersonalAssignmentProgress())openAssignmentProgress(subject,assignment);else openAssignmentDetails(subject,effectiveAssignment(assignment)); return; }
+    if(!assignment&&!canPlan('add_content'))return;
     const root=document.getElementById('overlay-root');if(!root)return;
     root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-assignment-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)} · Assignment</div><h2>${assignment?'Edit assignment':'New assignment'}</h2></div><button class="icon-btn" id="subject-r-assignment-close">×</button></div><form id="subject-r-assignment-form">
       <div class="field"><label>Assignment</label><input id="subject-r-assignment-title" required maxlength="140" value="${esc(assignment?.title||'')}" placeholder="e.g. Grammar Exercise 1"></div>
