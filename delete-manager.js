@@ -273,8 +273,8 @@
       if (!state.active) return;
       if (records.some(record => [...record.addedNodes,...record.removedNodes].some(node => node.nodeType === 1))) scheduleUpdate();
     });
-    const root = scope();
-    if (root) state.observer.observe(root,{childList:true,subtree:true});
+    state.observer.observe(document.body,{childList:true,subtree:true});
+    window.dispatchEvent(new CustomEvent('dafatii:delete-mode',{detail:{active:true}}));
     return true;
   }
 
@@ -288,6 +288,7 @@
     state.observer = null;
     document.querySelector('.dm-root')?.remove();
     unlockPage();
+    window.dispatchEvent(new CustomEvent('dafatii:delete-mode',{detail:{active:false}}));
   }
 
   function findLiveControl(entry) {
