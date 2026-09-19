@@ -310,8 +310,9 @@
     const sheet = document.querySelector('.dcc-sheet');
     if (!sheet) return;
     const actions = sheet.querySelector('.dcc-sheet-actions');
+    const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷',attendance:'◎'};
     actions.innerHTML = adds.slice(0,6).map((entry,index) =>
-      `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">＋</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>Open form</small></span><b>›</b></button>`
+      `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">${escapeHtml(typeIcons[entry.type]||'＋')}</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>${entry.type?'Create '+escapeHtml(entry.label.toLowerCase()):'Open form'}</small></span><b>›</b></button>`
     ).join('');
     const scheduleChooser=routeName().toLowerCase().startsWith('calendar/schedule');
     sheet.querySelector('header h2').textContent = scheduleChooser ? 'Choose item type' : 'Choose what to add';
