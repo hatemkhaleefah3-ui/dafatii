@@ -30,6 +30,7 @@ assert.ok(ui.includes("ASSIGNMENT_PROGRESS_KEY = 'dafatii:assignmentProgress:v1'
 assert.ok(ui.includes('function effectiveAssignment(')&&ui.includes('function openAssignmentProgress('),'student assignment rows must merge and edit personal progress');
 assert.ok(ui.includes('saveAssignmentProgress(assignment.id'),'assignment Open/Submit controls must persist student status and submission notes');
 assert.ok(ui.includes("tracksPersonalAssignmentProgress())&&!assignmentDone(a)"),'students with active course membership must receive a functional assignment Open control');
+assert.ok(ui.includes('tabindex="0" role="button"')&&ui.includes("e.target===el&&(e.key==='Enter'||e.key===' ')"),'lecture, exam, and assignment cards must support keyboard activation without duplicate nested-button actions');
 assert.ok(ui.includes("window.DafatiiSubjectRedesign = Object.freeze"),'Subjects redesign must expose a stable integration surface');
 
 for(const marker of ['.subject-r-tabs','.subject-r-card','.subject-r-hero','.subject-r-filterbar','.subject-r-wide-action','.subject-r-chapter-button','.subject-r-readonly']) assert.ok(css.includes(marker),marker+' style missing');
