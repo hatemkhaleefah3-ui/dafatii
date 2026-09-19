@@ -116,8 +116,8 @@ body[data-content-control-mode] .dcc-trigger{display:none!important}
 .dcc-selection-bar{
   position:fixed;z-index:176;left:50%;transform:translateX(-50%);
   bottom:calc(max(10px,env(safe-area-inset-bottom)) + 82px);
-  width:min(520px,calc(100% - 22px));min-height:66px;padding:6px;
-  display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:6px;
+  width:min(620px,calc(100% - 16px));min-height:68px;padding:6px;
+  display:grid;grid-template-columns:1fr 1.15fr 1fr 1fr;gap:5px;
   border:1px solid color-mix(in srgb,var(--line) 68%,transparent);border-radius:22px;
   background:color-mix(in srgb,var(--surface) 96%,transparent);box-shadow:0 20px 54px rgba(11,24,49,.2),inset 0 1px 0 rgba(255,255,255,.65);
   backdrop-filter:blur(26px) saturate(155%);-webkit-backdrop-filter:blur(26px) saturate(155%)
@@ -128,7 +128,7 @@ body[data-content-control-mode] .dcc-trigger{display:none!important}
   display:grid;place-items:center;align-content:center;gap:2px;padding:5px 4px;cursor:pointer
 }
 .dcc-selection-bar button>span{font:800 14px/1 sans-serif}
-.dcc-selection-bar button>strong{font:800 9px/1.1 Manrope,sans-serif}
+.dcc-selection-bar button>strong{font:800 8.5px/1.08 Manrope,sans-serif;white-space:nowrap}
 .dcc-selection-bar button.danger{background:linear-gradient(145deg,#dd4a59,#bd2e3d);color:#fff;box-shadow:0 9px 20px rgba(190,43,58,.22)}
 .dcc-selection-bar button.danger>b{position:absolute;inset-inline-end:7px;top:6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.2);font:800 8px Manrope,sans-serif}
 .dcc-selection-bar button:disabled{opacity:.38;cursor:not-allowed;box-shadow:none}
@@ -142,12 +142,16 @@ body[data-content-control-mode] .dcc-trigger{display:none!important}
 }
 body[data-content-control-mode="edit"] .dcc-selectable{outline-style:dashed!important;outline-color:color-mix(in srgb,var(--accent) 48%,transparent)!important}
 body[data-content-control-mode="delete"] .dcc-selectable{outline-color:color-mix(in srgb,#d33b4a 34%,transparent)!important}
+body[data-content-control-mode="delete"] .dcc-selectable *{pointer-events:none!important}
+body[data-content-control-mode="delete"] .dcc-selectable{
+  -webkit-user-select:none;user-select:none;touch-action:manipulation
+}
 .dcc-selectable:hover{outline-color:var(--accent)!important}
 body[data-content-control-mode="delete"] .dcc-selectable:hover{outline-color:#cf3545!important}
 .dcc-selected{
   outline:3px solid #cf3545!important;outline-offset:3px;
-  box-shadow:0 0 0 6px color-mix(in srgb,#d33b4a 10%,transparent)!important;
-  filter:saturate(.92)
+  box-shadow:0 0 0 6px color-mix(in srgb,#d33b4a 11%,transparent),0 12px 28px rgba(190,43,58,.10)!important;
+  filter:saturate(.92);transform:scale(.992)
 }
 
 @media(min-width:768px){
@@ -165,6 +169,9 @@ body[data-content-control-mode="delete"] .dcc-selectable:hover{outline-color:#cf
   .dcc-sheet-actions>button{min-height:62px;border-radius:18px}
   .dcc-action-icon{width:42px;height:42px;border-radius:14px}
   .dcc-mode-hint{top:max(8px,env(safe-area-inset-top))}
+  .dcc-selection-bar{width:calc(100% - 12px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + 78px);gap:4px;padding:5px}
+  .dcc-selection-bar button{border-radius:14px;padding-inline:2px}
+  .dcc-selection-bar button>strong{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){
   .dcc-trigger,.dcc-sheet-actions>button,.dcc-selectable{transition:none}
