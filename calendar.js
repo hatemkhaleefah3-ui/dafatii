@@ -283,7 +283,6 @@
       return `<section class="planner-period-cell">
         <button class="planner-period-cell-head" data-planner-open-date="${dateKey(date)}"><strong>${include31?'Days 30–31':`Day ${day}`}</strong><span>${esc(dayName(date,'short'))} · ${esc(monthName(date,'short'))} ${include31?'30–31':day}</span></button>
         <div class="planner-period-cell-body">${items.length?items.map(plannerCompactItem).join(''):`<span class="planner-cell-empty">No ${esc(tabLabel(plannerTab).toLowerCase())}</span>`}</div>
-        <button class="planner-cell-add" data-planner-cell-add data-date="${dateKey(date)}" data-time="09:00">＋</button>
       </section>`;
     }).join('')}</div>`;
   }
@@ -295,7 +294,6 @@
       return `<section class="planner-period-cell planner-month-cell">
         <button class="planner-period-cell-head" data-planner-open-month="${year}-${pad(month+1)}"><strong>${esc(monthName(first))}</strong><span>${items.length} ${esc(tabLabel(plannerTab).toLowerCase())}</span></button>
         <div class="planner-period-cell-body">${items.length?items.slice(0,6).map(plannerCompactItem).join(''):`<span class="planner-cell-empty">No ${esc(tabLabel(plannerTab).toLowerCase())}</span>`}${items.length>6?`<small class="planner-more-count">+${items.length-6} more</small>`:''}</div>
-        <button class="planner-cell-add" data-planner-cell-add data-date="${dateKey(first)}" data-time="09:00">＋</button>
       </section>`;
     }).join('')}</div>`;
   }
