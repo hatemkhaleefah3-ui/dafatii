@@ -636,7 +636,7 @@
       if(item.type==='tasks')item.taskState=item.done?'done':'backlog';
       if(item.type==='goals'){
         const target=goalTarget(item);
-        item.goalCurrent=item.done?target:Math.min(goalCurrent(item),Math.max(0,target-1));
+        item.goalCurrent=item.done?target:Math.min(goalCurrent(item),Math.max(0,target-(target<=1?target*.1:1)));
         item.progress=goalProgress(item);
       }
       savePlannerItems(items);rerender();
