@@ -1179,3 +1179,45 @@ body .quiet-workspace>.workspace-main>.planner-page{
     font-size:20px!important
   }
 }
+
+
+/* Planner v11 — range rail uses the same visual system as the date rail */
+.planner-page>.planner-mode-shell{
+  margin-top:-4px!important;
+  margin-bottom:2px!important
+}
+.planner-page>.planner-mode-shell .planner-loop-track{
+  gap:8px!important;
+  padding:7px calc(50% - 90px) 10px!important;
+  scroll-padding-inline:calc(50% - 90px)!important
+}
+.planner-page>.planner-mode-shell .planner-loop-item{
+  width:172px!important;
+  min-width:172px!important;
+  min-height:0!important;
+  padding:10px 8px!important;
+  font:inherit!important
+}
+.planner-page>.planner-mode-shell .planner-loop-item strong{
+  display:block;
+  font:800 23px/1.12 Manrope,sans-serif;
+  letter-spacing:-.03em
+}
+.planner-page>.planner-date-shell .planner-date-item small{
+  display:none!important
+}
+@media(max-width:767px){
+  .planner-page>.planner-mode-shell .planner-loop-track{
+    gap:2px!important;
+    padding:5px calc(50% - 70px) 8px!important;
+    scroll-padding-inline:calc(50% - 70px)!important
+  }
+  .planner-page>.planner-mode-shell .planner-loop-item{
+    width:136px!important;
+    min-width:136px!important;
+    padding:10px 4px!important
+  }
+  .planner-page>.planner-mode-shell .planner-loop-item strong{
+    font-size:20px
+  }
+}
