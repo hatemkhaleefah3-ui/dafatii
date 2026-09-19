@@ -7,6 +7,8 @@
     sheetOpen: false,
     synthetic: false,
     syncQueued: false,
+    deleting: false,
+    itemActions: new Map(),
     actions: { add: [], edit: [], delete: [] }
   };
 
@@ -126,7 +128,8 @@
   }
 
   function modeItems() {
-    return state.mode === 'delete' ? actionItems('delete') : state.mode === 'edit' ? actionItems('edit') : new Map();
+    if (!state.mode) return new Map();
+    return state.itemActions.size ? state.itemActions : actionItems(state.mode);
   }
 
   function refreshMode() {
@@ -149,8 +152,8 @@
       button = document.createElement('button');
       button.type = 'button';
       button.className = 'dcc-trigger';
-      button.innerHTML = '<span aria-hidden="true">^</span><small>Control</small>';
-      button.setAttribute('aria-label','Open content controls');
+      button.innerHTML = '<span class="dcc-trigger-glow" aria-hidden="true"></span><span class="dcc-trigger-icon" aria-hidden="true">⌃</span><span class="dcc-trigger-copy"><strong>Manage</strong><small>Content</small></span>';
+      button.setAttribute('aria-label','Open page content controls');
       button.setAttribute('aria-expanded','false');
       button.addEventListener('click', () => state.sheetOpen ? closeSheet() : openSheet());
       document.body.appendChild(button);
@@ -164,40 +167,61 @@
       exit = document.createElement('button');
       exit.type = 'button';
       exit.className = 'dcc-mode-exit';
-      exit.textContent = 'Exit';
+      exit.innerHTML = '<span aria-hidden="true">×</span><strong>Exit</strong>';
       exit.onclick = exitMode;
       document.body.appendChild(exit);
+    }
+
+    let hint = document.querySelector('.dcc-mode-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.className = 'dcc-mode-hint';
+      hint.innerHTML = '<span class="dcc-mode-hint-icon" aria-hidden="true"></span><div><strong></strong><small></small></div>';
+      document.body.appendChild(hint);
     }
 
     let bar = document.querySelector('.dcc-selection-bar');
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'dcc-selection-bar';
-      bar.innerHTML = '<button type="button" data-dcc-cancel>Cancel</button><button type="button" data-dcc-all>Select all</button><button type="button" class="danger" data-dcc-delete disabled>Delete <span>0</span></button>';
+      bar.innerHTML = '<button type="button" data-dcc-cancel><span>×</span><strong>Cancel</strong></button><button type="button" data-dcc-all><span>✓</span><strong>Select all</strong></button><button type="button" class="danger" data-dcc-delete disabled><span class="dcc-trash">⌫</span><strong>Delete</strong><b>0</b></button>';
       bar.querySelector('[data-dcc-cancel]').onclick = () => { state.selected.clear(); refreshMode(); };
       bar.querySelector('[data-dcc-all]').onclick = () => {
-        const items = [...modeItems().keys()];
-        state.selected = new Set(items);
+        state.selected = new Set([...state.itemActions.keys()]);
         refreshMode();
       };
       bar.querySelector('[data-dcc-delete]').onclick = deleteSelected;
       document.body.appendChild(bar);
     }
-    return { exit, bar };
+    return { exit, hint, bar };
   }
 
   function updateModeUi() {
-    const { exit, bar } = ensureModeUi();
+    const { exit, hint, bar } = ensureModeUi();
     const active = Boolean(state.mode);
     exit.hidden = !active;
+    hint.hidden = !active;
     bar.hidden = state.mode !== 'delete';
-    exit.textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit';
-    if (state.mode === 'delete') {
+    exit.querySelector('strong').textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit delete';
+    hint.dataset.mode = state.mode || '';
+    const hintStrong = hint.querySelector('strong');
+    const hintSmall = hint.querySelector('small');
+    const hintIcon = hint.querySelector('.dcc-mode-hint-icon');
+    if (state.mode === 'edit') {
+      hintIcon.textContent = '✎';
+      hintStrong.textContent = 'Edit mode';
+      hintSmall.textContent = 'Tap a highlighted item to open its edit form.';
+    } else if (state.mode === 'delete') {
       const count = state.selected.size;
+      hintIcon.textContent = '⌫';
+      hintStrong.textContent = count ? `${count} selected` : 'Delete mode';
+      hintSmall.textContent = count ? 'Select more items or delete the selection.' : 'Tap items to select them safely.';
       const del = bar.querySelector('[data-dcc-delete]');
-      del.disabled = count === 0;
-      del.querySelector('span').textContent = String(count);
-      bar.querySelector('[data-dcc-all]').disabled = modeItems().size === 0;
+      del.disabled = count === 0 || state.deleting;
+      del.querySelector('b').textContent = String(count);
+      bar.querySelector('[data-dcc-all]').disabled = state.itemActions.size === 0 || state.deleting;
+      bar.querySelector('[data-dcc-cancel]').disabled = state.deleting;
+      bar.dataset.busy = state.deleting ? 'true' : 'false';
     }
   }
 
@@ -214,9 +238,9 @@
         <div class="dcc-sheet-handle" aria-hidden="true"></div>
         <header><div><small>Page controls</small><h2>Content controls</h2></div><button type="button" class="dcc-close" aria-label="Close">×</button></header>
         <div class="dcc-sheet-actions">
-          <button type="button" class="danger" data-dcc-action="delete"><span>−</span><strong>Delete</strong><small>Select one or many items</small></button>
-          <button type="button" data-dcc-action="edit"><span>✎</span><strong>Edit</strong><small>Tap an item to edit it</small></button>
-          <button type="button" class="primary" data-dcc-action="add"><span>＋</span><strong>Add</strong><small>Open an add form</small></button>
+          <button type="button" class="danger" data-dcc-action="delete"><span class="dcc-action-icon">⌫</span><span class="dcc-action-copy"><strong>Delete</strong><small>Select one or many items</small></span><b>›</b></button>
+          <button type="button" data-dcc-action="edit"><span class="dcc-action-icon">✎</span><span class="dcc-action-copy"><strong>Edit</strong><small>Choose an item, then open its form</small></span><b>›</b></button>
+          <button type="button" class="primary" data-dcc-action="add"><span class="dcc-action-icon">＋</span><span class="dcc-action-copy"><strong>Add</strong><small>Open the page add form</small></span><b>›</b></button>
         </div>
         <div class="dcc-sheet-note"></div>
       </section>`;
@@ -259,10 +283,11 @@
     collectActions();
     closeSheet();
     state.mode = mode;
+    state.deleting = false;
     state.selected.clear();
+    state.itemActions = actionItems(mode);
     document.body.dataset.contentControlMode = mode;
-    const items = modeItems();
-    if (!items.size) {
+    if (!state.itemActions.size) {
       if (mode === 'edit' && state.actions.edit.length === 1) {
         withSynthetic(() => state.actions.edit[0].click());
         exitMode();
@@ -277,12 +302,16 @@
 
   function exitMode() {
     state.mode = '';
+    state.deleting = false;
     state.selected.clear();
+    state.itemActions = new Map();
     delete document.body.dataset.contentControlMode;
     clearItemClasses();
     const exit = document.querySelector('.dcc-mode-exit');
+    const hint = document.querySelector('.dcc-mode-hint');
     const bar = document.querySelector('.dcc-selection-bar');
     if (exit) exit.hidden = true;
+    if (hint) hint.hidden = true;
     if (bar) bar.hidden = true;
   }
 
@@ -292,8 +321,8 @@
   }
 
   function primaryControlFor(item, kind) {
-    const map = actionItems(kind);
-    return map.get(item) || null;
+    if (state.mode === kind && state.itemActions.has(item)) return state.itemActions.get(item) || null;
+    return actionItems(kind).get(item) || null;
   }
 
   function onCapturedClick(event) {
@@ -323,13 +352,26 @@
   }
 
   function uniqueAddActions() {
+    const route = routeName().toLowerCase();
+    const actions = state.actions.add || [];
+
+    if (route.startsWith('calendar/schedule')) {
+      const canonical = actions.find(control => control.matches?.('.planner-add,[data-planner-add]'));
+      return canonical ? [{ control: canonical, label: 'Add schedule item' }] : [];
+    }
+
+    const contextual = control => control.matches?.(
+      '.planner-cell-add,.planner-inline-add,.cal-add-axis,[data-planner-cell-add],[data-add-axis]'
+    );
     const seen = new Set(), result = [];
-    for (const control of state.actions.add || []) {
+    for (const control of actions) {
+      if (contextual(control)) continue;
       const label = readableLabel(control) || 'Add';
-      const key = label.toLowerCase();
+      const normalized = label.replace(/\b(at|for)\s+\d{1,2}:\d{2}\s*(am|pm)?\b/ig,'').replace(/\s+/g,' ').trim();
+      const key = normalized.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      result.push({ control, label });
+      result.push({ control, label: normalized || 'Add' });
     }
     return result;
   }
@@ -350,8 +392,8 @@
     const sheet = document.querySelector('.dcc-sheet');
     if (!sheet) return;
     const actions = sheet.querySelector('.dcc-sheet-actions');
-    actions.innerHTML = adds.slice(0, 8).map((entry, index) =>
-      `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span>＋</span><strong>${escapeHtml(entry.label)}</strong></button>`
+    actions.innerHTML = adds.slice(0, 6).map((entry, index) =>
+      `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">＋</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>Open form</small></span><b>›</b></button>`
     ).join('');
     sheet.querySelector('header h2').textContent = 'Choose what to add';
     sheet.querySelector('.dcc-sheet-note').textContent = 'All add methods for this page are centralized here.';
@@ -363,24 +405,62 @@
     });
   }
 
-  function deleteSelected() {
-    const items = [...state.selected];
+  function domOrderReverse(a,b) {
+    if (a === b) return 0;
+    const relation = a.compareDocumentPosition?.(b) || 0;
+    if (relation & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
+    if (relation & Node.DOCUMENT_POSITION_PRECEDING) return -1;
+    return 0;
+  }
+
+  function fireControl(control) {
+    if (!control) return false;
+    try {
+      if (typeof control.click === 'function') control.click();
+      else control.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function deleteSelected() {
+    if (state.deleting) return;
+    const items = [...state.selected].filter(item => state.itemActions.has(item));
     if (!items.length) return;
-    const controls = items.map(item => primaryControlFor(item,'delete')).filter(Boolean);
-    if (!controls.length) {
+    const entries = items
+      .map(item => ({ item, control: state.itemActions.get(item) }))
+      .filter(entry => entry.control)
+      .sort((a,b) => domOrderReverse(a.item,b.item));
+    if (!entries.length) {
       toast('No delete action is available for the selected items.');
       return;
     }
-    if (!confirm(`Delete ${controls.length} selected item${controls.length === 1 ? '' : 's'}?`)) return;
+    if (!confirm(`Delete ${entries.length} selected item${entries.length === 1 ? '' : 's'}?`)) return;
 
+    state.deleting = true;
+    updateModeUi();
     const originalConfirm = window.confirm;
+    let fired = 0;
     window.confirm = () => true;
     try {
-      withSynthetic(() => controls.forEach(control => control.click()));
+      state.synthetic = true;
+      for (const entry of entries) {
+        if (fireControl(entry.control)) fired++;
+        await Promise.resolve();
+      }
     } finally {
+      state.synthetic = false;
       window.confirm = originalConfirm;
+      state.deleting = false;
     }
-    toast(`${controls.length} item${controls.length === 1 ? '' : 's'} sent to delete.`);
+
+    if (!fired) {
+      toast('Delete failed. No item action could be executed.');
+      updateModeUi();
+      return;
+    }
+    toast(`Deleted ${fired} item${fired === 1 ? '' : 's'}.`);
     exitMode();
   }
 
