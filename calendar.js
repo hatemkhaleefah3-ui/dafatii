@@ -194,13 +194,13 @@
     const labels={day:'Days',week:'Weeks',month:'Months',year:'Years'};
     return [-3,-2,-1,0,1,2,3].map(offset=>{
       const mode=PLANNER_MODES[(currentIndex+offset+PLANNER_MODES.length*4)%PLANNER_MODES.length];
-      return `<button type="button" class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}">${labels[mode]}</button>`;
+      return `<button type="button" class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}"><strong>${labels[mode]}</strong></button>`;
     }).join('');
   }
   function periodLoop(){
     return [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7].map(offset=>{
       const date=addDate(plannerDate,plannerMode,offset),label=periodLabel(plannerMode,date);
-      return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span><small>${esc(label.meta)}</small></button>`;
+      return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span></button>`;
     }).join('');
   }
   const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals'}[tab]||tab);
