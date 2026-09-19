@@ -236,13 +236,81 @@
     return item.repeatUntil?`${base} · until ${item.repeatUntil}`:base;
   }
 
+  function plannerDetailRow(label,value){
+    const text=String(value??'').trim();
+    return text?`<div class="planner-item-detail-row"><span>${esc(label)}</span><strong>${esc(text)}</strong></div>`:'';
+  }
+  function plannerItemDetailMarkup(item){
+    const type=PLANNER_TABS.includes(item.type)?item.type:'schedule';
+    const title=String(item.title||plannerTypeLabel(type)).trim()||plannerTypeLabel(type);
+    const notes=String(item.notes||'').trim();
+    const rows=[];
+    const add=(label,value)=>{const row=plannerDetailRow(label,value);if(row)rows.push(row);};
+    if(type==='schedule'){
+      const start=normalizePlannerTime(item.time),end=normalizePlannerTime(item.endTime||item.time);
+      add('Date',item.date||item.day||'');
+      add('Time',end&&end!==start?`${start}–${end}`:start);
+      add('Location',item.location);
+      add('Repeat',item.recurring?'Weekly timetable':scheduleRepeatLabel(item));
+    }else if(type==='tasks'){
+      add('Due date',item.date);
+      add('Time',normalizePlannerTime(item.time));
+      add('Priority',priorityLabel(String(item.priority||'medium'))||'Medium priority');
+      add('Estimate',`${taskEstimate(item)} minutes`);
+      add('Status',item.done?'Complete':taskState(item)==='doing'?'In focus':'Ready');
+    }else if(type==='todos'){
+      add('Due date',item.date);
+      add('Time',normalizePlannerTime(item.time));
+      add('List',String(item.listLabel||'General').trim()||'General');
+      add('Importance',todoImportant(item)?'Important':'Standard');
+      add('Status',item.done?'Complete':'Open');
+    }else if(type==='goals'){
+      const unit=goalUnit(item),current=goalCurrent(item),target=goalTarget(item);
+      add('Target date',item.date);
+      add('Priority',priorityLabel(String(item.priority||'medium'))||'Medium priority');
+      add('Progress',`${goalProgress(item)}%`);
+      add('Current',`${current.toLocaleString()} ${unit}`);
+      add('Target',`${target.toLocaleString()} ${unit}`);
+      add('Progress step',`${goalStep(item).toLocaleString()} ${unit}`);
+      add('Status',item.done?'Reached':'Active');
+    }
+    return `<article class="planner-item-detail-card type-${esc(type)}">
+      <header class="planner-item-detail-head"><span class="planner-item-detail-icon" aria-hidden="true">${plannerTypeIcon(type)}</span><div><small>${esc(plannerTypeLabel(type))}</small><h2>${esc(title)}</h2></div></header>
+      ${rows.length?`<div class="planner-item-detail-grid">${rows.join('')}</div>`:''}
+      ${notes?`<section class="planner-item-detail-notes"><span>Notes</span><p>${esc(notes)}</p></section>`:''}
+    </article>`;
+  }
+  function plannerDetailItem(card){
+    const item=plannerItems().find(entry=>entry.id===card.dataset.plannerEntryId);
+    if(item)return item;
+    const sourceId=card.dataset.plannerSourceId;
+    if(!sourceId)return null;
+    const source=read(SCHEDULE_KEY,[]).find(entry=>entry.id===sourceId);
+    return source?{
+      id:card.dataset.plannerEntryId,sourceId,type:'schedule',date:card.dataset.plannerDate||'',day:source.day||'',
+      time:normalizePlannerTime(source.time),endTime:normalizePlannerTime(source.endTime||source.time),
+      title:source.subject||'Scheduled lecture',location:source.location||'',notes:source.notes||'Recurring weekly timetable',recurring:true
+    }:null;
+  }
+  function openPlannerItemDetail(item){
+    const root=document.getElementById('overlay-root');if(!root||!item)return;
+    root.innerHTML=`<div class="entity-sheet-overlay planner-item-detail-overlay" id="planner-item-detail-overlay"><section class="entity-sheet planner-item-detail-sheet" role="dialog" aria-modal="true" aria-label="${esc(plannerTypeLabel(item.type||'schedule'))} details">
+      <div class="entity-sheet-handle"></div><div class="planner-item-detail-toolbar"><span>Item details</span><button class="icon-btn" id="planner-item-detail-close" type="button" aria-label="Close item details">×</button></div>
+      ${plannerItemDetailMarkup(item)}
+    </section></div>`;
+    const close=()=>closeOverlay();
+    document.getElementById('planner-item-detail-close').onclick=close;
+    document.getElementById('planner-item-detail-overlay').onclick=event=>{if(event.target.id==='planner-item-detail-overlay')close();};
+    requestAnimationFrame(()=>document.getElementById('planner-item-detail-close')?.focus());
+  }
+
   function plannerCompactItem(item,context='compact'){
     const done=Boolean(item.done),type=item.type||plannerTab,priority=String(item.priority||'medium');
     const notes=String(item.notes||'').trim();
     if(type==='schedule'){
       const start=normalizePlannerTime(item.time),end=normalizePlannerTime(item.endTime||item.time);
       const cadenceText=item.recurring?'Weekly timetable':scheduleRepeatLabel(item);
-      return `<article class="planner-table-item planner-item-schedule schedule-block ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}">
+      return `<article class="planner-table-item planner-item-schedule schedule-block ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}" data-planner-source-id="${esc(item.sourceId||'')}" data-planner-date="${esc(item.date||'')}">
         <div class="schedule-block-accent" aria-hidden="true"></div>
         <div class="schedule-block-main">
           <div class="schedule-block-title"><strong>${esc(item.title||'Schedule item')}</strong><span>${esc(cadenceText)}</span></div>
@@ -662,6 +730,18 @@
       const [year,month]=button.dataset.plannerOpenMonth.split('-').map(Number);
       plannerDate=new Date(year,month-1,1);plannerMode='month';rerender();
     }));
+    document.querySelectorAll('[data-planner-entry-id]').forEach(card=>{
+      const open=()=>{const item=plannerDetailItem(card);if(item)openPlannerItemDetail(item);};
+      card.classList.add('planner-detail-trigger');
+      card.tabIndex=0;
+      card.setAttribute('aria-label','Open '+plannerTypeLabel(card.closest('[data-planner-tab-current]')?.dataset.plannerTabCurrent||plannerTab)+' item details');
+      card.addEventListener('click',event=>{if(event.target.closest?.('button,a,input,select,textarea,[role="button"]'))return;open();});
+      card.addEventListener('keydown',event=>{
+        if(event.target.closest?.('button,a,input,select,textarea,[role="button"]'))return;
+        if(event.key!=='Enter'&&event.key!==' ')return;
+        event.preventDefault();open();
+      });
+    });
     document.querySelectorAll('[data-planner-toggle]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;
       item.done=!item.done;
