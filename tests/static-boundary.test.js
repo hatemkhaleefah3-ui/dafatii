@@ -39,8 +39,8 @@ assert.match(index, /app\.js\?v=20260919-3/, 'the cleaned subject interface must
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
-assert.match(index, /calendar\.js\?v=20260919-10/, 'the cleaned calendar interface must be loaded');
-assert.match(index, /calendar\.css\?v=20260919-6/, 'retired calendar toolbar styling must be removed from the active asset');
+assert.match(index, /calendar\.js\?v=20260919-11/, 'the cleaned calendar interface must be loaded');
+assert.match(index, /calendar\.css\?v=20260919-7/, 'retired calendar toolbar styling must be removed from the active asset');
 assert.match(index, /role-panels\.js\?v=20260918-1/, 'the redesigned dashboard management entry must be loaded');
 assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management entry styling must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
