@@ -654,20 +654,6 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
 
 
 /* Planner v6 — rebuilt Tasks / To-do / Goals with shared dual date rails */
-.planner-date-controls{
-  display:grid;gap:8px;padding:10px;border:1px solid color-mix(in srgb,var(--line) 72%,transparent);
-  border-radius:22px;background:
-    radial-gradient(circle at 100% 0%,color-mix(in srgb,var(--accent) 6%,transparent),transparent 36%),
-    color-mix(in srgb,var(--surface) 96%,transparent);
-  box-shadow:0 12px 34px rgba(17,30,55,.055),inset 0 1px 0 rgba(255,255,255,.58)
-}
-.planner-date-control-label{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 5px}
-.planner-date-control-label>span{
-  color:var(--text);font:850 9px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em
-}
-.planner-date-control-label>small{color:var(--muted);font:650 8px/1.2 Manrope,sans-serif}
-.planner-date-controls .planner-loop-shell{margin:0}
-.planner-date-controls .planner-selected-summary{margin-top:2px}
 
 .planner-v6{display:grid;gap:14px}
 .planner-page:not([data-planner-tab-current="schedule"]) .planner-v6{
@@ -839,9 +825,6 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
   .planner-v6-todo-notebook,.planner-v6-goal-grid{grid-template-columns:1fr}
 }
 @media(max-width:640px){
-  .planner-date-controls{padding:8px;border-radius:18px}
-  .planner-date-control-label{padding-inline:3px}
-  .planner-date-control-label>small{display:none}
   .planner-v6-task-hero,.planner-v6-todo-hero,.planner-v6-goal-hero{grid-template-columns:1fr;padding:14px;border-radius:20px}
   .planner-v6-task-kpis,.planner-v6-goal-summary{grid-template-columns:repeat(3,1fr)}
   .planner-v6-task-kpis>div,.planner-v6-goal-summary>div{min-height:58px;padding:8px}
@@ -853,4 +836,97 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
   .planner-v6-goal-ring{width:68px;height:68px}.planner-v6-goal-ring>div{width:52px;height:52px}
   .planner-v6-goal-numbers{grid-template-columns:1fr 1fr 1fr}
   .planner-goal-measure-form{grid-template-columns:1fr 1fr}
+}
+
+
+/* Planner v7 — frameless page-level date rails and compact section navigation */
+.planner-page{
+  padding-top:8px
+}
+.planner-page>.planner-mode-shell,
+.planner-page>.planner-date-shell{
+  width:100%;margin:0;border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;padding:0!important;overflow:hidden
+}
+.planner-page>.planner-mode-shell{margin-top:0}
+.planner-page>.planner-date-shell{margin-top:-2px;margin-bottom:8px}
+.planner-page>.planner-mode-shell .planner-loop-track,
+.planner-page>.planner-date-shell .planner-date-track{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)
+}
+.planner-page>.planner-mode-shell .planner-loop-track{
+  padding-top:4px;padding-bottom:4px
+}
+.planner-page>.planner-date-shell .planner-date-track{
+  padding-top:7px;padding-bottom:10px
+}
+.planner-page>.planner-mode-shell .planner-loop-item{
+  min-height:42px;border-radius:12px
+}
+.planner-page>.planner-mode-shell .planner-loop-item.active{
+  color:var(--text);transform:scale(1.035)
+}
+.planner-page>.planner-date-shell .planner-date-item{
+  border-radius:14px
+}
+.planner-page>.planner-date-shell .planner-date-item.active{
+  color:var(--text);transform:scale(1.025)
+}
+
+/* The section bar is part of the page, not a floating card. */
+.planner-page .planner-content-tabs{
+  position:relative!important;top:auto!important;z-index:6;
+  display:flex;align-items:center;gap:5px;
+  margin:2px 0 18px;padding:0 2px 9px;
+  border:0!important;border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent)!important;
+  border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  overflow-x:auto;scrollbar-width:none
+}
+.planner-page .planner-content-tabs::-webkit-scrollbar{display:none}
+.planner-page .planner-content-tabs button{
+  position:relative;flex:1 0 auto;min-width:98px;min-height:42px;padding:9px 14px;
+  border:0;border-radius:13px;background:transparent;color:var(--muted);
+  font:820 11.5px/1 Manrope,sans-serif;letter-spacing:-.01em;cursor:pointer;
+  transition:background .14s ease,color .14s ease,transform .14s ease
+}
+.planner-page .planner-content-tabs button:hover{
+  background:color-mix(in srgb,var(--surface-2) 68%,transparent);color:var(--text)
+}
+.planner-page .planner-content-tabs button.active{
+  color:var(--accent)!important;
+  background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 17%,transparent)!important;
+  transform:translateY(-1px)
+}
+.planner-page .planner-content-tabs button.active::after{
+  content:"";position:absolute;left:50%;bottom:-10px;width:28px;height:3px;transform:translateX(-50%);
+  border-radius:999px;background:var(--accent);box-shadow:0 3px 9px color-mix(in srgb,var(--accent) 28%,transparent)
+}
+
+/* No planner title/description block; content begins with date controls. */
+.planner-page>.planner-add-proxies:first-child + .planner-mode-shell{
+  margin-top:0
+}
+
+@media(max-width:767px){
+  .planner-page{padding-top:4px}
+  .planner-page>.planner-mode-shell .planner-loop-track{
+    padding-top:2px;padding-bottom:2px
+  }
+  .planner-page>.planner-date-shell{
+    margin-top:-4px;margin-bottom:5px
+  }
+  .planner-page>.planner-date-shell .planner-date-track{
+    padding-top:5px;padding-bottom:8px
+  }
+  .planner-page .planner-content-tabs{
+    gap:3px;margin:0 0 14px;padding:0 0 8px
+  }
+  .planner-page .planner-content-tabs button{
+    flex:0 0 auto;min-width:86px;min-height:40px;padding:8px 11px;border-radius:12px;font-size:10.5px
+  }
+  .planner-page .planner-content-tabs button.active::after{bottom:-9px;width:24px}
 }
