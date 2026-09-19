@@ -132,11 +132,60 @@
     return map;
   }
 
-  function clearItemClasses() {
+  function clearDeleteHitboxes() {
+    document.querySelectorAll('.dcc-delete-hitbox').forEach(hitbox=>hitbox.remove());
+  }
+
+  function clearItemClasses({ removeHitboxes = false } = {}) {
     document.querySelectorAll('.dcc-selectable,.dcc-selected,.dcc-editable').forEach(el => {
       el.classList.remove('dcc-selectable','dcc-selected','dcc-editable');
       el.removeAttribute('data-dcc-selected');
     });
+    if (removeHitboxes) clearDeleteHitboxes();
+  }
+
+  function toggleDeleteSelection(item) {
+    if (state.mode !== 'delete' || state.deleting || !state.itemActions.has(item)) return;
+    toggleDeleteSelection(item);
+  }
+
+  function ensureDeleteHitbox(item) {
+    if (!(item instanceof Element)) return;
+    let hitbox = [...item.children].find(child=>child.classList?.contains('dcc-delete-hitbox'));
+    if (!hitbox) {
+      hitbox = document.createElement('span');
+      hitbox.className = 'dcc-delete-hitbox';
+      hitbox.setAttribute('role','button');
+      hitbox.setAttribute('tabindex','0');
+      hitbox.setAttribute('aria-label','Select item for deletion');
+      hitbox.innerHTML = '<span class="dcc-delete-check" aria-hidden="true">✓</span>';
+
+      const block = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      };
+
+      hitbox.addEventListener('pointerdown', block);
+      hitbox.addEventListener('pointerup', block);
+      hitbox.addEventListener('touchstart', event => {
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }, { passive:true });
+      hitbox.addEventListener('click', event => {
+        block(event);
+        toggleDeleteSelection(item);
+      });
+      hitbox.addEventListener('keydown', event => {
+        if (!['Enter',' '].includes(event.key)) return;
+        block(event);
+        toggleDeleteSelection(item);
+      });
+      item.appendChild(hitbox);
+    }
+    const selected = state.selected.has(item);
+    hitbox.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    hitbox.setAttribute('aria-label', selected ? 'Deselect item' : 'Select item for deletion');
   }
 
   function modeItems() {
@@ -149,7 +198,9 @@
     if (!state.mode) return;
     const items = modeItems();
     for (const item of items.keys()) {
+      if (!item?.isConnected) continue;
       item.classList.add('dcc-selectable', state.mode === 'edit' ? 'dcc-editable' : '');
+      if (state.mode === 'delete') ensureDeleteHitbox(item);
       if (state.selected.has(item)) {
         item.classList.add('dcc-selected');
         item.dataset.dccSelected = 'true';
@@ -323,7 +374,7 @@
     state.selected.clear();
     state.itemActions = new Map();
     delete document.body.dataset.contentControlMode;
-    clearItemClasses();
+    clearItemClasses({ removeHitboxes:true });
     const exit = document.querySelector('.dcc-mode-exit');
     const hint = document.querySelector('.dcc-mode-hint');
     const bar = document.querySelector('.dcc-selection-bar');
@@ -380,9 +431,7 @@
     event.stopImmediatePropagation();
 
     if (state.mode === 'delete') {
-      if (state.selected.has(item)) state.selected.delete(item);
-      else state.selected.add(item);
-      refreshMode();
+      toggleDeleteSelection(item);
       return;
     }
 
