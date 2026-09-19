@@ -665,7 +665,7 @@
         id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
         date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()
       };
-      if(!payload.title||!/^d{4}-d{2}-d{2}$/.test(payload.date))return;
+      if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
       if(type==='schedule'){
         payload.endTime=normalizePlannerTime(form.get('endTime')||payload.time);
         payload.location=String(form.get('location')||'').trim();
