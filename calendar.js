@@ -643,10 +643,16 @@
       requestAnimationFrame(()=>paintPlannerTrack(track));
     });
   }
+  function centerPlannerRailItem(button){
+    const track=button.closest('[data-planner-loop]');if(!track)return;
+    const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    button.scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest',inline:'center'});
+    if(reduced)requestAnimationFrame(()=>commitPlannerCenter(track));
+  }
   function bindSchedule(){
     const rerender=()=>render();
     document.querySelectorAll('[data-planner-tab]').forEach(button=>button.addEventListener('click',()=>{plannerTab=button.dataset.plannerTab;rerender();}));
-    document.querySelectorAll('[data-planner-mode]').forEach(button=>button.addEventListener('click',()=>{plannerMode=button.dataset.plannerMode||plannerMode;rerender();}));
+    document.querySelectorAll('[data-planner-mode],[data-planner-period-offset]').forEach(button=>button.addEventListener('click',()=>centerPlannerRailItem(button)));
     document.querySelectorAll('[data-planner-add-type]').forEach(button=>button.addEventListener('click',()=>openPlannerEntrySheet('','09:00','',button.dataset.plannerAddType||plannerTab)));
     document.querySelectorAll('[data-planner-open-date]').forEach(button=>button.addEventListener('click',()=>{
       plannerDate=dateFromKey(button.dataset.plannerOpenDate);plannerMode='day';rerender();
