@@ -748,7 +748,7 @@
           const value=name=>row.querySelector(`[data-schedule-field="${name}"]`)?.value||'';
           const checked=name=>Boolean(row.querySelector(`[data-schedule-field="${name}"]`)?.checked);
           const date=String(value('date')),scheduleTitle=String(value('title')).trim();
-          if(!scheduleTitle||!/^d{4}-d{2}-d{2}$/.test(date))return;
+          if(!scheduleTitle||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
           const repeat=checked('repeat'),recurrence=repeat&&['daily','weekly','monthly'].includes(value('recurrence'))?value('recurrence'):'none';
           const repeatUntil=repeat?String(value('repeatUntil')):'';
           if(repeatUntil&&repeatUntil<date)return;
@@ -788,7 +788,7 @@
       document.getElementById('planner-entry-form').onsubmit=event=>{
         event.preventDefault();const form=new FormData(event.currentTarget),items=plannerItems();
         const payload={id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()};
-        if(!payload.title||!/^d{4}-d{2}-d{2}$/.test(payload.date))return;
+        if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
         if(type==='tasks'){
           payload.priority=String(form.get('priority')||'medium');payload.estimatedMinutes=Math.max(5,Math.min(480,Number(form.get('estimatedMinutes')||30)));payload.done=Boolean(editing?.done);payload.taskState=payload.done?'done':(['backlog','doing'].includes(String(form.get('taskState')))?String(form.get('taskState')):'backlog');
         }else if(type==='todos'){
