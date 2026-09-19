@@ -489,19 +489,12 @@
   function scheduleView(){
     const selected=periodLabel(plannerMode,plannerDate),isSchedule=plannerTab==='schedule';
     const hasDateRails=['tasks','schedule','todos','goals'].includes(plannerTab);
-    const subtitle={schedule:'A timetable for dated and repeating schedule blocks.',tasks:'A period-based execution board for focused work.',todos:'A lightweight notebook for quick actions in the selected period.',goals:'A measurable outcome studio for the selected period.',attendance:'Attendance records kept outside the timetable.'}[plannerTab]||'Personal planner';
     return `<section class="calendar-page planner-page planner-subpage-${esc(plannerTab)}" data-planner-mode="${plannerMode}" data-planner-tab-current="${esc(plannerTab)}">
-      <div class="planner-head"><div><div class="eyebrow">Planner</div><h1>${esc(tabLabel(plannerTab))}</h1><p>${esc(subtitle)}</p></div></div>
       <div class="planner-add-proxies" aria-hidden="true"><button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${esc(plannerTab)}" aria-label="Add ${esc(plannerTypeLabel(plannerTab))}"></button></div>
-      <nav class="planner-content-tabs" aria-label="Planner sections">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
-      ${hasDateRails?`<div class="planner-date-controls">
-        <div class="planner-date-control-label"><span>Range</span><small>Choose day, week, month or year</small></div>
-        <div class="planner-loop-shell planner-mode-shell"><div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Date range">${modeLoop()}</div></div>
-        <div class="planner-date-control-label"><span>Date</span><small>Choose the active ${esc(plannerMode)}</small></div>
-        <div class="planner-loop-shell planner-date-shell"><div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div></div>
-        <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
-      </div>`:''}
-      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${hasDateRails?esc(selected.primary):esc(tabLabel(plannerTab))}</h2></div><small class="planner-content-help">${isSchedule?(plannerMode==='week'?'Days across the top · time down the side':'Only Schedule uses a timetable'):hasDateRails?'Filtered by both date selectors above':'This section uses its own workspace'}</small></div>${scheduleContent()}</section>
+      ${hasDateRails?`<div class="planner-loop-shell planner-mode-shell"><div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Date range">${modeLoop()}</div></div>
+      <div class="planner-loop-shell planner-date-shell"><div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div></div>`:''}
+      <nav class="planner-content-tabs" aria-label="Planner sections">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}" aria-current="${plannerTab===tab?'page':'false'}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
+      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${hasDateRails?esc(selected.primary):esc(tabLabel(plannerTab))}</h2></div><small class="planner-content-help">${isSchedule?(plannerMode==='week'?'Days across the top · time down the side':'Only Schedule uses a timetable'):hasDateRails?'Filtered by the date controls above':'This section uses its own workspace'}</small></div>${scheduleContent()}</section>
     </section>`;
   }
 
