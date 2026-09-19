@@ -5,8 +5,8 @@ const index=fs.readFileSync('index.html','utf8');
 const ui=fs.readFileSync('subject-redesign.js','utf8');
 const css=fs.readFileSync('subject-redesign.css','utf8');
 
-assert.match(index,/subject-redesign\.css\?v=20260919-2/,'reference-driven Subjects CSS must load');
-assert.match(index,/subject-redesign\.js\?v=20260919-2/,'reference-driven Subjects controller must load');
+assert.match(index,/subject-redesign\.css\?v=20260919-3/,'reference-driven Subjects CSS must load');
+assert.match(index,/subject-redesign\.js\?v=20260919-3/,'reference-driven Subjects controller must load');
 assert.ok(index.indexOf('subject-redesign.css?v=20260919-3') > index.indexOf('admin-console.css?v=20260918-3'),'Subjects CSS must load after existing presentation layers');
 assert.ok(index.indexOf('subject-redesign.js?v=20260919-3') > index.indexOf('admin-console.js?v=20260918-4'),'Subjects controller must wrap the final existing workspace renderer');
 
