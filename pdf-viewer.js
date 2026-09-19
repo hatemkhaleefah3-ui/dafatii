@@ -121,6 +121,7 @@
       setAxis:next => { axis = next === 'horizontal' ? 'horizontal' : 'vertical'; workspace.setAxis('pdf', axis); stage.dataset.axis = axis; void renderPages(currentPage); },
       zoomIn:() => { zoom = Math.min(3.5, zoom * 1.18); void renderPages(currentPage); },
       zoomOut:() => { zoom = Math.max(.45, zoom / 1.18); void renderPages(currentPage); },
+      resetZoom:() => { zoom = 1; void renderPages(currentPage); },
       rotate:() => { rotation = (rotation + 90) % 360; void renderPages(currentPage); },
       search,
       download:async () => { location.assign(await window.DafatiiFiles.getViewUrl(fileId, { download:true })); },
