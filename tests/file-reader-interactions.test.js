@@ -46,13 +46,14 @@ assert.match(workspaceCss, /--video-player-height:min\(50dvh,56\.25vw,520px\)/, 
 assert.match(workspaceCss, /grid-template-rows:calc\(60px \+ env\(safe-area-inset-top\)\) var\(--video-player-height\) max-content minmax\(0,1fr\)/, 'mobile viewer must reserve a compact safe-area top bar and fixed player track');
 assert.match(workspaceCss, /\.video-reader-topbar\{[^}]*height:72px[^}]*min-height:0/, 'desktop top bar must not stretch');
 assert.match(workspaceCss, /\.video-workspace-stage\{[^}]*height:100%[^}]*min-height:0/, 'player must fill its fixed grid track instead of sizing the shell');
+assert.doesNotMatch(workspaceCss, /\.video-workspace \.immersive-viewer-shell\{grid-template-rows:minmax\(0,52%\) minmax\(0,48%\)\}/, 'legacy two-row mobile layout must not override the four-row video viewer and create a blank gap');
 assert.match(css, /\.viewer-loading-screen\{/, 'the loading screen must cover the reader');
 assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages must remain hidden while loading');
 assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
 assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
 assert.match(index, /file-reader-interactions\.js\?v=20260919-1/, 'the loading, pinch, and chrome controller must be loaded');
 assert.match(index, /viewer-workspace\.js\?v=20260919-3/, 'the redesigned reader and video controls must be loaded');
-assert.match(index, /viewer-workspace\.css\?v=20260919-4/, 'the redesigned video viewer presentation must be loaded');
+assert.match(index, /viewer-workspace\.css\?v=20260919-5/, 'the redesigned video viewer presentation must be loaded');
 assert.match(index, /lecture-reader-design\.css\?v=20260919-1/, 'the redesigned file-reader presentation must be loaded');
 
 console.log('file reader loading and pinch checks passed');
