@@ -11,7 +11,9 @@
   const read = (key,fallback) => window.DafatiiCourses.readJSON(key,fallback);
   const write = (key,value) => window.DafatiiCourses.writeJSON(key,value);
   const managed = () => typeof schoolManagedWorkspace === 'function' && schoolManagedWorkspace();
-  const editable = () => !managed();
+  const schoolProgram = () => Boolean(window.DafatiiCourses?.active?.()?.isSchoolProgram);
+  const canContent = permission => !managed() && Boolean(window.DafatiiCourses?.editable?.(permission));
+  const canPlan = permission => schoolProgram() || Boolean(window.DafatiiCourses?.editable?.(permission));
 
   MAIN_NAV.subjects = ['All subjects','Lectures','Exams','Assignments'];
 
@@ -94,7 +96,10 @@
     return `<nav class="subject-r-tabs" aria-label="${esc(subject.name)} sections">${['overview','lectures','exams','assignments'].map(key=>`<button class="${active===key?'active':''}" data-subject-detail-route="${key}" data-subject-id="${esc(subject.id)}">${key[0].toUpperCase()+key.slice(1)}</button>`).join('')}</nav>`;
   }
   function chapterControl(subject){
-    return `<label class="subject-r-chapter"><span class="sr-only">Chapter</span><select aria-label="Chapter"><option>${esc(chapterName(subject))}</option></select></label>`;
+    const label=esc(chapterName(subject));
+    return canContent('edit_content')
+      ? `<button type="button" class="subject-r-chapter-button" data-edit-chapter="${esc(subject.id)}" aria-label="Edit chapter">${label} <span>⌄</span></button>`
+      : `<span class="subject-r-chapter-static">${label}</span>`;
   }
   function pageTitle(title,subtitle,action='',chapter=''){
     return `<div class="subject-r-heading"><div><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="subject-r-heading-actions">${chapter}${action}</div></div>`;
@@ -114,7 +119,7 @@
       }).length;return acc;
     },{lectures:0,exams:0,due:0});
     return `<section class="subject-redesign-page subject-r-index">
-      ${pageTitle('My Subjects','Manage lectures, exams, assignments, and progress across all subjects.',editable()?'<button class="subject-r-primary" id="subject-r-new"><span>＋</span> New Subject</button>':'')}
+      ${pageTitle('My Subjects','Manage lectures, exams, assignments, and progress across all subjects.',canContent('add_content')?'<button class="subject-r-primary" id="subject-r-new"><span>＋</span> New Subject</button>':'')}
       ${mainTabs('all subjects')}
       <div class="subject-r-tools">
         <label class="subject-r-search"><span>⌕</span><input id="subject-r-search" value="${esc(ui.search)}" placeholder="Search subjects…" autocomplete="off"></label>
@@ -168,7 +173,7 @@
     return `<article class="subject-r-card" data-open-subject="${esc(subject.id)}" tabindex="0" role="button">
       <div class="subject-r-card-icon">${iconFor(subject)}</div>
       <div class="subject-r-card-body">
-        <div class="subject-r-card-title"><h2>${esc(subject.name)}</h2><span class="subject-r-chapter-pill">${esc(chapterName(subject))}⌄</span></div>
+        <div class="subject-r-card-title"><h2>${esc(subject.name)}</h2><span class="subject-r-chapter-pill">${esc(chapterName(subject))}</span></div>
         <div class="subject-r-progress"><i><b style="width:${st.progress}%"></b></i><strong>${st.progress}%</strong></div>
         <div class="subject-r-card-meta">
           <span>▣ ${plural(st.lectures.length,'lecture')}</span><span>▤ ${plural(st.exams.length,'exam')}</span>
@@ -232,7 +237,7 @@
       <section class="subject-r-section"><div class="subject-r-section-head"><h2>Upcoming exams</h2><button data-subject-detail-route="exams" data-subject-id="${esc(subject.id)}">See all</button></div>${upcomingExams.length?`<div class="subject-r-mini-list">${upcomingExams.map(e=>`<button data-open-exam="${esc(e.id)}" data-subject-id="${esc(subject.id)}"><span><strong>${esc(e.title||'Exam')}</strong><small>${esc(dateLabel(e.day))}${e.time?` · ${esc(e.time)}`:''}</small></span><b>Scheduled</b></button>`).join('')}</div>`:emptyState('No upcoming exams','Add an exam to this subject when the date is known.')}</section>
       <section class="subject-r-section"><h2>Chapter outline</h2>${outline.length?`<div class="subject-r-outline">${outline.map((l,i)=>{const p=isLectureDone(l)?100:0;return `<div><b>${i+1}</b><span><strong>${esc(l.name)}</strong><small>${esc((l.notes||'Lecture material').slice(0,80))}</small></span><em>${p}%</em><i><b style="width:${p}%"></b></i></div>`;}).join('')}</div>`:emptyState('No chapter content','Lectures added to this subject will form the chapter outline.')}</section>
       <section class="subject-r-section"><h2>Latest results</h2>${latest.length?`<div class="subject-r-results">${latest.map(e=>`<div><strong>${esc(e.title||'Exam')}</strong><span>${esc(dateLabel(e.day))}</span><b>${esc(formatNumber(Number(e.degree)))}</b></div>`).join('')}</div>`:emptyState('No graded results','Enter exam degrees to build the results history.')}</section>
-      ${editable()?'<button class="subject-r-wide-action" id="subject-r-add-content">＋ <span>Add content</span></button>':''}
+      ${(canContent('add_content')||canPlan('add_content'))?'<button class="subject-r-wide-action" id="subject-r-add-content">＋ <span>Add content</span></button>':''}
     </section>`;
   }
 
@@ -240,12 +245,12 @@
     const list=subjectLectures(subject.id);
     const filtered=list.filter(l=>ui.lectureFilter==='all'||(ui.lectureFilter==='recorded'&&Boolean(l.link)));
     return `<section class="subject-redesign-page subject-r-detail" data-subject-id="${esc(subject.id)}">
-      ${pageTitle(`${subject.name} Lectures`,'Chapter materials and lecture schedule.',editable()?'<button class="subject-r-primary" id="subject-r-add-lecture">＋ Add Lecture</button>':'',chapterControl(subject))}
+      ${pageTitle(`${subject.name} Lectures`,'Chapter materials and lecture schedule.',canContent('add_content')?'<button class="subject-r-primary" id="subject-r-add-lecture">＋ Add Lecture</button>':'',chapterControl(subject))}
       ${detailTabs(subject,'lectures')}
       <div class="subject-r-metrics two">${metric('▶',list.length,'Lectures')}${metric('◉',list.filter(l=>Boolean(l.link)).length,'Recorded','red')}</div>
       <div class="subject-r-filterbar two">${[['all','All'],['recorded','Recorded']].map(([key,label])=>`<button class="${ui.lectureFilter===key?'active':''}" data-lecture-filter="${key}">${label}</button>`).join('')}</div>
       <div class="subject-r-stack">${filtered.length?filtered.map(l=>lectureCard(subject,l,false)).join(''):emptyState('No lectures in this view','Add a lecture or choose another filter.')}</div>
-      ${editable()?'<button class="subject-r-wide-action" id="subject-r-add-lecture-bottom">＋ <span>Add Lecture</span></button>':''}
+      ${canContent('add_content')?'<button class="subject-r-wide-action" id="subject-r-add-lecture-bottom">＋ <span>Add Lecture</span></button>':''}
     </section>`;
   }
   function lectureCard(subject,lecture,showSubject){
@@ -261,13 +266,13 @@
     const upcoming=filtered.filter(e=>!isExamPast(e));
     const past=filtered.filter(isExamPast);
     return `<section class="subject-redesign-page subject-r-detail" data-subject-id="${esc(subject.id)}">
-      ${pageTitle(`${subject.name} Exams`,'Track upcoming exams and past results.',editable()?'<button class="subject-r-primary" id="subject-r-add-exam">＋ Add Exam</button>':'',chapterControl(subject))}
+      ${pageTitle(`${subject.name} Exams`,'Track upcoming exams and past results.',canPlan('add_content')?'<button class="subject-r-primary" id="subject-r-add-exam">＋ Add Exam</button>':'',chapterControl(subject))}
       ${detailTabs(subject,'exams')}
       <div class="subject-r-metrics">${metric('▤',list.length,'Total exams')}${metric('▣',list.filter(e=>!isExamPast(e)).length,'Upcoming','red')}${metric('✓',list.filter(isExamPast).length,'Past exams','purple')}${metric('▥',formatAverage(degrees),'Average degree','green')}</div>
       <div class="subject-r-filterbar three">${[['all','All'],['upcoming','Upcoming'],['past','Past']].map(([key,label])=>`<button class="${ui.examFilter===key?'active':''}" data-exam-filter="${key}">${label}</button>`).join('')}</div>
       <section class="subject-r-section"><div class="subject-r-section-head"><h2>Upcoming exams</h2></div><div class="subject-r-stack">${upcoming.length?upcoming.map(e=>examCard(subject,e,false)).join(''):emptyState('No upcoming exams','Nothing scheduled in this filter.')}</div></section>
       <section class="subject-r-section"><div class="subject-r-section-head"><h2>Past exams</h2></div><div class="subject-r-stack">${past.length?past.map(e=>examCard(subject,e,false)).join(''):emptyState('No past exams','Graded and completed exams will appear here.')}</div></section>
-      ${editable()?'<button class="subject-r-wide-action" id="subject-r-add-exam-bottom">＋ <span>Add Exam</span></button>':''}
+      ${canPlan('add_content')?'<button class="subject-r-wide-action" id="subject-r-add-exam-bottom">＋ <span>Add Exam</span></button>':''}
     </section>`;
   }
   function examCard(subject,exam,showSubject){
@@ -288,13 +293,13 @@
     const filtered=list.filter(a=>ui.assignmentFilter==='all'||(ui.assignmentFilter==='due'&&isDueSoon(a))||(ui.assignmentFilter==='doing'&&a.status==='doing')||(ui.assignmentFilter==='done'&&assignmentDone(a)));
     const active=filtered.filter(a=>!assignmentDone(a)),history=list.filter(assignmentDone);
     return `<section class="subject-redesign-page subject-r-detail" data-subject-id="${esc(subject.id)}">
-      ${pageTitle(`${subject.name} Assignments`,'Track tasks, due dates, and submissions.',editable()?'<button class="subject-r-primary" id="subject-r-add-assignment">＋ New Assignment</button>':'',chapterControl(subject))}
+      ${pageTitle(`${subject.name} Assignments`,'Track tasks, due dates, and submissions.',canPlan('add_content')?'<button class="subject-r-primary" id="subject-r-add-assignment">＋ New Assignment</button>':'',chapterControl(subject))}
       ${detailTabs(subject,'assignments')}
       <div class="subject-r-metrics compact">${metric('',list.length,'Total')}${metric('',list.filter(isDueToday).length,'Due today','red')}${metric('',list.filter(a=>a.status==='doing').length,'In progress','purple')}${metric('',history.length,'Submitted','green')}</div>
       <div class="subject-r-filterbar">${[['all','All'],['due','Due soon'],['doing','In progress'],['done','Submitted']].map(([key,label])=>`<button class="${ui.assignmentFilter===key?'active':''}" data-assignment-r-filter="${key}">${label}</button>`).join('')}</div>
       <div class="subject-r-stack">${active.length?active.map(a=>assignmentCard(subject,a,false)).join(''):ui.assignmentFilter==='done'?'':emptyState('No active assignments','Your active tasks will appear here.')}</div>
       ${history.length?`<section class="subject-r-section"><h2>Submission history</h2><div class="subject-r-results">${history.map(a=>`<div data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id)}"><strong>${esc(a.title)}</strong><span>${a.completedAt?`Submitted ${new Date(a.completedAt).toLocaleDateString()}`:'Submitted'}</span><b>Submitted</b></div>`).join('')}</div></section>`:''}
-      ${editable()?'<button class="subject-r-wide-action" id="subject-r-add-assignment-bottom">＋ <span>New Assignment</span></button>':''}
+      ${canPlan('add_content')?'<button class="subject-r-wide-action" id="subject-r-add-assignment-bottom">＋ <span>New Assignment</span></button>':''}
     </section>`;
   }
   function isDueToday(a){
@@ -311,7 +316,7 @@
     const status=assignmentDone(a)?'Submitted':a.status==='doing'?'In progress':isDueSoon(a)?'Due soon':'Not started';
     return `<article class="subject-r-row assignment ${overdue?'overdue':''}" data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id||'')}">
       <div class="subject-r-row-main"><h2>${esc(a.title)}</h2><small class="${overdue?'danger':''}">${a.dueDate?`${overdue?'Overdue':'Due'} ${esc(dateLabel(a.dueDate))}${a.dueTime?`, ${esc(a.dueTime)}`:''}`:'No due date'}</small><p>${showSubject?`${esc(subject.name)} · `:''}${esc(a.notes||'No extra notes.')}</p></div>
-      <div class="subject-r-row-badges"><span class="subject-r-status ${assignmentDone(a)?'done':a.status==='doing'?'progress':isDueSoon(a)?'danger':'muted'}">${status}</span><b class="priority ${esc(a.priority||'medium')}">${esc((a.priority||'medium')[0].toUpperCase()+(a.priority||'medium').slice(1))}</b>${editable()&&!assignmentDone(a)?'<button class="subject-r-open">Open</button>':''}</div>
+      <div class="subject-r-row-badges"><span class="subject-r-status ${assignmentDone(a)?'done':a.status==='doing'?'progress':isDueSoon(a)?'danger':'muted'}">${status}</span><b class="priority ${esc(a.priority||'medium')}">${esc((a.priority||'medium')[0].toUpperCase()+(a.priority||'medium').slice(1))}</b>${canPlan('edit_content')&&!assignmentDone(a)?'<button class="subject-r-open" type="button">Open</button>':''}</div>
     </article>`;
   }
   function formatNumber(value){ return Number.isInteger(value)?String(value):Number(value).toFixed(1); }
@@ -391,8 +396,8 @@
     document.querySelectorAll('[data-open-lecture]').forEach(el=>el.addEventListener('click',()=>{
       const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;
       const lecture=subjectLectures(s.id).find(x=>x.id===el.dataset.openLecture);
-      if(editable()){openLectureSheet(s,el.dataset.openLecture);return;}
-      if(lecture?.link){try{const url=new URL(lecture.link,location.href);if(['http:','https:'].includes(url.protocol)){const win=window.open(url.href,'_blank','noopener,noreferrer');if(win)win.opener=null;}}catch{}}
+      if(canContent('edit_content')){openLectureSheet(s,el.dataset.openLecture);return;}
+      openLectureDetails(s,lecture);
     }));
     document.querySelectorAll('[data-open-exam]').forEach(el=>el.addEventListener('click',()=>{
       const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openExamRedesign(s,el.dataset.openExam);
@@ -419,8 +424,8 @@
   }
 
   function openExamRedesign(subject,examId=''){
-    if(!editable())return;
     const all=exams(),exam=all.find(e=>e.id===examId);
+    if(exam ? !canPlan('edit_content') : !canPlan('add_content')){ if(exam)openExamDetails(subject,exam); return; }
     const root=document.getElementById('overlay-root');if(!root)return;
     root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-exam-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)} · Exam</div><h2>${exam?'Edit exam':'Add exam'}</h2></div><button class="icon-btn" id="subject-r-exam-close">×</button></div><form id="subject-r-exam-form">
       <div class="field"><label>Exam title</label><input id="subject-r-exam-title" required maxlength="120" value="${esc(exam?.title||'')}" placeholder="e.g. Midterm Grammar Test"></div>
@@ -455,8 +460,8 @@
   }
 
   function openAssignmentRedesign(subject,assignmentId=''){
-    if(!editable())return;
     const value=suite(),assignment=value.assignments.find(a=>a.id===assignmentId);
+    if(assignment ? !canPlan('edit_content') : !canPlan('add_content')){ if(assignment)openAssignmentDetails(subject,assignment); return; }
     const root=document.getElementById('overlay-root');if(!root)return;
     root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-assignment-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)} · Assignment</div><h2>${assignment?'Edit assignment':'New assignment'}</h2></div><button class="icon-btn" id="subject-r-assignment-close">×</button></div><form id="subject-r-assignment-form">
       <div class="field"><label>Assignment</label><input id="subject-r-assignment-title" required maxlength="140" value="${esc(assignment?.title||'')}" placeholder="e.g. Grammar Exercise 1"></div>
