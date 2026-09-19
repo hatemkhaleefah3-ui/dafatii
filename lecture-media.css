@@ -6,12 +6,11 @@
 @media(max-width:767px){.lecture-media-sheet{max-width:none}.lecture-current-material{align-items:flex-start;flex-direction:column}.lecture-current-material .btn{width:100%}.lecture-dropzone{min-height:118px}.lecture-video-viewer{padding:0;background:#000}.lecture-video-panel{width:100%;height:100dvh;max-height:none;border:0;border-radius:0;box-shadow:none}.lecture-video-panel>header{min-height:calc(64px + env(safe-area-inset-top));padding:calc(9px + env(safe-area-inset-top)) 12px 9px 14px}.lecture-video-panel header a,.lecture-video-panel header button[data-video-fullscreen]{display:none}.lecture-video-panel header button[data-video-close]{display:inline-flex}.lecture-video-stage{padding-bottom:env(safe-area-inset-bottom);background:#000}}
 
 
-/* Lecture study tools v1 */
-.lecture-study-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:9px}
-.lecture-study-actions button,.lecture-study-editor-launchers button{min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);padding:9px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;text-align:start;cursor:pointer}
-.lecture-study-actions button span,.lecture-study-editor-launchers button span{width:28px;height:28px;border-radius:9px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent);display:grid;place-items:center;font-weight:900}
-.lecture-study-actions button b,.lecture-study-editor-launchers button b{min-width:0;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lecture-study-actions button small,.lecture-study-editor-launchers button small{color:var(--muted);font-size:9px}
+/* Lecture study tools v2 — lecture-form-only ownership */
+.lecture-study-editor-launchers button{min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);padding:9px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;text-align:start;cursor:pointer}
+.lecture-study-editor-launchers button span{width:28px;height:28px;border-radius:9px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent);display:grid;place-items:center;font-weight:900}
+.lecture-study-editor-launchers button b{min-width:0;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lecture-study-editor-launchers button small{color:var(--muted);font-size:9px}
 .lecture-study-editor-launchers{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:20px;background:var(--surface-2)}
 .lecture-study-editor-launchers>div:first-child span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .lecture-study-editor-launchers h3{margin:5px 0 4px;font-size:17px}.lecture-study-editor-launchers p{margin:0;color:var(--muted);font-size:12px}
@@ -39,7 +38,6 @@
 .lecture-study-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.lecture-study-fields.mcq-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.lecture-study-field{min-width:0}.lecture-study-field>span{display:block;margin-bottom:6px;color:var(--muted);font-size:10px;font-weight:800}.lecture-study-field textarea,.lecture-study-field select{width:100%}.lecture-study-field.compact{max-width:220px}.lecture-study-field-preview{margin-top:8px}.lecture-study-field-preview img{max-height:130px}
 .lecture-study-editor-empty{padding:34px;border:1px dashed var(--line);border-radius:20px;text-align:center;color:var(--muted)}.lecture-study-editor-footer{display:flex;justify-content:space-between;gap:12px;align-items:center}.lecture-study-delete-set{border:0;background:transparent;color:#b42318;font-weight:800}.lecture-study-delete-set:disabled{opacity:.35}.lecture-study-editor-footer .btn{min-width:180px}
 @media(max-width:767px){
-  .lecture-study-actions{grid-template-columns:1fr}.lecture-study-actions button{min-height:44px}
   .lecture-study-editor-launchers>div:last-child{grid-template-columns:1fr}
   .lecture-study-page{padding:0 0 120px}.lecture-study-head{grid-template-columns:auto minmax(0,1fr)}.lecture-study-count{display:none}.lecture-study-heading h1{font-size:32px}.lecture-study-heading p{font-size:12px}
   .lecture-study-tabs{width:calc(100% - 24px)}.lecture-study-tabs button{flex:1}
