@@ -322,7 +322,7 @@ function workspace(current){
       <button class="settings-action sidebar-trigger" id="sidebar-open">${icon('menu')} Sidebar</button>
     </div></div>
 
-    <div class="sub-nav"><div class="sub-inner">${subnav(mainActive,sub,subject,subjectTab)}</div></div>
+    ${page==='calendar'?'':`<div class="sub-nav"><div class="sub-inner">${subnav(mainActive,sub,subject,subjectTab)}</div></div>`}
 
     <aside class="sidebar ${state.sidebar?'open':''}">
       <div class="sidebar-head"><h3>Workspace</h3><button class="icon-btn" id="sidebar-close" aria-label="Close">${icon('close')}</button></div>

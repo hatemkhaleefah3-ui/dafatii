@@ -2,6 +2,7 @@ const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const ui=fs.readFileSync('calendar.js','utf8');
 const css=fs.readFileSync('calendar.css','utf8');
+const app=fs.readFileSync('app.js','utf8');
 const course=fs.readFileSync('course-context.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
@@ -20,6 +21,8 @@ assert.ok(ui.includes("const hasDateRails=['tasks','schedule','todos','goals'].i
 assert.ok(ui.includes('function plannerPeriodBounds()') && ui.includes('function plannerPeriodItems(type)'), 'non-table planner subpages must filter their data by the shared selected day/week/month/year period');
 assert.ok(!ui.includes('<div class="planner-head">') && !ui.includes('planner-date-control-label') && !ui.includes('planner-date-controls'), 'planner page title/description and framed date-picker holder/labels must be removed');
 assert.ok(ui.indexOf('planner-mode-shell') < ui.indexOf('planner-content-tabs') && ui.indexOf('planner-date-shell') < ui.indexOf('planner-content-tabs'), 'both date pickers must render above the planner subpage bar');
+assert.ok(ui.includes('planner-tab-icon') && ui.includes('planner-tab-label'), 'planner subpage bar must render dedicated icon and label structure for every section');
+assert.ok(app.includes("page==='calendar'?'':`<div class=\"sub-nav\"><div class=\"sub-inner\">"), 'calendar page must remove the outer global sub-navigation while preserving it elsewhere');
 assert.ok(!ui.includes('planner-task-dashboard') && !ui.includes('planner-todo-group'), 'retired task dashboard and old grouped to-do subpage markup must be removed from the renderer');
 assert.ok(ui.includes("if(plannerTab==='schedule')return scheduleTableContent()") && ui.includes("if(plannerTab==='tasks')return tasksSubpage()") && ui.includes("if(plannerTab==='todos')return todosSubpage()") && ui.includes("if(plannerTab==='goals')return goalsSubpage()"), 'only Schedule may render the timetable; tasks, to-do and goals must use dedicated subpage renderers');
 assert.ok(ui.includes('function tasksSubpage()') && ui.includes('function todosSubpage()') && ui.includes('function goalsSubpage()'), 'task, to-do and goal sections must have purpose-built premium subpages');
@@ -38,7 +41,7 @@ assert.ok(css.includes('.planner-week-grid') && css.includes('.planner-week-time
 assert.ok(css.includes('.schedule-block') && css.includes('.planner-task-card') && css.includes('.planner-todo-row') && css.includes('.planner-goal-card') && css.includes('.planner-repeat-panel'), 'schedule blocks, unique subpages and recurrence bottom sheet must have dedicated premium styling');
 assert.ok(css.includes('.planner-v6-task-board') && css.includes('.planner-v6-todo-notebook') && css.includes('.planner-v6-goal-grid') && css.includes('.planner-schedule-draft'), 'rebuilt productivity subpages and multi-schedule builder must have dedicated premium presentation');
 assert.ok(css.includes('Planner v7 — frameless page-level date rails') && css.includes('.planner-page>.planner-mode-shell') && css.includes('.planner-page>.planner-date-shell') && css.includes('background:transparent!important') && css.includes('border-radius:0!important'), 'date rails must be frameless and integrated into the page background');
-assert.ok(css.includes('.planner-page .planner-content-tabs') && css.includes('border-bottom:1px solid') && css.includes('button.active::after'), 'planner subpage navigation must use the redesigned integrated tab bar');
+assert.ok(css.includes('Planner v8 — single calendar navigation + premium five-section dock') && css.includes('grid-template-columns:repeat(5,minmax(0,1fr))') && css.includes('.planner-tab-icon') && css.includes('button.active::after'), 'planner subpage navigation must use the premium five-section dock');
 assert.ok(css.includes('width:min(520px,calc(100vw - 24px))!important') && css.includes('width:calc(100vw - 12px)!important') && css.includes('overflow-x:hidden!important'), 'planner bottom sheets must stay compact and within the viewport without width overflow');
 assert.ok(ui.includes("plannerMode='day'") && ui.includes("plannerMode='month'"), 'aggregate tables must drill into the same dated data across time scales');
 assert.ok(ui.includes('centeredPlannerItem') && ui.includes("track.addEventListener('scroll'") && ui.includes("track.addEventListener('scrollend'"), 'scroll position must select the item nearest the center of each rail');
@@ -47,7 +50,7 @@ assert.ok(!ui.includes('planner-loop-arrow') && !ui.includes('data-planner-mode-
 assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const entries=read(SCHEDULE_KEY,[])') && ui.includes("notes:'Recurring weekly timetable'"), 'existing weekly schedule data must project into matching dated schedule cells');
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-grid') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
-assert.ok(index.includes('calendar.js?v=20260919-12') && index.includes('calendar.css?v=20260919-8'), 'schedule redesign assets must be cache-busted');
+assert.ok(index.includes('calendar.js?v=20260919-13') && index.includes('calendar.css?v=20260919-9'), 'schedule redesign assets must be cache-busted');
 console.log('calendar schedule redesign tests passed');
 
 assert.ok(ui.includes('legacyPlannerSnapshot') && ui.includes('__dafatii:course-cache:'), 'planner migration must recover any locally cached pre-fix planner data without resubmitting it as Course content');

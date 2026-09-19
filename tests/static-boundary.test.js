@@ -35,12 +35,12 @@ assert.match(index, /delete-manager\.js\?v=20260919-1/, 'the replacement delete 
 assert.match(index, /student-suite\.js\?v=20260919-3/, 'student suite CRUD endpoints must use the unified content control build');
 assert.match(index, /quiet-shell\.js\?v=15/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260919-3/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260919-4/, 'the cleaned subject interface must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
-assert.match(index, /calendar\.js\?v=20260919-12/, 'the cleaned calendar interface must be loaded');
-assert.match(index, /calendar\.css\?v=20260919-8/, 'retired calendar toolbar styling must be removed from the active asset');
+assert.match(index, /calendar\.js\?v=20260919-13/, 'the cleaned calendar interface must be loaded');
+assert.match(index, /calendar\.css\?v=20260919-9/, 'retired calendar toolbar styling must be removed from the active asset');
 assert.match(index, /role-panels\.js\?v=20260918-1/, 'the redesigned dashboard management entry must be loaded');
 assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management entry styling must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
@@ -135,6 +135,7 @@ assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching m
 assert.match(quietShell, /data-quiet-courses/, 'the course access button must open a course popover');
 assert.match(quietShell, /quiet-profile-popover/, 'the profile button must open a profile summary');
 const app = fs.readFileSync('app.js', 'utf8');
+assert.ok(app.includes("page==='calendar'?'':`<div class=\"sub-nav\"><div class=\"sub-inner\">"), 'calendar must not render the redundant global Schedule/Deadlines/Exams sub-navigation');
 assert.doesNotMatch(app, /subject-back|data-subjects-back/, 'return controls must not remain embedded in sub-navigation');
 assert.doesNotMatch(app, /authOffline \? 'disabled'/, 'a failed startup check must not disable authentication');
 assert.match(app, /dataset\.submitting/, 'authentication errors must survive availability events');
