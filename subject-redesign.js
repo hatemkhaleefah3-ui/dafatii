@@ -46,7 +46,9 @@
   function effectiveAssignment(assignment){
     if(!tracksPersonalAssignmentProgress())return assignment;
     const progress=assignmentProgressFor(assignment.id);
-    return progress?{...assignment,status:progress.status||'todo',completedAt:progress.submittedAt||null,submissionNote:progress.submissionNote||''}:assignment;
+    return progress
+      ? {...assignment,status:progress.status||'todo',completedAt:progress.submittedAt||null,submissionNote:progress.submissionNote||''}
+      : {...assignment,status:'todo',completedAt:null,submissionNote:''};
   }
   function exams(){
     const value=read(EXAMS_KEY,[]);
