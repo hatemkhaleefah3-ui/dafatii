@@ -435,7 +435,10 @@
 
   function controlSelector(control) {
     if (!control) return '';
-    if (control.id) return `#${CSS.escape(control.id)}`;
+    if (control.id) {
+      const escaped = window.CSS?.escape ? window.CSS.escape(control.id) : String(control.id).replace(/([^a-zA-Z0-9_-])/g,'\\$1');
+      return `#${escaped}`;
+    }
     const dataAttr = [...control.attributes].find(attr =>
       attr.name.startsWith('data-') && /(delete|remove|archive)/i.test(attr.name) && attr.value
     );
