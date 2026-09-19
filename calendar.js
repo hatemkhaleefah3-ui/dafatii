@@ -10,7 +10,7 @@
   const plannerRead = (version,fallback) => window.DafatiiData.readJSON(plannerPersonalKey(version),fallback);
   const plannerWrite = (version,value) => window.DafatiiData.writeJSON(plannerPersonalKey(version),value);
   const PLANNER_MODES = ['day','week','month','year'];
-  const PLANNER_TABS = ['tasks','schedule','todos','goals','attendance'];
+  const PLANNER_TABS = ['tasks','schedule','todos','goals'];
   let plannerMode = 'day';
   let plannerDate = new Date();
   let plannerTab = 'schedule';
@@ -190,11 +190,7 @@
     return {primary:String(date.getFullYear()),secondary:'Year',meta:`${date.getFullYear()-1} · ${date.getFullYear()+1}`};
   }
   function modeLoop(){
-    const index=PLANNER_MODES.indexOf(plannerMode);
-    return [-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6].map(offset=>{
-      const mode=PLANNER_MODES[(index+offset+PLANNER_MODES.length*8)%PLANNER_MODES.length];
-      return `<button type="button" class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}" tabindex="-1">${mode[0].toUpperCase()+mode.slice(1)}s</button>`;
-    }).join('');
+    return PLANNER_MODES.map(mode=>`<button type="button" class="planner-loop-item ${plannerMode===mode?'active':''}" data-planner-mode="${mode}" aria-current="${plannerMode===mode?'true':'false'}">${mode[0].toUpperCase()+mode.slice(1)}</button>`).join('');
   }
   function periodLoop(){
     return [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7].map(offset=>{
@@ -202,13 +198,12 @@
       return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span><small>${esc(label.meta)}</small></button>`;
     }).join('');
   }
-  const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals',attendance:'Attendance'}[tab]||tab);
+  const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals'}[tab]||tab);
   const plannerTypeMeta = Object.freeze({
     tasks:{label:'Task',plural:'Tasks',icon:'✓'},
     schedule:{label:'Schedule item',plural:'Schedule',icon:'◷'},
     todos:{label:'To-do',plural:'To do',icon:'☑'},
-    goals:{label:'Goal',plural:'Goals',icon:'◇'},
-    attendance:{label:'Attendance',plural:'Attendance',icon:'◎'}
+    goals:{label:'Goal',plural:'Goals',icon:'◇'}
   });
   const plannerTypeLabel = type => plannerTypeMeta[type]?.label || tabLabel(type);
   const plannerTypeIcon = type => plannerTypeMeta[type]?.icon || '•';
@@ -463,15 +458,6 @@
     </div>`;
   }
 
-  function attendanceSubpage(){
-    const items=plannerSorted('attendance');
-    const counts={present:0,late:0,absent:0};items.forEach(item=>{const key=String(item.status||'present');if(key in counts)counts[key]++;});
-    if(!items.length)return premiumEmpty('attendance','No attendance records','Add an attendance record without placing it in the schedule table.');
-    return `<div class="planner-subpage planner-attendance-page">
-      <div class="planner-metrics attendance"><div><strong>${counts.present}</strong><span>Present</span></div><div><strong>${counts.late}</strong><span>Late</span></div><div><strong>${counts.absent}</strong><span>Absent</span></div></div>
-      <div class="planner-attendance-list">${items.map(item=>`<article class="planner-attendance-card status-${esc(item.status||'present')}" data-planner-entry-id="${esc(item.id)}"><span class="planner-attendance-dot"></span><div><strong>${esc(item.title||'Attendance')}</strong><small>${esc(item.date||'')} · ${esc(normalizePlannerTime(item.time))}</small>${item.notes?`<p>${esc(item.notes)}</p>`:''}</div><b>${esc(item.status||'present')}</b><button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'attendance')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'attendance')}"></button></article>`).join('')}</div>
-    </div>`;
-  }
   function scheduleTableContent(){
     if(plannerMode==='day')return dayTable();
     if(plannerMode==='week')return weekTable();
@@ -483,12 +469,12 @@
     if(plannerTab==='tasks')return tasksSubpage();
     if(plannerTab==='todos')return todosSubpage();
     if(plannerTab==='goals')return goalsSubpage();
-    return attendanceSubpage();
+    return scheduleTableContent();
   }
 
   function scheduleView(){
     const selected=periodLabel(plannerMode,plannerDate),isSchedule=plannerTab==='schedule';
-    const hasDateRails=['tasks','schedule','todos','goals'].includes(plannerTab);
+    const hasDateRails=PLANNER_TABS.includes(plannerTab);
     return `<section class="calendar-page planner-page planner-subpage-${esc(plannerTab)}" data-planner-mode="${plannerMode}" data-planner-tab-current="${esc(plannerTab)}">
       <div class="planner-add-proxies" aria-hidden="true"><button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${esc(plannerTab)}" aria-label="Add ${esc(plannerTypeLabel(plannerTab))}"></button></div>
       ${hasDateRails?`<div class="planner-loop-shell planner-mode-shell"><div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Date range">${modeLoop()}</div></div>
@@ -655,6 +641,7 @@
   function bindSchedule(){
     const rerender=()=>render();
     document.querySelectorAll('[data-planner-tab]').forEach(button=>button.addEventListener('click',()=>{plannerTab=button.dataset.plannerTab;rerender();}));
+    document.querySelectorAll('[data-planner-mode]').forEach(button=>button.addEventListener('click',()=>{plannerMode=button.dataset.plannerMode||plannerMode;rerender();}));
     document.querySelectorAll('[data-planner-add-type]').forEach(button=>button.addEventListener('click',()=>openPlannerEntrySheet('','09:00','',button.dataset.plannerAddType||plannerTab)));
     document.querySelectorAll('[data-planner-open-date]').forEach(button=>button.addEventListener('click',()=>{
       plannerDate=dateFromKey(button.dataset.plannerOpenDate);plannerMode='day';rerender();
@@ -719,7 +706,7 @@
     document.querySelectorAll('[data-planner-delete-recurring]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();write(SCHEDULE_KEY,read(SCHEDULE_KEY,[]).filter(entry=>entry.id!==button.dataset.plannerDeleteRecurring));rerender();
     }));
-    document.querySelectorAll('[data-planner-loop]').forEach(bindPlannerLoop);
+    document.querySelectorAll('[data-planner-loop="period"]').forEach(bindPlannerLoop);
   }
 
   function defaultEntryDate(){
@@ -750,7 +737,7 @@
     const selected=periodLabel(plannerMode,plannerDate);
     const chosenDate=editing?.date||dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(editing?.time||timeOverride);
     const isSchedule=type==='schedule',title=editing?'Edit':'Add';
-    const typeCopy={tasks:'Plan focused work with an estimate and execution state.',todos:'Capture a lightweight checklist item and move it forward quickly.',goals:'Track a measurable target with real units and progress.',schedule:'Build one or several timetable blocks in the same sheet.',attendance:'Track attendance outside the timetable.'}[type]||'Planner item';
+    const typeCopy={tasks:'Plan focused work with an estimate and execution state.',todos:'Capture a lightweight checklist item and move it forward quickly.',goals:'Track a measurable target with real units and progress.',schedule:'Build one or several timetable blocks in the same sheet.'}[type]||'Planner item';
 
     if(isSchedule){
       const initial=editing?[editing]:[{date:chosenDate,time:chosenTime,endTime:chosenTime,recurrence:'weekly'}];
@@ -815,12 +802,11 @@
       root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet planner-${esc(type)}-sheet" role="dialog" aria-modal="true">
         <div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2><p>${esc(typeCopy)}</p></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
         <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${esc(typeCopy)}</small></div></div>
-        <div class="field"><label>${type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Read 12 research papers':'Physics lecture'}"></div>
+        <div class="field"><label>Title</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Read 12 research papers':'Planner item'}"></div>
         <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
         ${type==='tasks'?`<div class="calendar-form-grid"><div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div><div class="field"><label>Focus estimate</label><select name="estimatedMinutes">${[15,25,30,45,60,90,120].map(minutes=>`<option value="${minutes}" ${taskEstimate(editing||{})===minutes?'selected':''}>${minutes} minutes</option>`).join('')}</select></div></div><div class="field"><label>Execution state</label><select name="taskState"><option value="backlog" ${taskState(editing||{})==='backlog'?'selected':''}>Backlog</option><option value="doing" ${taskState(editing||{})==='doing'?'selected':''}>In progress</option></select></div>`:''}
         ${type==='todos'?`<div class="calendar-form-grid"><div class="field"><label>List</label><input name="listLabel" maxlength="40" value="${esc(editing?.listLabel||'General')}" placeholder="Study, Personal, Errands…"></div><div class="field"><label>Importance</label><select name="todoImportant"><option value="no" ${!editing?.todoImportant?'selected':''}>Normal</option><option value="yes" ${editing?.todoImportant?'selected':''}>Important</option></select></div></div>`:''}
         ${type==='goals'?`<div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div><div class="planner-goal-measure-form"><div class="field"><label>Current</label><input name="goalCurrent" type="number" min="0" step="any" value="${current}"></div><div class="field"><label>Target</label><input name="goalTarget" type="number" min="0.01" step="any" value="${target}" required></div><div class="field"><label>Unit</label><input name="goalUnit" maxlength="18" value="${esc(unit)}" placeholder="pages, hours, chapters"></div><div class="field"><label>Progress step</label><input name="goalStep" type="number" min="0.01" step="any" value="${goalStep(editing||{})}"></div></div><div class="planner-goal-form-preview"><span style="--goal-progress:${progress}%"></span><strong id="planner-goal-preview">${progress}%</strong></div>`:''}
-        ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
         <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="${type==='tasks'?'What does done look like?':type==='todos'?'Optional quick context':type==='goals'?'Why this goal matters or how you will reach it':'Optional context'}">${esc(editing?.notes||'')}</textarea></div>
         <button class="btn btn-primary" type="submit">${editing?'Save changes':`Add ${esc(plannerTypeLabel(type))}`}</button>
       </form></section></div>`;
@@ -841,7 +827,7 @@
           payload.listLabel=String(form.get('listLabel')||'General').trim()||'General';payload.todoImportant=String(form.get('todoImportant')||'no')==='yes';payload.done=Boolean(editing?.done);
         }else if(type==='goals'){
           payload.priority=String(form.get('priority')||'medium');payload.goalTarget=Math.max(.01,Number(form.get('goalTarget')||100));payload.goalCurrent=Math.max(0,Number(form.get('goalCurrent')||0));payload.goalUnit=String(form.get('goalUnit')||'%').trim()||'%';payload.goalStep=Math.max(.01,Number(form.get('goalStep')||goalStep(editing||{})));payload.progress=Math.max(0,Math.min(100,Math.round(payload.goalCurrent/payload.goalTarget*100)));payload.done=payload.goalCurrent>=payload.goalTarget;
-        }else if(type==='attendance')payload.status=String(form.get('status')||'present');
+        }
         if(editing){const index=items.findIndex(item=>item.id===editing.id);if(index>=0)items[index]=payload;else items.push(payload);}else items.push(payload);
         plannerTab=type;savePlannerItems(items);closeOverlay();render();
       };
