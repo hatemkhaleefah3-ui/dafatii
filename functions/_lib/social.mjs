@@ -250,9 +250,21 @@ async function listMessages(context,user,conversationId){
     for(const row of reactions.results){if(!reactionMap.has(row.message_id))reactionMap.set(row.message_id,{});reactionMap.get(row.message_id)[row.emoji]=Number(row.count||0);}
   }
   if(member)await context.env.DB.prepare('UPDATE social_members SET last_read_at=? WHERE conversation_id=? AND user_id=?').bind(Date.now(),id,user.id).run();
-  return ok({conversation:{id:conversation.id,kind:conversation.kind,name:conversation.kind==='anonymous'?(conversation.topic||'Anonymous room'):conversation.name,topic:conversation.topic,visibility:conversation.visibility,memberCount:Number((await context.env.DB.prepare('SELECT COUNT(*) AS count FROM social_members WHERE conversation_id=?').bind(id).first())?.count||0),joined:Boolean(member)},
+  let displayName=conversation.kind==='anonymous'?(conversation.topic||'Anonymous room'):conversation.name;
+  if(conversation.kind==='private'){
+    const other=await context.env.DB.prepare(`SELECT u.display_name FROM social_members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id=? AND m.user_id != ? LIMIT 1`).bind(id,user.id).first();
+    displayName=other?.display_name||'Private chat';
+  }
+  return ok({conversation:{id:conversation.id,kind:conversation.kind,name:displayName,topic:conversation.topic,visibility:conversation.visibility,memberCount:Number((await context.env.DB.prepare('SELECT COUNT(*) AS count FROM social_members WHERE conversation_id=?').bind(id).first())?.count||0),joined:Boolean(member)},
     messages:ordered.map(row=>({id:row.id,type:row.type,payload:row.deleted_at?null:parsePayload(row.payload_json),deleted:Boolean(row.deleted_at),mine:row.sender_user_id===user.id,
       sender:conversation.kind==='anonymous'?anonymousAlias(id,row.sender_user_id):row.display_name,at:row.created_at,editedAt:row.edited_at||null,reactions:reactionMap.get(row.id)||{}}))});
+}
+
+async function listMembers(context,user,conversationId){
+  const id=requireUuid(conversationId),{conversation}=await requireReadable(context.env.DB,user.id,id);
+  if(conversation.kind==='anonymous')throw new HttpError(403,'ANONYMOUS_MEMBERS_HIDDEN','Anonymous room identities are private.');
+  const rows=await context.env.DB.prepare(`SELECT u.display_name,m.role,m.joined_at FROM social_members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id=? ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,u.display_name`).bind(id).all();
+  return ok({members:rows.results.map(row=>({name:row.display_name,role:row.role,joinedAt:row.joined_at}))});
 }
 
 function validateMessage(input){
@@ -339,6 +351,8 @@ export async function dispatchSocialRoute(context,method,path,user){
   if(match&&method==='PATCH'&&!match[2])return patchConversation(context,user,match[1]);
   if(match&&method==='GET'&&match[2]==='messages')return listMessages(context,user,match[1]);
   if(match&&method==='POST'&&match[2]==='messages')return sendMessage(context,user,match[1]);
+  match=path.match(/^social\/conversations\/([0-9a-f-]{36})\/members$/i);
+  if(match&&method==='GET')return listMembers(context,user,match[1]);
   match=path.match(/^social\/conversations\/([0-9a-f-]{36})\/messages\/([0-9a-f-]{36})\/reactions$/i);
   if(match&&method==='POST')return reactMessage(context,user,match[1],match[2]);
   match=path.match(/^social\/posts\/([0-9a-f-]{36})\/save$/i);
