@@ -17,6 +17,13 @@ assert.match(script, /event\.touches\.length !== 2/, 'pinch zoom must require ex
 assert.match(script, /event\.preventDefault\(\)/, 'custom pinch zoom must suppress browser page zoom while active');
 assert.match(script, /controls\.zoomIn|controls\.zoomOut/, 'pinch gestures must use the viewer zoom API');
 assert.match(script, /Math\.hypot/, 'pinch zoom must calculate two-finger distance');
+assert.match(script, /addEventListener\('dblclick',reset/, 'desktop double-click must reset file zoom');
+assert.match(script, /addEventListener\('touchend',event=>/, 'mobile double-tap detection must be installed');
+assert.match(script, /controls\.resetZoom\(\)/, 'double click/tap must call the renderer 100% zoom reset');
+assert.match(workspace, /aria-label="\$\{esc\(t\('switchLecture'\)\)\}"/, 'icon-only reader controls must keep accessible labels');
+assert.doesNotMatch(workspace, /<small>\$\{esc\(t\('switchLecture'\)\)\}<\/small>/, 'reader dock must not show text below the switch icon');
+assert.doesNotMatch(design, /\.viewer-reader-dock small/, 'reader dock CSS must not reserve space for text labels');
+assert.match(design, /grid-template-columns:repeat\(4,52px\)/, 'desktop reader controls must use compact circular icon slots');
 assert.match(script, /reader-chrome-hidden/, 'reader chrome must auto-hide while document content is scrolling');
 assert.match(script, /addEventListener\('scroll',onScroll/, 'reader auto-hide must be driven by the document stage scroll event');
 assert.match(workspace, /data-viewer-dock="switch"/, 'file reader must expose the switch lecture action');
@@ -51,9 +58,11 @@ assert.match(css, /\.viewer-loading-screen\{/, 'the loading screen must cover th
 assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages must remain hidden while loading');
 assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
 assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
-assert.match(index, /file-reader-interactions\.js\?v=20260919-1/, 'the loading, pinch, and chrome controller must be loaded');
-assert.match(index, /viewer-workspace\.js\?v=20260919-3/, 'the redesigned reader and video controls must be loaded');
+assert.match(index, /file-reader-interactions\.js\?v=20260919-2/, 'the loading, pinch, and chrome controller must be loaded');
+assert.match(index, /viewer-workspace\.js\?v=20260919-4/, 'the redesigned reader and video controls must be loaded');
 assert.match(index, /viewer-workspace\.css\?v=20260919-5/, 'the redesigned video viewer presentation must be loaded');
-assert.match(index, /lecture-reader-design\.css\?v=20260919-1/, 'the redesigned file-reader presentation must be loaded');
+assert.match(index, /lecture-reader-design\.css\?v=20260919-2/, 'the redesigned file-reader presentation must be loaded');
+assert.match(index, /pdf-viewer\.js\?v=20260919-1/, 'the PDF reader with exact 100% reset must be loaded');
+assert.match(index, /office-viewer\.js\?v=20260919-1/, 'the Office reader with zoom reset must be loaded');
 
 console.log('file reader loading and pinch checks passed');

@@ -341,10 +341,10 @@
     dock.setAttribute('aria-label',t('file'));
     const hasLecture=Boolean(context.lecture?.id);
     dock.innerHTML=`
-      <button type="button" data-viewer-dock="switch" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('change-course','▣')}</span><small>${esc(t('switchLecture'))}</small></button>
-      <button type="button" data-viewer-dock="navigate" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('subjects','☷')}</span><small>${esc(t('navigateLectures'))}</small></button>
-      <button type="button" data-viewer-dock="status" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('check','✓')}</span><small>${esc(t('lectureStatus'))}</small></button>
-      <button type="button" data-viewer-dock="examine"><span class="viewer-dock-icon">${icon('star','✦')}</span><small>${esc(t('examine'))}</small></button>`;
+      <button type="button" data-viewer-dock="switch" aria-label="${esc(t('switchLecture'))}" title="${esc(t('switchLecture'))}" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('change-course','▣')}</span></button>
+      <button type="button" data-viewer-dock="navigate" aria-label="${esc(t('navigateLectures'))}" title="${esc(t('navigateLectures'))}" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('subjects','☷')}</span></button>
+      <button type="button" data-viewer-dock="status" aria-label="${esc(t('lectureStatus'))}" title="${esc(t('lectureStatus'))}" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('check','✓')}</span></button>
+      <button type="button" data-viewer-dock="examine" aria-label="${esc(t('examine'))}" title="${esc(t('examine'))}"><span class="viewer-dock-icon">${icon('star','✦')}</span></button>`;
     root.append(dock);
     dock.querySelector('[data-viewer-dock="switch"]')?.addEventListener('click',()=>openSwitchLecture(root,context,controls));
     dock.querySelector('[data-viewer-dock="navigate"]')?.addEventListener('click',()=>openNavigateLectures(root,context,controls));

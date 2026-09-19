@@ -36,9 +36,11 @@ assert.match(headers, /script-src[^\n]*'wasm-unsafe-eval'/, 'CSP must allow the 
 assert.match(viewer, /Promise\.all\(\[loadRuntime\(\),\s*filePromise\]\)/, 'runtime loading and original-file download must run in parallel');
 assert.match(viewer, /Downloading document…/, 'the reader must expose download progress instead of an indefinite preparing state');
 assert.match(viewer, /originalFileCache/, 'recent original files must be cached in memory for fast reopen');
+assert.match(viewer, /const resetZoom = \(\) =>/, 'Office reader must expose a 100% zoom reset');
+assert.match(viewer, /controller\.resetZoom|controller\.setZoom|controller\.setScale/, 'Office zoom reset must prefer a native runtime reset API when available');
 assert.match(viewer, /pptModuleUrl:[\s\S]*pptWorkerUrl:[\s\S]*pptWasmUrl:[\s\S]*pptFontUrl:/, 'legacy PPT must use explicit native engine asset URLs');
 assert.match(viewer, /modulepreload[\s\S]*vendor\/ppt/, 'legacy PPT engine assets must be warmed before rendering');
 assert.match(index, /preconnect" href="https:\/\/unpkg\.com"/, 'the primary Office runtime CDN must be preconnected');
-assert.match(index, /office-viewer\.js\?v=20260917-4/, 'the failover Office reader must be cache-busted');
+assert.match(index, /office-viewer\.js\?v=20260919-1/, 'the failover Office reader must be cache-busted');
 
 console.log('office native reader boundary checks passed');
