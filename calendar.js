@@ -13,7 +13,7 @@
   const PLANNER_TABS = ['tasks','schedule','todos','goals','attendance'];
   let plannerMode = 'day';
   let plannerDate = new Date();
-  let plannerTab = 'tasks';
+  let plannerTab = 'schedule';
   const EXAMS_KEY = 'dafatii:examSchedule';
   const EXAM_NOTES_KEY = 'dafatii:examNotes';
   const AXIS_KEYS = {
@@ -156,7 +156,22 @@
   };
   const itemHour = item => Number(normalizePlannerTime(item.time).slice(0,2));
   const itemOnDate = (item,date) => item.date===dateKey(date);
-  const canonicalItemsForDate = (date,type=plannerTab) => plannerItems().filter(item=>item.type===type&&itemOnDate(item,date));
+  function scheduleItemOnDate(item,date){
+    if(item.type!=='schedule')return itemOnDate(item,date);
+    const start=dateFromKey(item.date),target=cloneDate(date);
+    if(Number.isNaN(start.getTime())||target<start)return false;
+    const until=item.repeatUntil?dateFromKey(item.repeatUntil):null;
+    if(until&&!Number.isNaN(until.getTime())&&target>until)return false;
+    const recurrence=String(item.recurrence||'none').toLowerCase();
+    const repeat=Boolean(item.repeat)&&['daily','weekly','monthly'].includes(recurrence);
+    if(!repeat)return itemOnDate(item,date);
+    const dayDelta=Math.round((target-start)/86400000);
+    if(recurrence==='daily')return dayDelta>=0;
+    if(recurrence==='weekly')return dayDelta>=0&&dayDelta%7===0;
+    if(recurrence==='monthly')return target.getDate()===start.getDate();
+    return itemOnDate(item,date);
+  }
+  const canonicalItemsForDate = (date,type=plannerTab) => plannerItems().filter(item=>item.type===type&&(type==='schedule'?scheduleItemOnDate(item,date):itemOnDate(item,date)));
   const sameDay = (a,b) => dateKey(a)===dateKey(b);
   const monthName = (date,style='long') => date.toLocaleDateString(undefined,{month:style});
   const dayName = (date,style='long') => date.toLocaleDateString(undefined,{weekday:style});
@@ -214,22 +229,41 @@
     const own=canonicalItemsForDate(date,plannerTab);
     return plannerTab==='schedule'?[...own,...recurringForDate(date)]:own;
   }
+  function scheduleRepeatLabel(item){
+    if(!item.repeat||!['daily','weekly','monthly'].includes(String(item.recurrence||'')))return 'One time';
+    const base={daily:'Daily',weekly:'Weekly',monthly:'Monthly'}[item.recurrence]||'Repeats';
+    return item.repeatUntil?`${base} · until ${item.repeatUntil}`:base;
+  }
+
   function plannerCompactItem(item,context='compact'){
     const done=Boolean(item.done),type=item.type||plannerTab,priority=String(item.priority||'medium');
-    const meta=[item.time,item.location,item.status].filter(Boolean).join(' · ');
-    const progress=type==='goals'?Math.max(0,Math.min(100,Number(item.progress||0))):0;
     const notes=String(item.notes||'').trim();
-    return `<article class="planner-table-item planner-item-${esc(type)} ${done?'done':''} ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}">
+    if(type==='schedule'){
+      const start=normalizePlannerTime(item.time),end=normalizePlannerTime(item.endTime||item.time);
+      const repeatLabel=item.recurring?'Weekly timetable':scheduleRepeatLabel(item);
+      return `<article class="planner-table-item planner-item-schedule schedule-block ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}">
+        <div class="schedule-block-accent" aria-hidden="true"></div>
+        <div class="schedule-block-main">
+          <div class="schedule-block-title"><strong>${esc(item.title||'Schedule item')}</strong><span>${esc(repeatLabel)}</span></div>
+          <div class="schedule-block-meta"><b>${esc(start)}${end&&end!==start?`–${esc(end)}`:''}</b>${item.location?`<span>⌖ ${esc(item.location)}</span>`:''}</div>
+          ${notes&&context!=='week'?`<p>${esc(notes)}</p>`:''}
+        </div>
+        ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'schedule item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'schedule item')}">×</button>`:''}
+      </article>`;
+    }
+    const meta=[item.time,item.status].filter(Boolean).join(' · ');
+    const progress=type==='goals'?Math.max(0,Math.min(100,Number(item.progress||0))):0;
+    return `<article class="planner-table-item planner-item-${esc(type)} ${done?'done':''}" data-planner-entry-id="${esc(item.id)}">
       <span class="planner-item-icon" aria-hidden="true">${esc(plannerTypeIcon(type))}</span>
       <div class="planner-item-main">
-        <div class="planner-item-title-row"><strong>${esc(item.title||plannerTypeLabel(type))}</strong>${priority&&type!=='schedule'&&type!=='attendance'?`<i class="planner-priority ${esc(priority)}" title="${esc(priorityLabel(priority))}"></i>`:''}</div>
+        <div class="planner-item-title-row"><strong>${esc(item.title||plannerTypeLabel(type))}</strong>${priority&&type!=='attendance'?`<i class="planner-priority ${esc(priority)}" title="${esc(priorityLabel(priority))}"></i>`:''}</div>
         ${meta?`<small class="planner-item-meta">${esc(meta)}</small>`:''}
-        ${notes&&context!=='week'?`<p>${esc(notes)}</p>`:''}
+        ${notes?`<p>${esc(notes)}</p>`:''}
         ${type==='goals'?`<div class="planner-goal-progress" aria-label="Goal progress ${progress}%"><span style="--goal-progress:${progress}%"></span><b>${progress}%</b></div>`:''}
       </div>
-      ${!item.recurring&&type!=='schedule'&&type!=='attendance'?`<button class="planner-mini-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`:''}
-      ${!item.recurring&&type==='goals'&&!done?`<button class="planner-progress-step" data-planner-progress="${esc(item.id)}" aria-label="Increase goal progress by 10 percent">+10</button>`:''}
-      ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'item')}">×</button>`:''}
+      ${type!=='attendance'?`<button class="planner-mini-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`:''}
+      ${type==='goals'&&!done?`<button class="planner-progress-step" data-planner-progress="${esc(item.id)}" aria-label="Increase goal progress by 10 percent">+10</button>`:''}
+      <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'item')}">×</button>
     </article>`;
   }
 
@@ -297,29 +331,109 @@
       </section>`;
     }).join('')}</div>`;
   }
-  function scheduleContent(){
+  function plannerSorted(type){
+    return plannerItems().filter(item=>item.type===type).sort((a,b)=>{
+      const doneDelta=Number(Boolean(a.done))-Number(Boolean(b.done));if(doneDelta)return doneDelta;
+      return `${a.date||''}T${normalizePlannerTime(a.time)}`.localeCompare(`${b.date||''}T${normalizePlannerTime(b.time)}`);
+    });
+  }
+  function premiumEmpty(type,title,copy){
+    return `<div class="planner-premium-empty"><span>${esc(plannerTypeIcon(type))}</span><strong>${esc(title)}</strong><p>${esc(copy)}</p></div>`;
+  }
+  function dueBadge(item){
+    const today=dateKey(new Date()),date=String(item.date||'');
+    if(!date)return '<span class="planner-due neutral">No date</span>';
+    if(item.done)return `<span class="planner-due done">Done · ${esc(date)}</span>`;
+    if(date<today)return `<span class="planner-due overdue">Overdue · ${esc(date)}</span>`;
+    if(date===today)return '<span class="planner-due today">Due today</span>';
+    return `<span class="planner-due">Due ${esc(date)}</span>`;
+  }
+  function taskCard(item){
+    const priority=String(item.priority||'medium');
+    return `<article class="planner-task-card ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
+      <button class="planner-task-check" data-planner-toggle="${esc(item.id)}" aria-label="${item.done?'Mark incomplete':'Mark complete'}">${item.done?'✓':''}</button>
+      <div class="planner-task-copy"><div class="planner-card-kicker"><span class="planner-priority-label ${esc(priority)}">${esc(priorityLabel(priority)||'Medium priority')}</span>${dueBadge(item)}</div><h3>${esc(item.title||'Untitled task')}</h3>${item.notes?`<p>${esc(item.notes)}</p>`:''}<small>${esc(normalizePlannerTime(item.time))}</small></div>
+      <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'task')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'task')}"></button>
+    </article>`;
+  }
+  function tasksSubpage(){
+    const items=plannerSorted('tasks'),open=items.filter(item=>!item.done),done=items.filter(item=>item.done),high=open.filter(item=>item.priority==='high');
+    if(!items.length)return premiumEmpty('tasks','No tasks yet','Use Manage Content → Add to create a focused task with priority and a due time.');
+    return `<div class="planner-subpage planner-tasks-page">
+      <div class="planner-metrics"><div><strong>${open.length}</strong><span>Open</span></div><div><strong>${high.length}</strong><span>High priority</span></div><div><strong>${done.length}</strong><span>Completed</span></div></div>
+      <div class="planner-section-head"><div><small>Work queue</small><h3>Tasks</h3></div><span>${items.length} total</span></div>
+      <div class="planner-task-stack">${items.map(taskCard).join('')}</div>
+    </div>`;
+  }
+  function todoRow(item){
+    return `<article class="planner-todo-row ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
+      <button class="planner-todo-check" data-planner-toggle="${esc(item.id)}" aria-label="${item.done?'Mark incomplete':'Complete to-do'}"><span>${item.done?'✓':''}</span></button>
+      <div><strong>${esc(item.title||'Untitled to-do')}</strong><small>${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</small>${item.notes?`<p>${esc(item.notes)}</p>`:''}</div>
+      ${dueBadge(item)}
+      <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'to-do')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'to-do')}"></button>
+    </article>`;
+  }
+  function todosSubpage(){
+    const items=plannerSorted('todos'),done=items.filter(item=>item.done).length,total=items.length,percent=total?Math.round(done/total*100):0;
+    if(!items.length)return premiumEmpty('todos','Your to-do list is clear','Add quick actions here; they stay separate from your timetable.');
+    return `<div class="planner-subpage planner-todos-page">
+      <div class="planner-todo-hero"><div><small>Completion</small><strong>${percent}%</strong><span>${done} of ${total} completed</span></div><div class="planner-todo-ring" style="--todo-progress:${percent}%"><b>${percent}</b></div></div>
+      <div class="planner-todo-progress"><span style="--todo-progress:${percent}%"></span></div>
+      <div class="planner-todo-list">${items.map(todoRow).join('')}</div>
+    </div>`;
+  }
+  function goalCard(item){
+    const progress=Math.max(0,Math.min(100,Number(item.progress||0))),priority=String(item.priority||'medium');
+    return `<article class="planner-goal-card ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
+      <div class="planner-goal-head"><span class="planner-goal-icon">◇</span><div><small>${esc(priorityLabel(priority)||'Medium priority')}</small><h3>${esc(item.title||'Untitled goal')}</h3></div><strong>${progress}%</strong></div>
+      ${item.notes?`<p>${esc(item.notes)}</p>`:''}
+      <div class="planner-goal-track"><span style="--goal-progress:${progress}%"></span></div>
+      <div class="planner-goal-foot"><span>Target ${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</span><div><button data-planner-progress="${esc(item.id)}" ${item.done?'disabled':''}>+10%</button><button data-planner-toggle="${esc(item.id)}">${item.done?'Reopen':'Complete'}</button></div></div>
+      <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'goal')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'goal')}"></button>
+    </article>`;
+  }
+  function goalsSubpage(){
+    const items=plannerSorted('goals'),active=items.filter(item=>!item.done),complete=items.filter(item=>item.done);
+    if(!items.length)return premiumEmpty('goals','No active goals','Create a measurable goal, set a target date and move it forward in 10% steps.');
+    const avg=Math.round(items.reduce((sum,item)=>sum+Math.max(0,Math.min(100,Number(item.progress||0))),0)/items.length);
+    return `<div class="planner-subpage planner-goals-page"><div class="planner-goals-hero"><div><small>Overall progress</small><strong>${avg}%</strong><span>${active.length} active · ${complete.length} complete</span></div><div class="planner-goals-orbit"><span style="--goal-progress:${avg}%"></span><b>◇</b></div></div><div class="planner-goal-grid">${items.map(goalCard).join('')}</div></div>`;
+  }
+  function attendanceSubpage(){
+    const items=plannerSorted('attendance');
+    const counts={present:0,late:0,absent:0};items.forEach(item=>{const key=String(item.status||'present');if(key in counts)counts[key]++;});
+    if(!items.length)return premiumEmpty('attendance','No attendance records','Add an attendance record without placing it in the schedule table.');
+    return `<div class="planner-subpage planner-attendance-page">
+      <div class="planner-metrics attendance"><div><strong>${counts.present}</strong><span>Present</span></div><div><strong>${counts.late}</strong><span>Late</span></div><div><strong>${counts.absent}</strong><span>Absent</span></div></div>
+      <div class="planner-attendance-list">${items.map(item=>`<article class="planner-attendance-card status-${esc(item.status||'present')}" data-planner-entry-id="${esc(item.id)}"><span class="planner-attendance-dot"></span><div><strong>${esc(item.title||'Attendance')}</strong><small>${esc(item.date||'')} · ${esc(normalizePlannerTime(item.time))}</small>${item.notes?`<p>${esc(item.notes)}</p>`:''}</div><b>${esc(item.status||'present')}</b><button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'attendance')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'attendance')}"></button></article>`).join('')}</div>
+    </div>`;
+  }
+  function scheduleTableContent(){
     if(plannerMode==='day')return dayTable();
     if(plannerMode==='week')return weekTable();
     if(plannerMode==='month')return monthTable();
     return yearTable();
   }
+  function scheduleContent(){
+    if(plannerTab==='schedule')return scheduleTableContent();
+    if(plannerTab==='tasks')return tasksSubpage();
+    if(plannerTab==='todos')return todosSubpage();
+    if(plannerTab==='goals')return goalsSubpage();
+    return attendanceSubpage();
+  }
 
   function scheduleView(){
-    const selected=periodLabel(plannerMode,plannerDate);
-    return `<section class="calendar-page planner-page" data-planner-mode="${plannerMode}">
-      <div class="planner-head"><div><div class="eyebrow">Schedule</div><h1>Your schedule</h1><p>Plan tasks, classes, to-dos, goals and attendance in one connected timeline.</p></div></div>
-      <div class="planner-add-proxies" aria-hidden="true">
-        ${PLANNER_TABS.map(type=>`<button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${type}" aria-label="Add ${esc(plannerTypeLabel(type))}"></button>`).join('')}
-      </div>
-      <div class="planner-loop-shell planner-mode-shell">
-        <div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Time scale">${modeLoop()}</div>
-      </div>
-      <div class="planner-loop-shell planner-date-shell">
-        <div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div>
-      </div>
-      <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
-      <nav class="planner-content-tabs" aria-label="Schedule content">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
-      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${esc(selected.primary)}</h2></div><small class="planner-content-help">${plannerMode==='week'?'Days across the top · time down the side':'Use Manage Content to add, edit or delete items'}</small></div>${scheduleContent()}</section>
+    const selected=periodLabel(plannerMode,plannerDate),isSchedule=plannerTab==='schedule';
+    const subtitle={schedule:'A timetable for dated and repeating schedule blocks.',tasks:'Focused work with priority and due-state tracking.',todos:'A lightweight checklist for quick actions.',goals:'Measurable outcomes with visible progress.',attendance:'Attendance records kept outside the timetable.'}[plannerTab]||'Personal planner';
+    return `<section class="calendar-page planner-page planner-subpage-${esc(plannerTab)}" data-planner-mode="${plannerMode}" data-planner-tab-current="${esc(plannerTab)}">
+      <div class="planner-head"><div><div class="eyebrow">Planner</div><h1>${esc(tabLabel(plannerTab))}</h1><p>${esc(subtitle)}</p></div></div>
+      <div class="planner-add-proxies" aria-hidden="true"><button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${esc(plannerTab)}" aria-label="Add ${esc(plannerTypeLabel(plannerTab))}"></button></div>
+      <nav class="planner-content-tabs" aria-label="Planner sections">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}">${esc(tabLabel(tab))}</button>`).join('')}</nav>
+      ${isSchedule?`<div class="planner-schedule-controls">
+        <div class="planner-loop-shell planner-mode-shell"><div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Time scale">${modeLoop()}</div></div>
+        <div class="planner-loop-shell planner-date-shell"><div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div></div>
+        <div class="planner-selected-summary"><strong>${esc(selected.primary)}</strong><span>${esc(selected.secondary)}</span><small>${esc(selected.meta)}</small></div>
+      </div>`:''}
+      <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${isSchedule?esc(selected.primary):esc(tabLabel(plannerTab))}</h2></div><small class="planner-content-help">${isSchedule?(plannerMode==='week'?'Days across the top · time down the side':'Only Schedule uses a timetable'):'This section uses its own purpose-built workspace'}</small></div>${scheduleContent()}</section>
     </section>`;
   }
 
@@ -491,13 +605,12 @@
     document.querySelectorAll('[data-planner-toggle]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;
       item.done=!item.done;
-      if(item.type==='goals'&&item.done)item.progress=100;
+      if(item.type==='goals')item.progress=item.done?100:Math.min(90,Number(item.progress||0));
       savePlannerItems(items);rerender();
     }));
     document.querySelectorAll('[data-planner-progress]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerProgress);if(!item||item.type!=='goals')return;
-      item.progress=Math.min(100,Math.max(0,Number(item.progress||0)+10));
-      item.done=item.progress>=100;
+      item.progress=Math.min(100,Math.max(0,Number(item.progress||0)+10));item.done=item.progress>=100;
       savePlannerItems(items);rerender();
     }));
     document.querySelectorAll('[data-planner-edit]').forEach(button=>button.addEventListener('click',event=>{
@@ -522,22 +635,28 @@
     const type=editing?.type||requestedType;
     const selected=periodLabel(plannerMode,plannerDate);
     const chosenDate=editing?.date||dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(editing?.time||timeOverride);
+    const chosenEnd=normalizePlannerTime(editing?.endTime||chosenTime);
     const title=editing?'Edit':'Add';
     const dateLabel=type==='goals'?'Target date':type==='tasks'||type==='todos'?'Due date':'Date';
-    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
-      <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${type==='tasks'?'A focused piece of work':type==='todos'?'A quick action to remember':type==='goals'?'A measurable outcome with progress':type==='schedule'?'A dated event or study session':'Track attendance for a class or event'}</small></div></div>
-      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Complete calculus revision':type==='attendance'?'Physics lecture':'Study session'}"></div>
-      <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
+    const isSchedule=type==='schedule';
+    const repeatOn=Boolean(editing?.repeat)&&['daily','weekly','monthly'].includes(String(editing?.recurrence||''));
+    root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet ${isSchedule?'planner-schedule-sheet':''}" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
+      <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${type==='tasks'?'Focused work with a due date':type==='todos'?'A quick action to remember':type==='goals'?'A measurable outcome with progress':type==='schedule'?'A premium block placed directly in your timetable':'Track attendance outside the timetable'}</small></div></div>
+      <div class="field"><label>${isSchedule?'Schedule item':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Complete calculus revision':type==='attendance'?'Physics lecture':'Study session'}"></div>
+      <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>${isSchedule?'Start time':'Time'}</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
+      ${isSchedule?`<div class="calendar-form-grid"><div class="field"><label>End time</label><input name="endTime" type="time" value="${esc(chosenEnd)}" required></div><div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}" placeholder="Optional room or place"></div></div>
+      <div class="planner-repeat-panel"><label class="planner-repeat-toggle"><span><strong>Repeat this schedule</strong><small>Keep it one-time, or repeat it automatically.</small></span><input type="checkbox" name="repeat" ${repeatOn?'checked':''}><i></i></label><div class="planner-repeat-options" id="planner-repeat-options" ${repeatOn?'':'hidden'}><div class="field"><label>Repeat</label><select name="recurrence"><option value="daily" ${editing?.recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${!editing?.recurrence||editing?.recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${editing?.recurrence==='monthly'?'selected':''}>Monthly</option></select></div><div class="field"><label>Repeat until <small>optional</small></label><input name="repeatUntil" type="date" min="${esc(chosenDate)}" value="${esc(editing?.repeatUntil||'')}"></div></div></div>`:''}
       ${type==='tasks'||type==='todos'||type==='goals'?`<div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div>`:''}
       ${type==='goals'?`<div class="field"><label>Progress</label><div class="planner-progress-field"><input name="progress" type="range" min="0" max="100" step="5" value="${Math.max(0,Math.min(100,Number(editing?.progress||0)))}"><output id="planner-progress-output">${Math.max(0,Math.min(100,Number(editing?.progress||0)))}%</output></div></div>`:''}
-      ${type==='schedule'?`<div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}" placeholder="Optional room or place"></div>`:''}
       ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
-      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional context, checklist or reminder">${esc(editing?.notes||'')}</textarea></div>
+      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="${isSchedule?'Optional details shown inside the schedule block':'Optional context, checklist or reminder'}">${esc(editing?.notes||'')}</textarea></div>
       <button class="btn btn-primary" type="submit">${editing?'Save changes':`Add ${esc(plannerTypeLabel(type))}`}</button>
     </form></section></div>`;
     const close=()=>closeOverlay();
     const progressInput=document.querySelector('#planner-entry-form [name="progress"]'),progressOutput=document.getElementById('planner-progress-output');
     progressInput?.addEventListener('input',()=>{if(progressOutput)progressOutput.value=`${progressInput.value}%`;});
+    const repeatInput=document.querySelector('#planner-entry-form [name="repeat"]'),repeatOptions=document.getElementById('planner-repeat-options');
+    repeatInput?.addEventListener('change',()=>{if(repeatOptions)repeatOptions.hidden=!repeatInput.checked;});
     document.getElementById('planner-entry-close').onclick=close;
     document.getElementById('planner-entry-overlay').onclick=event=>{if(event.target.id==='planner-entry-overlay')close();};
     document.getElementById('planner-entry-form').onsubmit=event=>{
@@ -546,9 +665,15 @@
         id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
         date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()
       };
-      if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
-      if(type==='schedule')payload.location=String(form.get('location')||'').trim();
-      else if(type==='attendance')payload.status=String(form.get('status')||'present');
+      if(!payload.title||!/^d{4}-d{2}-d{2}$/.test(payload.date))return;
+      if(type==='schedule'){
+        payload.endTime=normalizePlannerTime(form.get('endTime')||payload.time);
+        payload.location=String(form.get('location')||'').trim();
+        payload.repeat=Boolean(form.get('repeat'));
+        payload.recurrence=payload.repeat&&['daily','weekly','monthly'].includes(String(form.get('recurrence')))?String(form.get('recurrence')):'none';
+        payload.repeatUntil=payload.repeat?String(form.get('repeatUntil')||''):'';
+        if(payload.repeatUntil&&payload.repeatUntil<payload.date)return;
+      }else if(type==='attendance')payload.status=String(form.get('status')||'present');
       else{
         payload.priority=String(form.get('priority')||editing?.priority||'medium');
         payload.done=Boolean(editing?.done);
@@ -561,8 +686,7 @@
         const index=items.findIndex(item=>item.id===editing.id);
         if(index>=0)items[index]=payload;else items.push(payload);
       }else items.push(payload);
-      plannerTab=type;
-      savePlannerItems(items);close();render();
+      plannerTab=type;savePlannerItems(items);close();render();
     };
   }
 
