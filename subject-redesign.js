@@ -394,7 +394,7 @@
     document.querySelectorAll('[data-open-subject]').forEach(el=>{
       const open=()=>{touchRecent(el.dataset.openSubject);setHash(`subjects/subject/${encodeURIComponent(el.dataset.openSubject)}/overview`);};
       el.addEventListener('click',open);
-      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}});
     });
 
     document.getElementById('subject-r-new')?.addEventListener('click',()=>openSubjectSheet());
@@ -419,22 +419,22 @@
 
     document.querySelectorAll('[data-open-lecture]').forEach(el=>{
       const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;const lecture=subjectLectures(s.id).find(x=>x.id===el.dataset.openLecture);if(canContent('edit_content')){openLectureSheet(s,el.dataset.openLecture);return;}openLectureDetails(s,lecture);};
-      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}});
     });
     document.querySelectorAll('[data-open-exam]').forEach(el=>{
       const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openExamRedesign(s,el.dataset.openExam);};
-      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}});
     });
     document.querySelectorAll('[data-open-assignment]').forEach(el=>{
       const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId)||subject;if(s)openAssignmentRedesign(s,el.dataset.openAssignment);};
-      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}});
     });
   }
   function rebindSubjectCards(){
     document.querySelectorAll('[data-open-subject]').forEach(el=>{
       const open=()=>{touchRecent(el.dataset.openSubject);setHash(`subjects/subject/${encodeURIComponent(el.dataset.openSubject)}/overview`);};
       el.addEventListener('click',open);
-      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}});
     });
   }
 
