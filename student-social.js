@@ -352,16 +352,28 @@
   function chatAppShell(section,body,{thread=false,subpage=''}={}){
     const user=window.DafatiiAuth?.user;
     const avatar=esc((user?.displayName||'D').trim().slice(0,1).toUpperCase()||'D');
+    const activeCourse=window.DafatiiCourses?.active?.()||{};
+    const profileName=user?.displayName||'Dafatii user';
+    const profileRole=user?.platformRole||user?.accountType||'Student';
+    const profileEmail=user?.email||'—';
+    const profileStage=user?.studentStage||'—';
+    const profileCourse=activeCourse?.name||'—';
     const subpages=chatSubpages(section);
     const activeSubpage=subpage||subpages[0]?.[0]||'';
     return `<section class="chat-app-page ${thread?'thread-open':''}" data-chat-section="${esc(section)}" data-chat-subpage="${esc(activeSubpage)}">
       <header class="chat-app-topbar">
         <button class="chat-app-menu" id="chat-app-menu" aria-label="Open Chat menu" aria-expanded="false">${chatIcon('menu')}</button>
-        <a class="chat-app-brand" href="#chat/${chatSectionSlug(section)}" aria-label="Dafatii Chat home"><span class="chat-app-logo-mark">D</span><span class="chat-app-brand-copy"><strong>Dafatii</strong><small>People · Connect</small></span></a>
         <div class="chat-app-top-actions">
-          <button class="chat-app-search-top" id="chat-app-search-top" aria-label="Search this Chat page">${chatIcon('search')}</button>
-          <a class="chat-app-profile" href="#profile" aria-label="Profile"><span>${avatar}</span></a>
+          <button class="chat-app-profile" id="chat-app-profile" type="button" aria-label="Open Chat profile" aria-expanded="false" aria-controls="chat-app-profile-popover"><span>${avatar}</span></button>
         </div>
+        <section class="chat-app-profile-popover" id="chat-app-profile-popover" aria-label="Chat profile" hidden>
+          <div class="chat-app-profile-summary"><span>${avatar}</span><div><small>Chat profile</small><strong>${esc(profileName)}</strong><p>${esc(profileRole)}</p></div></div>
+          <dl>
+            <div><dt>Email</dt><dd>${esc(profileEmail)}</dd></div>
+            <div><dt>Study stage</dt><dd>${esc(profileStage)}</dd></div>
+            <div><dt>Active course</dt><dd>${esc(profileCourse)}</dd></div>
+          </dl>
+        </section>
       </header>
       <nav class="chat-app-subnav" aria-label="${esc(section)} subpages">
         ${subpages.map(([id,label])=>`<button type="button" data-chat-subpage="${esc(id)}" class="${id===activeSubpage?'active':''}" aria-current="${id===activeSubpage?'page':'false'}">${esc(label)}</button>`).join('')}
@@ -495,15 +507,17 @@
     const appRoot=document.querySelector('.chat-app-page'); if(!appRoot)return;
     const drawer=document.getElementById('chat-app-drawer');
     const menu=document.getElementById('chat-app-menu');
+    const profileButton=document.getElementById('chat-app-profile');
+    const profilePopover=document.getElementById('chat-app-profile-popover');
+    const closeProfile=()=>{if(!profileButton||!profilePopover)return;profilePopover.hidden=true;profileButton.setAttribute('aria-expanded','false');appRoot.classList.remove('profile-open');};
     const closeDrawer=()=>{appRoot.classList.remove('drawer-open');menu?.setAttribute('aria-expanded','false');};
-    menu?.addEventListener('click',()=>{const open=appRoot.classList.toggle('drawer-open');menu.setAttribute('aria-expanded',String(open));});
+    menu?.addEventListener('click',()=>{closeProfile();const open=appRoot.classList.toggle('drawer-open');menu.setAttribute('aria-expanded',String(open));});
+    profileButton?.addEventListener('click',event=>{event.stopPropagation();closeDrawer();if(!profilePopover)return;const open=profilePopover.hidden;profilePopover.hidden=!open;profileButton.setAttribute('aria-expanded',String(open));appRoot.classList.toggle('profile-open',open);});
+    appRoot.addEventListener('click',event=>{if(!event.target.closest('.chat-app-profile,.chat-app-profile-popover'))closeProfile();});
+    appRoot.addEventListener('keydown',event=>{if(event.key==='Escape'){closeProfile();closeDrawer();}});
     document.getElementById('chat-app-drawer-close')?.addEventListener('click',closeDrawer);
     document.getElementById('chat-app-drawer-backdrop')?.addEventListener('click',closeDrawer);
     drawer?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeDrawer));
-    document.getElementById('chat-app-search-top')?.addEventListener('click',()=>{
-      const input=document.getElementById('chatpro-search')||document.getElementById('chat-search');
-      input?.focus();input?.select?.();
-    });
     if(appRoot.dataset.chatSection==='Blogs & announcements'){
       document.querySelectorAll('[data-chat-subpage]').forEach(button=>button.addEventListener('click',()=>{
         chatFeedFilter=button.dataset.chatSubpage||'latest';
