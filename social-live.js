@@ -138,20 +138,23 @@
     return list;
   }
   function conversationCard(c,section){
-    const isDiscover=section==='groups'&&ui.filter.groups==='discover'&&!c.joined;
+    const isDiscoverGroup=section==='groups'&&ui.filter.groups==='discover'&&!c.joined;
+    const canPreview=Boolean(c.joined)||(c.kind==='anonymous'&&c.visibility==='public');
     const status=c.kind==='group'?(Number(c.memberCount||0)+' members'):(c.kind==='anonymous'?(Number(c.memberCount||0)+' participants'):'');
     const badge=c.kind==='anonymous'?'Anonymous':c.kind==='group'?'Group':'';
-    const href='#'+(c.joined?routeForSection(sectionForKind(c.kind))+'/'+encodeURIComponent(c.id):routeForSection(section));
-    return '<article class="live-chat-card kind-'+esc(c.kind)+'">'+
-      '<a class="live-chat-card-main" href="'+href+'" data-conversation-id="'+esc(c.id)+'" '+(c.joined?'':'data-discover-card="1"')+'>'+
+    const mainStart=canPreview
+      ? '<a class="live-chat-card-main" href="#'+routeForSection(sectionForKind(c.kind))+'/'+encodeURIComponent(c.id)+'" data-conversation-id="'+esc(c.id)+'">'
+      : '<div class="live-chat-card-main discover" aria-label="'+esc(c.name||'Conversation')+'">';
+    const mainEnd=canPreview?'</a>':'</div>';
+    return '<article class="live-chat-card kind-'+esc(c.kind)+'">'+mainStart+
       '<span class="live-chat-card-avatar">'+esc((c.name||'?').slice(0,2).toUpperCase())+'</span>'+
       '<span class="live-chat-card-copy"><span><strong>'+esc(c.name||'Conversation')+'</strong>'+(badge?'<em>'+badge+'</em>':'')+'</span><p>'+esc(c.lastMessage||c.topic||status||'No messages yet')+'</p>'+(status?'<small>'+esc(status)+'</small>':'')+'</span>'+
-      '<span class="live-chat-card-meta"><time>'+rel(c.lastMessageAt)+'</time>'+(c.unread?'<b>'+Number(c.unread)+'</b>':'')+'<i>›</i></span></a>'+
-      (isDiscover?'<button class="live-chat-join" data-join-conversation="'+esc(c.id)+'">Join</button>':'')+'</article>';
+      '<span class="live-chat-card-meta"><time>'+rel(c.lastMessageAt)+'</time>'+(c.unread?'<b>'+Number(c.unread)+'</b>':'')+(canPreview?'<i>›</i>':'')+'</span>'+mainEnd+
+      (isDiscoverGroup?'<button class="live-chat-join" data-join-conversation="'+esc(c.id)+'">Join</button>':'')+'</article>';
   }
   function sectionForKind(kind){return kind==='group'?'groups':kind==='anonymous'?'anonymous':'messages';}
   function searchRow(section){
-    const placeholder=section==='groups'?'Search groups, topics, or people…':section==='anonymous'?'Search anonymous rooms…':'Search chats and people…';
+    const placeholder=section==='groups'?'Search groups, topics, or people…':section==='anonymous'?'Search anonymous rooms…':section==='blogs'?'Search posts, topics, or people…':'Search chats and people…';
     return '<div class="live-chat-search"><label>'+icon('search')+'<input id="live-chat-search" value="'+esc(ui.query[section]||'')+'" placeholder="'+esc(placeholder)+'"></label>'+(section==='blogs'?'<button id="live-chat-saved" class="'+(cache.postsSavedOnly?'active':'')+'" aria-label="Show saved posts">⌑</button>':'')+'</div>';
   }
   function groupScopes(){
@@ -220,10 +223,13 @@
     const course=window.DafatiiCourses?.active?.();
     const courseCard=isGroup&&course?.id?'<a class="live-course-card" href="#subjects/All%20subjects"><span>▤</span><div><small>Course workspace</small><strong>'+esc(course.name||'Current course')+'</strong><p>Open subjects, lectures, exams, and assignments.</p></div><b>View Course</b></a>':'';
     const safety=c.kind==='anonymous'?'<div class="live-anon-safety"><span>◆</span><div><small>Pinned by Dafatii</small><strong>Be kind. Keep it constructive.</strong><p>Your public identity is not exposed in this room.</p></div></div>':'';
-    const memberPanel=isGroup&&ui.threadTab==='members'?'<div class="live-members">'+(members?members.map(m=>'<div><span>'+esc(m.name.slice(0,1).toUpperCase())+'</span><strong>'+esc(m.name)+'</strong><small>'+esc(m.role)+'</small></div>').join(''):loadingBlock('Loading members…'))+'</div>':'';
+    const memberPanel=isGroup&&ui.threadTab==='members'?'<div class="live-members">'+(members?members.map(m=>'<div><span>'+esc(m.name.slice(0,1).toUpperCase())+'</span><strong>'+esc(m.name)+'</strong><small>'+esc(m.role)+'</small></div>').join(''):(cache.error?errorBlock(cache.error):loadingBlock('Loading members…')))+'</div>':'';
     const timeline=ui.threadTab==='chat'?'<div class="live-messages" id="live-messages">'+(messages.length?messages.map(m=>messageRow(m,c)).join(''):'<div class="live-chat-empty compact"><strong>No messages yet</strong><p>Start the conversation below.</p></div>')+'</div>':'';
     const composer=ui.threadTab==='chat'?'<div class="live-composer"><button id="live-poll" aria-label="Create poll">＋</button><textarea id="live-message-input" rows="1" maxlength="5000" placeholder="'+esc(c.kind==='anonymous'?'Reply anonymously…':'Message '+c.name+'…')+'"></textarea><button id="live-send" aria-label="Send">'+icon('send')+'</button></div>':'';
-    return shell(section,'<div class="live-thread-shell"><header><a href="#'+routeForSection(sectionForKind(c.kind))+'" aria-label="Back">'+icon('back')+'</a><span class="live-thread-avatar">'+esc((c.name||'?').slice(0,2).toUpperCase())+'</span><div><strong>'+esc(c.name)+'</strong><small>'+esc(c.kind==='anonymous'?'Anonymous room':(c.memberCount?c.memberCount+' members':''))+'</small></div><button id="live-thread-more" aria-label="Conversation options">'+icon('more')+'</button></header>'+tabs+courseCard+safety+memberPanel+timeline+composer+'</div>',true);
+    const headerAction=c.joined
+      ? '<button id="live-thread-more" aria-label="Conversation options">'+icon('more')+'</button>'
+      : '<button id="live-thread-join" class="join" aria-label="Join conversation">Join</button>';
+    return shell(section,'<div class="live-thread-shell"><header><a href="#'+routeForSection(sectionForKind(c.kind))+'" aria-label="Back">'+icon('back')+'</a><span class="live-thread-avatar">'+esc((c.name||'?').slice(0,2).toUpperCase())+'</span><div><strong>'+esc(c.name)+'</strong><small>'+esc(c.kind==='anonymous'?'Anonymous room':(c.memberCount?c.memberCount+' members':''))+'</small></div>'+headerAction+'</header>'+tabs+courseCard+safety+memberPanel+timeline+composer+'</div>',true);
   }
 
   function renderChat(parts){
