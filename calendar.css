@@ -482,3 +482,172 @@ html[dir=rtl] .planner-week-day,html[dir=rtl] .planner-week-slot{direction:rtl;t
   .planner-todo-row>.planner-due{grid-column:2}
   .planner-repeat-options{grid-template-columns:1fr}
 }
+
+
+/* Planner v5 — distinct productivity tools + compact multi-schedule sheet */
+.planner-entry-overlay{
+  padding:12px!important;align-items:end!important;justify-items:center!important;overflow:hidden
+}
+body .planner-entry-overlay .planner-entry-sheet{
+  box-sizing:border-box!important;
+  width:min(520px,calc(100vw - 24px))!important;max-width:520px!important;
+  max-height:min(84dvh,760px)!important;margin:0 auto max(4px,env(safe-area-inset-bottom))!important;
+  padding:14px 14px calc(14px + env(safe-area-inset-bottom))!important;
+  border-radius:24px!important;border:1px solid var(--line)!important;overflow-x:hidden!important;overflow-y:auto!important
+}
+.planner-entry-sheet .entity-sheet-head{margin-bottom:12px;gap:12px}
+.planner-entry-sheet .entity-sheet-head h2{font-size:1.35rem;line-height:1.08}
+.planner-entry-sheet .entity-sheet-head p{max-width:390px;margin:5px 0 0;color:var(--muted);font:650 9px/1.4 Manrope,sans-serif}
+.planner-entry-sheet .field{margin-bottom:12px}
+.planner-entry-sheet .field label{font-size:9px}
+.planner-entry-sheet .field input,
+.planner-entry-sheet .field select{min-height:44px;height:44px}
+.planner-entry-sheet .field textarea{min-height:78px;max-height:130px;resize:vertical}
+.planner-entry-sheet .calendar-form-grid{gap:9px}
+.planner-entry-sheet>.entity-sheet-handle{margin-bottom:10px}
+
+/* Multi-item schedule builder */
+.planner-schedule-builder{display:grid;gap:11px}
+.planner-schedule-drafts{display:grid;gap:10px}
+.planner-schedule-draft{
+  position:relative;padding:12px 12px 4px;border:1px solid color-mix(in srgb,var(--accent) 13%,var(--line));
+  border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 98%,#fff),color-mix(in srgb,var(--surface-2) 58%,var(--surface)));
+  box-shadow:0 8px 20px rgba(17,30,55,.045),inset 0 1px 0 rgba(255,255,255,.58)
+}
+.planner-schedule-draft>header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--line)
+}
+.planner-schedule-draft>header small{display:block;color:var(--accent);font:850 7.5px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.11em}
+.planner-schedule-draft>header strong{display:block;margin-top:4px;font:820 11px/1.2 Manrope,sans-serif;color:var(--text)}
+.planner-draft-remove{
+  width:32px;height:32px;border:1px solid color-mix(in srgb,#dc3545 18%,var(--line));border-radius:11px;
+  background:color-mix(in srgb,#dc3545 6%,var(--surface));color:#c93443;font:700 18px/1 sans-serif
+}
+.planner-add-another{
+  width:100%;min-height:58px;padding:8px 11px;border:1px dashed color-mix(in srgb,var(--accent) 34%,var(--line));
+  border-radius:16px;background:color-mix(in srgb,var(--accent) 3%,var(--surface));color:var(--text);
+  display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:center;text-align:start
+}
+.planner-add-another>span{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent);font:900 18px/1 Manrope,sans-serif}
+.planner-add-another strong{display:block;font:820 10.5px/1.2 Manrope,sans-serif}
+.planner-add-another small{display:block;margin-top:3px;color:var(--muted);font:650 8px/1.25 Manrope,sans-serif}
+.planner-add-another:disabled{opacity:.4;cursor:not-allowed}
+.planner-sheet-actions{
+  position:sticky;bottom:calc(-14px - env(safe-area-inset-bottom));z-index:5;
+  margin:2px -14px calc(-14px - env(safe-area-inset-bottom));padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);
+  background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+.planner-sheet-actions>span{color:var(--muted);font:750 8.5px/1 Manrope,sans-serif}
+.planner-sheet-actions .btn{min-width:160px}
+.planner-schedule-draft .planner-repeat-panel{margin:0 0 12px;padding:9px;border-radius:14px}
+.planner-schedule-draft .planner-repeat-options{gap:8px;margin-top:9px;padding-top:9px}
+
+/* Tasks: execution/focus tool */
+.planner-task-dashboard{
+  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(240px,.9fr);gap:10px
+}
+.planner-task-focus{
+  min-height:118px;padding:18px;border:1px solid color-mix(in srgb,#8b5cf6 16%,var(--line));border-radius:22px;
+  background:radial-gradient(circle at 100% 0%,color-mix(in srgb,#8b5cf6 13%,transparent),transparent 45%),var(--surface);
+  box-shadow:0 12px 30px rgba(17,30,55,.055)
+}
+.planner-task-focus small{display:block;color:#7c3aed;font:850 8px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.12em}
+.planner-task-focus strong{display:block;margin-top:9px;font:900 34px/1 Manrope,sans-serif;letter-spacing:-.05em}
+.planner-task-focus strong em{font:800 12px/1 Manrope,sans-serif;font-style:normal;color:var(--muted)}
+.planner-task-focus span{display:block;margin-top:9px;color:var(--muted);font:700 9px/1.2 Manrope,sans-serif}
+.planner-task-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.planner-task-stats>div{
+  display:grid;place-items:center;align-content:center;min-height:118px;border:1px solid var(--line);border-radius:18px;background:var(--surface)
+}
+.planner-task-stats b{font:900 20px/1 Manrope,sans-serif}
+.planner-task-stats span{margin-top:6px;color:var(--muted);font:750 7.5px/1.2 Manrope,sans-serif;text-align:center}
+.planner-task-card{
+  grid-template-columns:48px minmax(0,1fr)!important;align-items:stretch!important;padding:0!important;overflow:hidden
+}
+.planner-task-card::before{display:none}
+.planner-task-rail{
+  padding:12px 7px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:10px;
+  background:linear-gradient(180deg,color-mix(in srgb,#8b5cf6 10%,var(--surface)),color-mix(in srgb,#8b5cf6 3%,var(--surface)))
+}
+.planner-task-duration{
+  writing-mode:vertical-rl;transform:rotate(180deg);color:#7c3aed;font:850 7px/1 Manrope,sans-serif;letter-spacing:.05em
+}
+.planner-task-copy{padding:13px 13px 12px 0}
+html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
+.planner-task-state{
+  display:inline-flex;align-items:center;min-height:20px;padding:3px 7px;border-radius:999px;
+  background:color-mix(in srgb,#8b5cf6 8%,var(--surface));color:#7c3aed;font:800 7.5px/1 Manrope,sans-serif
+}
+.planner-task-card.state-doing{border-color:color-mix(in srgb,#8b5cf6 35%,var(--line));box-shadow:0 12px 30px color-mix(in srgb,#8b5cf6 9%,transparent)}
+.planner-task-actions{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+.planner-task-actions button{
+  min-height:31px;padding:0 10px;border:0;border-radius:10px;background:#8b5cf6;color:#fff;font:820 8px/1 Manrope,sans-serif
+}
+.planner-task-actions span{color:var(--muted);font:700 8px/1.2 Manrope,sans-serif;text-align:end}
+
+/* To-do: frictionless checklist grouped by time */
+.planner-todo-group{display:grid;gap:7px}
+.planner-todo-group>header{display:flex;align-items:end;justify-content:space-between;padding:2px 3px}
+.planner-todo-group>header small{display:block;color:#0284c7;font:850 7.5px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em}
+.planner-todo-group>header h3{margin:4px 0 0;font:850 15px/1.1 Manrope,sans-serif}
+.planner-todo-group>header>span{min-width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);font:850 8px/1 Manrope,sans-serif}
+.planner-todo-row{
+  grid-template-columns:38px minmax(0,1fr) auto!important;padding:10px 11px!important;
+  transition:transform .13s ease,border-color .13s ease,opacity .13s ease
+}
+.planner-todo-row:hover{transform:translateY(-1px);border-color:color-mix(in srgb,#0ea5e9 25%,var(--line))}
+.planner-todo-copy{min-width:0}
+.planner-todo-kicker{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:5px}
+.planner-todo-kicker>span:first-child{
+  display:inline-flex;padding:3px 7px;border-radius:999px;background:color-mix(in srgb,#0ea5e9 8%,var(--surface));color:#0284c7;
+  font:800 7px/1 Manrope,sans-serif
+}
+.planner-todo-copy>strong{font:830 11.5px/1.2 Manrope,sans-serif}
+.planner-todo-copy>small{display:block;margin-top:5px;color:var(--muted);font:700 7.5px/1.2 Manrope,sans-serif}
+.planner-todo-tomorrow{
+  min-height:32px;padding:0 9px;border:1px solid color-mix(in srgb,#0ea5e9 18%,var(--line));border-radius:10px;
+  background:color-mix(in srgb,#0ea5e9 5%,var(--surface));color:#0284c7;font:820 7.5px/1 Manrope,sans-serif
+}
+
+/* Goals: measurable target tracking */
+.planner-goal-measure{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:12px;padding:9px 10px;border-radius:13px;
+  background:color-mix(in srgb,#10b981 6%,var(--surface-2))
+}
+.planner-goal-measure strong{font:900 17px/1 Manrope,sans-serif;color:#059669}
+.planner-goal-measure strong small{font:750 8px/1 Manrope,sans-serif;color:var(--muted)}
+.planner-goal-measure>span{color:var(--muted);font:750 8px/1 Manrope,sans-serif}
+.planner-goal-measure-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.planner-goal-form-preview{
+  --goal-progress:0%;position:relative;height:28px;margin:0 0 12px;border-radius:999px;overflow:hidden;
+  background:color-mix(in srgb,#10b981 7%,var(--surface-2))
+}
+.planner-goal-form-preview>span{position:absolute;inset-block:0;inset-inline-start:0;width:var(--goal-progress);background:linear-gradient(90deg,#10b981,#34d399)}
+.planner-goal-form-preview>strong{position:relative;z-index:1;display:block;padding-inline:10px;text-align:end;font:850 8px/28px Manrope,sans-serif;color:#047857}
+
+/* Distinct form accents */
+.planner-tasks-sheet .planner-entry-type-banner{border-color:color-mix(in srgb,#8b5cf6 18%,var(--line))}
+.planner-todos-sheet .planner-entry-type-banner{border-color:color-mix(in srgb,#0ea5e9 18%,var(--line))}
+.planner-goals-sheet .planner-entry-type-banner{border-color:color-mix(in srgb,#10b981 18%,var(--line))}
+
+@media(max-width:767px){
+  .planner-entry-overlay{padding:6px!important}
+  body .planner-entry-overlay .planner-entry-sheet{
+    width:calc(100vw - 12px)!important;max-width:calc(100vw - 12px)!important;
+    max-height:86dvh!important;margin:0 auto max(6px,env(safe-area-inset-bottom))!important;
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom))!important;border-radius:22px!important
+  }
+  .planner-entry-sheet .calendar-form-grid,.planner-repeat-options,.planner-goal-measure-form{grid-template-columns:1fr}
+  .planner-task-dashboard{grid-template-columns:1fr}
+  .planner-task-focus{min-height:100px}
+  .planner-task-stats>div{min-height:76px}
+  .planner-task-card{grid-template-columns:44px minmax(0,1fr)!important}
+  .planner-task-copy{padding:11px 10px 10px 0}
+  html[dir=rtl] .planner-task-copy{padding:11px 0 10px 10px}
+  .planner-task-actions{align-items:flex-start;flex-direction:column}
+  .planner-todo-row{grid-template-columns:36px minmax(0,1fr)!important}
+  .planner-todo-tomorrow{grid-column:2;justify-self:start}
+  .planner-sheet-actions{margin-inline:-12px;padding-inline:12px}
+  .planner-sheet-actions .btn{min-width:145px}
+}
