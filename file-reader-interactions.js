@@ -11,8 +11,8 @@
 
   const isArabic = () => (document.documentElement.lang || '').toLowerCase().startsWith('ar');
   const copy = () => isArabic()
-    ? { title:'جارٍ تجهيز الملف', waiting:'يرجى الانتظار حتى يصبح الملف جاهزاً بالكامل.', pinch:'استخدم إصبعين للتكبير والتصغير.' }
-    : { title:'Preparing file', waiting:'Please wait until the file is completely ready.', pinch:'Use two fingers to zoom in and out.' };
+    ? { title:'جارٍ تجهيز الملف', waiting:'يرجى الانتظار حتى يصبح الملف جاهزاً بالكامل.', pinch:'استخدم إصبعين للتكبير والتصغير. انقر نقراً مزدوجاً للعودة إلى 100٪.' }
+    : { title:'Preparing file', waiting:'Please wait until the file is completely ready.', pinch:'Pinch to zoom. Double-click or double-tap to return to 100%.' };
 
   function fileKey(value) {
     return value == null ? '' : String(value);
@@ -154,6 +154,7 @@
       if (!gesture || (event.touches && event.touches.length >= 2)) return;
       const ratio = gesture.ratio;
       gesture = null;
+      stage.dataset.readerPinchEndedAt = String(Date.now());
       clearPreview();
       if (Math.abs(ratio - 1) < .07) return;
       const rawSteps = Math.max(1, Math.round(Math.abs(Math.log(ratio) / Math.log(ZOOM_STEP))));
@@ -164,6 +165,41 @@
 
     stage.addEventListener('touchend', finish, { passive:false });
     stage.addEventListener('touchcancel', finish, { passive:false });
+  }
+
+  function bindZoomReset(root, controls = {}) {
+    if (typeof controls.resetZoom !== 'function') return;
+    const stage=root.querySelector('[data-pdf-stage], [data-office-stage]');
+    if(!stage || stage.dataset.readerZoomResetBound==='1')return;
+    stage.dataset.readerZoomResetBound='1';
+
+    const reset=event=>{
+      if(!root.classList.contains('reader-ready'))return;
+      const target=event?.target;
+      if(target?.closest?.('button,a,input,textarea,select,[contenteditable="true"]'))return;
+      event?.preventDefault?.();
+      controls.resetZoom();
+      root.classList.remove('reader-chrome-hidden');
+    };
+
+    stage.addEventListener('dblclick',reset,{passive:false});
+
+    let lastTapAt=0,lastTapX=0,lastTapY=0;
+    stage.addEventListener('touchend',event=>{
+      if(event.touches.length!==0 || event.changedTouches.length!==1)return;
+      const now=Date.now();
+      if(now-Number(stage.dataset.readerPinchEndedAt||0)<450){lastTapAt=0;return;}
+      const touch=event.changedTouches[0];
+      const closeEnough=Math.hypot(touch.clientX-lastTapX,touch.clientY-lastTapY)<34;
+      if(lastTapAt && now-lastTapAt<320 && closeEnough){
+        lastTapAt=0;
+        reset(event);
+        return;
+      }
+      lastTapAt=now;
+      lastTapX=touch.clientX;
+      lastTapY=touch.clientY;
+    },{passive:false});
   }
 
   function bindChromeAutoHide(root) {
@@ -198,6 +234,7 @@
         installLoadingScreen(root);
         if (context?.fileId != null) rootsByFileId.set(fileKey(context.fileId), root);
         bindPinchZoom(root, controls);
+        bindZoomReset(root, controls);
       }
       const dock=originalMountDock(root, context, controls);
       if(root?.classList?.contains('file-workspace'))bindChromeAutoHide(root);
