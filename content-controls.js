@@ -66,7 +66,7 @@
 
   function isIdentityNode(node) {
     if (!(node instanceof Element)) return false;
-    if (node.matches('article,tr,li')) return true;
+    if (node.matches('article,tr,li,.cal-head-button,.cal-cell')) return true;
     if ([...node.attributes].some(attr => /^data-(?!dcc-).*(?:id|key|user|subject|lecture|note|resource|assignment|deadline|material|teacher|student|room|course)$/i.test(attr.name))) return true;
     const cls = String(node.className || '');
     return /(?:^|\s)[^\s]*(?:card|row|item|entry|tile|record)(?:\s|$)/i.test(cls) && !/(actions?|toolbar|controls?)/i.test(cls);
