@@ -30,7 +30,7 @@ assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load b
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
+assert.match(index, /app\.js\?v=20260919-1/, 'the cleaned subject interface must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
@@ -142,6 +142,9 @@ assert.match(app, /data-landing-section="home"[^>]*aria-label[^>]*>\$\{icon\('na
 assert.match(app, /data-landing-section="about"/, 'the landing navigation must expose About us');
 assert.match(app, /data-landing-section="contact"/, 'the landing navigation must expose Contact us');
 assert.doesNotMatch(app, /Swipe right for edit or left for delete/, 'subject and lecture pages must not show swipe instructions');
+assert.doesNotMatch(app, /class="subject-swipe[^\"]*" data-subject-id=/, 'Subjects cards must not use the swipe container');
+assert.doesNotMatch(app, /subject-swipe-action[^\n]*data-(?:edit|delete)-subject/, 'Subjects cards must not render swipe edit/delete actions');
+assert.match(app, /class="subject-card-wrap[^\"]*" data-subject-id=/, 'Subjects cards must use a fixed non-swipe wrapper');
 const calendarUi = fs.readFileSync('calendar.js', 'utf8');
 const calendarCss = fs.readFileSync('calendar.css', 'utf8');
 assert.doesNotMatch(calendarUi, /calendar-toolbar|repeatLabel|Tap a row\/column header to edit/, 'calendar metadata badges must be removed from markup and code');
