@@ -348,56 +348,84 @@
     if(date===today)return '<span class="planner-due today">Due today</span>';
     return `<span class="planner-due">Due ${esc(date)}</span>`;
   }
+  const taskState = item => item.done ? 'done' : (['backlog','doing'].includes(String(item.taskState||'')) ? String(item.taskState) : 'backlog');
+  const taskEstimate = item => Math.max(5,Math.min(480,Number(item.estimatedMinutes||30)));
+  const goalTarget = item => Math.max(1,Number(item.goalTarget||100));
+  const goalCurrent = item => Math.max(0,Number(item.goalCurrent ?? item.progress ?? 0));
+  const goalProgress = item => Math.max(0,Math.min(100,Math.round((goalCurrent(item)/goalTarget(item))*100)));
+  const goalUnit = item => String(item.goalUnit||'%').trim()||'%';
+
   function taskCard(item){
-    const priority=String(item.priority||'medium');
-    return `<article class="planner-task-card ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
-      <button class="planner-task-check" data-planner-toggle="${esc(item.id)}" aria-label="${item.done?'Mark incomplete':'Mark complete'}">${item.done?'✓':''}</button>
-      <div class="planner-task-copy"><div class="planner-card-kicker"><span class="planner-priority-label ${esc(priority)}">${esc(priorityLabel(priority)||'Medium priority')}</span>${dueBadge(item)}</div><h3>${esc(item.title||'Untitled task')}</h3>${item.notes?`<p>${esc(item.notes)}</p>`:''}<small>${esc(normalizePlannerTime(item.time))}</small></div>
+    const priority=String(item.priority||'medium'),state=taskState(item),estimate=taskEstimate(item);
+    return `<article class="planner-task-card state-${esc(state)} ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
+      <div class="planner-task-rail"><button class="planner-task-check" data-planner-toggle="${esc(item.id)}" aria-label="${item.done?'Reopen task':'Complete task'}">${item.done?'✓':'◦'}</button><span class="planner-task-duration">${estimate}m</span></div>
+      <div class="planner-task-copy">
+        <div class="planner-card-kicker"><span class="planner-priority-label ${esc(priority)}">${esc(priorityLabel(priority)||'Medium priority')}</span><span class="planner-task-state">${state==='doing'?'In progress':state==='done'?'Completed':'Backlog'}</span>${dueBadge(item)}</div>
+        <h3>${esc(item.title||'Untitled task')}</h3>${item.notes?`<p>${esc(item.notes)}</p>`:''}
+        <div class="planner-task-actions">
+          ${!item.done?`<button type="button" data-planner-task-state="${esc(item.id)}" data-next-state="${state==='doing'?'backlog':'doing'}">${state==='doing'?'Pause':'Start focus'}</button>`:''}
+          <span>${esc(normalizePlannerTime(item.time))} · ${estimate} min focus block</span>
+        </div>
+      </div>
       <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'task')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'task')}"></button>
     </article>`;
   }
   function tasksSubpage(){
-    const items=plannerSorted('tasks'),open=items.filter(item=>!item.done),done=items.filter(item=>item.done),high=open.filter(item=>item.priority==='high');
-    if(!items.length)return premiumEmpty('tasks','No tasks yet','Use Manage Content → Add to create a focused task with priority and a due time.');
+    const items=plannerSorted('tasks'),open=items.filter(item=>!item.done),doing=open.filter(item=>taskState(item)==='doing'),done=items.filter(item=>item.done),planned=open.reduce((sum,item)=>sum+taskEstimate(item),0);
+    if(!items.length)return premiumEmpty('tasks','No tasks yet','Create focused work with a priority, due time and estimated focus duration.');
     return `<div class="planner-subpage planner-tasks-page">
-      <div class="planner-metrics"><div><strong>${open.length}</strong><span>Open</span></div><div><strong>${high.length}</strong><span>High priority</span></div><div><strong>${done.length}</strong><span>Completed</span></div></div>
-      <div class="planner-section-head"><div><small>Work queue</small><h3>Tasks</h3></div><span>${items.length} total</span></div>
+      <div class="planner-task-dashboard">
+        <div class="planner-task-focus"><small>Focus load</small><strong>${planned}<em> min</em></strong><span>${doing.length?doing.length+' active now':'Nothing in progress'}</span></div>
+        <div class="planner-task-stats"><div><b>${open.length}</b><span>Open</span></div><div><b>${doing.length}</b><span>In progress</span></div><div><b>${done.length}</b><span>Done</span></div></div>
+      </div>
+      <div class="planner-section-head"><div><small>Execution queue</small><h3>Tasks</h3></div><span>Start → focus → finish</span></div>
       <div class="planner-task-stack">${items.map(taskCard).join('')}</div>
     </div>`;
   }
+
   function todoRow(item){
+    const list=String(item.listLabel||'General').trim()||'General';
     return `<article class="planner-todo-row ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
       <button class="planner-todo-check" data-planner-toggle="${esc(item.id)}" aria-label="${item.done?'Mark incomplete':'Complete to-do'}"><span>${item.done?'✓':''}</span></button>
-      <div><strong>${esc(item.title||'Untitled to-do')}</strong><small>${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</small>${item.notes?`<p>${esc(item.notes)}</p>`:''}</div>
-      ${dueBadge(item)}
+      <div class="planner-todo-copy"><div class="planner-todo-kicker"><span>${esc(list)}</span>${dueBadge(item)}</div><strong>${esc(item.title||'Untitled to-do')}</strong>${item.notes?`<p>${esc(item.notes)}</p>`:''}<small>${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</small></div>
+      ${!item.done?`<button class="planner-todo-tomorrow" type="button" data-planner-todo-tomorrow="${esc(item.id)}" aria-label="Move to tomorrow">Tomorrow</button>`:''}
       <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'to-do')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'to-do')}"></button>
     </article>`;
   }
   function todosSubpage(){
-    const items=plannerSorted('todos'),done=items.filter(item=>item.done).length,total=items.length,percent=total?Math.round(done/total*100):0;
-    if(!items.length)return premiumEmpty('todos','Your to-do list is clear','Add quick actions here; they stay separate from your timetable.');
+    const items=plannerSorted('todos'),today=dateKey(new Date()),doneItems=items.filter(item=>item.done),todayItems=items.filter(item=>!item.done&&item.date===today),upcoming=items.filter(item=>!item.done&&item.date!==today),total=items.length,percent=total?Math.round(doneItems.length/total*100):0;
+    if(!items.length)return premiumEmpty('todos','Your checklist is clear','Use To-do for quick actions. Check them off or move an unfinished item to tomorrow in one tap.');
+    const group=(title,copy,rows)=>rows.length?`<section class="planner-todo-group"><header><div><small>${esc(copy)}</small><h3>${esc(title)}</h3></div><span>${rows.length}</span></header><div class="planner-todo-list">${rows.map(todoRow).join('')}</div></section>`:'';
     return `<div class="planner-subpage planner-todos-page">
-      <div class="planner-todo-hero"><div><small>Completion</small><strong>${percent}%</strong><span>${done} of ${total} completed</span></div><div class="planner-todo-ring" style="--todo-progress:${percent}%"><b>${percent}</b></div></div>
+      <div class="planner-todo-hero"><div><small>Checklist completion</small><strong>${percent}%</strong><span>${doneItems.length} of ${total} checked off</span></div><div class="planner-todo-ring" style="--todo-progress:${percent}%"><b>${percent}</b></div></div>
       <div class="planner-todo-progress"><span style="--todo-progress:${percent}%"></span></div>
-      <div class="planner-todo-list">${items.map(todoRow).join('')}</div>
+      ${group('Today','Do next',todayItems)}${group('Upcoming','Later',upcoming)}${group('Completed','Archive',doneItems)}
     </div>`;
   }
+
   function goalCard(item){
-    const progress=Math.max(0,Math.min(100,Number(item.progress||0))),priority=String(item.priority||'medium');
+    const progress=goalProgress(item),priority=String(item.priority||'medium'),current=goalCurrent(item),target=goalTarget(item),unit=goalUnit(item);
     return `<article class="planner-goal-card ${item.done?'done':''}" data-planner-entry-id="${esc(item.id)}">
       <div class="planner-goal-head"><span class="planner-goal-icon">◇</span><div><small>${esc(priorityLabel(priority)||'Medium priority')}</small><h3>${esc(item.title||'Untitled goal')}</h3></div><strong>${progress}%</strong></div>
       ${item.notes?`<p>${esc(item.notes)}</p>`:''}
+      <div class="planner-goal-measure"><strong>${current.toLocaleString()} <small>${esc(unit)}</small></strong><span>of ${target.toLocaleString()} ${esc(unit)}</span></div>
       <div class="planner-goal-track"><span style="--goal-progress:${progress}%"></span></div>
-      <div class="planner-goal-foot"><span>Target ${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</span><div><button data-planner-progress="${esc(item.id)}" ${item.done?'disabled':''}>+10%</button><button data-planner-toggle="${esc(item.id)}">${item.done?'Reopen':'Complete'}</button></div></div>
+      <div class="planner-goal-foot"><span>Target ${esc(item.date||'No date')} · ${esc(normalizePlannerTime(item.time))}</span><div><button type="button" data-planner-goal-step="${esc(item.id)}" ${item.done?'disabled':''}>+${target<=10?1:Math.max(1,Math.round(target/10))} ${esc(unit)}</button><button data-planner-toggle="${esc(item.id)}">${item.done?'Reopen':'Complete'}</button></div></div>
       <button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'goal')}"></button><button class="dcc-native-action" type="button" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'goal')}"></button>
     </article>`;
   }
   function goalsSubpage(){
     const items=plannerSorted('goals'),active=items.filter(item=>!item.done),complete=items.filter(item=>item.done);
-    if(!items.length)return premiumEmpty('goals','No active goals','Create a measurable goal, set a target date and move it forward in 10% steps.');
-    const avg=Math.round(items.reduce((sum,item)=>sum+Math.max(0,Math.min(100,Number(item.progress||0))),0)/items.length);
-    return `<div class="planner-subpage planner-goals-page"><div class="planner-goals-hero"><div><small>Overall progress</small><strong>${avg}%</strong><span>${active.length} active · ${complete.length} complete</span></div><div class="planner-goals-orbit" style="--goal-progress:${avg}%"><b>◇</b></div></div><div class="planner-goal-grid">${items.map(goalCard).join('')}</div></div>`;
+    if(!items.length)return premiumEmpty('goals','No measurable goals','Set a numeric target and unit, then log progress until the target is reached.');
+    const avg=Math.round(items.reduce((sum,item)=>sum+goalProgress(item),0)/items.length);
+    const nearest=active.slice().sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999')))[0];
+    return `<div class="planner-subpage planner-goals-page">
+      <div class="planner-goals-hero"><div><small>Portfolio progress</small><strong>${avg}%</strong><span>${active.length} active · ${complete.length} reached${nearest?` · next target ${esc(nearest.date)}`:''}</span></div><div class="planner-goals-orbit" style="--goal-progress:${avg}%"><b>◇</b></div></div>
+      <div class="planner-section-head"><div><small>Measurable outcomes</small><h3>Goals</h3></div><span>Log real progress, not just status</span></div>
+      <div class="planner-goal-grid">${items.map(goalCard).join('')}</div>
+    </div>`;
   }
+
   function attendanceSubpage(){
     const items=plannerSorted('attendance');
     const counts={present:0,late:0,absent:0};items.forEach(item=>{const key=String(item.status||'present');if(key in counts)counts[key]++;});
