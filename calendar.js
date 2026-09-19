@@ -682,6 +682,20 @@
     if(plannerMode==='month')return dateKey(new Date(plannerDate.getFullYear(),plannerDate.getMonth(),1));
     return dateKey(new Date(plannerDate.getFullYear(),0,1));
   }
+  function scheduleDraftMarkup(values={},index=0,removable=false){
+    const date=String(values.date||defaultEntryDate()),time=normalizePlannerTime(values.time||'09:00'),endTime=normalizePlannerTime(values.endTime||values.time||'10:00');
+    const repeat=Boolean(values.repeat)&&['daily','weekly','monthly'].includes(String(values.recurrence||''));
+    const recurrence=['daily','weekly','monthly'].includes(String(values.recurrence||''))?String(values.recurrence):'weekly';
+    return `<article class="planner-schedule-draft" data-schedule-draft>
+      <header><div><small>Schedule item ${index+1}</small><strong>${esc(values.title||'New timetable block')}</strong></div>${removable?`<button type="button" class="planner-draft-remove" data-remove-schedule-row aria-label="Remove schedule item">×</button>`:''}</header>
+      <div class="field"><label>Schedule item</label><input data-schedule-field="title" maxlength="140" required value="${esc(values.title||'')}" placeholder="Study session, lecture, meeting…"></div>
+      <div class="calendar-form-grid"><div class="field"><label>Date</label><input data-schedule-field="date" type="date" value="${esc(date)}" required></div><div class="field"><label>Start time</label><input data-schedule-field="time" type="time" value="${esc(time)}" required></div></div>
+      <div class="calendar-form-grid"><div class="field"><label>End time</label><input data-schedule-field="endTime" type="time" value="${esc(endTime)}" required></div><div class="field"><label>Location</label><input data-schedule-field="location" maxlength="100" value="${esc(values.location||'')}" placeholder="Optional room or place"></div></div>
+      <div class="planner-repeat-panel"><label class="planner-repeat-toggle"><span><strong>Repeat this item</strong><small>Leave off for a one-time block.</small></span><input data-schedule-field="repeat" data-schedule-repeat type="checkbox" ${repeat?'checked':''}><i></i></label><div class="planner-repeat-options" ${repeat?'':'hidden'}><div class="field"><label>Cadence</label><select data-schedule-field="recurrence"><option value="daily" ${recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${recurrence==='monthly'?'selected':''}>Monthly</option></select></div><div class="field"><label>Repeat until <small>optional</small></label><input data-schedule-field="repeatUntil" type="date" min="${esc(date)}" value="${esc(values.repeatUntil||'')}"></div></div></div>
+      <div class="field"><label>Notes</label><textarea data-schedule-field="notes" maxlength="500" placeholder="Optional details shown inside the schedule block">${esc(values.notes||'')}</textarea></div>
+    </article>`;
+  }
+
   function openPlannerEntrySheet(dateOverride='',timeOverride='09:00',editId='',typeOverride=''){
     const root=document.getElementById('overlay-root');if(!root)return;
     const allItems=plannerItems(),editing=editId?allItems.find(item=>item.id===editId):null;
@@ -689,59 +703,107 @@
     const type=editing?.type||requestedType;
     const selected=periodLabel(plannerMode,plannerDate);
     const chosenDate=editing?.date||dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(editing?.time||timeOverride);
-    const chosenEnd=normalizePlannerTime(editing?.endTime||chosenTime);
-    const title=editing?'Edit':'Add';
-    const dateLabel=type==='goals'?'Target date':type==='tasks'||type==='todos'?'Due date':'Date';
-    const isSchedule=type==='schedule';
-    const repeatOn=Boolean(editing?.repeat)&&['daily','weekly','monthly'].includes(String(editing?.recurrence||''));
-    root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet ${isSchedule?'planner-schedule-sheet':''}" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
-      <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${type==='tasks'?'Focused work with a due date':type==='todos'?'A quick action to remember':type==='goals'?'A measurable outcome with progress':type==='schedule'?'A premium block placed directly in your timetable':'Track attendance outside the timetable'}</small></div></div>
-      <div class="field"><label>${isSchedule?'Schedule item':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Complete calculus revision':type==='attendance'?'Physics lecture':'Study session'}"></div>
-      <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>${isSchedule?'Start time':'Time'}</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
-      ${isSchedule?`<div class="calendar-form-grid"><div class="field"><label>End time</label><input name="endTime" type="time" value="${esc(chosenEnd)}" required></div><div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}" placeholder="Optional room or place"></div></div>
-      <div class="planner-repeat-panel"><label class="planner-repeat-toggle"><span><strong>Repeat this schedule</strong><small>Keep it one-time, or repeat it automatically.</small></span><input type="checkbox" name="repeat" ${repeatOn?'checked':''}><i></i></label><div class="planner-repeat-options" id="planner-repeat-options" ${repeatOn?'':'hidden'}><div class="field"><label>Repeat</label><select name="recurrence"><option value="daily" ${editing?.recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${!editing?.recurrence||editing?.recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${editing?.recurrence==='monthly'?'selected':''}>Monthly</option></select></div><div class="field"><label>Repeat until <small>optional</small></label><input name="repeatUntil" type="date" min="${esc(chosenDate)}" value="${esc(editing?.repeatUntil||'')}"></div></div></div>`:''}
-      ${type==='tasks'||type==='todos'||type==='goals'?`<div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div>`:''}
-      ${type==='goals'?`<div class="field"><label>Progress</label><div class="planner-progress-field"><input name="progress" type="range" min="0" max="100" step="5" value="${Math.max(0,Math.min(100,Number(editing?.progress||0)))}"><output id="planner-progress-output">${Math.max(0,Math.min(100,Number(editing?.progress||0)))}%</output></div></div>`:''}
-      ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
-      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="${isSchedule?'Optional details shown inside the schedule block':'Optional context, checklist or reminder'}">${esc(editing?.notes||'')}</textarea></div>
-      <button class="btn btn-primary" type="submit">${editing?'Save changes':`Add ${esc(plannerTypeLabel(type))}`}</button>
-    </form></section></div>`;
+    const isSchedule=type==='schedule',title=editing?'Edit':'Add';
+    const typeCopy={tasks:'Plan focused work with an estimate and execution state.',todos:'Capture a lightweight checklist item and move it forward quickly.',goals:'Track a measurable target with real units and progress.',schedule:'Build one or several timetable blocks in the same sheet.',attendance:'Track attendance outside the timetable.'}[type]||'Planner item';
+
+    if(isSchedule){
+      const initial=editing?[editing]:[{date:chosenDate,time:chosenTime,endTime:chosenTime,recurrence:'weekly'}];
+      root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet planner-schedule-sheet" role="dialog" aria-modal="true">
+        <div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Schedule · ${esc(selected.primary)}</div><h2>${editing?'Edit schedule item':'Add schedule items'}</h2><p>${esc(typeCopy)}</p></div><button class="icon-btn" id="planner-entry-close">×</button></div>
+        <form id="planner-entry-form" class="planner-schedule-builder">
+          <div class="planner-schedule-drafts" id="planner-schedule-drafts">${initial.map((item,index)=>scheduleDraftMarkup(item,index,false)).join('')}</div>
+          ${editing?'':`<button type="button" class="planner-add-another" id="planner-add-schedule-row"><span>＋</span><div><strong>Add another schedule item</strong><small>Up to 8 items in one save</small></div></button>`}
+          <div class="planner-sheet-actions"><span id="planner-schedule-count">${initial.length} item${initial.length===1?'':'s'}</span><button class="btn btn-primary" type="submit">${editing?'Save changes':'Add schedule items'}</button></div>
+        </form>
+      </section></div>`;
+
+      const drafts=document.getElementById('planner-schedule-drafts'),count=document.getElementById('planner-schedule-count');
+      const renumber=()=>{
+        const rows=[...drafts.querySelectorAll('[data-schedule-draft]')];
+        rows.forEach((row,index)=>{const label=row.querySelector('header small');if(label)label.textContent=`Schedule item ${index+1}`;});
+        if(count)count.textContent=`${rows.length} item${rows.length===1?'':'s'}`;
+        const add=document.getElementById('planner-add-schedule-row');if(add)add.disabled=rows.length>=8;
+      };
+      const bindDraft=row=>{
+        row.querySelector('[data-schedule-repeat]')?.addEventListener('change',event=>{
+          const options=row.querySelector('.planner-repeat-options');if(options)options.hidden=!event.currentTarget.checked;
+        });
+        row.querySelector('[data-schedule-field="date"]')?.addEventListener('change',event=>{
+          const until=row.querySelector('[data-schedule-field="repeatUntil"]');if(until)until.min=event.currentTarget.value;
+        });
+        row.querySelector('[data-remove-schedule-row]')?.addEventListener('click',()=>{row.remove();renumber();});
+      };
+      [...drafts.querySelectorAll('[data-schedule-draft]')].forEach(bindDraft);
+      document.getElementById('planner-add-schedule-row')?.addEventListener('click',()=>{
+        const rows=[...drafts.querySelectorAll('[data-schedule-draft]')];if(rows.length>=8)return;
+        const last=rows[rows.length-1],date=last?.querySelector('[data-schedule-field="date"]')?.value||chosenDate;
+        const time=last?.querySelector('[data-schedule-field="endTime"]')?.value||chosenTime;
+        const wrapper=document.createElement('div');wrapper.innerHTML=scheduleDraftMarkup({date,time,endTime:time,recurrence:'weekly'},rows.length,true);
+        const row=wrapper.firstElementChild;drafts.appendChild(row);bindDraft(row);renumber();row.querySelector('[data-schedule-field="title"]')?.focus();
+      });
+
+      document.getElementById('planner-entry-form').onsubmit=event=>{
+        event.preventDefault();const rows=[...drafts.querySelectorAll('[data-schedule-draft]')],items=plannerItems(),payloads=[];
+        for(const row of rows){
+          const value=name=>row.querySelector(`[data-schedule-field="${name}"]`)?.value||'';
+          const checked=name=>Boolean(row.querySelector(`[data-schedule-field="${name}"]`)?.checked);
+          const date=String(value('date')),scheduleTitle=String(value('title')).trim();
+          if(!scheduleTitle||!/^d{4}-d{2}-d{2}$/.test(date))return;
+          const repeat=checked('repeat'),recurrence=repeat&&['daily','weekly','monthly'].includes(value('recurrence'))?value('recurrence'):'none';
+          const repeatUntil=repeat?String(value('repeatUntil')):'';
+          if(repeatUntil&&repeatUntil<date)return;
+          payloads.push({
+            id:editing?.id||id(),type:'schedule',title:scheduleTitle,date,time:normalizePlannerTime(value('time')),
+            endTime:normalizePlannerTime(value('endTime')||value('time')),location:String(value('location')).trim(),notes:String(value('notes')).trim(),
+            repeat,recurrence,repeatUntil,createdAt:editing?.createdAt||Date.now()
+          });
+        }
+        if(editing){
+          const index=items.findIndex(item=>item.id===editing.id);if(index>=0)items[index]=payloads[0];else items.push(payloads[0]);
+        }else items.push(...payloads);
+        plannerTab='schedule';savePlannerItems(items);closeOverlay();render();
+      };
+    }else{
+      const dateLabel=type==='goals'?'Target date':type==='tasks'||type==='todos'?'Due date':'Date';
+      const progress=goalProgress(editing||{}),target=goalTarget(editing||{}),current=goalCurrent(editing||{}),unit=goalUnit(editing||{});
+      root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet planner-${esc(type)}-sheet" role="dialog" aria-modal="true">
+        <div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2><p>${esc(typeCopy)}</p></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
+        <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${esc(typeCopy)}</small></div></div>
+        <div class="field"><label>${type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Read 12 research papers':'Physics lecture'}"></div>
+        <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
+        ${type==='tasks'?`<div class="calendar-form-grid"><div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div><div class="field"><label>Focus estimate</label><select name="estimatedMinutes">${[15,25,30,45,60,90,120].map(minutes=>`<option value="${minutes}" ${taskEstimate(editing||{})===minutes?'selected':''}>${minutes} minutes</option>`).join('')}</select></div></div><div class="field"><label>Execution state</label><select name="taskState"><option value="backlog" ${taskState(editing||{})==='backlog'?'selected':''}>Backlog</option><option value="doing" ${taskState(editing||{})==='doing'?'selected':''}>In progress</option></select></div>`:''}
+        ${type==='todos'?`<div class="field"><label>List</label><input name="listLabel" maxlength="40" value="${esc(editing?.listLabel||'General')}" placeholder="Study, Personal, Errands…"></div>`:''}
+        ${type==='goals'?`<div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div><div class="planner-goal-measure-form"><div class="field"><label>Current</label><input name="goalCurrent" type="number" min="0" step="any" value="${current}"></div><div class="field"><label>Target</label><input name="goalTarget" type="number" min="0.01" step="any" value="${target}" required></div><div class="field"><label>Unit</label><input name="goalUnit" maxlength="18" value="${esc(unit)}" placeholder="pages, hours, chapters"></div></div><div class="planner-goal-form-preview"><span style="--goal-progress:${progress}%"></span><strong id="planner-goal-preview">${progress}%</strong></div>`:''}
+        ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
+        <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="${type==='tasks'?'What does done look like?':type==='todos'?'Optional quick context':type==='goals'?'Why this goal matters or how you will reach it':'Optional context'}">${esc(editing?.notes||'')}</textarea></div>
+        <button class="btn btn-primary" type="submit">${editing?'Save changes':`Add ${esc(plannerTypeLabel(type))}`}</button>
+      </form></section></div>`;
+
+      if(type==='goals'){
+        const currentInput=document.querySelector('#planner-entry-form [name="goalCurrent"]'),targetInput=document.querySelector('#planner-entry-form [name="goalTarget"]'),preview=document.getElementById('planner-goal-preview');
+        const paint=()=>{const cur=Math.max(0,Number(currentInput?.value||0)),tar=Math.max(.01,Number(targetInput?.value||1)),pct=Math.max(0,Math.min(100,Math.round(cur/tar*100)));if(preview){preview.textContent=`${pct}%`;preview.parentElement?.style.setProperty('--goal-progress',`${pct}%`);}};
+        currentInput?.addEventListener('input',paint);targetInput?.addEventListener('input',paint);
+      }
+
+      document.getElementById('planner-entry-form').onsubmit=event=>{
+        event.preventDefault();const form=new FormData(event.currentTarget),items=plannerItems();
+        const payload={id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()};
+        if(!payload.title||!/^d{4}-d{2}-d{2}$/.test(payload.date))return;
+        if(type==='tasks'){
+          payload.priority=String(form.get('priority')||'medium');payload.estimatedMinutes=Math.max(5,Math.min(480,Number(form.get('estimatedMinutes')||30)));payload.done=Boolean(editing?.done);payload.taskState=payload.done?'done':(['backlog','doing'].includes(String(form.get('taskState')))?String(form.get('taskState')):'backlog');
+        }else if(type==='todos'){
+          payload.listLabel=String(form.get('listLabel')||'General').trim()||'General';payload.done=Boolean(editing?.done);
+        }else if(type==='goals'){
+          payload.priority=String(form.get('priority')||'medium');payload.goalTarget=Math.max(.01,Number(form.get('goalTarget')||100));payload.goalCurrent=Math.max(0,Number(form.get('goalCurrent')||0));payload.goalUnit=String(form.get('goalUnit')||'%').trim()||'%';payload.progress=Math.max(0,Math.min(100,Math.round(payload.goalCurrent/payload.goalTarget*100)));payload.done=payload.goalCurrent>=payload.goalTarget;
+        }else if(type==='attendance')payload.status=String(form.get('status')||'present');
+        if(editing){const index=items.findIndex(item=>item.id===editing.id);if(index>=0)items[index]=payload;else items.push(payload);}else items.push(payload);
+        plannerTab=type;savePlannerItems(items);closeOverlay();render();
+      };
+    }
+
     const close=()=>closeOverlay();
-    const progressInput=document.querySelector('#planner-entry-form [name="progress"]'),progressOutput=document.getElementById('planner-progress-output');
-    progressInput?.addEventListener('input',()=>{if(progressOutput)progressOutput.value=`${progressInput.value}%`;});
-    const repeatInput=document.querySelector('#planner-entry-form [name="repeat"]'),repeatOptions=document.getElementById('planner-repeat-options');
-    repeatInput?.addEventListener('change',()=>{if(repeatOptions)repeatOptions.hidden=!repeatInput.checked;});
     document.getElementById('planner-entry-close').onclick=close;
     document.getElementById('planner-entry-overlay').onclick=event=>{if(event.target.id==='planner-entry-overlay')close();};
-    document.getElementById('planner-entry-form').onsubmit=event=>{
-      event.preventDefault();const form=new FormData(event.currentTarget),items=plannerItems();
-      const payload={
-        id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
-        date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()
-      };
-      if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
-      if(type==='schedule'){
-        payload.endTime=normalizePlannerTime(form.get('endTime')||payload.time);
-        payload.location=String(form.get('location')||'').trim();
-        payload.repeat=Boolean(form.get('repeat'));
-        payload.recurrence=payload.repeat&&['daily','weekly','monthly'].includes(String(form.get('recurrence')))?String(form.get('recurrence')):'none';
-        payload.repeatUntil=payload.repeat?String(form.get('repeatUntil')||''):'';
-        if(payload.repeatUntil&&payload.repeatUntil<payload.date)return;
-      }else if(type==='attendance')payload.status=String(form.get('status')||'present');
-      else{
-        payload.priority=String(form.get('priority')||editing?.priority||'medium');
-        payload.done=Boolean(editing?.done);
-        if(type==='goals'){
-          payload.progress=Math.max(0,Math.min(100,Number(form.get('progress')||editing?.progress||0)));
-          payload.done=payload.progress>=100;
-        }
-      }
-      if(editing){
-        const index=items.findIndex(item=>item.id===editing.id);
-        if(index>=0)items[index]=payload;else items.push(payload);
-      }else items.push(payload);
-      plannerTab=type;savePlannerItems(items);close();render();
-    };
   }
 
   function bindExams(){
