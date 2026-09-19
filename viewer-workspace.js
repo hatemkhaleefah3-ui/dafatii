@@ -397,10 +397,10 @@
         <button class="video-reader-exit" type="button" aria-label="${esc(t('close'))}">×</button>
         <button class="video-reader-examine" type="button"><span class="video-reader-examine-icon">${icon('star','✦')}</span><span>${esc(t('examine'))}</span></button>
       </header>
-      <div class="video-reader-scroll">
-        <div class="video-workspace-stage">${embed ? `<iframe src="${esc(embed)}" title="${esc(title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>` : `<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div>
-        <section class="video-reader-heading"><h1>${esc(title)}</h1></section>
-        <section class="video-reader-notes" aria-label="${esc(t('notes'))}">
+      <div class="video-workspace-stage">${embed ? `<iframe src="${esc(embed)}" title="${esc(title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>` : `<video src="${esc(url)}" controls playsinline preload="metadata"></video>`}</div>
+      <section class="video-reader-heading"><h1>${esc(title)}</h1></section>
+      <section class="video-reader-notes" aria-label="${esc(t('notes'))}">
+        <div class="video-notes-scroll" data-video-notes-scroll>
           <div class="video-notes-source-row">
             <div><span>${esc(t('notes'))}</span><strong data-video-source-title></strong></div>
             <button type="button" data-video-source-button><span data-video-source-button-label></span>${icon('arrow-right','›')}</button>
@@ -417,13 +417,13 @@
             </div>
             <button class="video-note-publish" type="submit">${esc(t('publishNote'))}</button>
           </form>
-        </section>
-      </div>
+        </div>
+      </section>
     </section>`;
     document.body.append(root);
 
     const shell = root.querySelector('.video-reader-shell');
-    const scroll = root.querySelector('.video-reader-scroll');
+    const notesScroll = root.querySelector('[data-video-notes-scroll]');
     const textarea = root.querySelector('.video-note-composer textarea');
     const close = () => root.remove();
 
@@ -492,15 +492,7 @@
       if(typeof showToast==='function')showToast(t('noteSaved'));
     };
 
-    let chromeTimer=0,lastTop=0;
-    const showChrome=()=>{root.classList.remove('video-chrome-hidden');clearTimeout(chromeTimer);chromeTimer=setTimeout(()=>root.classList.add('video-chrome-hidden'),1800);};
-    scroll.addEventListener('scroll',()=>{
-      if(Math.abs(scroll.scrollTop-lastTop)>3)root.classList.add('video-chrome-hidden');
-      lastTop=scroll.scrollTop;
-      clearTimeout(chromeTimer);
-      chromeTimer=setTimeout(()=>root.classList.remove('video-chrome-hidden'),650);
-    },{passive:true});
-    shell.addEventListener('pointerdown',showChrome,{passive:true});
+    notesScroll?.addEventListener('scroll',()=>{}, { passive:true });
 
     renderNotes();
     root.querySelector('video')?.play?.().catch(() => {});
