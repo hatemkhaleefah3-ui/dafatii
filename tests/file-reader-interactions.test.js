@@ -5,6 +5,7 @@ const script = fs.readFileSync('file-reader-interactions.js', 'utf8');
 const css = fs.readFileSync('file-reader-interactions.css', 'utf8');
 const workspace = fs.readFileSync('viewer-workspace.js', 'utf8');
 const design = fs.readFileSync('lecture-reader-design.css', 'utf8');
+const workspaceCss = fs.readFileSync('viewer-workspace.css', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 
 assert.match(script, /reader-loading/, 'file readers must enter a dedicated loading state');
@@ -28,12 +29,22 @@ assert.match(design, /\.file-workspace \.reader-settings-button/, 'the reference
 assert.match(design, /\.file-workspace \.viewer-reader-dock/, 'the reference reader must use the four-action floating dock');
 assert.match(design, /\.viewer-status-list/, 'lecture status must use a dedicated sheet layout');
 assert.match(design, /\.viewer-examine-list/, 'examine tools must use a dedicated sheet layout');
+assert.match(workspace, /video-reader-topbar/, 'video viewer must use the reference-style minimal top bar');
+assert.match(workspace, /video-reader-examine/, 'video viewer must expose Examine from the top bar');
+assert.match(workspace, /video-note-composer/, 'video viewer must include the inline note composer');
+assert.match(workspace, /data-video-source-button/, 'video viewer must support switching note sources');
+assert.match(workspace, /data-video-visibility="personal"/, 'video note composer must expose personal visibility');
+assert.match(workspace, /dafatii:viewer-note-publish/, 'public video notes must delegate to an explicit integration instead of pretending to publish');
+assert.match(workspaceCss, /\.video-reader-topbar/, 'video viewer CSS must define the minimal top bar');
+assert.match(workspaceCss, /\.video-note-visibility/, 'video viewer CSS must define the visibility control');
+assert.match(workspaceCss, /\.video-source-list/, 'video viewer CSS must define the notes-source sheet');
 assert.match(css, /\.viewer-loading-screen\{/, 'the loading screen must cover the reader');
 assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages must remain hidden while loading');
 assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
 assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
 assert.match(index, /file-reader-interactions\.js\?v=20260919-1/, 'the loading, pinch, and chrome controller must be loaded');
-assert.match(index, /viewer-workspace\.js\?v=20260919-1/, 'the redesigned reader controls must be loaded');
+assert.match(index, /viewer-workspace\.js\?v=20260919-2/, 'the redesigned reader and video controls must be loaded');
+assert.match(index, /viewer-workspace\.css\?v=20260919-2/, 'the redesigned video viewer presentation must be loaded');
 assert.match(index, /lecture-reader-design\.css\?v=20260919-1/, 'the redesigned file-reader presentation must be loaded');
 
 console.log('file reader loading and pinch checks passed');
