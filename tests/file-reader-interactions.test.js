@@ -40,16 +40,19 @@ assert.match(workspaceCss, /\.video-note-visibility/, 'video viewer CSS must def
 assert.match(workspaceCss, /\.video-source-list/, 'video viewer CSS must define the notes-source sheet');
 assert.doesNotMatch(workspace, /class="video-reader-scroll"/, 'video, title, and notes must not share one scrolling container');
 assert.match(workspace, /data-video-notes-scroll/, 'video viewer must expose a dedicated notes scroller');
-assert.match(workspaceCss, /grid-template-rows:auto auto auto minmax\(0,1fr\)/, 'video viewer shell must keep top bar, player, and title fixed while notes consume the remaining height');
+assert.match(workspaceCss, /grid-template-rows:72px var\(--video-player-height\) max-content minmax\(0,1fr\)/, 'desktop video viewer must use non-stretching fixed chrome and player tracks');
 assert.match(workspaceCss, /\.video-notes-scroll\{[^}]*overflow-y:auto/, 'only the notes pane should scroll when content exceeds available height');
-assert.match(workspaceCss, /height:min\(50dvh,56\.25vw,520px\)/, 'video player height must adapt to device viewport while remaining fixed inside the viewer');
+assert.match(workspaceCss, /--video-player-height:min\(50dvh,56\.25vw,520px\)/, 'video player height must adapt to the desktop viewport');
+assert.match(workspaceCss, /grid-template-rows:calc\(60px \+ env\(safe-area-inset-top\)\) var\(--video-player-height\) max-content minmax\(0,1fr\)/, 'mobile viewer must reserve a compact safe-area top bar and fixed player track');
+assert.match(workspaceCss, /\.video-reader-topbar\{[^}]*height:72px[^}]*min-height:0/, 'desktop top bar must not stretch');
+assert.match(workspaceCss, /\.video-workspace-stage\{[^}]*height:100%[^}]*min-height:0/, 'player must fill its fixed grid track instead of sizing the shell');
 assert.match(css, /\.viewer-loading-screen\{/, 'the loading screen must cover the reader');
 assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages must remain hidden while loading');
 assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
 assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
 assert.match(index, /file-reader-interactions\.js\?v=20260919-1/, 'the loading, pinch, and chrome controller must be loaded');
 assert.match(index, /viewer-workspace\.js\?v=20260919-3/, 'the redesigned reader and video controls must be loaded');
-assert.match(index, /viewer-workspace\.css\?v=20260919-3/, 'the redesigned video viewer presentation must be loaded');
+assert.match(index, /viewer-workspace\.css\?v=20260919-4/, 'the redesigned video viewer presentation must be loaded');
 assert.match(index, /lecture-reader-design\.css\?v=20260919-1/, 'the redesigned file-reader presentation must be loaded');
 
 console.log('file reader loading and pinch checks passed');
