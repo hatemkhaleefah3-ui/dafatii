@@ -1221,3 +1221,15 @@ body .quiet-workspace>.workspace-main>.planner-page{
     font-size:20px
   }
 }
+
+
+/* Planner v12 — unselected range options remain visually transparent */
+.planner-page>.planner-mode-shell .planner-loop-item:not(.active),
+.planner-page>.planner-mode-shell .planner-loop-item:not(.active):hover,
+.planner-page>.planner-mode-shell .planner-loop-item:not(.active):focus-visible{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important
+}
