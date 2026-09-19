@@ -180,7 +180,7 @@ html[dir=rtl] .planner-week-day,html[dir=rtl] .planner-week-slot{direction:rtl;t
 }
 .planner-table-item.recurring{border-style:dashed;box-shadow:none}
 .planner-table-item.week-chip{
-  grid-template-columns:25px minmax(0,1fr) auto;gap:5px;padding:6px 6px 6px 5px;border-radius:10px;box-shadow:none
+  grid-template-columns:25px minmax(0,1fr) auto auto;gap:5px;padding:6px 6px 6px 5px;border-radius:10px;box-shadow:none
 }
 .planner-table-item.week-chip .planner-item-icon{width:24px;height:24px;border-radius:8px;font-size:10px}
 .planner-table-item.week-chip .planner-item-title-row strong{font-size:9.5px}
