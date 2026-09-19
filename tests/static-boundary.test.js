@@ -31,8 +31,8 @@ assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller mus
 assert.match(index, /quiet-shell\.js\?v=14/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.match(index, /app\.js\?v=20260918-5/, 'the cleaned subject interface must be loaded');
-assert.match(index, /subject-redesign\.css\?v=20260919-2/, 'the reference-driven Subjects presentation must be loaded');
-assert.match(index, /subject-redesign\.js\?v=20260919-2/, 'the reference-driven Subjects controller must be loaded');
+assert.match(index, /subject-redesign\.css\?v=20260919-3/, 'the reference-driven Subjects presentation must be loaded');
+assert.match(index, /subject-redesign\.js\?v=20260919-3/, 'the reference-driven Subjects controller must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
@@ -50,6 +50,9 @@ assert.match(index, /student-social\.js\?v=20260919-3/, 'the multi-page chat app
 assert.match(index, /advanced-chat\.js\?v=20260919-3/, 'the advanced chat engine must load the multi-page integration build');
 assert.match(index, /advanced-chat\.css\?v=20260918-3/, 'the advanced chat engine must load its dedicated shell integration styles');
 assert.match(index, /chat-reference-redesign\.css\?v=20260919-1/, 'the supplied-reference Chat redesign stylesheet must be loaded after the Chat engine styles');
+assert.match(index, /social-live\.css\?v=20260919-1/, 'the real social UI theme must be loaded');
+assert.match(index, /social-live\.js\?v=20260919-1/, 'the real social client must be loaded');
+assert.ok(index.indexOf('social-live.js?v=20260919-1') > index.indexOf('subject-redesign.js?v=20260919-3'), 'real social client must wrap the final workspace renderer');
 assert.match(studentSocial, /CHAT_SUBNAV = \['Private chats','Groups','Blogs & announcements','Anonymous'\]/, 'Chat must expose the four dedicated app pages');
 assert.match(studentSocial, /chat-app-bottom/, 'Chat must render its own special bottom navigation');
 assert.match(studentSocial, /href="#dashboard"/, 'Chat app navigation must provide a direct return to Dashboard');
