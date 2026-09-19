@@ -205,10 +205,10 @@
   }
   function plannerCompactItem(item){
     const done=Boolean(item.done),meta=[item.time,item.location,item.status].filter(Boolean).join(' · ');
-    return `<article class="planner-table-item ${done?'done':''} ${item.recurring?'recurring':''}">
+    return `<article class="planner-table-item ${done?'done':''} ${item.recurring?'recurring':''}" data-planner-entry-id="${esc(item.id)}">
       <div><strong>${esc(item.title||tabLabel(item.type||plannerTab))}</strong>${meta?`<small>${esc(meta)}</small>`:''}</div>
       ${!item.recurring&&item.type!=='schedule'&&item.type!=='attendance'?`<button class="planner-mini-check" data-planner-toggle="${esc(item.id)}" aria-label="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`:''}
-      ${!item.recurring?`<button class="planner-mini-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button>`:''}
+      ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'item')}"></button><button class="planner-mini-delete" data-planner-delete="${esc(item.id)}" aria-label="Delete">×</button>`:''}
     </article>`;
   }
   function plannerCellBody(date){
@@ -308,7 +308,7 @@
     const rows = periods.map((time,timeIndex) => {
       const cells = days.map(day => {
         const e = byCell.get(`${day}|${time}`);
-        return `<button class="cal-cell ${e?'filled':''}" data-kind="${kind}" data-day="${esc(day)}" data-time="${esc(time)}" ${e?`data-entry="${e.id}"`:''}>${e?`<strong>${esc(e.subject)}</strong><span>${esc(e.location || '')}</span>`:'<span class="cal-empty-dot">＋</span>'}</button>`;
+        return `<button class="cal-cell ${e?'filled':''}" data-kind="${kind}" data-day="${esc(day)}" data-time="${esc(time)}" ${e?`data-entry="${e.id}" data-content-id="${e.id}"`:''}>${e?`<strong>${esc(e.subject)}</strong><span>${esc(e.location || '')}</span><span class="dcc-native-action" role="button" data-calendar-edit-entry="${e.id}" aria-label="Edit ${esc(e.subject)}"></span><span class="dcc-native-action" role="button" data-calendar-delete-entry="${e.id}" aria-label="Delete ${esc(e.subject)}"></span>`:'<span class="cal-empty-dot">＋</span>'}</button>`;
       }).join('');
       return `<button class="cal-time cal-head-button" data-axis-kind="${kind}" data-axis-type="period" data-axis-index="${timeIndex}" aria-label="Edit ${esc(time)} row">${esc(time)}</button>${cells}<div class="cal-axis-spacer" aria-hidden="true"></div>`;
     }).join('');
@@ -459,6 +459,9 @@
       event.stopPropagation();const items=plannerItems(),item=items.find(entry=>entry.id===button.dataset.plannerToggle);if(!item)return;
       item.done=!item.done;savePlannerItems(items);rerender();
     }));
+    document.querySelectorAll('[data-planner-edit]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();openPlannerEntrySheet('','',button.dataset.plannerEdit);
+    }));
     document.querySelectorAll('[data-planner-delete]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();savePlannerItems(plannerItems().filter(entry=>entry.id!==button.dataset.plannerDelete));rerender();
     }));
@@ -471,32 +474,38 @@
     if(plannerMode==='month')return dateKey(new Date(plannerDate.getFullYear(),plannerDate.getMonth(),1));
     return dateKey(new Date(plannerDate.getFullYear(),0,1));
   }
-  function openPlannerEntrySheet(dateOverride='',timeOverride='09:00'){
+  function openPlannerEntrySheet(dateOverride='',timeOverride='09:00',editId=''){
     const root=document.getElementById('overlay-root');if(!root)return;
-    const selected=periodLabel(plannerMode,plannerDate),type=plannerTab;
-    const chosenDate=dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(timeOverride);
-    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(tabLabel(type))} · ${esc(selected.primary)}</div><h2>Add ${esc(tabLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
-      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Study for 90 minutes':type==='attendance'?'Physics lecture':'Study session'}"></div>
+    const allItems=plannerItems(),editing=editId?allItems.find(item=>item.id===editId):null;
+    const selected=periodLabel(plannerMode,plannerDate),type=editing?.type||plannerTab;
+    const chosenDate=editing?.date||dateOverride||defaultEntryDate(),chosenTime=normalizePlannerTime(editing?.time||timeOverride);
+    const title=editing?'Edit':'Add';
+    root.innerHTML=`<div class="entity-sheet-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(tabLabel(type))} · ${esc(selected.primary)}</div><h2>${title} ${esc(tabLabel(type))}</h2></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
+      <div class="field"><label>${type==='schedule'?'Title':type==='attendance'?'Class / event':'Title'}</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Study for 90 minutes':type==='attendance'?'Physics lecture':'Study session'}"></div>
       <div class="calendar-form-grid"><div class="field"><label>Date</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
-      ${type==='schedule'?'<div class="field"><label>Location</label><input name="location" maxlength="100"></div>':''}
-      ${type==='attendance'?'<div class="field"><label>Status</label><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select></div>':''}
-      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional"></textarea></div>
-      <button class="btn btn-primary" type="submit">Add</button>
+      ${type==='schedule'?`<div class="field"><label>Location</label><input name="location" maxlength="100" value="${esc(editing?.location||'')}"></div>`:''}
+      ${type==='attendance'?`<div class="field"><label>Status</label><select name="status"><option value="present" ${editing?.status==='present'?'selected':''}>Present</option><option value="late" ${editing?.status==='late'?'selected':''}>Late</option><option value="absent" ${editing?.status==='absent'?'selected':''}>Absent</option></select></div>`:''}
+      <div class="field"><label>Notes</label><textarea name="notes" maxlength="500" placeholder="Optional">${esc(editing?.notes||'')}</textarea></div>
+      <button class="btn btn-primary" type="submit">${editing?'Save changes':'Add'}</button>
     </form></section></div>`;
     const close=()=>closeOverlay();
     document.getElementById('planner-entry-close').onclick=close;
     document.getElementById('planner-entry-overlay').onclick=event=>{if(event.target.id==='planner-entry-overlay')close();};
     document.getElementById('planner-entry-form').onsubmit=event=>{
       event.preventDefault();const form=new FormData(event.currentTarget),items=plannerItems();
-      const item={
-        id:id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
-        date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:Date.now()
+      const payload={
+        id:editing?.id||id(),type,title:String(form.get('title')||'').trim(),notes:String(form.get('notes')||'').trim(),
+        date:String(form.get('date')||chosenDate),time:normalizePlannerTime(form.get('time')),createdAt:editing?.createdAt||Date.now()
       };
-      if(!item.title||!/^\d{4}-\d{2}-\d{2}$/.test(item.date))return;
-      if(type==='schedule')item.location=String(form.get('location')||'').trim();
-      else if(type==='attendance')item.status=String(form.get('status')||'present');
-      else item.done=false;
-      items.push(item);savePlannerItems(items);close();render();
+      if(!payload.title||!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))return;
+      if(type==='schedule')payload.location=String(form.get('location')||'').trim();
+      else if(type==='attendance')payload.status=String(form.get('status')||'present');
+      else payload.done=Boolean(editing?.done);
+      if(editing){
+        const index=items.findIndex(item=>item.id===editing.id);
+        if(index>=0)items[index]=payload;else items.push(payload);
+      }else items.push(payload);
+      savePlannerItems(items);close();render();
     };
   }
 
@@ -517,16 +526,37 @@
   }
 
   function bindTimetableCells(kind,key,manualRoute){
-    document.querySelectorAll(`.cal-cell[data-kind="${kind}"]`).forEach(cell=>cell.addEventListener('click',()=>{
-      if(!cell.dataset.entry){ setHash(manualRoute); return; }
-      const arr=read(key,[]);
-      const item=arr.find(x=>x.id===cell.dataset.entry);
-      if(!item) return;
-      if(confirm(`Delete ${item.subject} from ${item.day} at ${item.time}?`)){
-        write(key,arr.filter(x=>x.id!==item.id));
-        render();
-      }
+    document.querySelectorAll(`.cal-cell[data-kind="${kind}"]`).forEach(cell=>cell.addEventListener('click',event=>{
+      if(event.target.closest('[data-calendar-edit-entry],[data-calendar-delete-entry]'))return;
+      if(!cell.dataset.entry)return;
     }));
+    document.querySelectorAll(`[data-calendar-edit-entry]`).forEach(control=>control.addEventListener('click',event=>{
+      event.stopPropagation();
+      const arr=read(key,[]),item=arr.find(entry=>entry.id===control.dataset.calendarEditEntry);
+      if(item)openTimetableEntrySheet(kind,key,item);
+    }));
+    document.querySelectorAll(`[data-calendar-delete-entry]`).forEach(control=>control.addEventListener('click',event=>{
+      event.stopPropagation();
+      write(key,read(key,[]).filter(entry=>entry.id!==control.dataset.calendarDeleteEntry));
+      render();
+    }));
+  }
+
+  function openTimetableEntrySheet(kind,key,item){
+    const root=document.getElementById('overlay-root');if(!root||!item)return;
+    const {days,periods}=axes(kind);
+    root.innerHTML=`<div class="entity-sheet-overlay" id="calendar-entry-edit-overlay"><section class="entity-sheet calendar-axis-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${kind==='schedule'?'Schedule':'Exams'}</div><h2>Edit entry</h2></div><button class="icon-btn" id="calendar-entry-edit-close">×</button></div><form id="calendar-entry-edit-form"><div class="field"><label>Subject</label><input name="subject" required maxlength="140" value="${esc(item.subject||'')}"></div><div class="calendar-form-grid"><div class="field"><label>Day</label><select name="day">${days.map(day=>`<option ${day===item.day?'selected':''}>${esc(day)}</option>`).join('')}</select></div><div class="field"><label>Time</label><select name="time">${periods.map(time=>`<option ${time===item.time?'selected':''}>${esc(time)}</option>`).join('')}</select></div></div><div class="field"><label>Location / room</label><input name="location" maxlength="100" value="${esc(item.location||'')}"></div><button class="btn btn-primary" type="submit">Save changes</button></form></section></div>`;
+    const close=()=>closeOverlay();
+    document.getElementById('calendar-entry-edit-close').onclick=close;
+    document.getElementById('calendar-entry-edit-overlay').onclick=event=>{if(event.target.id==='calendar-entry-edit-overlay')close();};
+    document.getElementById('calendar-entry-edit-form').onsubmit=event=>{
+      event.preventDefault();
+      const form=new FormData(event.currentTarget),arr=read(key,[]),target=arr.find(entry=>entry.id===item.id);
+      if(!target)return;
+      const subject=String(form.get('subject')||'').trim();if(!subject)return;
+      Object.assign(target,{subject,day:String(form.get('day')||item.day),time:String(form.get('time')||item.time),location:String(form.get('location')||'').trim()});
+      write(key,arr);close();render();
+    };
   }
 
   function openAxisSheet(kind,type,index){

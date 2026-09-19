@@ -190,18 +190,31 @@
       </div>
       ${room.visibility==='private'&&!verified?'<small class="sr-pin-note">PIN required to apply or join.</small>':''}
       ${room.owner==='me'&&room.visibility==='secret'?`<small class="sr-pin-note">Joining code: <strong>${esc(room.code)}</strong></small>`:''}
+      ${room.owner==='me'?`<button type="button" class="dcc-native-action" data-content-edit-room="${esc(room.id)}" aria-label="Edit ${esc(room.name)}"></button><button type="button" class="dcc-native-action" data-content-delete-room="${esc(room.id)}" aria-label="Delete ${esc(room.name)}"></button>`:''}
     </article>`;
   }
 
   function bindStudyRooms(){
-    document.getElementById('sr-create')?.addEventListener('click',openCreateRoomSheet);
-    document.getElementById('sr-empty-create')?.addEventListener('click',openCreateRoomSheet);
+    document.getElementById('sr-create')?.addEventListener('click',()=>openCreateRoomSheet());
+    document.getElementById('sr-empty-create')?.addEventListener('click',()=>openCreateRoomSheet());
     document.getElementById('sr-join-secret')?.addEventListener('click',openSecretJoinSheet);
     document.getElementById('sr-leave-active')?.addEventListener('click',()=>{
       const value=roomState(); value.active=null; saveRoomState(value); render();
     });
     document.querySelectorAll('[data-room-apply]').forEach(btn=>btn.addEventListener('click',()=>applyRoom(btn.dataset.roomApply)));
     document.querySelectorAll('[data-room-join]').forEach(btn=>btn.addEventListener('click',()=>joinRoom(btn.dataset.roomJoin)));
+    document.querySelectorAll('[data-content-edit-room]').forEach(btn=>btn.addEventListener('click',event=>{
+      event.stopPropagation();openCreateRoomSheet(btn.dataset.contentEditRoom);
+    }));
+    document.querySelectorAll('[data-content-delete-room]').forEach(btn=>btn.addEventListener('click',event=>{
+      event.stopPropagation();
+      const value=roomState(),id=btn.dataset.contentDeleteRoom;
+      value.customRooms=value.customRooms.filter(room=>room.id!==id);
+      value.applied=value.applied.filter(roomId=>roomId!==id);
+      value.verified=value.verified.filter(roomId=>roomId!==id);
+      if(value.active?.roomId===id)value.active=null;
+      saveRoomState(value);render();
+    }));
     bindActiveRoomTimer();
   }
 
@@ -250,29 +263,55 @@
     });
   }
 
-  function openCreateRoomSheet(){
+  function openCreateRoomSheet(roomId=''){
     const root=document.getElementById('overlay-root'); if(!root)return;
-    root.innerHTML=`<div class="entity-sheet-overlay" id="sr-create-overlay"><section class="entity-sheet sr-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Study Rooms</div><h2>Create a study room</h2></div><button class="icon-btn" id="sr-create-close">×</button></div><form id="sr-create-form">
-      <div class="field"><label>Room name</label><input id="sr-room-name" maxlength="70" required placeholder="e.g. Organic Chemistry Sprint"></div>
-      <div class="calendar-form-grid"><div class="field"><label>Subject</label><input id="sr-room-subject" maxlength="50" required placeholder="Subject"></div><div class="field"><label>Capacity</label><input id="sr-room-capacity" type="number" min="2" max="100" value="20"></div></div>
-      <div class="field"><label>Description</label><textarea id="sr-room-description" class="academic-notes" maxlength="260" placeholder="How should students use this room?"></textarea></div>
-      <div class="calendar-form-grid"><div class="field"><label>Visibility</label><select id="sr-room-visibility"><option value="public">Public</option><option value="private">Private · PIN</option><option value="secret">Secret · joining code</option></select></div><div class="field"><label>Vibe</label><select id="sr-room-vibe"><option>Deep focus</option><option>Collaborative</option><option>Cozy</option><option>High energy</option><option>Build mode</option></select></div></div>
-      <div class="field" id="sr-room-pin-field" hidden><label>Room PIN</label><input id="sr-room-pin" maxlength="12" inputmode="numeric" placeholder="Required for private rooms"></div>
-      <div class="sr-sheet-actions"><button class="btn btn-primary" type="submit">Create room</button></div>
+    const current=roomState();
+    const editing=roomId?current.customRooms.find(room=>room.id===roomId&&room.owner==='me'):null;
+    const mode=editing?'Edit':'Create';
+    root.innerHTML=`<div class="entity-sheet-overlay" id="sr-create-overlay"><section class="entity-sheet sr-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Study Rooms</div><h2>${mode} a study room</h2></div><button class="icon-btn" id="sr-create-close">×</button></div><form id="sr-create-form">
+      <div class="field"><label>Room name</label><input id="sr-room-name" maxlength="70" required value="${esc(editing?.name||'')}" placeholder="e.g. Organic Chemistry Sprint"></div>
+      <div class="calendar-form-grid"><div class="field"><label>Subject</label><input id="sr-room-subject" maxlength="50" required value="${esc(editing?.subject||'')}" placeholder="Subject"></div><div class="field"><label>Capacity</label><input id="sr-room-capacity" type="number" min="2" max="100" value="${Number(editing?.capacity||20)}"></div></div>
+      <div class="field"><label>Description</label><textarea id="sr-room-description" class="academic-notes" maxlength="260" placeholder="How should students use this room?">${esc(editing?.description||'')}</textarea></div>
+      <div class="calendar-form-grid"><div class="field"><label>Visibility</label><select id="sr-room-visibility"><option value="public" ${editing?.visibility==='public'?'selected':''}>Public</option><option value="private" ${editing?.visibility==='private'?'selected':''}>Private · PIN</option><option value="secret" ${editing?.visibility==='secret'?'selected':''}>Secret · joining code</option></select></div><div class="field"><label>Vibe</label><select id="sr-room-vibe">${['Deep focus','Collaborative','Cozy','High energy','Build mode'].map(v=>`<option ${editing?.vibe===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
+      <div class="field" id="sr-room-pin-field" ${editing?.visibility==='private'?'':'hidden'}><label>Room PIN</label><input id="sr-room-pin" maxlength="12" inputmode="numeric" value="${esc(editing?.pin||'')}" placeholder="Required for private rooms"></div>
+      <div class="sr-sheet-actions"><button class="btn btn-primary" type="submit">${editing?'Save changes':'Create room'}</button></div>
     </form></section></div>`;
     const visibility=document.getElementById('sr-room-visibility');
     const pinField=document.getElementById('sr-room-pin-field');
-    visibility.onchange=()=>{ pinField.hidden=visibility.value!=='private'; document.getElementById('sr-room-pin').required=visibility.value==='private'; };
+    const pinInput=document.getElementById('sr-room-pin');
+    const syncVisibility=()=>{pinField.hidden=visibility.value!=='private';pinInput.required=visibility.value==='private';};
+    visibility.onchange=syncVisibility;syncVisibility();
     const close=()=>{root.innerHTML='';};
     document.getElementById('sr-create-close').onclick=close;
     document.getElementById('sr-create-overlay').onclick=e=>{if(e.target.id==='sr-create-overlay')close();};
     document.getElementById('sr-create-form').onsubmit=e=>{
       e.preventDefault();
       const type=visibility.value;
-      const code=type==='secret'?Math.random().toString(36).slice(2,8).toUpperCase():'';
-      const room={id:uid('room'),owner:'me',name:document.getElementById('sr-room-name').value.trim(),subject:document.getElementById('sr-room-subject').value.trim(),description:document.getElementById('sr-room-description').value.trim(),visibility:type,pin:type==='private'?document.getElementById('sr-room-pin').value.trim():'',code,vibe:document.getElementById('sr-room-vibe').value,capacity:clamp(Number(document.getElementById('sr-room-capacity').value)||20,2,100),members:1,online:1,streak:1,accent:'✦',tags:type==='secret'?['Created by you','Secret']:type==='private'?['Created by you','PIN']:['Created by you','Public']};
+      const existingCode=editing?.visibility==='secret'?String(editing.code||''):'';
+      const code=type==='secret'?(existingCode||Math.random().toString(36).slice(2,8).toUpperCase()):'';
+      const room={
+        id:editing?.id||uid('room'),owner:'me',
+        name:document.getElementById('sr-room-name').value.trim(),
+        subject:document.getElementById('sr-room-subject').value.trim(),
+        description:document.getElementById('sr-room-description').value.trim(),
+        visibility:type,pin:type==='private'?pinInput.value.trim():'',code,
+        vibe:document.getElementById('sr-room-vibe').value,
+        capacity:clamp(Number(document.getElementById('sr-room-capacity').value)||20,2,100),
+        members:editing?.members||1,online:editing?.online||1,streak:editing?.streak||1,
+        accent:editing?.accent||'✦',
+        tags:type==='secret'?['Created by you','Secret']:type==='private'?['Created by you','PIN']:['Created by you','Public']
+      };
       if(!room.name||!room.subject||(type==='private'&&!room.pin)) return;
-      const value=roomState(); value.customRooms.push(room); if(!value.applied.includes(room.id))value.applied.push(room.id); if(type==='private')value.verified.push(room.id); saveRoomState(value); close(); setHash(`study-rooms/${encodeURIComponent('My study rooms')}`); showToast(type==='secret'?`Room created. Joining code: ${code}`:'Study room created');
+      const value=roomState();
+      if(editing){
+        const index=value.customRooms.findIndex(item=>item.id===editing.id);
+        if(index>=0)value.customRooms[index]=room;else value.customRooms.push(room);
+      }else value.customRooms.push(room);
+      if(!value.applied.includes(room.id))value.applied.push(room.id);
+      value.verified=value.verified.filter(id=>id!==room.id);
+      if(type==='private')value.verified.push(room.id);
+      saveRoomState(value);close();setHash(`study-rooms/${encodeURIComponent('My study rooms')}`);
+      showToast(editing?'Study room updated':type==='secret'?`Room created. Joining code: ${code}`:'Study room created');
     };
   }
 
