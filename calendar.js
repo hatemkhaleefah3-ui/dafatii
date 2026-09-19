@@ -255,7 +255,7 @@
     const meta=[item.time,item.status].filter(Boolean).join(' · ');
     const progress=type==='goals'?Math.max(0,Math.min(100,Number(item.progress||0))):0;
     return `<article class="planner-table-item planner-item-${esc(type)} ${done?'done':''}" data-planner-entry-id="${esc(item.id)}">
-      <span class="planner-item-icon" aria-hidden="true">${esc(plannerTypeIcon(type))}</span>
+      <span class="planner-item-icon" aria-hidden="true">${plannerTypeIcon(type)}</span>
       <div class="planner-item-main">
         <div class="planner-item-title-row"><strong>${esc(item.title||plannerTypeLabel(type))}</strong>${priority&&type!=='attendance'?`<i class="planner-priority ${esc(priority)}" title="${esc(priorityLabel(priority))}"></i>`:''}</div>
         ${meta?`<small class="planner-item-meta">${esc(meta)}</small>`:''}
@@ -364,7 +364,7 @@
     return [label.primary,label.secondary].filter(Boolean).join(' · ');
   }
   function premiumEmpty(type,title,copy){
-    return `<div class="planner-premium-empty"><span>${esc(plannerTypeIcon(type))}</span><strong>${esc(title)}</strong><p>${esc(copy)}</p></div>`;
+    return `<div class="planner-premium-empty"><span>${plannerTypeIcon(type)}</span><strong>${esc(title)}</strong><p>${esc(copy)}</p></div>`;
   }
   function dueBadge(item){
     const today=dateKey(new Date()),date=String(item.date||'');
@@ -485,7 +485,7 @@
       <div class="planner-add-proxies" aria-hidden="true"><button type="button" class="dcc-native-action planner-add-proxy" data-planner-add-type="${esc(plannerTab)}" aria-label="Add ${esc(plannerTypeLabel(plannerTab))}"></button></div>
       ${hasDateRails?`<div class="planner-loop-shell planner-mode-shell"><div class="planner-loop-track" data-planner-loop="mode" role="listbox" aria-label="Date range">${modeLoop()}</div></div>
       <div class="planner-loop-shell planner-date-shell"><div class="planner-date-track" data-planner-loop="period" role="listbox" aria-label="${plannerMode} selection">${periodLoop()}</div></div>`:''}
-      <nav class="planner-content-tabs" aria-label="Planner sections">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}" aria-current="${plannerTab===tab?'page':'false'}"><span class="planner-tab-icon" aria-hidden="true">${esc(plannerTypeIcon(tab))}</span><span class="planner-tab-label">${esc(tabLabel(tab))}</span></button>`).join('')}</nav>
+      <nav class="planner-content-tabs" aria-label="Planner sections">${PLANNER_TABS.map(tab=>`<button class="${plannerTab===tab?'active':''}" data-planner-tab="${tab}" aria-current="${plannerTab===tab?'page':'false'}"><span class="planner-tab-icon" aria-hidden="true">${plannerTypeIcon(tab)}</span><span class="planner-tab-label">${esc(tabLabel(tab))}</span></button>`).join('')}</nav>
       <section class="planner-content" aria-live="polite"><div class="planner-content-head"><div><span>${esc(tabLabel(plannerTab))}</span><h2>${hasDateRails?esc(selected.primary):esc(tabLabel(plannerTab))}</h2></div><small class="planner-content-help">${isSchedule?(plannerMode==='week'?'Days across the top · time down the side':'Only Schedule uses a timetable'):hasDateRails?'Filtered by the date controls above':'This section uses its own workspace'}</small></div>${scheduleContent()}</section>
     </section>`;
   }
@@ -813,7 +813,7 @@
       const progress=goalProgress(editing||{}),target=goalTarget(editing||{}),current=goalCurrent(editing||{}),unit=goalUnit(editing||{});
       root.innerHTML=`<div class="entity-sheet-overlay planner-entry-overlay" id="planner-entry-overlay"><section class="entity-sheet planner-entry-sheet planner-${esc(type)}-sheet" role="dialog" aria-modal="true">
         <div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(plannerTypeLabel(type))}</div><h2>${title} ${esc(plannerTypeLabel(type))}</h2><p>${esc(typeCopy)}</p></div><button class="icon-btn" id="planner-entry-close">×</button></div><form id="planner-entry-form">
-        <div class="planner-entry-type-banner type-${esc(type)}"><span>${esc(plannerTypeIcon(type))}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${esc(typeCopy)}</small></div></div>
+        <div class="planner-entry-type-banner type-${esc(type)}"><span>${plannerTypeIcon(type)}</span><div><strong>${esc(plannerTypeLabel(type))}</strong><small>${esc(typeCopy)}</small></div></div>
         <div class="field"><label>Title</label><input name="title" maxlength="140" required value="${esc(editing?.title||'')}" placeholder="${type==='tasks'?'Finish chapter review':type==='todos'?'Send assignment':type==='goals'?'Read 12 research papers':'Planner item'}"></div>
         <div class="calendar-form-grid"><div class="field"><label>${dateLabel}</label><input name="date" type="date" value="${esc(chosenDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(chosenTime)}" required></div></div>
         ${type==='tasks'?`<div class="calendar-form-grid"><div class="field"><label>Priority</label><select name="priority"><option value="low" ${editing?.priority==='low'?'selected':''}>Low</option><option value="medium" ${!editing?.priority||editing?.priority==='medium'?'selected':''}>Medium</option><option value="high" ${editing?.priority==='high'?'selected':''}>High</option></select></div><div class="field"><label>Focus estimate</label><select name="estimatedMinutes">${[15,25,30,45,60,90,120].map(minutes=>`<option value="${minutes}" ${taskEstimate(editing||{})===minutes?'selected':''}>${minutes} minutes</option>`).join('')}</select></div></div><div class="field"><label>Execution state</label><select name="taskState"><option value="backlog" ${taskState(editing||{})==='backlog'?'selected':''}>Backlog</option><option value="doing" ${taskState(editing||{})==='doing'?'selected':''}>In progress</option></select></div>`:''}
