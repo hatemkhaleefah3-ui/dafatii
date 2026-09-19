@@ -396,7 +396,7 @@
     const items=plannerSorted('goals'),active=items.filter(item=>!item.done),complete=items.filter(item=>item.done);
     if(!items.length)return premiumEmpty('goals','No active goals','Create a measurable goal, set a target date and move it forward in 10% steps.');
     const avg=Math.round(items.reduce((sum,item)=>sum+Math.max(0,Math.min(100,Number(item.progress||0))),0)/items.length);
-    return `<div class="planner-subpage planner-goals-page"><div class="planner-goals-hero"><div><small>Overall progress</small><strong>${avg}%</strong><span>${active.length} active · ${complete.length} complete</span></div><div class="planner-goals-orbit"><span style="--goal-progress:${avg}%"></span><b>◇</b></div></div><div class="planner-goal-grid">${items.map(goalCard).join('')}</div></div>`;
+    return `<div class="planner-subpage planner-goals-page"><div class="planner-goals-hero"><div><small>Overall progress</small><strong>${avg}%</strong><span>${active.length} active · ${complete.length} complete</span></div><div class="planner-goals-orbit" style="--goal-progress:${avg}%"><b>◇</b></div></div><div class="planner-goal-grid">${items.map(goalCard).join('')}</div></div>`;
   }
   function attendanceSubpage(){
     const items=plannerSorted('attendance');
