@@ -59,6 +59,13 @@ export async function ensureSocialSchema(db){
       created_at INTEGER NOT NULL,
       PRIMARY KEY (message_id,user_id,emoji)
     )`,
+    `CREATE TABLE IF NOT EXISTS social_poll_votes (
+      message_id TEXT NOT NULL REFERENCES social_messages(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      option_index INTEGER NOT NULL CHECK (option_index >= 0 AND option_index < 8),
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (message_id,user_id)
+    )`,
     `CREATE TABLE IF NOT EXISTS social_posts (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -243,11 +250,13 @@ async function listMessages(context,user,conversationId){
     : await context.env.DB.prepare(`SELECT sm.*,u.display_name FROM social_messages sm JOIN users u ON u.id=sm.sender_user_id WHERE sm.conversation_id=? ORDER BY sm.created_at DESC LIMIT ?`).bind(id,limit).all();
   const ordered=[...rows.results].reverse();
   const ids=ordered.map(row=>row.id);
-  const reactionMap=new Map();
+  const reactionMap=new Map(),pollVoteMap=new Map();
   if(ids.length){
     const placeholders=ids.map(()=>'?').join(',');
     const reactions=await context.env.DB.prepare(`SELECT message_id,emoji,COUNT(*) AS count FROM social_reactions WHERE message_id IN (${placeholders}) GROUP BY message_id,emoji`).bind(...ids).all();
     for(const row of reactions.results){if(!reactionMap.has(row.message_id))reactionMap.set(row.message_id,{});reactionMap.get(row.message_id)[row.emoji]=Number(row.count||0);}
+    const votes=await context.env.DB.prepare(`SELECT message_id,option_index,COUNT(*) AS count FROM social_poll_votes WHERE message_id IN (${placeholders}) GROUP BY message_id,option_index`).bind(...ids).all();
+    for(const row of votes.results){if(!pollVoteMap.has(row.message_id))pollVoteMap.set(row.message_id,new Map());pollVoteMap.get(row.message_id).set(Number(row.option_index),Number(row.count||0));}
   }
   if(member)await context.env.DB.prepare('UPDATE social_members SET last_read_at=? WHERE conversation_id=? AND user_id=?').bind(Date.now(),id,user.id).run();
   let displayName=conversation.kind==='anonymous'?(conversation.topic||'Anonymous room'):conversation.name;
@@ -256,8 +265,15 @@ async function listMessages(context,user,conversationId){
     displayName=other?.display_name||'Private chat';
   }
   return ok({conversation:{id:conversation.id,kind:conversation.kind,name:displayName,topic:conversation.topic,visibility:conversation.visibility,memberCount:Number((await context.env.DB.prepare('SELECT COUNT(*) AS count FROM social_members WHERE conversation_id=?').bind(id).first())?.count||0),joined:Boolean(member)},
-    messages:ordered.map(row=>({id:row.id,type:row.type,payload:row.deleted_at?null:parsePayload(row.payload_json),deleted:Boolean(row.deleted_at),mine:row.sender_user_id===user.id,
-      sender:conversation.kind==='anonymous'?anonymousAlias(id,row.sender_user_id):row.display_name,at:row.created_at,editedAt:row.edited_at||null,reactions:reactionMap.get(row.id)||{}}))});
+    messages:ordered.map(row=>{
+      let payload=row.deleted_at?null:parsePayload(row.payload_json);
+      if(row.type==='poll'&&payload?.options){
+        const counts=pollVoteMap.get(row.id)||new Map();
+        payload={...payload,options:payload.options.map((option,index)=>({...option,votes:Number(counts.get(index)||0)}))};
+      }
+      return {id:row.id,type:row.type,payload,deleted:Boolean(row.deleted_at),mine:row.sender_user_id===user.id,
+        sender:conversation.kind==='anonymous'?anonymousAlias(id,row.sender_user_id):row.display_name,at:row.created_at,editedAt:row.edited_at||null,reactions:reactionMap.get(row.id)||{}};
+    })});
 }
 
 async function listMembers(context,user,conversationId){
@@ -304,6 +320,18 @@ async function reactMessage(context,user,conversationId,messageId){
   if(existing)await context.env.DB.prepare('DELETE FROM social_reactions WHERE message_id=? AND user_id=? AND emoji=?').bind(mid,user.id,emoji).run();
   else await context.env.DB.prepare('INSERT INTO social_reactions (message_id,user_id,emoji,created_at) VALUES (?,?,?,?)').bind(mid,user.id,emoji,Date.now()).run();
   return ok({active:!existing});
+}
+
+async function votePoll(context,user,conversationId,messageId){
+  const cid=requireUuid(conversationId),mid=requireUuid(messageId);
+  await requireWritable(context.env.DB,user.id,cid);
+  const row=await context.env.DB.prepare("SELECT type,payload_json FROM social_messages WHERE id=? AND conversation_id=? AND deleted_at IS NULL").bind(mid,cid).first();
+  if(!row||row.type!=='poll')throw new HttpError(404,'POLL_NOT_FOUND','Poll was not found.');
+  const payload=parsePayload(row.payload_json),input=await readJson(context.request,2048),index=Number(input.optionIndex);
+  if(!Number.isSafeInteger(index)||index<0||index>=Math.min(Array.isArray(payload.options)?payload.options.length:0,8))throw new HttpError(400,'INVALID_POLL_OPTION','Poll option is invalid.');
+  await context.env.DB.prepare(`INSERT INTO social_poll_votes (message_id,user_id,option_index,created_at) VALUES (?,?,?,?)
+    ON CONFLICT(message_id,user_id) DO UPDATE SET option_index=excluded.option_index,created_at=excluded.created_at`).bind(mid,user.id,index,Date.now()).run();
+  return ok({voted:true,optionIndex:index});
 }
 
 async function listPosts(context,user){
@@ -355,6 +383,8 @@ export async function dispatchSocialRoute(context,method,path,user){
   if(match&&method==='GET')return listMembers(context,user,match[1]);
   match=path.match(/^social\/conversations\/([0-9a-f-]{36})\/messages\/([0-9a-f-]{36})\/reactions$/i);
   if(match&&method==='POST')return reactMessage(context,user,match[1],match[2]);
+  match=path.match(/^social\/conversations\/([0-9a-f-]{36})\/messages\/([0-9a-f-]{36})\/poll$/i);
+  if(match&&method==='POST')return votePoll(context,user,match[1],match[2]);
   match=path.match(/^social\/posts\/([0-9a-f-]{36})\/save$/i);
   if(match&&method==='POST')return toggleSavePost(context,user,match[1]);
   throw new HttpError(404,'NOT_FOUND','Social API route was not found.');
