@@ -40,6 +40,7 @@ assert.match(design, /\.viewer-status-list/, 'lecture status must use a dedicate
 assert.match(design, /\.viewer-examine-list/, 'examine tools must use a dedicated sheet layout');
 assert.match(workspace, /video-reader-topbar/, 'video viewer must use the reference-style minimal top bar');
 assert.match(workspace, /video-reader-examine/, 'video viewer must expose Examine from the top bar');
+assert.match(workspace, /if \(event\.defaultPrevented\) \{\s*onClose\?\.\(\);\s*return;/, 'accepted Flashcards, MCQ and Question & Answer actions must close either viewer before routing');
 assert.match(workspace, /video-note-composer/, 'video viewer must include the inline note composer');
 assert.match(workspace, /data-video-source-button/, 'video viewer must support switching note sources');
 assert.match(workspace, /data-video-visibility="personal"/, 'video note composer must expose personal visibility');
@@ -61,7 +62,7 @@ assert.match(css, /reader-loading[\s\S]*visibility:hidden/, 'document stages mus
 assert.match(css, /touch-action:pan-x pan-y/, 'single-finger document scrolling must remain enabled while custom pinch zoom is active');
 assert.match(index, /file-reader-interactions\.css\?v=20260917-1/, 'the loading and pinch styles must be loaded');
 assert.match(index, /file-reader-interactions\.js\?v=20260919-3/, 'the loading, pinch, and chrome controller must be loaded');
-assert.match(index, /viewer-workspace\.js\?v=20260919-4/, 'the redesigned reader and video controls must be loaded');
+assert.match(index, /viewer-workspace\.js\?v=20260919-5/, 'the redesigned reader and video controls must be loaded');
 assert.match(index, /viewer-workspace\.css\?v=20260919-5/, 'the redesigned video viewer presentation must be loaded');
 assert.match(index, /lecture-reader-design\.css\?v=20260919-2/, 'the redesigned file-reader presentation must be loaded');
 assert.match(index, /pdf-viewer\.js\?v=20260919-1/, 'the PDF reader baseline reset must be loaded');
