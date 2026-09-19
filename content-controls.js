@@ -75,6 +75,7 @@
   function itemFor(control) {
     const root = scope();
     if (!root || !control) return null;
+    if (control.matches?.('.cal-head-button,.cal-cell')) return control;
     let node = control.parentElement;
     while (node && node !== root && node !== document.body) {
       if (isIdentityNode(node)) return node;
