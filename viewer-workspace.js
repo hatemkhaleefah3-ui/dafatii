@@ -166,10 +166,12 @@
     }
     const event = new CustomEvent('dafatii:viewer-study-action', { cancelable:true, detail:{ action, lecture:context.lecture || null, fileId:context.fileId || null, url:context.url || null } });
     window.dispatchEvent(event);
-    if (!event.defaultPrevented) {
-      if (typeof showToast === 'function') showToast(t('unavailable'));
-      else alert(t('unavailable'));
+    if (event.defaultPrevented) {
+      onClose?.();
+      return;
     }
+    if (typeof showToast === 'function') showToast(t('unavailable'));
+    else alert(t('unavailable'));
   }
 
   function openSwitchLecture(root, context, controls = {}) {
