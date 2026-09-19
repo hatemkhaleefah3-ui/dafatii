@@ -129,16 +129,16 @@
 
   function composer(c,pro){
     const reply=ui.replyTo?c.messages.find(m=>m.id===ui.replyTo):null,editing=ui.editing?c.messages.find(m=>m.id===ui.editing):null,draft=editing?.text??pro.drafts[c.id]??'';
-    return `<div class="chatpro-composer-zone">
-      ${reply||editing?`<div class="chatpro-compose-context"><span>${editing?'Edit':'Reply'}</span><div><strong>${editing?'Edit message':`Reply to ${reply?.mine?'yourself':reply?.sender||c.name}`}</strong><small>${esc(editing?.text||preview(reply))}</small></div><button id="chatpro-context-close" aria-label="Close">${icon('close')}</button></div>`:''}
+    return `<div class="chatpro-composer-zone" data-chat-composer>
+      ${reply||editing?`<div class="chatpro-compose-context"><span>${editing?'Edit':'Reply'}</span><div><strong>${editing?'Edit message':`Reply to ${reply?.mine?'yourself':reply?.sender||c.name}`}</strong><small>${esc(editing?.text||preview(reply))}</small></div><button type="button" id="chatpro-context-close" aria-label="Close">${icon('close')}</button></div>`:''}
       ${ui.attach?attachmentMenu(c):''}${ui.emoji?emojiPicker():''}${ui.sticker?stickerPanel():''}
       <div class="chatpro-composer">
-        <button id="chatpro-attach" title="Attach" aria-label="Attach">${icon('attach')}</button>
-        <button id="chatpro-emoji" title="Emoji" aria-label="Emoji">${icon('smile')}</button>
-        <textarea id="chatpro-input" rows="1" maxlength="5000" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea>
-        <button id="chatpro-voice" title="Voice message" aria-label="Voice message">${icon('mic')}</button>
-        <button id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
-        <button id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
+        <button type="button" id="chatpro-attach" title="Attach" aria-label="Attach">${icon('attach')}</button>
+        <button type="button" id="chatpro-emoji" title="Emoji" aria-label="Emoji">${icon('smile')}</button>
+        <textarea id="chatpro-input" rows="1" maxlength="5000" enterkeyhint="send" placeholder="Message ${esc(c.name)}…">${esc(draft)}</textarea>
+        <button type="button" id="chatpro-voice" title="Voice message" aria-label="Voice message">${icon('mic')}</button>
+        <button type="button" id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
+        <button type="button" id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
       </div>
       <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" hidden>
     </div>`;
@@ -197,6 +197,12 @@
 
   function bindComposer(c,state,pro){
     const input=document.getElementById('chatpro-input');if(!input)return;
+    const zone=input.closest('[data-chat-composer]');
+    const keepComposerInteractionLocal=event=>event.stopPropagation();
+    zone?.addEventListener('pointerdown',keepComposerInteractionLocal);
+    zone?.addEventListener('click',keepComposerInteractionLocal);
+    zone?.addEventListener('focusin',keepComposerInteractionLocal);
+    input.addEventListener('focus',()=>requestAnimationFrame(()=>{const box=document.getElementById('chatpro-messages');if(box)box.scrollTop=box.scrollHeight;}));
     const draftSave=()=>{if(ui.editing)return;pro.drafts[c.id]=input.value;savePro(pro);};
     input.addEventListener('input',()=>{input.style.height='auto';input.style.height=`${Math.min(150,input.scrollHeight)}px`;draftSave();});
     input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCurrent(c,state,pro,input);}});
