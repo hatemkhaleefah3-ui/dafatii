@@ -9,8 +9,8 @@ const social=fs.readFileSync('student-social.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"), 'chat app must be excluded from unified content controls');
-assert.ok(js.includes("button.innerHTML = '<span aria-hidden="true">^</span><small>Control</small>'"), 'each eligible page needs the floating up-arrow control button');
-assert.ok(js.includes("data-dcc-action="delete"") && js.includes("data-dcc-action="edit"") && js.includes("data-dcc-action="add""), 'control sheet must expose delete, edit, and add');
+assert.ok(js.includes("button.innerHTML") && js.includes('aria-hidden="true">^</span><small>Control'), 'each eligible page needs the floating up-arrow control button');
+assert.ok(js.includes('data-dcc-action="delete"') && js.includes('data-dcc-action="edit"') && js.includes('data-dcc-action="add"'), 'control sheet must expose delete, edit, and add');
 assert.ok(js.includes("data-dcc-cancel") && js.includes("data-dcc-all") && js.includes("data-dcc-delete"), 'delete mode must expose cancel, select all, and delete controls');
 assert.ok(js.includes("exit.textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit'"), 'selection/edit systems need an explicit exit control above the action bar');
 assert.ok(js.includes("event.stopImmediatePropagation()") && js.includes("event.target.closest('.dcc-selectable')"), 'mode interactions must own item clicks instead of leaking to page navigation');
