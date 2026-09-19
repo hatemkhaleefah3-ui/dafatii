@@ -7,6 +7,7 @@ import { completionDisposition, inspectObject, inspectObjectPrefix, signedObject
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
 import { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } from '../../_lib/policy.mjs';
 import { translateInterfaceText } from '../../_lib/translate.mjs';
+import { dispatchSocialRoute } from '../../_lib/social.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
@@ -333,6 +334,8 @@ async function dispatch(context) {
   const courseResponse = await dispatchCourseRoute(context, method, path);
   if (courseResponse) return courseResponse;
   const user = await actorFor(context.env.DB, await requireUser(context), context.env);
+  const socialResponse = await dispatchSocialRoute(context, method, path, user);
+  if (socialResponse) return socialResponse;
   if (method === 'POST' && path === 'translate') {
     const input = await readJson(context.request, 16384);
     return ok({ translations: await translateInterfaceText(context.env, input) });

@@ -8,7 +8,7 @@
     'dafatii:subjects','dafatii:lectures','dafatii:weeklySchedule','dafatii:scheduleNotes',
     'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
     'dafatii:examDays','dafatii:examPeriods','dafatii:studentSuite:v1','dafatii:studyRoomState:v1',
-    'dafatii:studyRoomWorkspace:v1','dafatii:chatState:v1','dafatii:chatProState:v1',
+    'dafatii:studyRoomWorkspace:v1',
     'dafatii:materialFiles:v1'
   ]);
   const GLOBAL_USER_KEYS = new Set(['dafatii:studyRoomState:v1','dafatii:studyRoomWorkspace:v1']);
@@ -84,13 +84,12 @@
     const exams=[{id:'seed-exam-1',subject:subjects[0].name,subjectId:subjects[0].id,lectureIds:(lectures[subjects[0].id]||[]).map(item=>item.id),day:dueDate(28),time:'10:30 AM',location:'Main hall',notes:'Review all listed lectures.',degree:null}];
     const focusLog=[{id:'seed-focus-1',minutes:50,label:`${subjects[0].name} review`,subjectId:subjects[0].id,at:createdAt-86400000}];
     const suite={profile:{name:'Student',username:'student',school:'Dafatii Academy',course:templateName,semester:'Foundation term',bio:'',targetHours:8,studyLanguage:'English',interfaceLanguage:'English'},preferences:{motion:'full',density:'comfortable',weekStarts:'Sunday',defaultFocus:50,notifications:true},notes,resources,assignments,deadlines,focusLog,applications:[],scholarships:[],volunteer:[],support:[],activity:[]};
-    const conversations=template.chats.map(([name,message],index)=>({id:`course-chat-${index+1}`,kind:index?'group':'private',name,avatar:name[0],status:index?'Course group · active':'online',messages:[{id:`course-message-${index+1}`,mine:false,type:'text',text:message,at:createdAt-(index+1)*900000,reactions:{}}]}));
-    return {subjects,lectures,suite,schedule,exams,chat:{conversations,selected:{private:conversations[0]?.id||'',group:conversations[1]?.id||'',unknown:''},reported:[],blocked:[]}};
+    return {subjects,lectures,suite,schedule,exams};
   }
 
   function seedValues(templateName){
     const seed=courseSeed(templateName);
-    return {'dafatii:subjects':seed.subjects,'dafatii:lectures':seed.lectures,'dafatii:studentSuite:v1':seed.suite,'dafatii:weeklySchedule':seed.schedule,'dafatii:examSchedule':seed.exams,'dafatii:chatState:v1':seed.chat};
+    return {'dafatii:subjects':seed.subjects,'dafatii:lectures':seed.lectures,'dafatii:studentSuite:v1':seed.suite,'dafatii:weeklySchedule':seed.schedule,'dafatii:examSchedule':seed.exams};
   }
 
   const runtime={actor:null,courses:[],schoolCourse:null,schoolContent:{subjects:[],lectures:{}},activeId:localStorage.getItem('__dafatii:active-course')||'',revisions:new Map(),queues:new Map(),ready:false};
