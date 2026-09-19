@@ -651,3 +651,206 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
   .planner-sheet-actions{margin-inline:-12px;padding-inline:12px}
   .planner-sheet-actions .btn{min-width:145px}
 }
+
+
+/* Planner v6 — rebuilt Tasks / To-do / Goals with shared dual date rails */
+.planner-date-controls{
+  display:grid;gap:8px;padding:10px;border:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+  border-radius:22px;background:
+    radial-gradient(circle at 100% 0%,color-mix(in srgb,var(--accent) 6%,transparent),transparent 36%),
+    color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 12px 34px rgba(17,30,55,.055),inset 0 1px 0 rgba(255,255,255,.58)
+}
+.planner-date-control-label{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 5px}
+.planner-date-control-label>span{
+  color:var(--text);font:850 9px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em
+}
+.planner-date-control-label>small{color:var(--muted);font:650 8px/1.2 Manrope,sans-serif}
+.planner-date-controls .planner-loop-shell{margin:0}
+.planner-date-controls .planner-selected-summary{margin-top:2px}
+
+.planner-v6{display:grid;gap:14px}
+.planner-page:not([data-planner-tab-current="schedule"]) .planner-v6{
+  padding:0 1px 4px
+}
+
+/* Tasks v6 — period-scoped execution board */
+.planner-v6-task-hero{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;
+  padding:18px;border:1px solid color-mix(in srgb,#8b5cf6 18%,var(--line));border-radius:24px;
+  background:
+    radial-gradient(circle at 100% 0%,color-mix(in srgb,#8b5cf6 15%,transparent),transparent 45%),
+    linear-gradient(145deg,var(--surface),color-mix(in srgb,#8b5cf6 3%,var(--surface)));
+  box-shadow:0 14px 34px rgba(68,45,125,.07),inset 0 1px 0 rgba(255,255,255,.62)
+}
+.planner-v6-task-hero>div:first-child>small,
+.planner-v6-todo-hero>div:first-child>small,
+.planner-v6-goal-hero>div:first-child>small{
+  display:block;color:var(--muted);font:820 8px/1.1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.12em
+}
+.planner-v6-task-hero h3,.planner-v6-todo-hero h3,.planner-v6-goal-hero h3{
+  margin:6px 0 0;font:900 21px/1.08 Manrope,sans-serif;letter-spacing:-.035em
+}
+.planner-v6-task-hero p,.planner-v6-todo-hero p,.planner-v6-goal-hero p{
+  margin:7px 0 0;color:var(--muted);font:650 9.5px/1.45 Manrope,sans-serif
+}
+.planner-v6-task-kpis,.planner-v6-goal-summary{
+  display:grid;grid-template-columns:repeat(3,minmax(72px,1fr));gap:7px
+}
+.planner-v6-task-kpis>div,.planner-v6-goal-summary>div{
+  min-height:68px;padding:10px;border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 89%,transparent);display:grid;place-items:center;align-content:center;text-align:center
+}
+.planner-v6-task-kpis strong,.planner-v6-goal-summary strong{font:900 18px/1 Manrope,sans-serif;letter-spacing:-.04em}
+.planner-v6-task-kpis span,.planner-v6-goal-summary span{margin-top:5px;color:var(--muted);font:750 7px/1.15 Manrope,sans-serif}
+.planner-v6-task-board{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start
+}
+.planner-v6-task-lane{
+  min-width:0;padding:9px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);border-radius:20px;
+  background:color-mix(in srgb,var(--surface-2) 48%,var(--surface))
+}
+.planner-v6-task-lane>header{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 10px
+}
+.planner-v6-task-lane>header small{display:block;color:var(--muted);font:760 7px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em}
+.planner-v6-task-lane>header h3{margin:4px 0 0;font:850 13px/1.1 Manrope,sans-serif}
+.planner-v6-task-lane>header>span{
+  min-width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:var(--surface);
+  color:var(--muted);font:850 8px/1 Manrope,sans-serif;box-shadow:0 4px 12px rgba(17,30,55,.05)
+}
+.planner-v6-task-lane-body{display:grid;gap:8px}
+.planner-v6-lane-empty{
+  min-height:96px;padding:14px;border:1px dashed color-mix(in srgb,var(--line) 72%,transparent);border-radius:14px;
+  display:grid;place-items:center;text-align:center;color:var(--muted);font:650 8.5px/1.4 Manrope,sans-serif
+}
+.planner-v6-task-card{
+  position:relative;padding:11px;border:1px solid var(--line);border-radius:15px;background:var(--surface);
+  box-shadow:0 7px 20px rgba(17,30,55,.045),inset 0 1px 0 rgba(255,255,255,.58)
+}
+.planner-v6-task-card.priority-high{border-color:color-mix(in srgb,#ef4444 22%,var(--line))}
+.planner-v6-task-card.done{opacity:.62}
+.planner-v6-task-top{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.planner-v6-task-top>span:nth-child(2){color:var(--muted);font:770 7px/1 Manrope,sans-serif}
+.planner-v6-priority-dot{width:7px;height:7px;border-radius:999px;background:#f59e0b}
+.planner-v6-priority-dot.high{background:#ef4444}.planner-v6-priority-dot.low{background:#22c55e}
+.planner-v6-task-top .planner-due{margin-inline-start:auto}
+.planner-v6-task-card h4{margin:9px 0 0;font:850 12px/1.2 Manrope,sans-serif;letter-spacing:-.01em}
+.planner-v6-task-card.done h4{text-decoration:line-through;color:var(--muted)}
+.planner-v6-task-card>p{margin:6px 0 0;color:var(--muted);font:620 8.5px/1.4 Manrope,sans-serif}
+.planner-v6-task-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;color:var(--muted);font:720 7.5px/1 Manrope,sans-serif}
+.planner-v6-task-actions{display:flex;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+.planner-v6-task-actions button,.planner-v6-goal-actions button{
+  min-height:30px;padding:0 9px;border:0;border-radius:9px;background:#7c3aed;color:#fff;font:820 7.5px/1 Manrope,sans-serif;cursor:pointer
+}
+.planner-v6-task-actions button.soft,.planner-v6-goal-actions button.soft{
+  border:1px solid var(--line);background:var(--surface-2);color:var(--text)
+}
+
+/* To-do v6 — list notebook */
+.planner-v6-todo-hero{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:18px;
+  border:1px solid color-mix(in srgb,#0ea5e9 18%,var(--line));border-radius:24px;
+  background:radial-gradient(circle at 100% 0%,color-mix(in srgb,#0ea5e9 14%,transparent),transparent 45%),var(--surface);
+  box-shadow:0 14px 34px rgba(17,30,55,.055)
+}
+.planner-v6-todo-score{
+  --todo-score:0%;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;align-content:center;
+  background:conic-gradient(#0ea5e9 var(--todo-score),color-mix(in srgb,var(--line) 72%,transparent) 0);
+  position:relative;isolation:isolate
+}
+.planner-v6-todo-score::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--surface);z-index:-1}
+.planner-v6-todo-score strong{font:900 15px/1 Manrope,sans-serif}.planner-v6-todo-score span{margin-top:4px;color:var(--muted);font:760 6.5px/1 Manrope,sans-serif}
+.planner-v6-todo-toolbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:15px;background:var(--surface)
+}
+.planner-v6-todo-toolbar>span{padding:5px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);font:720 7.5px/1 Manrope,sans-serif}
+.planner-v6-todo-toolbar>span b{color:var(--text)}
+.planner-v6-todo-toolbar button{margin-inline-start:auto;border:0;background:transparent;color:#dc3545;font:800 7.5px/1 Manrope,sans-serif;cursor:pointer}
+.planner-v6-todo-notebook{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.planner-v6-todo-list-card{
+  overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:0 9px 24px rgba(17,30,55,.045)
+}
+.planner-v6-todo-list-card>header{display:flex;align-items:end;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line);background:color-mix(in srgb,#0ea5e9 3%,var(--surface))}
+.planner-v6-todo-list-card>header small{display:block;color:#0284c7;font:820 7px/1 Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em}
+.planner-v6-todo-list-card>header h3{margin:4px 0 0;font:850 13px/1.1 Manrope,sans-serif}
+.planner-v6-todo-list-card>header>span{color:var(--muted);font:760 7.5px/1 Manrope,sans-serif}
+.planner-v6-todo-row{
+  position:relative;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:10px 11px;border-bottom:1px solid var(--line)
+}
+.planner-v6-todo-row:last-child{border-bottom:0}
+.planner-v6-todo-row.done{opacity:.58}.planner-v6-todo-row.important{background:color-mix(in srgb,#f59e0b 3%,var(--surface))}
+.planner-v6-todo-check{
+  width:32px;height:32px;border:0;border-radius:10px;background:color-mix(in srgb,#0ea5e9 7%,var(--surface-2));display:grid;place-items:center;cursor:pointer
+}
+.planner-v6-todo-check span{width:18px;height:18px;border:2px solid color-mix(in srgb,#0ea5e9 45%,var(--line));border-radius:6px;display:grid;place-items:center;color:#0284c7;font:900 9px/1 Manrope,sans-serif}
+.planner-v6-todo-row.done .planner-v6-todo-check span{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+.planner-v6-todo-tags{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.planner-v6-todo-tags>span:first-child,.planner-v6-todo-tags>b{
+  padding:3px 6px;border-radius:999px;background:color-mix(in srgb,#0ea5e9 7%,var(--surface-2));color:#0284c7;font:800 6.5px/1 Manrope,sans-serif
+}
+.planner-v6-todo-tags>b{background:color-mix(in srgb,#f59e0b 9%,var(--surface));color:#b45309}
+.planner-v6-todo-copy>strong{display:block;font:830 10.5px/1.2 Manrope,sans-serif}
+.planner-v6-todo-row.done .planner-v6-todo-copy>strong{text-decoration:line-through;color:var(--muted)}
+.planner-v6-todo-copy p{margin:5px 0 0;color:var(--muted);font:600 8px/1.35 Manrope,sans-serif}
+.planner-v6-todo-copy>small{display:block;margin-top:5px;color:var(--muted);font:700 7px/1 Manrope,sans-serif}
+.planner-v6-todo-actions{display:grid;gap:5px;justify-items:end}
+.planner-v6-todo-actions button{
+  min-height:28px;padding:0 7px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--muted);font:800 7px/1 Manrope,sans-serif;cursor:pointer
+}
+.planner-v6-todo-actions button:first-child{width:28px;padding:0;font-size:12px}
+.planner-v6-todo-actions button:first-child.active{background:color-mix(in srgb,#f59e0b 12%,var(--surface));border-color:color-mix(in srgb,#f59e0b 26%,var(--line));color:#b45309}
+
+/* Goals v6 — measurable outcome studio */
+.planner-v6-goal-hero{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px;
+  border:1px solid color-mix(in srgb,#10b981 18%,var(--line));border-radius:24px;
+  background:radial-gradient(circle at 100% 0%,color-mix(in srgb,#10b981 14%,transparent),transparent 45%),var(--surface);
+  box-shadow:0 14px 34px rgba(17,30,55,.055)
+}
+.planner-v6-goal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.planner-v6-goal-card{
+  position:relative;display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center;padding:14px;
+  border:1px solid var(--line);border-radius:22px;background:var(--surface);box-shadow:0 10px 28px rgba(17,30,55,.05)
+}
+.planner-v6-goal-card.done{opacity:.68}
+.planner-v6-goal-ring{
+  --goal-score:0%;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(#10b981 var(--goal-score),color-mix(in srgb,var(--line) 72%,transparent) 0)
+}
+.planner-v6-goal-ring>div{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;align-content:center;background:var(--surface)}
+.planner-v6-goal-ring strong{font:900 15px/1 Manrope,sans-serif;color:#047857}.planner-v6-goal-ring span{margin-top:4px;color:var(--muted);font:720 6.5px/1 Manrope,sans-serif}
+.planner-v6-goal-kicker{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.planner-v6-goal-kicker>span:last-child{color:var(--muted);font:720 7px/1 Manrope,sans-serif}
+.planner-v6-goal-body h3{margin:8px 0 0;font:850 13px/1.2 Manrope,sans-serif}
+.planner-v6-goal-body>p{margin:6px 0 0;color:var(--muted);font:610 8.5px/1.4 Manrope,sans-serif}
+.planner-v6-goal-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:11px}
+.planner-v6-goal-numbers>div{padding:8px;border-radius:11px;background:var(--surface-2)}
+.planner-v6-goal-numbers strong{display:block;font:850 11px/1 Manrope,sans-serif}.planner-v6-goal-numbers span{display:block;margin-top:4px;color:var(--muted);font:680 6.5px/1.2 Manrope,sans-serif}
+.planner-v6-goal-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.planner-v6-goal-actions button{background:#059669}.planner-v6-goal-actions button:disabled{opacity:.35;cursor:not-allowed}
+.planner-v6-goal-footnote{
+  padding:9px 12px;border-radius:13px;background:color-mix(in srgb,#10b981 5%,var(--surface));color:#047857;font:740 8px/1.35 Manrope,sans-serif;text-align:center
+}
+.planner-goal-measure-form{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+@media(max-width:900px){
+  .planner-v6-task-board{grid-template-columns:1fr}
+  .planner-v6-todo-notebook,.planner-v6-goal-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .planner-date-controls{padding:8px;border-radius:18px}
+  .planner-date-control-label{padding-inline:3px}
+  .planner-date-control-label>small{display:none}
+  .planner-v6-task-hero,.planner-v6-todo-hero,.planner-v6-goal-hero{grid-template-columns:1fr;padding:14px;border-radius:20px}
+  .planner-v6-task-kpis,.planner-v6-goal-summary{grid-template-columns:repeat(3,1fr)}
+  .planner-v6-task-kpis>div,.planner-v6-goal-summary>div{min-height:58px;padding:8px}
+  .planner-v6-todo-score{width:68px;height:68px}
+  .planner-v6-todo-hero .planner-v6-todo-score{justify-self:start}
+  .planner-v6-todo-row{grid-template-columns:31px minmax(0,1fr);align-items:start}
+  .planner-v6-todo-actions{grid-column:2;display:flex;justify-items:start}
+  .planner-v6-goal-card{grid-template-columns:72px minmax(0,1fr);gap:10px;padding:11px}
+  .planner-v6-goal-ring{width:68px;height:68px}.planner-v6-goal-ring>div{width:52px;height:52px}
+  .planner-v6-goal-numbers{grid-template-columns:1fr 1fr 1fr}
+  .planner-goal-measure-form{grid-template-columns:1fr 1fr}
+}
