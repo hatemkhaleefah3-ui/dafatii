@@ -39,7 +39,7 @@ assert.ok(admin.includes('admin-teacher-image-file') && admin.includes('validate
 assert.ok(!admin.includes('220*1024') && !admin.includes('FileReader'), 'teacher profile pictures must not have the old client-side size cap or be encoded into D1 payloads');
 assert.ok(admin.includes("purpose:'teacher-profile'") && admin.includes('DafatiiFiles.upload'), 'teacher profile pictures must use the file upload pipeline');
 assert.ok(fileClient.includes('purpose: options.purpose || null'), 'file client must forward upload purpose');
-assert.ok(api.includes("teacherProfile ? validateTeacherProfileUpload(raw) : validateUpload(raw, context.env)") && api.includes('const driveUpload = teacherProfile || usesDrive(context.env)'), 'teacher profile uploads must bypass Dafatii byte quota checks and force Google Drive storage');
+assert.ok(api.includes("teacherProfile ? validateTeacherProfileUpload(raw) : validateUpload(raw, context.env)") && api.includes('const driveUpload = teacherProfile || chatAttachment || usesDrive(context.env)'), 'teacher profile uploads must bypass Dafatii byte quota checks and force Google Drive storage');
 assert.ok(api.includes('ADMIN_REQUIRED') && api.includes('TEACHER_IMAGE_TYPES'), 'teacher profile upload path must stay admin-only and image-only');
 assert.ok(backend.includes('imageFileId') && backend.includes('/api/v1/school/teacher-images/'), 'teacher profiles must store a website image route backed by an uploaded file');
 assert.ok(schoolRoute.includes('teacher-images') && schoolRoute.includes('streamDriveFile'), 'website must stream teacher profile pictures from Google Drive');
