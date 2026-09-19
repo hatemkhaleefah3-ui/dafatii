@@ -12,7 +12,7 @@ assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"
 assert.ok(js.includes("dcc-trigger-icon") && js.includes(">⌃</span>") && js.includes("<strong>Manage</strong>"), 'each eligible page needs the premium floating up-arrow control button');
 assert.ok(js.includes('data-dcc-action="delete"') && js.includes('data-dcc-action="edit"') && js.includes('data-dcc-action="add"'), 'control sheet must expose delete, edit, and add');
 assert.ok(js.includes("data-dcc-cancel") && js.includes("data-dcc-all") && js.includes("data-dcc-delete"), 'delete mode must expose cancel, select all, and delete controls');
-assert.ok(js.includes("exit.textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit'"), 'selection/edit systems need an explicit exit control above the action bar');
+assert.ok(js.includes("exit.querySelector('strong').textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit delete'"), 'selection/edit systems need an explicit exit control above the action bar');
 assert.ok(js.includes("event.stopImmediatePropagation()") && js.includes("event.target.closest('.dcc-selectable')"), 'mode interactions must own item clicks instead of leaking to page navigation');
 assert.ok(js.includes("state.selected = new Set([...state.itemActions.keys()])") && js.includes("domOrderReverse") && js.includes("fireControl(entry.control)"), 'delete mode must support select-all and reliable reverse-order batch execution');
 assert.ok(js.includes("function uniqueAddActions()") && js.includes("route.startsWith('calendar/schedule')") && js.includes("label: 'Add schedule item'"), 'schedule add must collapse slot-specific actions into one canonical form action');
