@@ -134,6 +134,16 @@ assert.match(quietShell, /data-quiet-language/, 'the active shell needs an in-pl
 assert.match(quietShell, /applyInterfaceLanguage\(next\)/, 'language switching must use the canonical language preference');
 assert.match(quietShell, /data-quiet-courses/, 'the course access button must open a course popover');
 assert.match(quietShell, /quiet-profile-popover/, 'the profile button must open a profile summary');
+const lectureMedia = fs.readFileSync('lecture-media.js', 'utf8');
+const lectureMediaCss = fs.readFileSync('lecture-media.css', 'utf8');
+assert.ok(lectureMedia.includes('Lecture study tools v1') && lectureMedia.includes("flashcards:{") && lectureMedia.includes("mcqs:{") && lectureMedia.includes("qa:{"), 'lectures must expose dedicated Flashcards, MCQ and Question & Answer modules');
+assert.ok(lectureMedia.includes("accept=\"${ACCEPT}\"") && lectureMedia.includes(".xlsx,.xls,.xlsb,.ods,.csv,.tsv,.txt,.json") && lectureMedia.includes('sheet_to_json'), 'study-set imports must accept Excel, OpenDocument, CSV, TSV, TXT and JSON sources');
+assert.ok(lectureMedia.includes("columns:[") && lectureMedia.includes("field:'correct'") && lectureMedia.includes("field:'option4'") && lectureMedia.includes('rowsToItems(type,rows)'), 'imported sets must enforce the requested two-column and six-column schemas');
+assert.ok(lectureMedia.includes('function imageUrl(value)') && lectureMedia.includes('lecture-study-image') && lectureMedia.includes('referrerpolicy=\"no-referrer\"'), 'direct image URLs in study content must render as images');
+assert.ok(lectureMedia.includes('lecture-study-editor-launchers') && lectureMedia.includes('data-editor-study') && lectureMedia.includes('data-study-delete-set') && lectureMedia.includes('data-study-remove'), 'lecture editing must link to create/edit pages with item and whole-set deletion');
+assert.ok(lectureMedia.includes("parts[1]==='lecture-study'") && lectureMedia.includes('function flashcardStudy(items)') && lectureMedia.includes('function mcqStudy(items)') && lectureMedia.includes('function qaStudy(items)'), 'each study type must have a dedicated routed study page');
+assert.ok(lectureMediaCss.includes('Lecture study tools v1') && lectureMediaCss.includes('.flashcard-stage') && lectureMediaCss.includes('.mcq-exam-card') && lectureMediaCss.includes('.qa-exam-card') && lectureMediaCss.includes('.lecture-study-manager'), 'the three study pages and their manager must have dedicated responsive styling');
+assert.ok(index.includes('lecture-media.js?v=20260919-2') && index.includes('lecture-media.css?v=20260919-3'), 'lecture study assets must be cache-busted');
 const app = fs.readFileSync('app.js', 'utf8');
 assert.ok(app.includes("page==='calendar'?'':`<div class=\"sub-nav\"><div class=\"sub-inner\">"), 'calendar must not render the redundant global Schedule/Deadlines/Exams sub-navigation');
 assert.doesNotMatch(app, /subject-back|data-subjects-back/, 'return controls must not remain embedded in sub-navigation');
