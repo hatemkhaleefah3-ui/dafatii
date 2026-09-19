@@ -1397,3 +1397,36 @@ body .quiet-workspace>.workspace-main>.planner-page{
     padding-inline:14px!important
   }
 }
+
+
+/* Planner v16 — full-width mobile planner without outer shadow lines */
+@media(max-width:767px){
+  body .quiet-workspace>.workspace-main:has(>.planner-page){
+    padding-inline:0!important
+  }
+  body .quiet-workspace>.workspace-main>.planner-page{
+    width:100%!important;
+    max-width:100%!important;
+    margin-inline:0!important
+  }
+  .planner-page .planner-content-tabs{
+    width:100%!important;
+    max-width:100%!important;
+    margin-inline:0!important;
+    border:0!important;
+    box-shadow:none!important
+  }
+  .planner-page>.planner-content{
+    width:100%!important;
+    max-width:100%!important;
+    margin-inline:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    padding-inline:14px!important
+  }
+  .planner-page>.planner-content .planner-week-scroll,
+  .planner-page>.planner-content .planner-table-scroll{
+    box-shadow:none!important
+  }
+}
