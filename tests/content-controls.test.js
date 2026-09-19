@@ -25,11 +25,11 @@ assert.ok(suite.includes('data-content-delete-deadline'), 'custom deadlines must
 assert.ok(calendar.includes('data-planner-edit') && calendar.includes("openPlannerEntrySheet('','',button.dataset.plannerEdit)"), 'planner entries must expose edit forms');
 assert.ok(calendar.includes('data-calendar-edit-entry') && calendar.includes('data-calendar-delete-entry'), 'calendar cells must expose edit/delete endpoints');
 assert.ok(calendar.includes('data-planner-add-type') && calendar.includes('data-planner-tab-current'), 'planner subpages must expose one active Add proxy and identify the active section');
-assert.ok(js.includes("const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷',attendance:'◎'}"), 'typed schedule choices must use distinct premium icons');
+assert.ok(js.includes("const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷'}") && !js.includes("attendance:'◎'"), 'planner add metadata must include only the four remaining planner sections');
 assert.ok(social.includes('data-content-edit-room') && social.includes('data-content-delete-room'), 'user-created study rooms must expose edit/delete endpoints');
 
-assert.ok(index.includes('content-controls.css?v=20260919-7') && index.includes('content-controls.js?v=20260919-9'), 'new content-control assets must load');
+assert.ok(index.includes('content-controls.css?v=20260919-7') && index.includes('content-controls.js?v=20260919-10'), 'new content-control assets must load');
 assert.ok(index.includes('delete-manager.css?v=20260919-1') && index.includes('delete-manager.js?v=20260919-1'), 'replacement delete manager assets must load');
-assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260919-9'), 'delete manager must load before content controls delegate to it');
+assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260919-10'), 'delete manager must load before content controls delegate to it');
 
 console.log('unified content controls tests passed');
