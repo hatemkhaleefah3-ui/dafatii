@@ -184,10 +184,10 @@
     if(mode==='week'){
       const start=weekStart(date),end=addDate(start,'day',6);
       const cross=start.getMonth()!==end.getMonth();
-      return {primary:`${monthName(start,'short')} ${start.getDate()}–${cross?monthName(end,'short')+' ':''}${end.getDate()}`,secondary:'Week',meta:String(start.getFullYear())};
+      return {primary:`${monthName(start,'short')} ${start.getDate()}–${cross?monthName(end,'short')+' ':''}${end.getDate()}`,secondary:'',meta:String(start.getFullYear())};
     }
     if(mode==='month')return {primary:monthName(date),secondary:String(date.getFullYear()),meta:'Month'};
-    return {primary:String(date.getFullYear()),secondary:'Year',meta:`${date.getFullYear()-1} · ${date.getFullYear()+1}`};
+    return {primary:String(date.getFullYear()),secondary:'',meta:`${date.getFullYear()-1} · ${date.getFullYear()+1}`};
   }
   function modeLoop(){
     const currentIndex=Math.max(0,PLANNER_MODES.indexOf(plannerMode));
@@ -200,7 +200,7 @@
   function periodLoop(){
     return [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7].map(offset=>{
       const date=addDate(plannerDate,plannerMode,offset),label=periodLabel(plannerMode,date);
-      return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong><span>${esc(label.secondary)}</span></button>`;
+      return `<button type="button" class="planner-date-item ${offset===0?'active':''}" data-planner-period-offset="${offset}" aria-current="${offset===0?'date':'false'}" tabindex="-1"><strong>${esc(label.primary)}</strong>${label.secondary?`<span>${esc(label.secondary)}</span>`:''}</button>`;
     }).join('');
   }
   const tabLabel = tab => ({tasks:'Tasks',schedule:'Schedule',todos:'To do',goals:'Goals'}[tab]||tab);
@@ -211,7 +211,8 @@
     goals:{label:'Goal',plural:'Goals',icon:'◇'}
   });
   const plannerTypeLabel = type => plannerTypeMeta[type]?.label || tabLabel(type);
-  const plannerTypeIcon = type => plannerTypeMeta[type]?.icon || '•';
+  const plannerTypeIconName = Object.freeze({tasks:'check',schedule:'clock',todos:'representer',goals:'star'});
+  const plannerTypeIcon = type => window.DafatiiIcons?.icon(plannerTypeIconName[type]) || plannerTypeMeta[type]?.icon || '•';
   const priorityLabel = value => ({high:'High priority',medium:'Medium priority',low:'Low priority'}[value]||'');
 
   function recurringForDate(date){
