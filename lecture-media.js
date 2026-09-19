@@ -366,7 +366,7 @@
 })();
 
 
-/* Lecture study tools v2: lecture-linked flashcards, MCQ and Q&A workspaces */
+/* Lecture study tools v3: lecture-linked flashcards, MCQ and Q&A workspaces */
 ;(function lectureStudyToolsModule(){
   const TYPES={
     flashcards:{
@@ -662,6 +662,20 @@
     }));
   }
 
+  function viewerStudyRoute(event){
+    const actionMap={flashcards:'flashcards',mcqs:'mcqs','question-answer':'qa'};
+    const type=actionMap[event.detail?.action],lecture=event.detail?.lecture;
+    if(!type||!lecture?.id)return;
+    let subjectId=String(lecture.subjectId||'');
+    if(!subjectId){
+      const owner=Object.entries(state.lectures||{}).find(([,items])=>Array.isArray(items)&&items.some(item=>String(item.id)===String(lecture.id)));
+      subjectId=owner?.[0]||'';
+    }
+    if(!subjectId)return;
+    event.preventDefault();
+    routeTo(subjectId,lecture.id,type);
+  }
+
   const api={view,bind,routeTo};
   window.DafatiiLectureStudyTools=api;
   const originalWorkspaceContent=workspaceContent;
@@ -681,4 +695,5 @@
     requestAnimationFrame(()=>decorateEditor(subject,lectureId));
     return result;
   };
+  window.addEventListener('dafatii:viewer-study-action',viewerStudyRoute);
 })();
