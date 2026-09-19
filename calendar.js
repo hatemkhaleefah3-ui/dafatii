@@ -240,11 +240,11 @@
     const notes=String(item.notes||'').trim();
     if(type==='schedule'){
       const start=normalizePlannerTime(item.time),end=normalizePlannerTime(item.endTime||item.time);
-      const repeatLabel=item.recurring?'Weekly timetable':scheduleRepeatLabel(item);
+      const cadenceText=item.recurring?'Weekly timetable':scheduleRepeatLabel(item);
       return `<article class="planner-table-item planner-item-schedule schedule-block ${item.recurring?'recurring':''} ${context==='week'?'week-chip':''}" data-planner-entry-id="${esc(item.id)}">
         <div class="schedule-block-accent" aria-hidden="true"></div>
         <div class="schedule-block-main">
-          <div class="schedule-block-title"><strong>${esc(item.title||'Schedule item')}</strong><span>${esc(repeatLabel)}</span></div>
+          <div class="schedule-block-title"><strong>${esc(item.title||'Schedule item')}</strong><span>${esc(cadenceText)}</span></div>
           <div class="schedule-block-meta"><b>${esc(start)}${end&&end!==start?`–${esc(end)}`:''}</b>${item.location?`<span>⌖ ${esc(item.location)}</span>`:''}</div>
           ${notes&&context!=='week'?`<p>${esc(notes)}</p>`:''}
         </div>
