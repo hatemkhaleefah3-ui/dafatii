@@ -24,6 +24,7 @@
     '.cal-head-button','.cal-cell','article','tr','li'
   ].join(',');
 
+  const workspace = () => document.querySelector('.workspace,.quiet-workspace');
   const scope = () => document.querySelector('.workspace-main') || document.querySelector('.quiet-main') || document.querySelector('.workspace,.quiet-workspace');
   const excluded = el => Boolean(el.closest(
     '.dm-root,.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-mode-hint,.dcc-selection-bar,' +
@@ -196,7 +197,7 @@
   }
 
   function lockPage() {
-    const root = scope();
+    const root = workspace() || scope();
     document.querySelectorAll('.dm-page-locked').forEach(el => {
       if (el !== root) el.classList.remove('dm-page-locked');
     });
