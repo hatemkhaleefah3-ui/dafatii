@@ -209,15 +209,22 @@ function subjectListView(){
 
 function subjectCard(subject){
   const managed=schoolManagedWorkspace();
+  const lectureCount=Array.isArray(state.lectures[subject.id])?state.lectures[subject.id].length:0;
+  const lectureLabel=`${lectureCount} ${lectureCount===1?'lecture':'lectures'}`;
   return `
     <div class="subject-card-wrap ${managed?'school-managed-card':''}" data-subject-id="${escapeHtml(subject.id)}">
       <article class="subject-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(subject.name)}">
-        <div class="subject-card-top"><div class="subject-icon">${escapeHtml(subject.icon)}</div>${managed?'':`<div class="subject-desktop-actions"><button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button><button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button></div>`}</div>
-        <div class="subject-card-copy"><h2>${escapeHtml(subject.name)}</h2>${managed&&subject.teacherName?`<small>${escapeHtml(subject.teacherName)}</small>`:''}<p>Open subject →</p></div>
+        <div class="subject-card-top">
+          <div class="subject-icon" aria-hidden="true">${escapeHtml(subject.icon)}</div>
+          ${managed?'':`<div class="subject-desktop-actions"><button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button><button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button></div>`}
+        </div>
+        <div class="subject-card-copy">
+          <div class="subject-card-heading"><h2>${escapeHtml(subject.name)}</h2>${managed&&subject.teacherName?`<span class="subject-card-teacher">${escapeHtml(subject.teacherName)}</span>`:''}</div>
+          <div class="subject-card-footer"><span class="subject-card-meta">${escapeHtml(lectureLabel)}</span><span class="subject-card-open" aria-hidden="true">${icon('arrow-right')}</span></div>
+        </div>
       </article>
     </div>`;
 }
-
 function subjectDetailView(subject, tab){
   if(tab === 'lectures') return lectureListView(subject);
   return `<section class="empty-state subject-detail">

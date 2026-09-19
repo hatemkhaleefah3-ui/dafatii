@@ -29,8 +29,6 @@
     if (typeof state === 'undefined' || typeof subjectCard !== 'function' || typeof openSubjectSheet !== 'function') return;
     workspacePatched = true;
 
-    const originalSubjectCard = subjectCard;
-    const originalBindSubjects = bindSubjects;
     const originalLectureListView = lectureListView;
     const originalBindLectures = bindLectures;
 
@@ -82,16 +80,12 @@
       return subject.studyUnits.map(unit => `<option value="${esc(unit.id)}"${unit.id === active.id ? ' selected' : ''}>${esc(unit.name)}</option>`).join('');
     }
 
-    function unitCardControl(subject) {
-      normalizeSubject(subject);
-      const type = subject.studyType;
-      return `<label class="study-unit-card-switcher" data-study-unit-control data-subject-id="${esc(subject.id)}"><span>${esc(typeSingular(type))}</span><select data-study-unit-select data-subject-id="${esc(subject.id)}" aria-label="${esc(copy(`Select ${typeSingular(type).toLowerCase()}`,`اختر ${typeSingular(type)}`))}">${unitOptions(subject)}</select></label>`;
-    }
-
     function unitDetailControl(subject) {
       normalizeSubject(subject);
-      const type = subject.studyType;
-      return `<div class="study-unit-detail-bar"><div><small>${esc(copy('Study content','محتوى الدراسة'))}</small><strong>${esc(typePlural(type))}</strong></div><label><span>${esc(typeSingular(type))}</span><select data-study-unit-detail-select data-subject-id="${esc(subject.id)}">${unitOptions(subject)}</select></label></div>`;
+      const type=subject.studyType;
+      const active=activeUnit(subject);
+      const singular=typeSingular(type);
+      return `<section class="study-unit-detail-bar" aria-label="${esc(copy(`Select ${singular.toLowerCase()}`,`اختر ${singular}`))}"><div class="study-unit-detail-copy"><small>${esc(copy(`Current ${singular.toLowerCase()}`,`${singular} الحالي`))}</small><strong>${esc(active.name)}</strong></div><label class="study-unit-detail-picker"><span>${esc(copy(`Switch ${singular.toLowerCase()}`,`تغيير ${singular}`))}</span><select data-study-unit-detail-select data-subject-id="${esc(subject.id)}" aria-label="${esc(copy(`Switch ${singular.toLowerCase()}`,`تغيير ${singular}`))}">${unitOptions(subject)}</select></label></section>`;
     }
 
     function switchUnit(subjectId, unitId) {
@@ -110,23 +104,6 @@
       const unit = activeUnit(subject);
       const lectures = Array.isArray(state.lectures[subjectId]) ? state.lectures[subjectId] : [];
       return lectures.filter(lecture => lecture.studyUnitId === unit.id);
-    };
-
-    subjectCard = function(subject) {
-      normalizeSubject(subject);
-      const base = originalSubjectCard(subject);
-      return base.replace('<div class="subject-card-copy">', `${unitCardControl(subject)}<div class="subject-card-copy">`);
-    };
-
-    bindSubjects = function() {
-      originalBindSubjects();
-      document.querySelectorAll('[data-study-unit-select]').forEach(select => {
-        ['pointerdown','click','keydown'].forEach(name => select.addEventListener(name,event => event.stopPropagation()));
-        select.addEventListener('change', event => {
-          event.stopPropagation();
-          switchUnit(select.dataset.subjectId, select.value);
-        });
-      });
     };
 
     lectureListView = function(subject) {
