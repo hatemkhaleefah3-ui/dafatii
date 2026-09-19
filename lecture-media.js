@@ -362,3 +362,337 @@
   window.addEventListener('dafatii:datahydrated', () => requestAnimationFrame(decorateLectureCards));
   document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(decorateLectureCards));
 })();
+
+
+/* Lecture study tools v1: lecture-linked flashcards, MCQ and Q&A workspaces */
+;(function lectureStudyToolsModule(){
+  const TYPES={
+    flashcards:{
+      label:'Flashcards',singular:'flashcard',icon:'◫',
+      description:'Review front-and-back cards from this lecture.',
+      columns:[
+        {field:'front',label:'Front',aliases:['front']},
+        {field:'back',label:'Back',aliases:['back']}
+      ]
+    },
+    mcqs:{
+      label:'MCQs',singular:'question',icon:'◉',
+      description:'Take a multiple-choice exam and receive immediate scoring.',
+      columns:[
+        {field:'question',label:'Question',aliases:['question']},
+        {field:'correct',label:'Correct option number',aliases:['correctoptionnumber','correctoption','correct','answer']},
+        {field:'option1',label:'First option',aliases:['firstoption','option1','first']},
+        {field:'option2',label:'Second option',aliases:['secondoption','option2','second']},
+        {field:'option3',label:'Third option',aliases:['thirdoption','option3','third']},
+        {field:'option4',label:'Fourth option',aliases:['fourthoption','option4','fourth']}
+      ]
+    },
+    qa:{
+      label:'Question & Answer',singular:'question',icon:'?',
+      description:'Practice questions, reveal answers, and move at your own pace.',
+      columns:[
+        {field:'question',label:'Question',aliases:['question']},
+        {field:'answer',label:'Answer',aliases:['answer']}
+      ]
+    }
+  };
+  const ACCEPT='.xlsx,.xls,.xlsb,.ods,.csv,.tsv,.txt,.json';
+  const runtime={key:'',mode:'study',index:0,revealed:false,answers:{},draft:[],notice:''};
+  const esc=value=>escapeHtml(value??'');
+  const clone=value=>JSON.parse(JSON.stringify(value));
+  const uid=()=>`study-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+  const norm=value=>String(value??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const typeFor=value=>Object.prototype.hasOwnProperty.call(TYPES,value)?value:'';
+  const canEdit=()=>!schoolManagedWorkspace();
+
+  function routeParts(){
+    return route().split('/');
+  }
+  function findContext(parts){
+    const subjectId=decodeURIComponent(parts[2]||''),lectureId=decodeURIComponent(parts[3]||''),type=typeFor(parts[4]);
+    const subject=state.subjects.find(item=>item.id===subjectId);
+    const lecture=(state.lectures[subjectId]||[]).find(item=>item.id===lectureId);
+    return {subjectId,lectureId,type,subject,lecture};
+  }
+  function storedItems(lecture,type){
+    const items=lecture?.studyTools?.[type]?.items;
+    return Array.isArray(items)?items:[];
+  }
+  function blank(type){
+    if(type==='flashcards')return {id:uid(),front:'',back:''};
+    if(type==='qa')return {id:uid(),question:'',answer:''};
+    return {id:uid(),question:'',correct:1,option1:'',option2:'',option3:'',option4:''};
+  }
+  function cleanItem(type,item){
+    const next={id:String(item?.id||uid())};
+    for(const column of TYPES[type].columns)next[column.field]=column.field==='correct'?Math.max(1,Math.min(4,Number(item?.[column.field]||1))):String(item?.[column.field]??'').trim();
+    return next;
+  }
+  function validItem(type,item){
+    if(type==='flashcards')return Boolean(item.front&&item.back);
+    if(type==='qa')return Boolean(item.question&&item.answer);
+    return Boolean(item.question&&item.option1&&item.option2&&item.option3&&item.option4&&Number(item.correct)>=1&&Number(item.correct)<=4);
+  }
+  function resetRuntime(context){
+    const key=`${context.subjectId}:${context.lectureId}:${context.type}`;
+    if(runtime.key===key)return;
+    const items=storedItems(context.lecture,context.type);
+    runtime.key=key;
+    runtime.mode=items.length?'study':'manage';
+    runtime.index=0;
+    runtime.revealed=false;
+    runtime.answers={};
+    runtime.draft=clone(items);
+    runtime.notice='';
+  }
+  function imageUrl(value){
+    const text=String(value||'').trim();
+    try{
+      const url=new URL(text);
+      if(!['http:','https:'].includes(url.protocol))return '';
+      return /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(url.pathname)?url.href:'';
+    }catch{return '';}
+  }
+  function rich(value,className=''){
+    const text=String(value??'').trim(),image=imageUrl(text);
+    if(image)return `<figure class="lecture-study-image ${esc(className)}"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>Image</figcaption></figure>`;
+    return `<div class="lecture-study-text ${esc(className)}">${esc(text)}</div>`;
+  }
+  function routeTo(subjectId,lectureId,type){
+    setHash(`subjects/lecture-study/${encodeURIComponent(subjectId)}/${encodeURIComponent(lectureId)}/${type}`);
+  }
+  function backRoute(context){
+    return `subjects/subject/${encodeURIComponent(context.subjectId)}/lectures`;
+  }
+  function pageHeader(context,items){
+    const meta=TYPES[context.type];
+    return `<header class="lecture-study-head">
+      <button class="lecture-study-back" type="button" data-study-back aria-label="Back to lectures">‹</button>
+      <div class="lecture-study-heading"><span>${esc(context.subject?.name||'Subject')} · ${esc(context.lecture.name)}</span><h1>${esc(meta.label)}</h1><p>${esc(meta.description)}</p></div>
+      <div class="lecture-study-count"><strong>${items.length}</strong><span>${items.length===1?esc(meta.singular):'items'}</span></div>
+    </header>`;
+  }
+  function emptyStudy(context){
+    const meta=TYPES[context.type];
+    return `<section class="lecture-study-empty"><span>${esc(meta.icon)}</span><h2>No ${esc(meta.label)} yet</h2><p>Create items manually or import a structured spreadsheet, CSV, TSV, text, or JSON file.</p>${canEdit()?'<button class="btn btn-primary" type="button" data-study-mode="manage">Create set</button>':''}</section>`;
+  }
+  function flashcardStudy(items){
+    const index=Math.min(runtime.index,Math.max(0,items.length-1)),item=items[index];
+    return `<section class="lecture-study-session flashcard-session">
+      <div class="lecture-study-progress"><span>${index+1} / ${items.length}</span><i style="--study-progress:${((index+1)/items.length)*100}%"></i></div>
+      <button class="flashcard-stage ${runtime.revealed?'revealed':''}" type="button" data-study-reveal>
+        <span>${runtime.revealed?'Back':'Front'}</span>
+        ${rich(runtime.revealed?item.back:item.front)}
+        <small>${runtime.revealed?'Tap to show front':'Tap to reveal answer'}</small>
+      </button>
+      <div class="lecture-study-nav"><button type="button" data-study-prev ${index===0?'disabled':''}>Previous</button><button type="button" data-study-reveal>${runtime.revealed?'Show front':'Reveal'}</button><button type="button" data-study-next ${index===items.length-1?'disabled':''}>Next</button></div>
+    </section>`;
+  }
+  function qaStudy(items){
+    const index=Math.min(runtime.index,Math.max(0,items.length-1)),item=items[index];
+    return `<section class="lecture-study-session qa-session">
+      <div class="lecture-study-progress"><span>Question ${index+1} of ${items.length}</span><i style="--study-progress:${((index+1)/items.length)*100}%"></i></div>
+      <article class="qa-exam-card"><span>Question</span>${rich(item.question,'question')}${runtime.revealed?`<div class="qa-answer"><span>Answer</span>${rich(item.answer,'answer')}</div>`:'<button class="btn btn-primary" type="button" data-study-reveal>Reveal answer</button>'}</article>
+      <div class="lecture-study-nav"><button type="button" data-study-prev ${index===0?'disabled':''}>Previous</button><button type="button" data-study-reveal>${runtime.revealed?'Hide answer':'Reveal answer'}</button><button type="button" data-study-next ${index===items.length-1?'disabled':''}>Next</button></div>
+    </section>`;
+  }
+  function mcqStudy(items){
+    const index=Math.min(runtime.index,Math.max(0,items.length-1)),item=items[index],selected=Number(runtime.answers[index]||0),correct=Number(item.correct);
+    const answered=Object.keys(runtime.answers).length,score=Object.entries(runtime.answers).reduce((sum,[key,value])=>sum+(Number(items[Number(key)]?.correct)===Number(value)?1:0),0);
+    return `<section class="lecture-study-session mcq-session">
+      <div class="lecture-study-score"><div><span>Question</span><strong>${index+1}/${items.length}</strong></div><div><span>Answered</span><strong>${answered}</strong></div><div><span>Score</span><strong>${score}/${answered||0}</strong></div></div>
+      <article class="mcq-exam-card"><span>Question ${index+1}</span>${rich(item.question,'question')}<div class="mcq-options">${[1,2,3,4].map(number=>{
+        const active=selected===number,truth=selected&&correct===number,wrong=active&&selected!==correct;
+        return `<button type="button" data-study-answer="${number}" class="${truth?'correct':wrong?'wrong':active?'selected':''}" ${selected?'disabled':''}><b>${number}</b>${rich(item[`option${number}`])}</button>`;
+      }).join('')}</div>${selected?`<p class="mcq-feedback ${selected===correct?'correct':'wrong'}">${selected===correct?'Correct answer.':`Incorrect. The correct option is ${correct}.`}</p>`:''}</article>
+      <div class="lecture-study-nav"><button type="button" data-study-prev ${index===0?'disabled':''}>Previous</button><button type="button" data-study-restart>Restart exam</button><button type="button" data-study-next ${index===items.length-1?'disabled':''}>Next</button></div>
+    </section>`;
+  }
+  function studyView(context,items){
+    if(!items.length)return emptyStudy(context);
+    if(context.type==='flashcards')return flashcardStudy(items);
+    if(context.type==='qa')return qaStudy(items);
+    return mcqStudy(items);
+  }
+  function editorField(item,index,column){
+    const value=item[column.field]??'',preview=imageUrl(value)?`<div class="lecture-study-field-preview">${rich(value)}</div>`:'';
+    if(column.field==='correct')return `<label class="lecture-study-field compact"><span>${esc(column.label)}</span><select data-study-field="${column.field}" data-study-index="${index}">${[1,2,3,4].map(number=>`<option value="${number}" ${Number(value)===number?'selected':''}>${number}</option>`).join('')}</select></label>`;
+    return `<label class="lecture-study-field"><span>${esc(column.label)}</span><textarea rows="2" data-study-field="${column.field}" data-study-index="${index}" placeholder="${esc(column.label)} or direct image URL">${esc(value)}</textarea>${preview}</label>`;
+  }
+  function editorRow(type,item,index){
+    const meta=TYPES[type];
+    return `<article class="lecture-study-editor-row"><header><div><span>${esc(meta.singular)} ${index+1}</span><strong>${esc(item.front||item.question||`New ${meta.singular}`)}</strong></div><button type="button" data-study-remove="${index}" aria-label="Remove ${esc(meta.singular)}">×</button></header><div class="lecture-study-fields ${type==='mcqs'?'mcq-fields':''}">${meta.columns.map(column=>editorField(item,index,column)).join('')}</div></article>`;
+  }
+  function managerView(context){
+    const meta=TYPES[context.type],columns=meta.columns.map(column=>column.label).join(' · ');
+    return `<section class="lecture-study-manager">
+      <div class="lecture-study-import-card"><div><span>Import file</span><h2>Import ${esc(meta.label)}</h2><p>Accepted: Excel, OpenDocument, CSV, TSV, TXT, and JSON.</p><small>Column order: ${esc(columns)}</small></div><label class="lecture-study-import"><input id="lecture-study-import" type="file" accept="${ACCEPT}" hidden><b>Import file</b><span>${esc(ACCEPT.replaceAll('.','').toUpperCase())}</span></label></div>
+      ${runtime.notice?`<p class="lecture-study-notice" role="status">${esc(runtime.notice)}</p>`:''}
+      <div class="lecture-study-editor-toolbar"><div><strong>${runtime.draft.length}</strong><span>items in this set</span></div><button type="button" data-study-add>+ Add ${esc(meta.singular)}</button></div>
+      <div class="lecture-study-editor-list">${runtime.draft.length?runtime.draft.map((item,index)=>editorRow(context.type,item,index)).join(''):`<div class="lecture-study-editor-empty">Add an item or import a file to begin.</div>`}</div>
+      <footer class="lecture-study-editor-footer"><button class="lecture-study-delete-set" type="button" data-study-delete-set ${storedItems(context.lecture,context.type).length?'':'disabled'}>Delete whole set</button><button class="btn btn-primary" type="button" data-study-save>Save ${esc(meta.label)}</button></footer>
+    </section>`;
+  }
+  function view(parts){
+    const context=findContext(parts);
+    if(!context.subject||!context.lecture||!context.type)return `<section class="lecture-study-missing"><h1>Study set unavailable</h1><p>The lecture or study type could not be found.</p><button class="btn btn-primary" type="button" data-study-back>Back to lectures</button></section>`;
+    resetRuntime(context);
+    const items=storedItems(context.lecture,context.type);
+    if(!canEdit()&&runtime.mode==='manage')runtime.mode='study';
+    return `<section class="lecture-study-page type-${esc(context.type)}">${pageHeader(context,items)}
+      <nav class="lecture-study-tabs" aria-label="Study set mode"><button type="button" data-study-mode="study" class="${runtime.mode==='study'?'active':''}">Study</button>${canEdit()?`<button type="button" data-study-mode="manage" class="${runtime.mode==='manage'?'active':''}">${items.length?'Edit set':'Create set'}</button>`:''}</nav>
+      ${runtime.mode==='manage'&&canEdit()?managerView(context):studyView(context,items)}
+    </section>`;
+  }
+  function parseDelimited(text){
+    const rows=[];let row=[],cell='',quoted=false;
+    for(let index=0;index<text.length;index++){
+      const char=text[index];
+      if(char==='"'){
+        if(quoted&&text[index+1]==='"'){cell+='"';index++;}else quoted=!quoted;
+      }else if(!quoted&&(char===','||char==='\t'||char===';'||char==='\n'||char==='\r')){
+        if(char==='\r'&&text[index+1]==='\n')continue;
+        if(char==='\n'||char==='\r'){row.push(cell);if(row.some(value=>String(value).trim()))rows.push(row);row=[];cell='';}
+        else{row.push(cell);cell='';}
+      }else cell+=char;
+    }
+    row.push(cell);if(row.some(value=>String(value).trim()))rows.push(row);
+    return rows;
+  }
+  function objectValue(object,column){
+    const keys=Object.keys(object||{});
+    for(const key of keys)if(column.aliases.includes(norm(key)))return object[key];
+    return '';
+  }
+  function rowsToItems(type,rows){
+    const columns=TYPES[type].columns;
+    if(!Array.isArray(rows)||!rows.length)return [];
+    if(rows.every(row=>row&&typeof row==='object'&&!Array.isArray(row))){
+      return rows.map(row=>cleanItem(type,Object.fromEntries(columns.map(column=>[column.field,objectValue(row,column)])))).filter(item=>validItem(type,item));
+    }
+    const matrix=rows.map(row=>Array.isArray(row)?row:[row]);
+    const header=matrix[0].map(norm),hasHeader=columns.filter(column=>header.some(value=>column.aliases.includes(value))).length>=Math.min(2,columns.length);
+    const indexes=columns.map((column,position)=>hasHeader?header.findIndex(value=>column.aliases.includes(value)):position);
+    return matrix.slice(hasHeader?1:0).map(row=>{
+      const raw={};columns.forEach((column,position)=>raw[column.field]=indexes[position]>=0?row[indexes[position]]:'');
+      return cleanItem(type,raw);
+    }).filter(item=>validItem(type,item));
+  }
+  async function importFile(file,type){
+    const extension=String(file.name||'').split('.').pop().toLowerCase();
+    if(extension==='json'){
+      const parsed=JSON.parse(await file.text());
+      const rows=Array.isArray(parsed)?parsed:Array.isArray(parsed?.items)?parsed.items:[];
+      return rowsToItems(type,rows);
+    }
+    if(window.XLSX){
+      const workbook=window.XLSX.read(await file.arrayBuffer(),{type:'array'});
+      const sheet=workbook.Sheets[workbook.SheetNames[0]];
+      return rowsToItems(type,window.XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false}));
+    }
+    return rowsToItems(type,parseDelimited(await file.text()));
+  }
+  function redraw(parts){
+    const main=document.querySelector('.workspace-main');if(!main)return;
+    main.innerHTML=view(parts);bind(parts);
+  }
+  function saveSet(context,parts){
+    const cleaned=runtime.draft.map(item=>cleanItem(context.type,item)).filter(item=>validItem(context.type,item));
+    if(!cleaned.length){runtime.notice='Add at least one complete item before saving.';redraw(parts);return;}
+    context.lecture.studyTools=context.lecture.studyTools&&typeof context.lecture.studyTools==='object'?context.lecture.studyTools:{};
+    context.lecture.studyTools[context.type]={version:1,items:cleaned,updatedAt:Date.now()};
+    context.lecture.updatedAt=Date.now();
+    saveLectures();
+    runtime.key='';runtime.mode='study';runtime.notice='';
+    showToast(`${TYPES[context.type].label} saved.`);
+    redraw(parts);
+  }
+  function bind(parts){
+    const context=findContext(parts);
+    document.querySelector('[data-study-back]')?.addEventListener('click',()=>setHash(context.subject?backRoute(context):'subjects/All%20subjects'));
+    document.querySelectorAll('[data-study-mode]').forEach(button=>button.addEventListener('click',()=>{
+      runtime.mode=button.dataset.studyMode;
+      if(runtime.mode==='manage')runtime.draft=clone(storedItems(context.lecture,context.type));
+      runtime.notice='';runtime.index=0;runtime.revealed=false;redraw(parts);
+    }));
+    document.querySelectorAll('[data-study-reveal]').forEach(button=>button.addEventListener('click',()=>{runtime.revealed=!runtime.revealed;redraw(parts);}));
+    document.querySelector('[data-study-prev]')?.addEventListener('click',()=>{runtime.index=Math.max(0,runtime.index-1);runtime.revealed=false;redraw(parts);});
+    document.querySelector('[data-study-next]')?.addEventListener('click',()=>{const length=storedItems(context.lecture,context.type).length;runtime.index=Math.min(length-1,runtime.index+1);runtime.revealed=false;redraw(parts);});
+    document.querySelectorAll('[data-study-answer]').forEach(button=>button.addEventListener('click',()=>{runtime.answers[runtime.index]=Number(button.dataset.studyAnswer);redraw(parts);}));
+    document.querySelector('[data-study-restart]')?.addEventListener('click',()=>{runtime.answers={};runtime.index=0;runtime.revealed=false;redraw(parts);});
+    document.querySelectorAll('[data-study-field]').forEach(field=>field.addEventListener('input',()=>{const item=runtime.draft[Number(field.dataset.studyIndex)];if(item)item[field.dataset.studyField]=field.dataset.studyField==='correct'?Number(field.value):field.value;}));
+    document.querySelector('[data-study-add]')?.addEventListener('click',()=>{runtime.draft.push(blank(context.type));redraw(parts);});
+    document.querySelectorAll('[data-study-remove]').forEach(button=>button.addEventListener('click',()=>{runtime.draft.splice(Number(button.dataset.studyRemove),1);redraw(parts);}));
+    document.querySelector('[data-study-save]')?.addEventListener('click',()=>saveSet(context,parts));
+    document.querySelector('[data-study-delete-set]')?.addEventListener('click',()=>{
+      if(!confirm(`Delete all ${TYPES[context.type].label} for this lecture?`))return;
+      if(context.lecture.studyTools)delete context.lecture.studyTools[context.type];
+      context.lecture.updatedAt=Date.now();saveLectures();
+      runtime.key='';runtime.mode='manage';showToast(`${TYPES[context.type].label} deleted.`);redraw(parts);
+    });
+    document.getElementById('lecture-study-import')?.addEventListener('change',async event=>{
+      const file=event.target.files?.[0];if(!file)return;
+      runtime.notice='Importing…';redraw(parts);
+      try{
+        const imported=await importFile(file,context.type);
+        if(!imported.length)throw new Error('No valid rows matched the required columns.');
+        runtime.draft.push(...imported);runtime.notice=`Imported ${imported.length} ${imported.length===1?'item':'items'}.`;
+      }catch(error){runtime.notice=error?.message||'The file could not be imported.';}
+      redraw(parts);
+    });
+  }
+  function cardButtons(subjectId,lecture){
+    const editable=canEdit();
+    return Object.entries(TYPES).map(([type,meta])=>{
+      const count=storedItems(lecture,type).length;
+      if(!editable&&!count)return '';
+      const verb=count?'Open':'Make';
+      return `<button type="button" data-lecture-study-launch="${type}" data-study-subject="${esc(subjectId)}" data-study-lecture="${esc(lecture.id)}"><span>${esc(meta.icon)}</span><b>${verb} ${esc(meta.label)}</b>${count?`<small>${count}</small>`:''}</button>`;
+    }).join('');
+  }
+  function decorateCards(){
+    document.querySelectorAll('.lecture-card-wrap[data-lecture-id][data-subject-id]').forEach(wrapper=>{
+      if(wrapper.querySelector('.lecture-study-actions'))return;
+      const subjectId=wrapper.dataset.subjectId,lecture=(state.lectures[subjectId]||[]).find(item=>item.id===wrapper.dataset.lectureId);
+      if(!lecture)return;
+      const buttons=cardButtons(subjectId,lecture);if(!buttons)return;
+      const actions=document.createElement('div');actions.className='lecture-study-actions';actions.innerHTML=buttons;wrapper.append(actions);
+      actions.querySelectorAll('[data-lecture-study-launch]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();routeTo(button.dataset.studySubject,button.dataset.studyLecture,button.dataset.lectureStudyLaunch);}));
+    });
+  }
+  function decorateEditor(subject,lectureId){
+    const form=document.getElementById('lecture-media-form');if(!form||form.querySelector('.lecture-study-editor-launchers'))return;
+    const lecture=(state.lectures[subject.id]||[]).find(item=>item.id===lectureId);
+    const block=document.createElement('section');block.className='lecture-study-editor-launchers';
+    block.innerHTML=`<div><span>Study tools</span><h3>${lecture?'Create or edit lecture practice':'Save the lecture to create practice'}</h3><p>Build flashcards, an MCQ exam, or a question-and-answer exam.</p></div><div>${Object.entries(TYPES).map(([type,meta])=>{
+      const count=storedItems(lecture,type).length;
+      return `<button type="button" data-editor-study="${type}" ${lecture?'':'disabled'}><span>${esc(meta.icon)}</span><b>${count?'Edit':'Make'} ${esc(meta.label)}</b>${count?`<small>${count} items</small>`:''}</button>`;
+    }).join('')}</div>`;
+    const submit=document.getElementById('lecture-media-submit');submit?.before(block);
+    block.querySelectorAll('[data-editor-study]').forEach(button=>button.addEventListener('click',()=>{if(!lecture)return;routeTo(subject.id,lecture.id,button.dataset.editorStudy);}));
+  }
+
+  const api={view,bind,routeTo,decorateCards};
+  window.DafatiiLectureStudyTools=api;
+  const originalWorkspaceContent=workspaceContent;
+  workspaceContent=function(page,parts,title){
+    if(page==='subjects'&&parts[1]==='lecture-study')return view(parts);
+    return originalWorkspaceContent(page,parts,title);
+  };
+  const originalBindWorkspace=bindWorkspace;
+  bindWorkspace=function(subject){
+    originalBindWorkspace(subject);
+    const parts=routeParts();
+    if(parts[0]==='subjects'&&parts[1]==='lecture-study')bind(parts);
+    requestAnimationFrame(decorateCards);
+  };
+  const originalOpenLectureSheet=window.openLectureSheet;
+  window.openLectureSheet=function(subject,lectureId=''){
+    const result=originalOpenLectureSheet(subject,lectureId);
+    requestAnimationFrame(()=>decorateEditor(subject,lectureId));
+    return result;
+  };
+  new MutationObserver(()=>requestAnimationFrame(decorateCards)).observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(decorateCards));
+  window.addEventListener('hashchange',()=>requestAnimationFrame(decorateCards));
+})();
