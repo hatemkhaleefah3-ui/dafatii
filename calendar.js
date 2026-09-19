@@ -221,7 +221,7 @@
     const target=dayName(date).toLowerCase();
     return entries.filter(item=>String(item.day||'').toLowerCase()===target).map(item=>({
       id:`recurring:${dateKey(date)}:${item.id||item.subject||item.time||Math.random()}`,
-      type:'schedule',date:dateKey(date),time:normalizePlannerTime(item.time),
+      sourceId:item.id||'',type:'schedule',date:dateKey(date),time:normalizePlannerTime(item.time),
       title:item.subject||'Scheduled lecture',location:item.location||'',notes:'Recurring weekly timetable',recurring:true
     }));
   }
@@ -248,7 +248,7 @@
           <div class="schedule-block-meta"><b>${esc(start)}${end&&end!==start?`–${esc(end)}`:''}</b>${item.location?`<span>⌖ ${esc(item.location)}</span>`:''}</div>
           ${notes&&context!=='week'?`<p>${esc(notes)}</p>`:''}
         </div>
-        ${!item.recurring?`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'schedule item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'schedule item')}">×</button>`:''}
+        ${item.recurring&&item.sourceId?`<button class="dcc-native-action" type="button" data-planner-edit-recurring="${esc(item.sourceId)}" aria-label="Edit ${esc(item.title||'schedule item')}"></button><button class="dcc-native-action" type="button" data-planner-delete-recurring="${esc(item.sourceId)}" aria-label="Delete ${esc(item.title||'schedule item')}"></button>`:`<button class="dcc-native-action" type="button" data-planner-edit="${esc(item.id)}" aria-label="Edit ${esc(item.title||'schedule item')}"></button><button class="planner-mini-delete dcc-native-action" data-planner-delete="${esc(item.id)}" aria-label="Delete ${esc(item.title||'schedule item')}">×</button>`}
       </article>`;
     }
     const meta=[item.time,item.status].filter(Boolean).join(' · ');
@@ -616,8 +616,14 @@
     document.querySelectorAll('[data-planner-edit]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();openPlannerEntrySheet('','',button.dataset.plannerEdit);
     }));
+    document.querySelectorAll('[data-planner-edit-recurring]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();const arr=read(SCHEDULE_KEY,[]),item=arr.find(entry=>entry.id===button.dataset.plannerEditRecurring);if(item)openTimetableEntrySheet('schedule',SCHEDULE_KEY,item);
+    }));
     document.querySelectorAll('[data-planner-delete]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();savePlannerItems(plannerItems().filter(entry=>entry.id!==button.dataset.plannerDelete));rerender();
+    }));
+    document.querySelectorAll('[data-planner-delete-recurring]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();write(SCHEDULE_KEY,read(SCHEDULE_KEY,[]).filter(entry=>entry.id!==button.dataset.plannerDeleteRecurring));rerender();
     }));
     document.querySelectorAll('[data-planner-loop]').forEach(bindPlannerLoop);
   }
