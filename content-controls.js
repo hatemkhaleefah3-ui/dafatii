@@ -66,18 +66,30 @@
     return false;
   }
 
+  const ENTITY_OWNER_SELECTOR = [
+    '[data-subject-id]','[data-lecture-id]','[data-note-id]','[data-resource-id]',
+    '[data-assignment-id]','[data-deadline-id]','[data-room-id]','[data-planner-entry-id]',
+    '[data-material-id]','[data-course-id]','[data-student-id]','[data-teacher-id]',
+    '.cal-head-button','.cal-cell','article','tr','li'
+  ].join(',');
+
   function isIdentityNode(node) {
     if (!(node instanceof Element)) return false;
     if (node.matches('article,tr,li,.cal-head-button,.cal-cell')) return true;
     if ([...node.attributes].some(attr => /^data-(?!dcc-).*(?:id|key|user|subject|lecture|note|resource|assignment|deadline|material|teacher|student|room|course)$/i.test(attr.name))) return true;
     const cls = String(node.className || '');
-    return /(?:^|\s)[^\s]*(?:card|row|item|entry|tile|record)(?:\s|$)/i.test(cls) && !/(actions?|toolbar|controls?)/i.test(cls);
+    const entityLike = /(?:^|\s)[^\s]*(?:card|row|item|entry|tile|record)(?:\s|$)/i.test(cls);
+    const substructure = /(?:^|[-_\s])(top|head|header|footer|copy|meta|actions?|toolbar|controls?|icon|body|content)(?:$|[-_\s])/i.test(cls);
+    return entityLike && !substructure;
   }
 
   function itemFor(control) {
     const root = scope();
     if (!root || !control) return null;
-    if (control.matches?.('.cal-head-button,.cal-cell')) return control;
+
+    const explicitOwner = control.closest?.(ENTITY_OWNER_SELECTOR);
+    if (explicitOwner && explicitOwner !== root && root.contains(explicitOwner)) return explicitOwner;
+
     let node = control.parentElement;
     while (node && node !== root && node !== document.body) {
       if (isIdentityNode(node)) return node;
@@ -347,6 +359,18 @@
     event.stopImmediatePropagation();
   }
 
+  function onCapturedKeydown(event) {
+    if (state.mode !== 'delete' || state.synthetic || !['Enter',' '].includes(event.key)) return;
+    const item = selectableFromEvent(event);
+    if (!item) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (state.selected.has(item)) state.selected.delete(item);
+    else state.selected.add(item);
+    refreshMode();
+  }
+
   function onCapturedClick(event) {
     const item = selectableFromEvent(event);
     if (!item) return;
@@ -545,8 +569,10 @@
     requestAnimationFrame(sync);
   }
 
+  document.addEventListener('touchstart', blockDeleteItemPress, {capture:true,passive:true});
   document.addEventListener('pointerdown', blockDeleteItemPress, true);
   document.addEventListener('pointerup', blockDeleteItemPress, true);
+  document.addEventListener('keydown', onCapturedKeydown, true);
   document.addEventListener('click', onCapturedClick, true);
   window.addEventListener('hashchange', () => { exitMode(); closeSheet(); scheduleSync(); });
   window.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
