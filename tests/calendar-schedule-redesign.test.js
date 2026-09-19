@@ -7,7 +7,7 @@ const course=fs.readFileSync('course-context.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(ui.includes("const PLANNER_MODES = ['day','week','month','year']"), 'schedule must expose day/week/month/year time scales');
-assert.ok(ui.includes("return PLANNER_MODES.map(mode=>") && ui.includes("data-planner-mode=\"${mode}\""), 'Day / Week / Month / Year must be visible once each as an explicit picker instead of a looping mode carousel');
+assert.ok(ui.includes("const labels={day:'Days',week:'Weeks',month:'Months',year:'Years'}") && ui.includes("[-3,-2,-1,0,1,2,3].map(offset=>") && ui.includes('data-loop-offset="${offset}"'), 'Day / Week / Month / Year must use the centered looping rail design');
 assert.ok(ui.includes('data-planner-loop="mode"') && ui.includes('data-planner-loop="period"'), 'planner needs an explicit range picker plus the moving date rail');
 assert.ok(ui.includes("[-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7]") && ui.includes('addDate(plannerDate,plannerMode'), 'period selector must generate a wide endless moving window around the selected date');
 assert.ok(ui.includes("PLANNER_TABS = ['tasks','schedule','todos','goals']"), 'planner must expose only Tasks, Schedule, To-do and Goals');
@@ -43,16 +43,17 @@ assert.ok(css.includes('.planner-week-grid') && css.includes('.planner-week-time
 assert.ok(css.includes('.schedule-block') && css.includes('.planner-task-card') && css.includes('.planner-todo-row') && css.includes('.planner-goal-card') && css.includes('.planner-repeat-panel'), 'schedule blocks, unique subpages and recurrence bottom sheet must have dedicated premium styling');
 assert.ok(css.includes('.planner-v6-task-board') && css.includes('.planner-v6-todo-notebook') && css.includes('.planner-v6-goal-grid') && css.includes('.planner-schedule-draft'), 'rebuilt productivity subpages and multi-schedule builder must have dedicated premium presentation');
 assert.ok(css.includes('Planner v7 — frameless page-level date rails') && css.includes('.planner-page>.planner-mode-shell') && css.includes('.planner-page>.planner-date-shell') && css.includes('background:transparent!important') && css.includes('border-radius:0!important'), 'date rails must be frameless and integrated into the page background');
-assert.ok(css.includes('Planner v9 — four-section planner + explicit Day / Week / Month / Year picker') && css.includes('grid-template-columns:repeat(4,minmax(0,1fr))') && css.includes('.planner-tab-icon') && css.includes('button.active::after'), 'planner navigation must use the four-section dock and explicit four-option range picker');
+assert.ok(css.includes('Planner v10 — mode rail matches the date rail and clears the fixed Calendar toolbar') && css.includes('.planner-page>.planner-mode-shell .planner-loop-track') && css.includes('scroll-snap-type:x mandatory!important') && css.includes('.planner-tab-icon'), 'mode picker must match the centered fading date-rail design while keeping the four-section dock');
 assert.ok(css.includes('width:min(520px,calc(100vw - 24px))!important') && css.includes('width:calc(100vw - 12px)!important') && css.includes('overflow-x:hidden!important'), 'planner bottom sheets must stay compact and within the viewport without width overflow');
 assert.ok(ui.includes("plannerMode='day'") && ui.includes("plannerMode='month'"), 'aggregate tables must drill into the same dated data across time scales');
-assert.ok(ui.includes('centeredPlannerItem') && ui.includes("document.querySelectorAll('[data-planner-mode]')") && ui.includes("document.querySelectorAll('[data-planner-loop=\"period\"]')"), 'range mode must switch by direct Day/Week/Month/Year taps while the date rail keeps centered scroll selection');
+assert.ok(ui.includes('centeredPlannerItem') && ui.includes("document.querySelectorAll('[data-planner-mode]')") && ui.includes("document.querySelectorAll('[data-planner-loop=\"mode\"],[data-planner-loop=\"period\"]')"), 'range and date rails must both use centered scroll selection while retaining direct mode taps');
 assert.ok(ui.includes("item.style.opacity") && ui.includes("distance/fadeDistance"), 'selection opacity must fall continuously as items move away from the rail center');
 assert.ok(!ui.includes('planner-loop-arrow') && !ui.includes('data-planner-mode-step') && !ui.includes('data-planner-period-step'), 'schedule selectors must not render arrow buttons');
 assert.ok(ui.includes('function recurringForDate(date)') && ui.includes('const entries=read(SCHEDULE_KEY,[])') && ui.includes("notes:'Recurring weekly timetable'"), 'existing weekly schedule data must project into matching dated schedule cells');
 assert.ok(css.includes('.planner-loop-shell{position:relative') && css.includes('border:0') && css.includes('background:transparent') && css.includes('scroll-snap-type:x mandatory'), 'selector rails must be frameless horizontal scroll-snap controls');
+assert.ok(css.includes('body .quiet-workspace>.workspace-main>.planner-page') && css.includes('margin-top:58px!important'), 'planner must clear the fixed Calendar toolbar so the mode rail is fully visible');
 assert.ok(css.includes('.planner-content-tabs') && css.includes('.planner-day-table') && css.includes('.planner-week-grid') && css.includes('.planner-month-table') && css.includes('.planner-year-table'), 'all four interconnected schedule tables must be styled');
-assert.ok(index.includes('calendar.js?v=20260919-14') && index.includes('calendar.css?v=20260919-10'), 'schedule redesign assets must be cache-busted');
+assert.ok(index.includes('calendar.js?v=20260919-15') && index.includes('calendar.css?v=20260919-11'), 'schedule redesign assets must be cache-busted');
 console.log('calendar schedule redesign tests passed');
 
 assert.ok(ui.includes('legacyPlannerSnapshot') && ui.includes('__dafatii:course-cache:'), 'planner migration must recover any locally cached pre-fix planner data without resubmitting it as Course content');
