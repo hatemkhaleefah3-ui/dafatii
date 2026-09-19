@@ -5,16 +5,32 @@
   const PREFS_KEY = 'dafatii:viewerPrefs:v1';
   const copy = {
     en: {
-      settings:'Viewer settings', interactive:'Interactive lecture', flashcards:'Flashcards', exam:'Exam', download:'Download', fullscreen:'Fullscreen',
-      vertical:'Vertical pages', horizontal:'Horizontal pages', notes:'Notes', writeNote:'Write note', lectureNotes:'Lecture notes', personalNotes:'My notes', addNote:'Add note',
-      notePlaceholder:'Write a note…', page:'Page', close:'Close', noNotes:'No notes yet.', remove:'Delete', search:'Search document', searchPlaceholder:'Search…',
-      zoomIn:'Zoom in', zoomOut:'Zoom out', rotate:'Rotate', unavailable:'This study tool is not configured yet.', video:'Video', file:'File'
+      settings:'Reader settings', interactive:'Interactive lecture', flashcards:'Flashcards', exam:'Exam', mcqs:'MCQs', questionAnswer:'Question & Answer',
+      download:'Download', fullscreen:'Fullscreen', vertical:'Up – Down', horizontal:'Left – Right', notes:'Notes', writeNote:'Write note',
+      lectureNotes:'Lecture notes', personalNotes:'My notes', addNote:'Add note', notePlaceholder:'Write a note…', page:'Page', close:'Close',
+      noNotes:'No notes yet.', remove:'Delete', search:'Search document', searchPlaceholder:'Search…', zoomIn:'Zoom in', zoomOut:'Zoom out',
+      rotate:'Rotate', unavailable:'This study tool is not configured yet.', video:'Video', file:'File',
+      switchLecture:'Switch lecture', navigateLectures:'Navigate lectures', lectureStatus:'Lecture status', examine:'Examine',
+      previousLecture:'Previous lecture', nextLecture:'Next lecture', selectLecture:'Select specific lecture',
+      unread:'Unread', reading:'Reading', finished:'Finished', notOpened:'Not opened yet.', inProgress:'In progress.', completed:'Completed.',
+      reviewPoints:'Quickly review key points.', testUnderstanding:'Test your understanding.', exploreDeeper:'Explore and learn deeper.',
+      scrollDirection:'Scroll direction', scrollHelp:'Choose how to navigate pages.', theme:'Theme', light:'Light', dark:'Dark',
+      fontSize:'Font size', small:'Small', medium:'Medium', large:'Large', zoom:'Zoom', pageBehavior:'Page behavior',
+      continuousScroll:'Continuous scroll', paged:'Paged', tools:'Reader tools'
     },
     ar: {
-      settings:'إعدادات العارض', interactive:'المحاضرة التفاعلية', flashcards:'البطاقات التعليمية', exam:'الاختبار', download:'تنزيل', fullscreen:'ملء الشاشة',
-      vertical:'تمرير الصفحات عمودياً', horizontal:'تمرير الصفحات أفقياً', notes:'الملاحظات', writeNote:'كتابة ملاحظة', lectureNotes:'ملاحظات المحاضرة', personalNotes:'ملاحظاتي', addNote:'إضافة ملاحظة',
-      notePlaceholder:'اكتب ملاحظة…', page:'صفحة', close:'إغلاق', noNotes:'لا توجد ملاحظات بعد.', remove:'حذف', search:'البحث في الملف', searchPlaceholder:'بحث…',
-      zoomIn:'تكبير', zoomOut:'تصغير', rotate:'تدوير', unavailable:'هذه الأداة الدراسية غير مهيأة بعد.', video:'فيديو', file:'ملف'
+      settings:'إعدادات القارئ', interactive:'المحاضرة التفاعلية', flashcards:'البطاقات التعليمية', exam:'الاختبار', mcqs:'أسئلة اختيار من متعدد', questionAnswer:'سؤال وجواب',
+      download:'تنزيل', fullscreen:'ملء الشاشة', vertical:'أعلى – أسفل', horizontal:'يمين – يسار', notes:'الملاحظات', writeNote:'كتابة ملاحظة',
+      lectureNotes:'ملاحظات المحاضرة', personalNotes:'ملاحظاتي', addNote:'إضافة ملاحظة', notePlaceholder:'اكتب ملاحظة…', page:'صفحة', close:'إغلاق',
+      noNotes:'لا توجد ملاحظات بعد.', remove:'حذف', search:'البحث في الملف', searchPlaceholder:'بحث…', zoomIn:'تكبير', zoomOut:'تصغير',
+      rotate:'تدوير', unavailable:'هذه الأداة الدراسية غير مهيأة بعد.', video:'فيديو', file:'ملف',
+      switchLecture:'تبديل المحاضرة', navigateLectures:'التنقل بين المحاضرات', lectureStatus:'حالة المحاضرة', examine:'اختبر نفسك',
+      previousLecture:'المحاضرة السابقة', nextLecture:'المحاضرة التالية', selectLecture:'اختر محاضرة محددة',
+      unread:'غير مقروءة', reading:'قيد القراءة', finished:'مكتملة', notOpened:'لم تُفتح بعد.', inProgress:'قيد التقدم.', completed:'مكتملة.',
+      reviewPoints:'راجع النقاط المهمة بسرعة.', testUnderstanding:'اختبر مدى فهمك.', exploreDeeper:'استكشف وتعلّم بعمق أكبر.',
+      scrollDirection:'اتجاه التمرير', scrollHelp:'اختر طريقة التنقل بين الصفحات.', theme:'المظهر', light:'فاتح', dark:'داكن',
+      fontSize:'حجم المحتوى', small:'صغير', medium:'متوسط', large:'كبير', zoom:'التكبير', pageBehavior:'سلوك الصفحات',
+      continuousScroll:'تمرير مستمر', paged:'صفحة بصفحة', tools:'أدوات القارئ'
     }
   };
 
@@ -80,6 +96,67 @@
     render();
   }
 
+  const READER_PREFS_KEY = 'dafatii:readerUiPrefs:v1';
+  const LECTURE_STATUS_KEY = 'dafatii:lectureReaderStatus:v1';
+  const icon = (name, fallback='') => window.DafatiiIcons?.icon?.(name) || fallback;
+
+  function localObject(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch { return {}; }
+  }
+  function writeLocalObject(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }
+  function readerPrefs() { return localObject(READER_PREFS_KEY); }
+  function setReaderPref(key, value) { const p=readerPrefs(); p[key]=value; writeLocalObject(READER_PREFS_KEY,p); }
+
+  function lectureGroup(context = {}) {
+    const lecture = context.lecture;
+    if (!lecture || typeof state === 'undefined' || !state?.subjects) return null;
+    let subject = null;
+    if (lecture.subjectId) subject = state.subjects.find(item => String(item.id) === String(lecture.subjectId)) || null;
+    if (!subject && state.lectures && typeof state.lectures === 'object') {
+      const entry = Object.entries(state.lectures).find(([,items]) => Array.isArray(items) && items.some(item => String(item?.id) === String(lecture.id)));
+      if (entry) subject = state.subjects.find(item => String(item.id) === String(entry[0])) || null;
+    }
+    if (!subject) return null;
+    let lectures = [];
+    try {
+      lectures = typeof subjectLectures === 'function' ? subjectLectures(subject.id) : (Array.isArray(state.lectures?.[subject.id]) ? state.lectures[subject.id] : []);
+    } catch { lectures = Array.isArray(state.lectures?.[subject.id]) ? state.lectures[subject.id] : []; }
+    const index = lectures.findIndex(item => String(item?.id) === String(lecture.id));
+    return { subject, lectures, index };
+  }
+
+  function openLectureFromReader(root, lecture, controls = {}) {
+    if (!lecture) return;
+    closeSheets(root);
+    controls.close?.();
+    setTimeout(() => {
+      try { window.openLectureLink?.(lecture); }
+      catch (error) { if (typeof showToast === 'function') showToast(error?.message || t('unavailable')); }
+    }, 0);
+  }
+
+  function currentLectureStatus(context) {
+    if (!context.lecture?.id) return 'unread';
+    return localObject(LECTURE_STATUS_KEY)[String(context.lecture.id)] || 'unread';
+  }
+  function setLectureStatus(context, status) {
+    if (!context.lecture?.id || !['unread','reading','finished'].includes(status)) return;
+    const value=localObject(LECTURE_STATUS_KEY);
+    value[String(context.lecture.id)]=status;
+    writeLocalObject(LECTURE_STATUS_KEY,value);
+  }
+  function syncLectureStatus(root, context) {
+    const status=currentLectureStatus(context);
+    root.dataset.readerLectureStatus=status;
+    const button=root.querySelector('[data-viewer-dock="status"]');
+    if (button) button.dataset.status=status;
+  }
+
   function studyAction(root, action, context, onClose) {
     closeSheets(root);
     if (action === 'exam') {
@@ -95,50 +172,190 @@
     }
   }
 
-  function openSettings(root, context, controls = {}) {
-    const axis = controls.getAxis?.();
-    const backdrop = sheet(root, t('settings'), `
-      <div class="viewer-setting-grid">
-        <button type="button" data-viewer-setting="interactive"><span>✦</span><strong>${esc(t('interactive'))}</strong></button>
-        <button type="button" data-viewer-setting="flashcards"><span>◫</span><strong>${esc(t('flashcards'))}</strong></button>
-        <button type="button" data-viewer-setting="exam"><span>✓</span><strong>${esc(t('exam'))}</strong></button>
-        ${controls.setAxis ? `<button type="button" data-viewer-setting="axis"><span>${axis === 'horizontal' ? '↔' : '↕'}</span><strong>${esc(axis === 'horizontal' ? t('vertical') : t('horizontal'))}</strong></button>` : ''}
-        ${controls.zoomIn ? `<button type="button" data-viewer-setting="zoom-in"><span>＋</span><strong>${esc(t('zoomIn'))}</strong></button><button type="button" data-viewer-setting="zoom-out"><span>−</span><strong>${esc(t('zoomOut'))}</strong></button>` : ''}
-        ${controls.rotate ? `<button type="button" data-viewer-setting="rotate"><span>↻</span><strong>${esc(t('rotate'))}</strong></button>` : ''}
-        ${controls.search ? `<button type="button" data-viewer-setting="search"><span>⌕</span><strong>${esc(t('search'))}</strong></button>` : ''}
-        ${controls.download ? `<button type="button" data-viewer-setting="download"><span>⇩</span><strong>${esc(t('download'))}</strong></button>` : ''}
-        ${controls.fullscreen ? `<button type="button" data-viewer-setting="fullscreen"><span>⛶</span><strong>${esc(t('fullscreen'))}</strong></button>` : ''}
+  function openSwitchLecture(root, context, controls = {}) {
+    const group=lectureGroup(context);
+    if (!group?.lectures?.length) { if(typeof showToast==='function')showToast(t('unavailable')); return; }
+    const backdrop=sheet(root,t('switchLecture'),`
+      <div class="viewer-lecture-picker">
+        ${group.lectures.map(item => `<button type="button" data-reader-lecture="${esc(item.id)}" class="${String(item.id)===String(context.lecture?.id)?'active':''}"><span class="viewer-lecture-picker-icon">${esc(item.icon || '◫')}</span><span><strong>${esc(item.name || t('file'))}</strong><small>${String(item.id)===String(context.lecture?.id)?esc(t('reading')):''}</small></span><span class="viewer-row-arrow">${icon('arrow-right','→')}</span></button>`).join('')}
       </div>`);
-    backdrop.querySelectorAll('[data-viewer-setting]').forEach(button => button.onclick = async () => {
-      const action = button.dataset.viewerSetting;
-      if (['interactive','flashcards','exam'].includes(action)) return studyAction(root, action, context, controls.close);
-      if (action === 'axis') { const next = controls.getAxis() === 'horizontal' ? 'vertical' : 'horizontal'; controls.setAxis(next); backdrop.remove(); return; }
-      if (action === 'zoom-in') controls.zoomIn?.();
-      if (action === 'zoom-out') controls.zoomOut?.();
-      if (action === 'rotate') controls.rotate?.();
-      if (action === 'download') await controls.download?.();
-      if (action === 'fullscreen') await controls.fullscreen?.();
-      if (action === 'search') {
-        backdrop.remove();
-        const searchSheet = sheet(root, t('search'), `<form class="viewer-search-form"><input type="search" placeholder="${esc(t('searchPlaceholder'))}" autofocus><button type="submit">${esc(t('search'))}</button></form><p class="viewer-search-status" role="status"></p>`);
-        searchSheet.querySelector('form').onsubmit = async event => { event.preventDefault(); const q=event.currentTarget.querySelector('input').value.trim(); if(!q)return; const status=searchSheet.querySelector('.viewer-search-status'); status.textContent='…'; status.textContent = await controls.search(q) || ''; };
-        return;
-      }
+    backdrop.querySelectorAll('[data-reader-lecture]').forEach(button => button.onclick = () => {
+      const lecture=group.lectures.find(item => String(item.id)===String(button.dataset.readerLecture));
+      openLectureFromReader(root,lecture,controls);
+    });
+  }
+
+  function openNavigateLectures(root, context, controls = {}) {
+    const group=lectureGroup(context);
+    if (!group?.lectures?.length) { if(typeof showToast==='function')showToast(t('unavailable')); return; }
+    const prev=group.index>0?group.lectures[group.index-1]:null;
+    const next=group.index>=0&&group.index<group.lectures.length-1?group.lectures[group.index+1]:null;
+    const backdrop=sheet(root,t('navigateLectures'),`
+      <div class="viewer-navigation-sheet">
+        <div class="viewer-nav-pair">
+          <button type="button" data-reader-nav="previous" ${prev?'':'disabled'}>${icon('arrow-left','←')}<span>${esc(t('previousLecture'))}</span></button>
+          <button type="button" data-reader-nav="next" ${next?'':'disabled'}><span>${esc(t('nextLecture'))}</span>${icon('arrow-right','→')}</button>
+        </div>
+        <label class="viewer-lecture-select"><span>${esc(t('selectLecture'))}</span><select data-reader-lecture-select>${group.lectures.map(item => `<option value="${esc(item.id)}"${String(item.id)===String(context.lecture?.id)?' selected':''}>${esc(item.name || t('file'))}</option>`).join('')}</select></label>
+      </div>`);
+    backdrop.querySelector('[data-reader-nav="previous"]')?.addEventListener('click',()=>openLectureFromReader(root,prev,controls));
+    backdrop.querySelector('[data-reader-nav="next"]')?.addEventListener('click',()=>openLectureFromReader(root,next,controls));
+    backdrop.querySelector('[data-reader-lecture-select]')?.addEventListener('change',event=>{
+      const lecture=group.lectures.find(item=>String(item.id)===String(event.currentTarget.value));
+      openLectureFromReader(root,lecture,controls);
+    });
+  }
+
+  function openLectureStatus(root, context) {
+    if (!context.lecture?.id) { if(typeof showToast==='function')showToast(t('unavailable')); return; }
+    const current=currentLectureStatus(context);
+    const rows=[
+      ['unread','clock',t('unread'),t('notOpened')],
+      ['reading','check',t('reading'),t('inProgress')],
+      ['finished','check',t('finished'),t('completed')]
+    ];
+    const backdrop=sheet(root,t('lectureStatus'),`
+      <div class="viewer-status-list">${rows.map(([value,ic,title,desc])=>`<button type="button" data-reader-status="${value}" class="${current===value?'active':''}"><span class="viewer-status-icon">${icon(ic,value==='unread'?'◷':'✓')}</span><span><strong>${esc(title)}</strong><small>${esc(desc)}</small></span></button>`).join('')}</div>`);
+    backdrop.querySelectorAll('[data-reader-status]').forEach(button=>button.onclick=()=>{
+      setLectureStatus(context,button.dataset.readerStatus);
+      syncLectureStatus(root,context);
       backdrop.remove();
     });
   }
 
-  function mountDock(root, context, controls = {}) {
-    const dock = document.createElement('nav');
-    dock.className = 'viewer-bottom-dock';
-    dock.innerHTML = `<button type="button" data-viewer-dock="settings" aria-label="${esc(t('settings'))}">⚙</button>${controls.setAxis ? `<button type="button" data-viewer-dock="axis" aria-label="${esc(t('horizontal'))}">${controls.getAxis?.() === 'horizontal' ? '↔' : '↕'}</button>` : ''}${controls.notes ? `<button type="button" data-viewer-dock="notes" aria-label="${esc(t('writeNote'))}">✎</button>` : ''}`;
+  function openExamine(root, context, controls = {}) {
+    const items=[
+      ['flashcards','file',t('flashcards'),t('reviewPoints')],
+      ['mcqs','check',t('mcqs'),t('testUnderstanding')],
+      ['question-answer','chat',t('questionAnswer'),t('exploreDeeper')]
+    ];
+    const backdrop=sheet(root,t('examine'),`
+      <div class="viewer-examine-list">${items.map(([action,ic,title,desc])=>`<button type="button" data-reader-examine="${action}"><span class="viewer-examine-icon">${icon(ic,'✦')}</span><span><strong>${esc(title)}</strong><small>${esc(desc)}</small></span><span class="viewer-row-arrow">${icon('arrow-right','→')}</span></button>`).join('')}</div>`);
+    backdrop.querySelectorAll('[data-reader-examine]').forEach(button=>button.onclick=()=>studyAction(root,button.dataset.readerExamine,context,controls.close));
+  }
+
+  function setReaderTheme(root, theme) {
+    const next=theme==='dark'?'dark':'light';
+    root.dataset.readerTheme=next;
+    setReaderPref('theme',next);
+  }
+
+  function openSearch(root, controls) {
+    const searchSheet = sheet(root, t('search'), `<form class="viewer-search-form"><input type="search" placeholder="${esc(t('searchPlaceholder'))}" autofocus><button type="submit">${esc(t('search'))}</button></form><p class="viewer-search-status" role="status"></p>`);
+    searchSheet.querySelector('form').onsubmit = async event => {
+      event.preventDefault();
+      const q=event.currentTarget.querySelector('input').value.trim(); if(!q)return;
+      const status=searchSheet.querySelector('.viewer-search-status'); status.textContent='…'; status.textContent = await controls.search(q) || '';
+    };
+  }
+
+  function openSettings(root, context, controls = {}) {
+    const axis=controls.getAxis?.() || 'vertical';
+    const theme=root.dataset.readerTheme || readerPrefs().theme || 'light';
+    const scale=root.dataset.readerScale || 'medium';
+    const paged=root.classList.contains('reader-paged');
+    const backdrop=sheet(root,t('settings'),`
+      <div class="reader-settings-stack" data-reader-settings>
+        ${controls.setAxis?`<section class="reader-setting-section"><div class="reader-setting-heading"><strong>${esc(t('scrollDirection'))}</strong><small>${esc(t('scrollHelp'))}</small></div><div class="reader-segmented" data-reader-axis><button type="button" data-axis-value="vertical" class="${axis==='vertical'?'active':''}">↕ <span>${esc(t('vertical'))}</span></button><button type="button" data-axis-value="horizontal" class="${axis==='horizontal'?'active':''}">↔ <span>${esc(t('horizontal'))}</span></button></div></section>`:''}
+        <section class="reader-setting-row"><span class="reader-setting-row-icon">◐</span><strong>${esc(t('theme'))}</strong><button type="button" data-reader-theme-toggle><span data-reader-theme-value>${esc(theme==='dark'?t('dark'):t('light'))}</span>${icon('arrow-right','›')}</button></section>
+        ${controls.zoomIn&&controls.zoomOut?`<section class="reader-setting-row reader-size-row"><span class="reader-setting-row-icon">Aa</span><strong>${esc(t('fontSize'))}</strong><div class="reader-size-control"><button type="button" data-reader-size="small" class="${scale==='small'?'active':''}">A</button><button type="button" data-reader-size="medium" class="${scale==='medium'?'active':''}">A</button><button type="button" data-reader-size="large" class="${scale==='large'?'active':''}">A</button></div></section><section class="reader-setting-row"><span class="reader-setting-row-icon">⌕</span><strong>${esc(t('zoom'))}</strong><div class="reader-zoom-control"><button type="button" data-reader-zoom="out">−</button><span data-reader-zoom-value>100%</span><button type="button" data-reader-zoom="in">＋</button></div></section>`:''}
+        <section class="reader-setting-row"><span class="reader-setting-row-icon">▤</span><strong>${esc(t('pageBehavior'))}</strong><button type="button" data-reader-page-behavior><span>${esc(paged?t('paged'):t('continuousScroll'))}</span>${icon('arrow-right','›')}</button></section>
+        <section class="reader-tool-list"><h3>${esc(t('tools'))}</h3>
+          ${controls.notes?`<button type="button" data-reader-tool="notes"><span>${icon('edit','✎')}</span><strong>${esc(t('notes'))}</strong>${icon('arrow-right','›')}</button>`:''}
+          ${controls.search?`<button type="button" data-reader-tool="search"><span>${icon('search','⌕')}</span><strong>${esc(t('search'))}</strong>${icon('arrow-right','›')}</button>`:''}
+          ${controls.rotate?`<button type="button" data-reader-tool="rotate"><span>↻</span><strong>${esc(t('rotate'))}</strong>${icon('arrow-right','›')}</button>`:''}
+          ${controls.download?`<button type="button" data-reader-tool="download"><span>${icon('download','⇩')}</span><strong>${esc(t('download'))}</strong>${icon('arrow-right','›')}</button>`:''}
+          ${controls.fullscreen?`<button type="button" data-reader-tool="fullscreen"><span>⛶</span><strong>${esc(t('fullscreen'))}</strong>${icon('arrow-right','›')}</button>`:''}
+        </section>
+      </div>`);
+
+    backdrop.querySelectorAll('[data-axis-value]').forEach(button=>button.onclick=()=>{
+      controls.setAxis?.(button.dataset.axisValue);
+      backdrop.remove();
+    });
+    backdrop.querySelector('[data-reader-theme-toggle]')?.addEventListener('click',()=>{
+      const next=(root.dataset.readerTheme||theme)==='dark'?'light':'dark';
+      setReaderTheme(root,next);
+      const value=backdrop.querySelector('[data-reader-theme-value]');
+      if(value)value.textContent=next==='dark'?t('dark'):t('light');
+    });
+    const scaleOrder=['small','medium','large'];
+    backdrop.querySelectorAll('[data-reader-size]').forEach(button=>button.onclick=()=>{
+      const current=root.dataset.readerScale||'medium';
+      const next=button.dataset.readerSize;
+      const delta=scaleOrder.indexOf(next)-scaleOrder.indexOf(current);
+      if(delta>0) for(let i=0;i<delta;i++)controls.zoomIn?.();
+      if(delta<0) for(let i=0;i<Math.abs(delta);i++)controls.zoomOut?.();
+      root.dataset.readerScale=next;
+      backdrop.querySelectorAll('[data-reader-size]').forEach(item=>item.classList.toggle('active',item===button));
+    });
+    let zoomPercent=100;
+    backdrop.querySelectorAll('[data-reader-zoom]').forEach(button=>button.onclick=()=>{
+      if(button.dataset.readerZoom==='in'){controls.zoomIn?.();zoomPercent=Math.min(300,Math.round(zoomPercent*1.18));}
+      else {controls.zoomOut?.();zoomPercent=Math.max(45,Math.round(zoomPercent/1.18));}
+      const value=backdrop.querySelector('[data-reader-zoom-value]'); if(value)value.textContent=`${zoomPercent}%`;
+    });
+    backdrop.querySelector('[data-reader-page-behavior]')?.addEventListener('click',event=>{
+      root.classList.toggle('reader-paged');
+      const span=event.currentTarget.querySelector('span');
+      if(span)span.textContent=root.classList.contains('reader-paged')?t('paged'):t('continuousScroll');
+      setReaderPref('paged',root.classList.contains('reader-paged'));
+    });
+    backdrop.querySelectorAll('[data-reader-tool]').forEach(button=>button.onclick=async()=>{
+      const action=button.dataset.readerTool;
+      if(action==='notes'){backdrop.remove();openNotes(root,context,controls.getPage);return;}
+      if(action==='search'){backdrop.remove();openSearch(root,controls);return;}
+      if(action==='rotate'){controls.rotate?.();backdrop.remove();return;}
+      if(action==='download'){await controls.download?.();backdrop.remove();return;}
+      if(action==='fullscreen'){await controls.fullscreen?.();backdrop.remove();}
+    });
+  }
+
+  function mountCompactDock(root, context, controls = {}) {
+    const dock=document.createElement('nav');
+    dock.className='viewer-bottom-dock viewer-bottom-dock-compact';
+    dock.innerHTML=`<button type="button" data-viewer-dock="settings" aria-label="${esc(t('settings'))}">⚙</button>${controls.notes?`<button type="button" data-viewer-dock="notes" aria-label="${esc(t('writeNote'))}">✎</button>`:''}`;
     root.append(dock);
-    dock.querySelector('[data-viewer-dock=settings]').onclick = () => openSettings(root, context, controls);
-    const axisButton = dock.querySelector('[data-viewer-dock=axis]');
-    if (axisButton) axisButton.onclick = () => { const next = controls.getAxis() === 'horizontal' ? 'vertical' : 'horizontal'; controls.setAxis(next); axisButton.textContent = next === 'horizontal' ? '↔' : '↕'; };
-    const noteButton = dock.querySelector('[data-viewer-dock=notes]');
-    if (noteButton) noteButton.onclick = () => openNotes(root, context, controls.getPage);
+    dock.querySelector('[data-viewer-dock="settings"]').onclick=()=>openSettings(root,context,controls);
+    dock.querySelector('[data-viewer-dock="notes"]')?.addEventListener('click',()=>openNotes(root,context,controls.getPage));
     return dock;
+  }
+
+  function mountReaderDock(root, context, controls = {}) {
+    const shell=root.querySelector('.immersive-viewer-shell') || root;
+    const pref=readerPrefs();
+    setReaderTheme(root,pref.theme || 'light');
+    root.classList.toggle('reader-paged',Boolean(pref.paged));
+    if(context.lecture?.id && currentLectureStatus(context)==='unread')setLectureStatus(context,'reading');
+
+    const settings=document.createElement('button');
+    settings.type='button';
+    settings.className='reader-top-control reader-settings-button';
+    settings.setAttribute('aria-label',t('settings'));
+    settings.innerHTML=icon('settings','⚙');
+    shell.append(settings);
+    settings.onclick=()=>openSettings(root,context,controls);
+
+    const dock=document.createElement('nav');
+    dock.className='viewer-bottom-dock viewer-reader-dock';
+    dock.setAttribute('aria-label',t('file'));
+    const hasLecture=Boolean(context.lecture?.id);
+    dock.innerHTML=`
+      <button type="button" data-viewer-dock="switch" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('change-course','▣')}</span><small>${esc(t('switchLecture'))}</small></button>
+      <button type="button" data-viewer-dock="navigate" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('subjects','☷')}</span><small>${esc(t('navigateLectures'))}</small></button>
+      <button type="button" data-viewer-dock="status" ${hasLecture?'':'disabled'}><span class="viewer-dock-icon">${icon('check','✓')}</span><small>${esc(t('lectureStatus'))}</small></button>
+      <button type="button" data-viewer-dock="examine"><span class="viewer-dock-icon">${icon('star','✦')}</span><small>${esc(t('examine'))}</small></button>`;
+    root.append(dock);
+    dock.querySelector('[data-viewer-dock="switch"]')?.addEventListener('click',()=>openSwitchLecture(root,context,controls));
+    dock.querySelector('[data-viewer-dock="navigate"]')?.addEventListener('click',()=>openNavigateLectures(root,context,controls));
+    dock.querySelector('[data-viewer-dock="status"]')?.addEventListener('click',()=>openLectureStatus(root,context));
+    dock.querySelector('[data-viewer-dock="examine"]')?.addEventListener('click',()=>openExamine(root,context,controls));
+    syncLectureStatus(root,context);
+    return dock;
+  }
+
+  function mountDock(root, context, controls = {}) {
+    return root?.classList?.contains('file-workspace') ? mountReaderDock(root,context,controls) : mountCompactDock(root,context,controls);
   }
 
   function youtubeId(value) {
