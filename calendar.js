@@ -190,7 +190,12 @@
     return {primary:String(date.getFullYear()),secondary:'Year',meta:`${date.getFullYear()-1} · ${date.getFullYear()+1}`};
   }
   function modeLoop(){
-    return PLANNER_MODES.map(mode=>`<button type="button" class="planner-loop-item ${plannerMode===mode?'active':''}" data-planner-mode="${mode}" aria-current="${plannerMode===mode?'true':'false'}">${mode[0].toUpperCase()+mode.slice(1)}</button>`).join('');
+    const currentIndex=Math.max(0,PLANNER_MODES.indexOf(plannerMode));
+    const labels={day:'Days',week:'Weeks',month:'Months',year:'Years'};
+    return [-3,-2,-1,0,1,2,3].map(offset=>{
+      const mode=PLANNER_MODES[(currentIndex+offset+PLANNER_MODES.length*4)%PLANNER_MODES.length];
+      return `<button type="button" class="planner-loop-item ${offset===0?'active':''}" data-planner-mode="${mode}" data-loop-offset="${offset}" aria-current="${offset===0?'true':'false'}">${labels[mode]}</button>`;
+    }).join('');
   }
   function periodLoop(){
     return [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7].map(offset=>{
@@ -706,7 +711,7 @@
     document.querySelectorAll('[data-planner-delete-recurring]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();write(SCHEDULE_KEY,read(SCHEDULE_KEY,[]).filter(entry=>entry.id!==button.dataset.plannerDeleteRecurring));rerender();
     }));
-    document.querySelectorAll('[data-planner-loop="period"]').forEach(bindPlannerLoop);
+    document.querySelectorAll('[data-planner-loop="mode"],[data-planner-loop="period"]').forEach(bindPlannerLoop);
   }
 
   function defaultEntryDate(){
