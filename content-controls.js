@@ -129,8 +129,12 @@
     const actions = state.actions.add || [];
 
     if (route.startsWith('calendar/schedule')) {
-      const canonical = actions.find(control => control.matches?.('.planner-add,[data-planner-add]'));
-      return canonical ? [{ control:canonical, label:'Add schedule item' }] : [];
+      const order=['tasks','todos','goals','schedule','attendance'];
+      const labels={tasks:'Task',todos:'To-do',goals:'Goal',schedule:'Schedule item',attendance:'Attendance'};
+      return order.map(type=>{
+        const control=actions.find(candidate=>candidate.dataset?.plannerAddType===type);
+        return control?{control,label:labels[type],type}:null;
+      }).filter(Boolean);
     }
 
     const contextual = control => control.matches?.('.planner-cell-add,.planner-inline-add,.cal-add-axis,[data-planner-cell-add],[data-add-axis]');
@@ -309,8 +313,9 @@
     actions.innerHTML = adds.slice(0,6).map((entry,index) =>
       `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">＋</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>Open form</small></span><b>›</b></button>`
     ).join('');
-    sheet.querySelector('header h2').textContent = 'Choose what to add';
-    sheet.querySelector('.dcc-sheet-note').textContent = 'Choose one add form for this page.';
+    const scheduleChooser=routeName().toLowerCase().startsWith('calendar/schedule');
+    sheet.querySelector('header h2').textContent = scheduleChooser ? 'Choose item type' : 'Choose what to add';
+    sheet.querySelector('.dcc-sheet-note').textContent = scheduleChooser ? 'Task, to-do, goal, schedule item or attendance.' : 'Choose one add form for this page.';
     actions.querySelectorAll('[data-dcc-add-index]').forEach(button => button.addEventListener('click',() => {
       const entry = adds[Number(button.dataset.dccAddIndex)];
       if (!entry) return;
