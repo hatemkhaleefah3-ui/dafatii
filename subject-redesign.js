@@ -277,7 +277,7 @@
     </section>`;
   }
   function lectureCard(subject,lecture,showSubject){
-    return `<article class="subject-r-row lecture" data-open-lecture="${esc(lecture.id)}" data-subject-id="${esc(subject.id)}">
+    return `<article class="subject-r-row lecture" data-open-lecture="${esc(lecture.id)}" data-subject-id="${esc(subject.id)}" tabindex="0" role="button">
       <div class="subject-r-row-main"><h2>${esc(lecture.name)}</h2><p>${showSubject?`${esc(subject.name)} · `:''}${esc(lecture.notes||'Lecture material')}</p><small>${lecture.link?'🔗 Lecture link available':'No recording/link attached'}</small></div>
     </article>`;
   }
@@ -300,7 +300,7 @@
   }
   function examCard(subject,exam,showSubject){
     const past=isExamPast(exam),degree=hasDegree(exam)?Number(exam.degree):null;
-    return `<article class="subject-r-row exam" data-open-exam="${esc(exam.id)}" data-subject-id="${esc(subject.id)}">
+    return `<article class="subject-r-row exam" data-open-exam="${esc(exam.id)}" data-subject-id="${esc(subject.id)}" tabindex="0" role="button">
       <div class="subject-r-row-main"><h2>${esc(exam.title||'Exam')}</h2><small>▣ ${esc(past?'Taken':'Due')} ${esc(dateLabel(exam.day))}${exam.time?` · ${esc(exam.time)}`:''}</small><p>${showSubject?`${esc(subject.name)} · `:''}${esc(exam.notes||'Exam details')}</p></div>
       <div class="subject-r-row-badges"><span class="subject-r-status ${past?'done':'upcoming'}">${past?(degree!==null?'Graded':'Completed'):'Upcoming'}</span>${degree!==null?`<b>${esc(formatNumber(degree))}</b>`:''}</div>
     </article>`;
@@ -321,7 +321,7 @@
       <div class="subject-r-metrics compact">${metric('',list.length,'Total')}${metric('',list.filter(isDueToday).length,'Due today','red')}${metric('',list.filter(a=>a.status==='doing').length,'In progress','purple')}${metric('',history.length,'Submitted','green')}</div>
       <div class="subject-r-filterbar">${[['all','All'],['due','Due soon'],['doing','In progress'],['done','Submitted']].map(([key,label])=>`<button class="${ui.assignmentFilter===key?'active':''}" data-assignment-r-filter="${key}">${label}</button>`).join('')}</div>
       <div class="subject-r-stack">${active.length?active.map(a=>assignmentCard(subject,a,false)).join(''):ui.assignmentFilter==='done'?'':emptyState('No active assignments','Your active tasks will appear here.')}</div>
-      ${history.length?`<section class="subject-r-section"><h2>Submission history</h2><div class="subject-r-results">${history.map(a=>`<div data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id)}"><strong>${esc(a.title)}</strong><span>${a.completedAt?`Submitted ${new Date(a.completedAt).toLocaleDateString()}`:'Submitted'}</span><b>Submitted</b></div>`).join('')}</div></section>`:''}
+      ${history.length?`<section class="subject-r-section"><h2>Submission history</h2><div class="subject-r-results">${history.map(a=>`<div data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id)}" tabindex="0" role="button"><strong>${esc(a.title)}</strong><span>${a.completedAt?`Submitted ${new Date(a.completedAt).toLocaleDateString()}`:'Submitted'}</span><b>Submitted</b></div>`).join('')}</div></section>`:''}
       ${canPlan('add_content')?'<button class="subject-r-wide-action" id="subject-r-add-assignment-bottom">＋ <span>New Assignment</span></button>':''}
     </section>`;
   }
@@ -337,7 +337,7 @@
   function assignmentCard(subject,a,showSubject){
     const due=assignmentDueTime(a),overdue=Number.isFinite(due)&&due<now()&&!assignmentDone(a);
     const status=assignmentDone(a)?'Submitted':a.status==='doing'?'In progress':isDueSoon(a)?'Due soon':'Not started';
-    return `<article class="subject-r-row assignment ${overdue?'overdue':''}" data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id||'')}">
+    return `<article class="subject-r-row assignment ${overdue?'overdue':''}" data-open-assignment="${esc(a.id)}" data-subject-id="${esc(subject.id||'')}" tabindex="0" role="button">
       <div class="subject-r-row-main"><h2>${esc(a.title)}</h2><small class="${overdue?'danger':''}">${a.dueDate?`${overdue?'Overdue':'Due'} ${esc(dateLabel(a.dueDate))}${a.dueTime?`, ${esc(a.dueTime)}`:''}`:'No due date'}</small><p>${showSubject?`${esc(subject.name)} · `:''}${esc(a.notes||'No extra notes.')}</p></div>
       <div class="subject-r-row-badges"><span class="subject-r-status ${assignmentDone(a)?'done':a.status==='doing'?'progress':isDueSoon(a)?'danger':'muted'}">${status}</span><b class="priority ${esc(a.priority||'medium')}">${esc((a.priority||'medium')[0].toUpperCase()+(a.priority||'medium').slice(1))}</b>${(canPlan('edit_content')||tracksPersonalAssignmentProgress())&&!assignmentDone(a)?'<button class="subject-r-open" type="button">Open</button>':''}</div>
     </article>`;
@@ -417,18 +417,18 @@
     document.getElementById('subject-r-add-content')?.addEventListener('click',()=>subject&&openAddContent(subject));
     document.querySelectorAll('[data-edit-chapter]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const target=state.subjects.find(s=>s.id===button.dataset.editChapter);if(target)openChapterSheet(target);}));
 
-    document.querySelectorAll('[data-open-lecture]').forEach(el=>el.addEventListener('click',()=>{
-      const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;
-      const lecture=subjectLectures(s.id).find(x=>x.id===el.dataset.openLecture);
-      if(canContent('edit_content')){openLectureSheet(s,el.dataset.openLecture);return;}
-      openLectureDetails(s,lecture);
-    }));
-    document.querySelectorAll('[data-open-exam]').forEach(el=>el.addEventListener('click',()=>{
-      const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openExamRedesign(s,el.dataset.openExam);
-    }));
-    document.querySelectorAll('[data-open-assignment]').forEach(el=>el.addEventListener('click',()=>{
-      const s=state.subjects.find(x=>x.id===el.dataset.subjectId)||subject;if(s)openAssignmentRedesign(s,el.dataset.openAssignment);
-    }));
+    document.querySelectorAll('[data-open-lecture]').forEach(el=>{
+      const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;const lecture=subjectLectures(s.id).find(x=>x.id===el.dataset.openLecture);if(canContent('edit_content')){openLectureSheet(s,el.dataset.openLecture);return;}openLectureDetails(s,lecture);};
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    });
+    document.querySelectorAll('[data-open-exam]').forEach(el=>{
+      const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(s)openExamRedesign(s,el.dataset.openExam);};
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    });
+    document.querySelectorAll('[data-open-assignment]').forEach(el=>{
+      const open=()=>{const s=state.subjects.find(x=>x.id===el.dataset.subjectId)||subject;if(s)openAssignmentRedesign(s,el.dataset.openAssignment);};
+      el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    });
   }
   function rebindSubjectCards(){
     document.querySelectorAll('[data-open-subject]').forEach(el=>{
