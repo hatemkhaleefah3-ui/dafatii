@@ -277,8 +277,12 @@ async function listMessages(context,user,conversationId){
 }
 
 async function listMembers(context,user,conversationId){
-  const id=requireUuid(conversationId),{conversation}=await requireReadable(context.env.DB,user.id,id);
+  const id=requireUuid(conversationId);
+  const conversation=await conversationRow(context.env.DB,id);
+  if(!conversation)throw new HttpError(404,'CONVERSATION_NOT_FOUND','Conversation was not found.');
   if(conversation.kind==='anonymous')throw new HttpError(403,'ANONYMOUS_MEMBERS_HIDDEN','Anonymous room identities are private.');
+  const member=await memberRow(context.env.DB,user.id,id);
+  if(!member)throw new HttpError(403,'CONVERSATION_ACCESS_DENIED','Join this conversation before viewing members.');
   const rows=await context.env.DB.prepare(`SELECT u.display_name,m.role,m.joined_at FROM social_members m JOIN users u ON u.id=m.user_id WHERE m.conversation_id=? ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,u.display_name`).bind(id).all();
   return ok({members:rows.results.map(row=>({name:row.display_name,role:row.role,joinedAt:row.joined_at}))});
 }
