@@ -343,7 +343,7 @@
   };
 
   function decorateLectureCards() {
-    document.querySelectorAll('.lecture-swipe[data-lecture-id][data-subject-id]').forEach(wrapper => {
+    document.querySelectorAll('.lecture-card-wrap[data-lecture-id][data-subject-id]').forEach(wrapper => {
       const subjectId = wrapper.dataset.subjectId;
       const lecture = subjectLectures(subjectId).find(item => item.id === wrapper.dataset.lectureId);
       const card = wrapper.querySelector('.lecture-card');

@@ -166,6 +166,30 @@
     stage.addEventListener('touchcancel', finish, { passive:false });
   }
 
+  function bindChromeAutoHide(root) {
+    const stage=root.querySelector('[data-pdf-stage], [data-office-stage]');
+    if(!stage || stage.dataset.readerChromeBound==='1')return;
+    stage.dataset.readerChromeBound='1';
+    let timer=0,lastTop=stage.scrollTop,lastLeft=stage.scrollLeft;
+    const show=(delay=1200)=>{
+      root.classList.remove('reader-chrome-hidden');
+      clearTimeout(timer);
+      timer=setTimeout(()=>{ if(!root.querySelector('.viewer-sheet-backdrop')) root.classList.add('reader-chrome-hidden'); },delay);
+    };
+    const onScroll=()=>{
+      const moved=Math.abs(stage.scrollTop-lastTop)+Math.abs(stage.scrollLeft-lastLeft)>2;
+      lastTop=stage.scrollTop;lastLeft=stage.scrollLeft;
+      if(!moved)return;
+      root.classList.add('reader-chrome-hidden');
+      clearTimeout(timer);
+      timer=setTimeout(()=>root.classList.remove('reader-chrome-hidden'),650);
+    };
+    stage.addEventListener('scroll',onScroll,{passive:true});
+    root.addEventListener('pointerdown',event=>{ if(!event.target.closest('.viewer-sheet-backdrop'))show(1800); },{passive:true});
+    root.addEventListener('keydown',()=>show(1800));
+    show(2200);
+  }
+
   const originalMountDock = workspace.mountDock.bind(workspace);
   const wrappedWorkspace = Object.freeze({
     ...workspace,
@@ -175,7 +199,9 @@
         if (context?.fileId != null) rootsByFileId.set(fileKey(context.fileId), root);
         bindPinchZoom(root, controls);
       }
-      return originalMountDock(root, context, controls);
+      const dock=originalMountDock(root, context, controls);
+      if(root?.classList?.contains('file-workspace'))bindChromeAutoHide(root);
+      return dock;
     }
   });
   window.DafatiiViewerWorkspace = wrappedWorkspace;
