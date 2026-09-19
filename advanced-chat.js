@@ -175,7 +175,7 @@
         <button type="button" id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
         <button type="button" id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
       </div>
-      <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" hidden>
+      <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" hidden>
     </div>`;
   }
   function attachmentMenu(c){return `<div class="chatpro-attach-menu"><button data-attach-kind="media"><span>${icon('image')}</span><b>Photos & videos</b></button><button data-attach-kind="document"><span>${icon('file')}</span><b>Document</b></button><button data-attach-kind="contact"><span>${icon('user')}</span><b>Contact</b></button><button data-attach-kind="location"><span>${icon('location')}</span><b>Location</b></button>${c.kind==='group'?`<button data-attach-kind="poll"><span>${icon('poll')}</span><b>Poll</b></button>`:''}<button data-attach-kind="sticker"><span>${icon('star')}</span><b>Sticker / GIF</b></button></div>`;}
