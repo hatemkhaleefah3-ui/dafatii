@@ -132,7 +132,7 @@
       const control=actions.find(candidate=>candidate.dataset?.plannerAddType);
       if(!control)return [];
       const type=String(control.dataset.plannerAddType||'schedule');
-      const labels={tasks:'Task',todos:'To-do',goals:'Goal',schedule:'Schedule item',attendance:'Attendance'};
+      const labels={tasks:'Task',todos:'To-do',goals:'Goal',schedule:'Schedule item'};
       return [{control,label:labels[type]||'Item',type}];
     }
 
@@ -309,7 +309,7 @@
     const sheet = document.querySelector('.dcc-sheet');
     if (!sheet) return;
     const actions = sheet.querySelector('.dcc-sheet-actions');
-    const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷',attendance:'◎'};
+    const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷'};
     actions.innerHTML = adds.slice(0,6).map((entry,index) =>
       `<button type="button" class="dcc-add-choice" data-dcc-add-index="${index}"><span class="dcc-action-icon">${escapeHtml(typeIcons[entry.type]||'＋')}</span><span class="dcc-action-copy"><strong>${escapeHtml(entry.label)}</strong><small>${entry.type?'Create '+escapeHtml(entry.label.toLowerCase()):'Open form'}</small></span><b>›</b></button>`
     ).join('');
