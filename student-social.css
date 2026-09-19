@@ -219,3 +219,20 @@
   .chat-app-top-actions{gap:5px}.chat-app-brand{gap:7px}.chat-app-stage{padding-inline:6px}.chat-app-subnav{gap:4px}.chat-app-subnav button{padding-inline:11px}
 }
 @media(prefers-reduced-motion:reduce){.chat-app-drawer,.chat-app-nav-item,.chat-app-subnav button,.chat-app-menu{transition:none}}
+
+/* Full-screen conversation route: only the conversation header, messages, and composer remain. */
+.chat-app-page.thread-open{
+  height:100dvh;min-height:100dvh;padding:0;overflow:hidden;
+}
+.chat-app-page.thread-open>.chat-app-topbar,
+.chat-app-page.thread-open>.chat-app-subnav,
+.chat-app-page.thread-open>.chat-app-bottom{
+  display:none!important;
+}
+.chat-app-page.thread-open>.chat-app-stage{
+  width:100%;max-width:none;height:100dvh;margin:0;padding:0;overflow:hidden;
+}
+.chat-app-page.thread-open .chatpro-page.route-thread{
+  width:100%;max-width:none;height:100dvh;margin:0;
+}
+
