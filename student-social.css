@@ -226,8 +226,8 @@ body:has(.chat-app-page.thread-open){
   overflow:hidden!important;overscroll-behavior:none;
 }
 .chat-app-page.thread-open{
-  position:fixed;inset:0;z-index:90;
-  width:100%;height:auto;min-height:0;padding:0;overflow:hidden;
+  position:fixed;inset-inline:0;top:var(--chat-viewport-top,0px);bottom:auto;z-index:200;
+  width:100%;height:var(--chat-viewport-height,100dvh);min-height:0;padding:0;overflow:hidden;
   background:var(--bg);overscroll-behavior:none;
 }
 .chat-app-page.thread-open>.chat-app-topbar,
@@ -237,10 +237,10 @@ body:has(.chat-app-page.thread-open){
 }
 .chat-app-page.thread-open>.chat-app-stage{
   position:absolute;inset:0;
-  width:100%;max-width:none;height:auto;min-height:0;margin:0;padding:0;overflow:hidden;
+  width:100%;max-width:none;height:100%;min-height:0;margin:0;padding:0;overflow:hidden;
 }
 .chat-app-page.thread-open .chatpro-page.route-thread{
   position:absolute;inset:0;
-  width:100%;max-width:none;height:auto;min-height:0;margin:0;overflow:hidden;
+  width:100%;max-width:none;height:100%;min-height:0;margin:0;overflow:hidden;
 }
 

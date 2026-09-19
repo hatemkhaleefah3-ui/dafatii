@@ -1,7 +1,7 @@
 (() => {
   const CHAT_KEY='dafatii:chatState:v1';
   const PRO_KEY='dafatii:chatProState:v1';
-  const MAX_IMAGE=1200*1024, MAX_VIDEO=2200*1024, MAX_DOC=1000*1024, MAX_VOICE=900*1024;
+  const MAX_VOICE=900*1024;
   const SUBS=['Private chats','Groups','Anonymous'];
   const now=()=>Date.now();
   const uid=p=>`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
@@ -9,6 +9,18 @@
   const icon=(name,extra='')=>window.DafatiiChatShell?.icon?.(name,extra)||'';
   let voiceRecorder=null,voiceStream=null,voiceChunks=[],voiceConversationId='';
   const ui={section:'',filter:'all',query:'',info:false,search:false,searchQuery:'',menuMessage:'',replyTo:'',editing:'',attach:false,emoji:false,sticker:false,mobileThread:false};
+  function syncThreadViewport(){
+    const page=document.querySelector('.chat-app-page.thread-open');if(!page)return;
+    const viewport=window.visualViewport;
+    const height=Math.max(320,Math.round(viewport?.height||window.innerHeight||document.documentElement.clientHeight||0));
+    const top=Math.max(0,Math.round(viewport?.offsetTop||0));
+    page.style.setProperty('--chat-viewport-height',`${height}px`);
+    page.style.setProperty('--chat-viewport-top',`${top}px`);
+  }
+  window.visualViewport?.addEventListener('resize',syncThreadViewport);
+  window.visualViewport?.addEventListener('scroll',syncThreadViewport);
+  window.addEventListener('resize',syncThreadViewport);
+
 
   function read(key,fallback){return window.DafatiiCourses.readJSON(key,fallback);}
   function write(key,value){try{window.DafatiiCourses.writeJSON(key,value);return true;}catch{showToast('Browser storage is full. Remove large chat media and try again.');return false;}}
@@ -120,7 +132,30 @@
   function threadSearch(c){const q=ui.searchQuery.trim().toLowerCase(),matches=q?c.messages.filter(m=>String(m.text||m.name||m.question||'').toLowerCase().includes(q)).length:0;return `<div class="chatpro-thread-search">${icon('search')}<input id="chatpro-thread-search-input" value="${esc(ui.searchQuery)}" placeholder="Search messages"><small>${q?`${matches} found`:''}</small><button id="chatpro-search-close" aria-label="Close search">${icon('close')}</button></div>`;}
   function messageTimeline(c,pro){if(!c.messages.length)return `<div class="chatpro-empty-thread"><div>✦</div><h2>No messages yet</h2><p>Start the conversation or share a study file.</p></div>`;let lastDay='';return c.messages.map(m=>{const day=fmtDay(m.at);const marker=day!==lastDay?`<div class="chatpro-day"><span>${esc(day)}</span></div>`:'';lastDay=day;return marker+messageRow(m,c,pro);}).join('');}
   function messageRow(m,c,pro){const reply=m.replyTo?c.messages.find(x=>x.id===m.replyTo):null,starred=Boolean(pro.starred[c.id]?.[m.id]);return `<div class="chatpro-msg-row ${m.mine?'mine':'theirs'} ${ui.menuMessage===m.id?'menu-open':''}" data-message-id="${esc(m.id)}"><div class="chatpro-msg-wrap">${c.kind==='group'&&!m.mine?`<small class="chatpro-sender">${esc(m.sender||c.name)}</small>`:''}<div class="chatpro-bubble ${m.type&&m.type!=='text'?'media':''} ${m.deleted?'deleted':''}">${m.forwarded?'<div class="chatpro-forwarded">↪ Forwarded</div>':''}${reply?`<button class="chatpro-reply-quote" data-jump-message="${esc(reply.id)}"><strong>${esc(reply.mine?'You':reply.sender||c.name)}</strong><span>${esc(preview(reply))}</span></button>`:''}${renderMessage(m)}<div class="chatpro-msg-foot">${m.edited?'<span>edited</span>':''}${starred?'<span>★</span>':''}<time>${esc(fmtTime(m.at))}</time>${m.mine?`<span class="chatpro-status ${m.status==='read'?'read':''}">✓✓</span>`:''}</div></div>${renderReactions(m)}<div class="chatpro-hover-actions"><button data-quick-react="❤️">♡</button><button data-message-reply>↩</button><button data-message-more>⋮</button></div>${ui.menuMessage===m.id?messageMenu(m,c,starred):''}</div></div>`;}
-  function renderMessage(m){if(m.deleted)return `<div class="chatpro-deleted">⊘ This message was deleted</div>`;if(m.type==='image')return `<img class="chatpro-image" src="${esc(m.data)}" alt="Shared image">${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='video')return `<video class="chatpro-video" src="${esc(m.data)}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;if(m.type==='voice')return `<div class="chatpro-voice"><button>▶</button><audio src="${esc(m.data)}" controls preload="metadata"></audio><span>🎙</span></div>`;if(m.type==='file')return `<a class="chatpro-file" href="${esc(m.data)}" download="${esc(m.name||'document')}"><span>▤</span><div><strong>${esc(m.name||'Document')}</strong><small>${esc(m.sizeLabel||'File')}</small></div><b>⇩</b></a>`;if(m.type==='sticker')return `<div class="chatpro-sticker">${esc(m.text||'✨')}</div>`;if(m.type==='custom-sticker')return `<div class="chatpro-custom-sticker"><span>${esc(m.emoji||'✨')}</span><strong>${esc(m.text||'Study mode')}</strong></div>`;if(m.type==='gif')return `<img class="chatpro-gif" src="${esc(m.data)}" alt="GIF">`;if(m.type==='gif-maker')return `<div class="chatpro-made-gif"><span>${esc(m.frame1||'FOCUS')}</span><span>${esc(m.frame2||'DONE')}</span></div>`;if(m.type==='contact')return `<div class="chatpro-contact"><span>👤</span><div><strong>${esc(m.contactName||'Contact')}</strong><small>${esc(m.contactValue||'')}</small></div><button data-contact-save>Save</button></div>`;if(m.type==='location')return `<a class="chatpro-location" href="https://www.openstreetmap.org/?mlat=${Number(m.lat)}&mlon=${Number(m.lon)}#map=15/${Number(m.lat)}/${Number(m.lon)}" target="_blank" rel="noopener noreferrer"><span>📍</span><div><strong>Shared location</strong><small>${Number(m.lat).toFixed(4)}, ${Number(m.lon).toFixed(4)}</small></div></a>`;if(m.type==='poll')return pollView(m);return `<div class="chatpro-text">${linkify(esc(m.text||''))}</div>`;}
+  function renderMessage(m){
+    if(m.deleted)return `<div class="chatpro-deleted">⊘ This message was deleted</div>`;
+    if(m.type==='image'){
+      const image=m.fileId
+        ? `<button type="button" class="chatpro-media-open" data-chat-open-file="${esc(m.fileId)}" aria-label="Open ${esc(m.name||'image')}"><img class="chatpro-image" data-chat-file-id="${esc(m.fileId)}" alt="Shared image"></button>`
+        : `<img class="chatpro-image" src="${esc(m.data||'')}" alt="Shared image">`;
+      return image+(m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:'');
+    }
+    if(m.type==='video')return m.fileId
+      ? `<video class="chatpro-video" data-chat-file-id="${esc(m.fileId)}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`
+      : `<video class="chatpro-video" src="${esc(m.data||'')}" controls playsinline></video>${m.caption?`<p class="chatpro-caption">${esc(m.caption)}</p>`:''}`;
+    if(m.type==='voice')return `<div class="chatpro-voice"><button>▶</button><audio src="${esc(m.data)}" controls preload="metadata"></audio><span>🎙</span></div>`;
+    if(m.type==='file')return m.fileId
+      ? `<button type="button" class="chatpro-file" data-chat-open-file="${esc(m.fileId)}"><span>▤</span><div><strong>${esc(m.name||'Document')}</strong><small>${esc(m.sizeLabel||'File')} · Google Drive</small></div><b>↗</b></button>`
+      : `<a class="chatpro-file" href="${esc(m.data||'')}" download="${esc(m.name||'document')}"><span>▤</span><div><strong>${esc(m.name||'Document')}</strong><small>${esc(m.sizeLabel||'File')}</small></div><b>⇩</b></a>`;
+    if(m.type==='sticker')return `<div class="chatpro-sticker">${esc(m.text||'✨')}</div>`;
+    if(m.type==='custom-sticker')return `<div class="chatpro-custom-sticker"><span>${esc(m.emoji||'✨')}</span><strong>${esc(m.text||'Study mode')}</strong></div>`;
+    if(m.type==='gif')return `<img class="chatpro-gif" src="${esc(m.data)}" alt="GIF">`;
+    if(m.type==='gif-maker')return `<div class="chatpro-made-gif"><span>${esc(m.frame1||'FOCUS')}</span><span>${esc(m.frame2||'DONE')}</span></div>`;
+    if(m.type==='contact')return `<div class="chatpro-contact"><span>👤</span><div><strong>${esc(m.contactName||'Contact')}</strong><small>${esc(m.contactValue||'')}</small></div><button data-contact-save>Save</button></div>`;
+    if(m.type==='location')return `<a class="chatpro-location" href="https://www.openstreetmap.org/?mlat=${Number(m.lat)}&mlon=${Number(m.lon)}#map=15/${Number(m.lat)}/${Number(m.lon)}" target="_blank" rel="noopener noreferrer"><span>📍</span><div><strong>Shared location</strong><small>${Number(m.lat).toFixed(4)}, ${Number(m.lon).toFixed(4)}</small></div></a>`;
+    if(m.type==='poll')return pollView(m);
+    return `<div class="chatpro-text">${linkify(esc(m.text||''))}</div>`;
+  }
   function linkify(text){return text.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');}
   function pollView(m){const total=(m.options||[]).reduce((s,o)=>s+Number(o.votes||0),0)||1;return `<div class="chatpro-poll"><strong>📊 ${esc(m.question||'Poll')}</strong>${(m.options||[]).map((o,i)=>`<button data-poll-vote="${i}" class="${o.voted?'voted':''}"><span>${esc(o.text)}</span><b>${Math.round((Number(o.votes||0)/total)*100)}%</b><i style="--poll:${Math.round((Number(o.votes||0)/total)*100)}%"></i></button>`).join('')}</div>`;}
   function renderReactions(m){const r=Object.entries(m.reactions||{}).filter(([,n])=>n>0);return r.length?`<div class="chatpro-reactions">${r.map(([e,n])=>`<button data-reaction="${esc(e)}">${esc(e)} ${n}</button>`).join('')}</div>`:'';}
@@ -140,14 +175,19 @@
         <button type="button" id="chatpro-schedule" title="Schedule message" aria-label="Schedule message">${icon('clock')}</button>
         <button type="button" id="chatpro-send" class="send" title="Send" aria-label="Send">${icon('send')}</button>
       </div>
-      <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" hidden>
+      <input id="chatpro-media-file" type="file" accept="image/*,video/*" hidden><input id="chatpro-doc-file" type="file" hidden>
     </div>`;
   }
   function attachmentMenu(c){return `<div class="chatpro-attach-menu"><button data-attach-kind="media"><span>${icon('image')}</span><b>Photos & videos</b></button><button data-attach-kind="document"><span>${icon('file')}</span><b>Document</b></button><button data-attach-kind="contact"><span>${icon('user')}</span><b>Contact</b></button><button data-attach-kind="location"><span>${icon('location')}</span><b>Location</b></button>${c.kind==='group'?`<button data-attach-kind="poll"><span>${icon('poll')}</span><b>Poll</b></button>`:''}<button data-attach-kind="sticker"><span>${icon('star')}</span><b>Sticker / GIF</b></button></div>`;}
   function emojiPicker(){const e=['😀','😂','🥹','😍','😭','😤','🤯','😴','🫡','🤝','❤️','🔥','💯','✅','⚡','🎓','📚','🧠','☕','🚀','🧪','📐','🎯','🙌','👀','✨','🥳','🤍','👍','👎'];return `<div class="chatpro-emoji-picker"><div class="chatpro-picker-head"><strong>Emoji</strong><button data-close-picker>×</button></div><div>${e.map(x=>`<button data-insert-emoji="${x}">${x}</button>`).join('')}</div></div>`;}
   function stickerPanel(){const s=['📚','🧠','🔥','😭','😂','💯','🫡','⚡','☕','🎓','✅','🤝','😴','🚀'];return `<div class="chatpro-sticker-panel"><div class="chatpro-picker-head"><strong>Stickers & GIFs</strong><button data-close-picker>×</button></div><div class="chatpro-provider"><button data-provider="https://giphy.com/search/study">GIPHY ↗</button><button data-provider="https://tenor.com/search/study-gifs">Tenor ↗</button></div><div class="chatpro-sticker-grid">${s.map(x=>`<button data-send-sticker="${x}">${x}</button>`).join('')}</div><div class="chatpro-gif-entry"><input id="chatpro-gif-url" placeholder="Paste direct GIF URL"><button id="chatpro-gif-send">Send GIF</button></div><button class="chatpro-make" id="chatpro-make-sticker">＋ Make sticker</button></div>`;}
 
-  function infoPanel(c,state,pro){const meta=metaFor(pro,c.id),starred=Object.keys(pro.starred[c.id]||{}).filter(id=>pro.starred[c.id][id]),media=c.messages.filter(m=>['image','video','gif'].includes(m.type)).slice(-6);const participants=c.kind==='group'?(c.participants||['You','Lina','Yousef','Noor','Omar']):[];return `<aside class="chatpro-info"><div class="chatpro-info-head"><strong>Chat info</strong><button id="chatpro-info-close">×</button></div><div class="chatpro-profile"><span class="chatpro-avatar xlarge">${esc(c.avatar||c.name?.[0]||'?')}</span><h2>${esc(c.name)}</h2><p>${esc(c.status||c.topic||'')}</p></div><div class="chatpro-info-actions"><button data-info-action="mute"><span>${meta.muted?'🔔':'🔕'}</span><small>${meta.muted?'Unmute':'Mute'}</small></button><button data-info-action="pin"><span>⌖</span><small>${meta.pinned?'Unpin':'Pin'}</small></button><button data-info-action="archive"><span>▣</span><small>${meta.archived?'Unarchive':'Archive'}</small></button></div>${media.length?`<section><header><strong>Media</strong><button data-info-action="media">${media.length} items</button></header><div class="chatpro-media-grid">${media.map(m=>m.type==='video'?`<div class="video-thumb">▶</div>`:`<img src="${esc(m.data)}" alt="Media">`).join('')}</div></section>`:''}<section><header><strong>Starred messages</strong><span>${starred.length}</span></header>${starred.length?`<div class="chatpro-starred-list">${starred.slice(-5).map(id=>{const m=c.messages.find(x=>x.id===id);return m?`<button data-jump-message="${esc(id)}">${esc(preview(m))}</button>`:'';}).join('')}</div>`:'<p class="chatpro-info-muted">No starred messages.</p>'}</section>${c.kind==='group'?`<section><header><strong>${participants.length} participants</strong><button id="chatpro-add-member">＋ Add</button></header><div class="chatpro-participants">${participants.map((p,i)=>`<div><span>${esc(p[0])}</span><strong>${esc(p)}</strong>${i===0?'<small>admin</small>':''}</div>`).join('')}</div></section>`:''}<section class="chatpro-danger-zone">${c.kind==='unknown'?`<button data-info-action="block">${state.blocked.includes(c.id)?'Unblock':'Block'} anonymous sender</button>`:''}<button data-info-action="clear">Clear chat</button><button data-info-action="delete">Delete conversation</button></section></aside>`;}
+  function infoMediaThumb(m){
+    if(m.type==='video')return '<div class="video-thumb">▶</div>';
+    if(m.fileId)return `<img data-chat-file-id="${esc(m.fileId)}" alt="Media">`;
+    return `<img src="${esc(m.data||'')}" alt="Media">`;
+  }
+  function infoPanel(c,state,pro){const meta=metaFor(pro,c.id),starred=Object.keys(pro.starred[c.id]||{}).filter(id=>pro.starred[c.id][id]),media=c.messages.filter(m=>['image','video','gif'].includes(m.type)).slice(-6);const participants=c.kind==='group'?(c.participants||['You','Lina','Yousef','Noor','Omar']):[];return `<aside class="chatpro-info"><div class="chatpro-info-head"><strong>Chat info</strong><button id="chatpro-info-close">×</button></div><div class="chatpro-profile"><span class="chatpro-avatar xlarge">${esc(c.avatar||c.name?.[0]||'?')}</span><h2>${esc(c.name)}</h2><p>${esc(c.status||c.topic||'')}</p></div><div class="chatpro-info-actions"><button data-info-action="mute"><span>${meta.muted?'🔔':'🔕'}</span><small>${meta.muted?'Unmute':'Mute'}</small></button><button data-info-action="pin"><span>⌖</span><small>${meta.pinned?'Unpin':'Pin'}</small></button><button data-info-action="archive"><span>▣</span><small>${meta.archived?'Unarchive':'Archive'}</small></button></div>${media.length?`<section><header><strong>Media</strong><button data-info-action="media">${media.length} items</button></header><div class="chatpro-media-grid">${media.map(infoMediaThumb).join('')}</div></section>`:''}<section><header><strong>Starred messages</strong><span>${starred.length}</span></header>${starred.length?`<div class="chatpro-starred-list">${starred.slice(-5).map(id=>{const m=c.messages.find(x=>x.id===id);return m?`<button data-jump-message="${esc(id)}">${esc(preview(m))}</button>`:'';}).join('')}</div>`:'<p class="chatpro-info-muted">No starred messages.</p>'}</section>${c.kind==='group'?`<section><header><strong>${participants.length} participants</strong><button id="chatpro-add-member">＋ Add</button></header><div class="chatpro-participants">${participants.map((p,i)=>`<div><span>${esc(p[0])}</span><strong>${esc(p)}</strong>${i===0?'<small>admin</small>':''}</div>`).join('')}</div></section>`:''}<section class="chatpro-danger-zone">${c.kind==='unknown'?`<button data-info-action="block">${state.blocked.includes(c.id)?'Unblock':'Block'} anonymous sender</button>`:''}<button data-info-action="clear">Clear chat</button><button data-info-action="delete">Delete conversation</button></section></aside>`;}
   function emptyThread(kind){return `<div class="chatpro-empty-thread big"><div>✦</div><h2>${kind==='group'?'Pick a group':kind==='unknown'?'Open an anonymous message':'Choose a conversation'}</h2><p>Messages, media, documents, reactions and study conversations will appear here.</p></div>`;}
 
   function bindProChat(){
@@ -168,6 +208,10 @@
   function resetTransient(){ui.info=false;ui.search=false;ui.searchQuery='';ui.menuMessage='';ui.replyTo='';ui.editing='';ui.attach=false;ui.emoji=false;ui.sticker=false;}
 
   function bindThread(c,state,pro){
+    const threadPage=document.querySelector('.chatpro-page.route-thread');
+    threadPage?.addEventListener('click',event=>event.stopPropagation());
+    syncThreadViewport();
+    bindStoredFiles(threadPage);
     document.getElementById('chatpro-mobile-back')?.addEventListener('click',()=>{resetTransient();setHash(chatThreadRoute(c.kind));});
     document.getElementById('chatpro-info')?.addEventListener('click',()=>{ui.info=!ui.info;render();});
     document.getElementById('chatpro-info-button')?.addEventListener('click',()=>{ui.info=!ui.info;render();});
@@ -193,6 +237,27 @@
     document.querySelectorAll('[data-contact-save]').forEach(b=>b.onclick=()=>showToast('Contact saved in this browser prototype'));
   }
   function handleMessageAction(action,id,c,state,pro){const m=c.messages.find(x=>x.id===id);if(!m)return;ui.menuMessage='';if(action==='reply'){ui.replyTo=id;ui.editing='';render();return;}if(action==='forward'){openForwardSheet(m,state);return;}if(action==='star'){pro.starred[c.id]=pro.starred[c.id]||{};pro.starred[c.id][id]=!pro.starred[c.id][id];savePro(pro);render();return;}if(action==='pin'){pro.chatSettings[c.id]=pro.chatSettings[c.id]||{};pro.chatSettings[c.id].pinnedMessageId=id;savePro(pro);render();return;}if(action==='copy'){navigator.clipboard?.writeText(m.text||'').then(()=>showToast('Message copied')).catch(()=>showToast('Copy unavailable'));return;}if(action==='edit'){ui.editing=id;ui.replyTo='';render();return;}if(action==='delete'){openDeleteMessageSheet(m,c,state);}}
+  function bindStoredFiles(root=document){
+    if(!root||!window.DafatiiFiles)return;
+    root.querySelectorAll('[data-chat-open-file]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();
+      const fileId=button.dataset.chatOpenFile;
+      if(!fileId)return;
+      window.DafatiiFiles.open(fileId).catch(error=>showToast(error?.message||'Could not open this file.'));
+    }));
+    root.querySelectorAll('[data-chat-file-id]').forEach(element=>{
+      if(element.dataset.chatFileReady)return;
+      element.dataset.chatFileReady='loading';
+      window.DafatiiFiles.getViewUrl(element.dataset.chatFileId).then(url=>{
+        if(!element.isConnected)return;
+        element.src=url;element.dataset.chatFileReady='1';
+      }).catch(error=>{
+        if(!element.isConnected)return;
+        element.dataset.chatFileReady='failed';
+        element.setAttribute('aria-label',error?.message||'Stored file is unavailable');
+      });
+    });
+  }
   function scrollToMessage(id){if(!id)return;const row=document.querySelector(`[data-message-id="${CSS.escape(id)}"]`);if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),1400);}}
 
   function bindComposer(c,state,pro){
@@ -225,8 +290,27 @@
   function sendCurrent(c,state,pro,input){const text=input.value.trim();if(!text)return;if(ui.editing){const m=c.messages.find(x=>x.id===ui.editing);if(m){m.text=text;m.edited=true;m.at=now();}ui.editing='';pro.drafts[c.id]='';savePro(pro);saveChat(state);render();return;}appendMessage(c,state,{type:'text',text,replyTo:ui.replyTo||undefined});ui.replyTo='';pro.drafts[c.id]='';savePro(pro);}
   function appendMessage(c,state,payload){const m={id:uid('msg'),mine:true,at:now(),status:'read',reactions:{},...payload};c.messages.push(m);c.unread=0;if(saveChat(state)){resetTransient();ui.mobileThread=true;render();}else c.messages.pop();}
   function handleAttachmentChoice(kind,c,state){ui.attach=false;if(kind==='media'){document.getElementById('chatpro-media-file')?.click();return;}if(kind==='document'){document.getElementById('chatpro-doc-file')?.click();return;}if(kind==='contact'){openContactSheet(c,state);return;}if(kind==='location'){shareLocation(c,state);return;}if(kind==='poll'){openPollSheet(c,state);return;}if(kind==='sticker'){ui.sticker=true;render();}}
-  async function handleMedia(file,c,state){if(!file)return;const isVideo=file.type.startsWith('video/'),max=isVideo?MAX_VIDEO:MAX_IMAGE;if(file.size>max){showToast(`${isVideo?'Video':'Image'} is too large for local browser storage`);return;}const data=await fileData(file);appendMessage(c,state,{type:isVideo?'video':'image',data,name:file.name});}
-  async function handleDocument(file,c,state){if(!file)return;if(file.size>MAX_DOC){showToast('Document is too large for local browser storage');return;}const data=await fileData(file);appendMessage(c,state,{type:'file',data,name:file.name,sizeLabel:formatBytes(file.size)});}
+  async function uploadChatAttachment(file){
+    if(!window.DafatiiFiles?.upload)throw new Error('Dafatii file storage is unavailable.');
+    return window.DafatiiFiles.upload(file,{purpose:'chat-attachment'});
+  }
+  async function handleMedia(file,c,state){
+    if(!file)return;
+    const isVideo=file.type.startsWith('video/')||/\.(mp4|webm|mov)$/i.test(file.name);
+    try{
+      showToast(`Uploading ${isVideo?'video':'image'} to Google Drive…`);
+      const stored=await uploadChatAttachment(file);
+      appendMessage(c,state,{type:isVideo?'video':'image',fileId:stored.id,name:stored.filename||file.name,sizeLabel:formatBytes(stored.size||file.size),contentType:stored.contentType||file.type,storage:'google-drive'});
+    }catch(error){showToast(error?.message||'Google Drive upload failed.');}
+  }
+  async function handleDocument(file,c,state){
+    if(!file)return;
+    try{
+      showToast('Uploading file to Google Drive…');
+      const stored=await uploadChatAttachment(file);
+      appendMessage(c,state,{type:'file',fileId:stored.id,name:stored.filename||file.name,sizeLabel:formatBytes(stored.size||file.size),contentType:stored.contentType||file.type,storage:'google-drive'});
+    }catch(error){showToast(error?.message||'Google Drive upload failed.');}
+  }
   function fileData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=reject;r.readAsDataURL(file);});}
   function formatBytes(n){if(n<1024)return `${n} B`;if(n<1048576)return `${Math.round(n/1024)} KB`;return `${(n/1048576).toFixed(1)} MB`;}
 
