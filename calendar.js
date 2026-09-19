@@ -468,7 +468,8 @@
     if(plannerTab==='schedule')return scheduleTableContent();
     if(plannerTab==='tasks')return tasksSubpage();
     if(plannerTab==='todos')return todosSubpage();
-    return goalsSubpage();
+    if(plannerTab==='goals')return goalsSubpage();
+    return scheduleTableContent();
   }
 
   function scheduleView(){
