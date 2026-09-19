@@ -230,6 +230,7 @@
 
     document.getElementById('lecture-media-form').onsubmit = async event => {
       event.preventDefault();
+      const studyAfter=event.currentTarget.dataset.studyAfter||'';
       const name = document.getElementById('lecture-media-name').value.trim();
       if (!name) return;
       let videoUrl = normalizeUrl(videoInput.value);
@@ -293,7 +294,8 @@
         if (previousFileId && previousFileId !== payload.fileId) cleanupFile(previousFileId);
         status.textContent = t('saved');
         close();
-        setHash(`subjects/subject/${encodeURIComponent(targetSubject.id)}/lectures`);
+        if(studyAfter&&['flashcards','mcqs','qa'].includes(studyAfter))window.DafatiiLectureStudyTools?.routeTo(targetSubject.id,payload.id,studyAfter);
+        else setHash(`subjects/subject/${encodeURIComponent(targetSubject.id)}/lectures`);
         requestAnimationFrame(decorateLectureCards);
       } catch (error) {
         if (newMetadata?.id) cleanupFile(newMetadata.id);
@@ -364,7 +366,7 @@
 })();
 
 
-/* Lecture study tools v1: lecture-linked flashcards, MCQ and Q&A workspaces */
+/* Lecture study tools v2: lecture-linked flashcards, MCQ and Q&A workspaces */
 ;(function lectureStudyToolsModule(){
   const TYPES={
     flashcards:{
@@ -641,38 +643,26 @@
       redraw(parts);
     });
   }
-  function cardButtons(subjectId,lecture){
-    const editable=canEdit();
-    return Object.entries(TYPES).map(([type,meta])=>{
-      const count=storedItems(lecture,type).length;
-      if(!editable&&!count)return '';
-      const verb=count?'Open':'Make';
-      return `<button type="button" data-lecture-study-launch="${type}" data-study-subject="${esc(subjectId)}" data-study-lecture="${esc(lecture.id)}"><span>${esc(meta.icon)}</span><b>${verb} ${esc(meta.label)}</b>${count?`<small>${count}</small>`:''}</button>`;
-    }).join('');
-  }
-  function decorateCards(){
-    document.querySelectorAll('.lecture-card-wrap[data-lecture-id][data-subject-id]').forEach(wrapper=>{
-      if(wrapper.querySelector('.lecture-study-actions'))return;
-      const subjectId=wrapper.dataset.subjectId,lecture=(state.lectures[subjectId]||[]).find(item=>item.id===wrapper.dataset.lectureId);
-      if(!lecture)return;
-      const buttons=cardButtons(subjectId,lecture);if(!buttons)return;
-      const actions=document.createElement('div');actions.className='lecture-study-actions';actions.innerHTML=buttons;wrapper.append(actions);
-      actions.querySelectorAll('[data-lecture-study-launch]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();routeTo(button.dataset.studySubject,button.dataset.studyLecture,button.dataset.lectureStudyLaunch);}));
-    });
-  }
   function decorateEditor(subject,lectureId){
     const form=document.getElementById('lecture-media-form');if(!form||form.querySelector('.lecture-study-editor-launchers'))return;
     const lecture=(state.lectures[subject.id]||[]).find(item=>item.id===lectureId);
     const block=document.createElement('section');block.className='lecture-study-editor-launchers';
-    block.innerHTML=`<div><span>Study tools</span><h3>${lecture?'Create or edit lecture practice':'Save the lecture to create practice'}</h3><p>Build flashcards, an MCQ exam, or a question-and-answer exam.</p></div><div>${Object.entries(TYPES).map(([type,meta])=>{
+    block.innerHTML=`<div><span>Lecture study tools</span><h3>Create or edit practice for this lecture</h3><p>These Flashcards, MCQs, and Question & Answer sets belong only to this lecture.</p></div><div>${Object.entries(TYPES).map(([type,meta])=>{
       const count=storedItems(lecture,type).length;
-      return `<button type="button" data-editor-study="${type}" ${lecture?'':'disabled'}><span>${esc(meta.icon)}</span><b>${count?'Edit':'Make'} ${esc(meta.label)}</b>${count?`<small>${count} items</small>`:''}</button>`;
+      return `<button type="button" data-editor-study="${type}"><span>${esc(meta.icon)}</span><b>${count?'Edit':'Make'} ${esc(meta.label)}</b>${count?`<small>${count} items</small>`:`<small>${lecture?'Not added':'Saves lecture first'}</small>`}</button>`;
     }).join('')}</div>`;
     const submit=document.getElementById('lecture-media-submit');submit?.before(block);
-    block.querySelectorAll('[data-editor-study]').forEach(button=>button.addEventListener('click',()=>{if(!lecture)return;routeTo(subject.id,lecture.id,button.dataset.editorStudy);}));
+    block.querySelectorAll('[data-editor-study]').forEach(button=>button.addEventListener('click',()=>{
+      const type=button.dataset.editorStudy;
+      if(lecture){routeTo(subject.id,lecture.id,type);return;}
+      const name=document.getElementById('lecture-media-name');
+      if(!name?.value.trim()){name?.focus();name?.reportValidity();return;}
+      form.dataset.studyAfter=type;
+      form.requestSubmit();
+    }));
   }
 
-  const api={view,bind,routeTo,decorateCards};
+  const api={view,bind,routeTo};
   window.DafatiiLectureStudyTools=api;
   const originalWorkspaceContent=workspaceContent;
   workspaceContent=function(page,parts,title){
@@ -684,7 +674,6 @@
     originalBindWorkspace(subject);
     const parts=routeParts();
     if(parts[0]==='subjects'&&parts[1]==='lecture-study')bind(parts);
-    requestAnimationFrame(decorateCards);
   };
   const originalOpenLectureSheet=window.openLectureSheet;
   window.openLectureSheet=function(subject,lectureId=''){
@@ -692,7 +681,4 @@
     requestAnimationFrame(()=>decorateEditor(subject,lectureId));
     return result;
   };
-  new MutationObserver(()=>requestAnimationFrame(decorateCards)).observe(document.documentElement,{childList:true,subtree:true});
-  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(decorateCards));
-  window.addEventListener('hashchange',()=>requestAnimationFrame(decorateCards));
 })();
