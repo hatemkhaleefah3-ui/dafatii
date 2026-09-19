@@ -1102,3 +1102,80 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
     font-size:10px!important
   }
 }
+
+
+/* Planner v10 — mode rail matches the date rail and clears the fixed Calendar toolbar */
+body .quiet-workspace>.workspace-main>.planner-page{
+  margin-top:58px!important
+}
+.planner-page>.planner-mode-shell{
+  margin:0 0 2px!important;
+  overflow:hidden!important
+}
+.planner-page>.planner-mode-shell .planner-loop-track{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:100%!important;
+  padding:12px calc(50% - 90px)!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scroll-snap-type:x mandatory!important;
+  scroll-padding-inline:calc(50% - 90px)!important;
+  scrollbar-width:none!important;
+  overscroll-behavior-inline:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-x!important;
+  cursor:grab!important;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)!important;
+  mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)!important
+}
+.planner-page>.planner-mode-shell .planner-loop-track:active{cursor:grabbing!important}
+.planner-page>.planner-mode-shell .planner-loop-track::-webkit-scrollbar{display:none}
+.planner-page>.planner-mode-shell .planner-loop-item{
+  flex:0 0 auto!important;
+  width:172px!important;
+  min-width:172px!important;
+  min-height:58px!important;
+  padding:10px 8px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--text)!important;
+  scroll-snap-align:center!important;
+  scroll-snap-stop:always!important;
+  opacity:.2;
+  transform:scale(.9);
+  font:650 22px/1.12 Manrope,sans-serif!important;
+  letter-spacing:-.03em!important;
+  text-align:center!important;
+  cursor:grab!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  transition:opacity .08s linear,transform .08s linear,color .12s ease!important;
+  will-change:opacity,transform
+}
+.planner-page>.planner-mode-shell .planner-loop-item.active{
+  color:var(--text)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font-weight:800!important
+}
+@media(max-width:767px){
+  body .quiet-workspace>.workspace-main>.planner-page{
+    margin-top:58px!important
+  }
+  .planner-page>.planner-mode-shell .planner-loop-track{
+    gap:2px!important;
+    padding-inline:calc(50% - 70px)!important;
+    scroll-padding-inline:calc(50% - 70px)!important
+  }
+  .planner-page>.planner-mode-shell .planner-loop-item{
+    width:136px!important;
+    min-width:136px!important;
+    min-height:54px!important;
+    padding:10px 4px!important;
+    font-size:20px!important
+  }
+}
