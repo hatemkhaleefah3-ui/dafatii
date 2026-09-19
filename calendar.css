@@ -635,7 +635,7 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
   .planner-entry-overlay{padding:6px!important}
   body .planner-entry-overlay .planner-entry-sheet{
     width:calc(100vw - 12px)!important;max-width:calc(100vw - 12px)!important;
-    max-height:86dvh!important;margin:0 6px max(6px,env(safe-area-inset-bottom))!important;
+    max-height:86dvh!important;margin:0 auto max(6px,env(safe-area-inset-bottom))!important;
     padding:12px 12px calc(12px + env(safe-area-inset-bottom))!important;border-radius:22px!important
   }
   .planner-entry-sheet .calendar-form-grid,.planner-repeat-options,.planner-goal-measure-form{grid-template-columns:1fr}
