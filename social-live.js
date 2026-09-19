@@ -320,7 +320,7 @@
     input.focus();
   }
   function openPostSheet(){
-    const isAdmin=Boolean(window.DafatiiAuth?.user?.isAdmin);
+    const isAdmin=window.DafatiiAuth?.user?.platformRole==='admin';
     const typeOptions=(isAdmin?'<option value="announcement">Announcement</option>':'')+'<option value="blog">Article</option><option value="event">Event</option>';
     const s=sheet('<div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">Community</div><h2>Create post</h2></div><button class="icon-btn" data-live-close>×</button></div><form id="live-post-form"><div class="field"><label>Type</label><select id="live-post-type">'+typeOptions+'</select></div><div class="field"><label>Title</label><input id="live-post-title" maxlength="140" required></div><div class="field"><label>Post</label><textarea id="live-post-body" maxlength="2000" rows="6" required></textarea></div><div class="field"><label>Tags</label><input id="live-post-tags" maxlength="200" placeholder="Study tips, Exams"></div><button class="btn btn-primary entity-submit">Publish</button></form>','live-post');
     if(!s)return;
