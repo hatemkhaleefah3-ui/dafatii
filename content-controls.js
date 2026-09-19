@@ -9,6 +9,8 @@
     syncQueued: false,
     deleting: false,
     itemActions: new Map(),
+    hitboxes: new Map(),
+    hitboxSyncQueued: false,
     actions: { add: [], edit: [], delete: [] }
   };
 
@@ -20,7 +22,7 @@
   const workspace = () => document.querySelector('.workspace,.quiet-workspace');
   const scope = () => document.querySelector('.workspace-main') || document.querySelector('.quiet-main') || workspace();
   const excluded = el => Boolean(el.closest(
-    '#overlay-root,.entity-sheet-overlay,.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-selection-bar,' +
+    '#overlay-root,.entity-sheet-overlay,.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-mode-hint,.dcc-selection-bar,.dcc-delete-portal,.dcc-delete-hitbox,' +
     '.main-nav,.settings-nav,.sub-nav,.sidebar,.bottom-nav,.quiet-toolbar,.quiet-sidebar,.quiet-desktop-tabs,' +
     '.chat-app-page,.chatpro-page'
   ));
@@ -132,8 +134,21 @@
     return map;
   }
 
+  function ensureDeletePortal() {
+    let portal = document.querySelector('.dcc-delete-portal');
+    if (!portal) {
+      portal = document.createElement('div');
+      portal.className = 'dcc-delete-portal';
+      portal.setAttribute('aria-hidden','false');
+      document.body.appendChild(portal);
+    }
+    return portal;
+  }
+
   function clearDeleteHitboxes() {
-    document.querySelectorAll('.dcc-delete-hitbox').forEach(hitbox=>hitbox.remove());
+    document.querySelector('.dcc-delete-portal')?.remove();
+    state.hitboxes.clear();
+    state.hitboxSyncQueued = false;
   }
 
   function clearItemClasses({ removeHitboxes = false } = {}) {
@@ -146,17 +161,57 @@
 
   function toggleDeleteSelection(item) {
     if (state.mode !== 'delete' || state.deleting || !state.itemActions.has(item)) return;
-    toggleDeleteSelection(item);
+    if (state.selected.has(item)) state.selected.delete(item);
+    else state.selected.add(item);
+    refreshMode();
+  }
+
+  function positionDeleteHitbox(item, hitbox) {
+    if (!item?.isConnected || !hitbox?.isConnected) return;
+    const rect = item.getBoundingClientRect();
+    const vw = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth;
+    const vh = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
+    const left = Math.max(0, rect.left);
+    const top = Math.max(0, rect.top);
+    const right = Math.min(vw, rect.right);
+    const bottom = Math.min(vh, rect.bottom);
+    const width = Math.max(0, right-left);
+    const height = Math.max(0, bottom-top);
+    hitbox.hidden = width < 2 || height < 2;
+    if (hitbox.hidden) return;
+    hitbox.style.left = `${Math.round(left)}px`;
+    hitbox.style.top = `${Math.round(top)}px`;
+    hitbox.style.width = `${Math.round(width)}px`;
+    hitbox.style.height = `${Math.round(height)}px`;
+    hitbox.style.borderRadius = getComputedStyle(item).borderRadius || '18px';
+  }
+
+  function syncDeleteHitboxes() {
+    state.hitboxSyncQueued = false;
+    if (state.mode !== 'delete') return;
+    for (const [item,hitbox] of [...state.hitboxes]) {
+      if (!item?.isConnected || !state.itemActions.has(item)) {
+        hitbox.remove();
+        state.hitboxes.delete(item);
+        continue;
+      }
+      positionDeleteHitbox(item,hitbox);
+    }
+  }
+
+  function scheduleDeleteHitboxSync() {
+    if (state.mode !== 'delete' || state.hitboxSyncQueued) return;
+    state.hitboxSyncQueued = true;
+    requestAnimationFrame(syncDeleteHitboxes);
   }
 
   function ensureDeleteHitbox(item) {
     if (!(item instanceof Element)) return;
-    let hitbox = [...item.children].find(child=>child.classList?.contains('dcc-delete-hitbox'));
+    let hitbox = state.hitboxes.get(item);
     if (!hitbox) {
-      hitbox = document.createElement('span');
+      hitbox = document.createElement('button');
+      hitbox.type = 'button';
       hitbox.className = 'dcc-delete-hitbox';
-      hitbox.setAttribute('role','button');
-      hitbox.setAttribute('tabindex','0');
       hitbox.setAttribute('aria-label','Select item for deletion');
       hitbox.innerHTML = '<span class="dcc-delete-check" aria-hidden="true">✓</span>';
 
@@ -181,11 +236,13 @@
         block(event);
         toggleDeleteSelection(item);
       });
-      item.appendChild(hitbox);
+      ensureDeletePortal().appendChild(hitbox);
+      state.hitboxes.set(item,hitbox);
     }
     const selected = state.selected.has(item);
     hitbox.setAttribute('aria-pressed', selected ? 'true' : 'false');
     hitbox.setAttribute('aria-label', selected ? 'Deselect item' : 'Select item for deletion');
+    positionDeleteHitbox(item,hitbox);
   }
 
   function modeItems() {
@@ -197,6 +254,14 @@
     clearItemClasses();
     if (!state.mode) return;
     const items = modeItems();
+    if (state.mode === 'delete') {
+      for (const [item,hitbox] of [...state.hitboxes]) {
+        if (!items.has(item) || !item?.isConnected) {
+          hitbox.remove();
+          state.hitboxes.delete(item);
+        }
+      }
+    }
     for (const item of items.keys()) {
       if (!item?.isConnected) continue;
       item.classList.add('dcc-selectable', state.mode === 'edit' ? 'dcc-editable' : '');
@@ -207,6 +272,7 @@
       }
     }
     updateModeUi();
+    scheduleDeleteHitboxSync();
   }
 
   function ensureTrigger() {
@@ -623,6 +689,10 @@
   document.addEventListener('pointerup', blockDeleteItemPress, true);
   document.addEventListener('keydown', onCapturedKeydown, true);
   document.addEventListener('click', onCapturedClick, true);
+  document.addEventListener('scroll', scheduleDeleteHitboxSync, true);
+  window.addEventListener('resize', scheduleDeleteHitboxSync);
+  window.visualViewport?.addEventListener('resize', scheduleDeleteHitboxSync);
+  window.visualViewport?.addEventListener('scroll', scheduleDeleteHitboxSync);
   window.addEventListener('hashchange', () => { exitMode(); closeSheet(); scheduleSync(); });
   window.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
 
