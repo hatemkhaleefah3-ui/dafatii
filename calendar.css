@@ -1362,3 +1362,38 @@ body .quiet-workspace>.workspace-main>.planner-page{
     border-radius:21px!important
   }
 }
+
+
+/* Planner v15 — contain non-table planner pages */
+.planner-page:not(.planner-subpage-schedule)>.planner-content{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin-inline:0!important;
+  box-sizing:border-box!important;
+  overflow-x:hidden!important
+}
+.planner-page:not(.planner-subpage-schedule)>.planner-content>.planner-subpage,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-task-hero,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-todo-hero,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-goal-hero,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-task-board,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-todo-notebook,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-v6-goal-grid,
+.planner-page:not(.planner-subpage-schedule)>.planner-content .planner-premium-empty{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box
+}
+.planner-page:not(.planner-subpage-schedule)>.planner-content h3,
+.planner-page:not(.planner-subpage-schedule)>.planner-content p{
+  max-width:100%;
+  overflow-wrap:anywhere
+}
+@media(max-width:767px){
+  .planner-page:not(.planner-subpage-schedule)>.planner-content{
+    margin-inline:0!important;
+    padding-inline:14px!important
+  }
+}
