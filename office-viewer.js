@@ -269,6 +269,7 @@
     let controller = null;
     let closed = false;
     let slowTimer = 0;
+    let zoomSteps = 0;
 
     const clearSlowTimer = () => {
       if (slowTimer) clearTimeout(slowTimer);
@@ -285,13 +286,35 @@
     root.querySelector('.immersive-close').onclick = close;
     root.addEventListener('click', event => { if (event.target === root) close(); });
 
+    const zoomIn = () => {
+      if (!controller?.zoomIn) return;
+      zoomSteps = Math.min(12, zoomSteps + 1);
+      return controller.zoomIn();
+    };
+    const zoomOut = () => {
+      if (!controller?.zoomOut) return;
+      zoomSteps = Math.max(-12, zoomSteps - 1);
+      return controller.zoomOut();
+    };
+    const resetZoom = () => {
+      if (!controller) return;
+      if (typeof controller.resetZoom === 'function') { zoomSteps = 0; return controller.resetZoom(); }
+      if (typeof controller.setZoom === 'function') { zoomSteps = 0; return controller.setZoom(1); }
+      if (typeof controller.setScale === 'function') { zoomSteps = 0; return controller.setScale(1); }
+      const count = Math.abs(zoomSteps);
+      const action = zoomSteps > 0 ? controller.zoomOut?.bind(controller) : controller.zoomIn?.bind(controller);
+      zoomSteps = 0;
+      for (let index = 0; index < count; index += 1) setTimeout(() => action?.(), index * 30);
+    };
+
     const context = { fileId, lecture:options.lecture || null, title };
     workspace.mountDock(root, context, {
       notes:true,
       close,
       getPage:() => null,
-      zoomIn:() => controller?.zoomIn?.(),
-      zoomOut:() => controller?.zoomOut?.(),
+      zoomIn,
+      zoomOut,
+      resetZoom,
       search:async query => searchSummary(await controller?.searchDocument?.(query), query),
       download:async () => { location.assign(await window.DafatiiFiles.getViewUrl(fileId, { download:true })); },
       fullscreen:() => shell.requestFullscreen?.()
