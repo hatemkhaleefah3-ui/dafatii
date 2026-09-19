@@ -86,8 +86,11 @@
   }
   async function loadThread(id,force=false){
     if(!force&&cache.messages.has(id))return;
-    try{cache.messages.set(id,await api('/social/conversations/'+encodeURIComponent(id)+'/messages',{idempotent:true}));cache.error='';}
-    catch(error){cache.error=error.message||'Conversation could not be loaded.';}
+    try{
+      cache.messages.set(id,await api('/social/conversations/'+encodeURIComponent(id)+'/messages',{idempotent:true}));
+      const item=cache.lists?.conversations?.find(c=>c.id===id);if(item)item.unread=0;
+      cache.error='';
+    }catch(error){cache.error=error.message||'Conversation could not be loaded.';}
   }
   async function loadMembers(id,force=false){
     if(!force&&cache.members.has(id))return;
