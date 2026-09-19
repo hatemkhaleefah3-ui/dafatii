@@ -554,7 +554,7 @@
         payload.done=Boolean(editing?.done);
         if(type==='goals'){
           payload.progress=Math.max(0,Math.min(100,Number(form.get('progress')||editing?.progress||0)));
-          payload.done=payload.progress>=100?true:payload.done;
+          payload.done=payload.progress>=100;
         }
       }
       if(editing){
