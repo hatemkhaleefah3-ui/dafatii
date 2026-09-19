@@ -1070,8 +1070,8 @@ html[dir=rtl] .planner-task-copy{padding:13px 0 12px 13px}
   border-radius:13px!important;
   background:transparent!important;
   color:var(--muted)!important;
-  opacity:1!important;
-  transform:none!important;
+  opacity:.2;
+  transform:scale(.9);
   font:820 11px/1 Manrope,sans-serif!important;
   text-align:center;
   cursor:pointer;
@@ -1232,4 +1232,15 @@ body .quiet-workspace>.workspace-main>.planner-page{
   box-shadow:none!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important
+}
+
+
+/* Planner v13 — restore center-distance translucency for range labels */
+.planner-page>.planner-mode-shell .planner-loop-item:not(.active){
+  opacity:.2;
+  transform:scale(.9)
+}
+.planner-page>.planner-mode-shell .planner-loop-item.active{
+  opacity:1;
+  transform:scale(1)
 }
