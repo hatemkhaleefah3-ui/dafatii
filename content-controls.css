@@ -147,10 +147,14 @@ body[data-content-control-mode="delete"] .dcc-selectable{
   -webkit-user-select:none;user-select:none;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent
 }
-body[data-content-control-mode="delete"] .dcc-selectable > :not(.dcc-delete-hitbox){pointer-events:none!important}
+body[data-content-control-mode="delete"] .dcc-selectable > *{pointer-events:none!important}
+.dcc-delete-portal{
+  position:fixed;inset:0;z-index:258;pointer-events:none;overflow:visible
+}
 .dcc-delete-hitbox{
-  position:absolute!important;inset:0!important;z-index:999!important;
-  display:block!important;border-radius:inherit!important;
+  position:absolute!important;z-index:1!important;
+  display:block!important;margin:0!important;padding:0!important;border:0!important;
+  appearance:none;-webkit-appearance:none;
   background:transparent!important;pointer-events:auto!important;cursor:pointer!important;
   touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important
 }
@@ -175,7 +179,7 @@ body[data-content-control-mode="delete"] .dcc-selectable:hover{outline-color:#cf
   box-shadow:0 0 0 6px color-mix(in srgb,#d33b4a 11%,transparent),0 12px 28px rgba(190,43,58,.10)!important;
   filter:saturate(.92);transform:scale(.992)
 }
-body[data-content-control-mode="delete"] .dcc-selected .dcc-delete-hitbox{
+.dcc-delete-hitbox[aria-pressed="true"]{
   background:color-mix(in srgb,#d33b4a 4%,transparent)!important
 }
 
