@@ -223,3 +223,6 @@ html[dir=rtl] .planner-week-day,html[dir=rtl] .planner-week-slot{direction:rtl;t
   .planner-item-title-row strong{font-size:10.5px}
   .planner-entry-sheet{max-width:none}
 }
+
+.planner-hour-row{grid-template-columns:86px minmax(0,1fr)}
+@media(max-width:767px){.planner-hour-row{grid-template-columns:68px minmax(0,1fr)}}
