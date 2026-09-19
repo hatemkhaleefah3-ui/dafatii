@@ -60,7 +60,7 @@
     const explicit = explicitTokens(el);
     if (kind === 'delete') return /(delete|remove|archive)/.test(explicit);
     if (kind === 'edit') return /edit/.test(explicit);
-    if (kind === 'add') return /(add|create|new|upload|import)/.test(explicit);
+    if (kind === 'add') return /(add|create|new|upload|import)/.test(explicit) || /^(add|create|new|upload|import)\b/i.test(readableLabel(el));
     return false;
   }
 
@@ -233,7 +233,7 @@
     if (!shell) return;
     collectActions();
     const deleteCount = actionItems('delete').size;
-    const editCount = actionItems('edit').size;
+    const editCount = Math.max(actionItems('edit').size, state.actions.edit.length ? 1 : 0);
     const addCount = uniqueAddActions().length;
     const counts = { delete: deleteCount, edit: editCount, add: addCount };
     for (const kind of ['delete','edit','add']) {
