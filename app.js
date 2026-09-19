@@ -210,8 +210,7 @@ function subjectListView(){
 function subjectCard(subject){
   const managed=schoolManagedWorkspace();
   return `
-    <div class="subject-swipe ${managed?'school-managed-card':''}" data-subject-id="${escapeHtml(subject.id)}">
-      ${managed?'':`<button class="subject-swipe-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}<span>Edit</span></button><button class="subject-swipe-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}<span>Delete</span></button>`}
+    <div class="subject-card-wrap ${managed?'school-managed-card':''}" data-subject-id="${escapeHtml(subject.id)}">
       <article class="subject-card" tabindex="0" role="button" aria-label="Open ${escapeHtml(subject.name)}">
         <div class="subject-card-top"><div class="subject-icon">${escapeHtml(subject.icon)}</div>${managed?'':`<div class="subject-desktop-actions"><button class="subject-mini-action edit" data-edit-subject="${escapeHtml(subject.id)}" aria-label="Edit ${escapeHtml(subject.name)}">${icon('edit')}</button><button class="subject-mini-action delete" data-delete-subject="${escapeHtml(subject.id)}" aria-label="Delete ${escapeHtml(subject.name)}">${icon('trash')}</button></div>`}</div>
         <div class="subject-card-copy"><h2>${escapeHtml(subject.name)}</h2>${managed&&subject.teacherName?`<small>${escapeHtml(subject.teacherName)}</small>`:''}<p>Open subject →</p></div>
@@ -377,12 +376,11 @@ function bindSubjects(){
   if(!managed)document.querySelectorAll('[data-delete-subject]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation(); deleteSubject(btn.dataset.deleteSubject);
   }));
-  document.querySelectorAll('.subject-swipe[data-subject-id]').forEach(wrap=>{
+  document.querySelectorAll('.subject-card-wrap[data-subject-id]').forEach(wrap=>{
     const id=wrap.dataset.subjectId;
     const card=wrap.querySelector('.subject-card');
     card.addEventListener('click',()=>setHash(`subjects/subject/${encodeURIComponent(id)}/lectures`));
     card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setHash(`subjects/subject/${encodeURIComponent(id)}/lectures`);}});
-    if(!managed)bindSwipe(card,()=>openSubjectSheet(id),()=>deleteSubject(id));
   });
 }
 
