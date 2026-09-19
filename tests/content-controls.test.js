@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const js=fs.readFileSync('content-controls.js','utf8');
 const css=fs.readFileSync('content-controls.css','utf8');
 const suite=fs.readFileSync('student-suite.js','utf8');
+const calendar=fs.readFileSync('calendar.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"), 'chat app must be excluded from unified content controls');
@@ -20,6 +21,10 @@ assert.ok(css.includes('inset-inline-end:18px') && css.includes('bottom:calc(max
 assert.ok(css.includes('.dcc-selection-bar') && css.includes('.dcc-selected'), 'selection mode needs persistent bottom controls and selected-item feedback');
 assert.ok(suite.includes('data-content-delete-note') && suite.includes('data-content-delete-resource') && suite.includes('data-content-delete-assignment'), 'suite items without old surface delete buttons must expose hidden delete endpoints to the unified system');
 assert.ok(suite.includes('data-content-edit-note'), 'note cards must expose their edit form through unified edit mode');
+assert.ok(suite.includes('data-content-delete-deadline'), 'custom deadlines must participate in batch-delete selection');
+assert.ok(calendar.includes('data-planner-edit') && calendar.includes("openPlannerEntrySheet('','',button.dataset.plannerEdit)"), 'planner entries must open their edit form from unified edit mode');
+assert.ok(calendar.includes('data-calendar-edit-entry') && calendar.includes('data-calendar-delete-entry'), 'schedule and exam timetable cells must expose unified edit/delete endpoints');
+assert.ok(calendar.includes('function openTimetableEntrySheet('), 'calendar cell edit mode must open a real edit form instead of deleting on normal click');
 assert.ok(index.includes('content-controls.css?v=20260919-1') && index.includes('content-controls.js?v=20260919-1'), 'unified content control assets must load');
 assert.ok(index.indexOf('content-controls.js?v=20260919-1') > index.indexOf('admin-console.js?v=20260918-4'), 'content controller must load after feature modules so it can centralize their actions');
 assert.ok(index.includes('student-suite.js?v=20260919-3'), 'suite CRUD proxy build must be cache-busted');
