@@ -27,7 +27,7 @@ assert.ok(ui.includes('data-schedule-field="repeat"') && ui.includes('data-sched
 assert.ok(ui.includes('schedule-block') && ui.includes('scheduleRepeatLabel(item)'), 'schedule items must render as premium full-cell timetable blocks');
 assert.ok(ui.includes('data-planner-edit-recurring') && ui.includes("openTimetableEntrySheet('schedule',SCHEDULE_KEY,item)"), 'legacy/projected weekly schedule blocks must also open their edit form from unified edit mode');
 
-assert.ok(ui.includes('data-planner-progress') && ui.includes("name=\"priority\"") && ui.includes("name=\"progress\""), 'tasks/to-dos/goals must support premium functional priority, completion and goal progress controls');
+assert.ok(ui.includes("name=\"estimatedMinutes\"") && ui.includes("name=\"listLabel\"") && ui.includes("name=\"goalTarget\"") && ui.includes("name=\"goalCurrent\"") && ui.includes("name=\"goalUnit\""), 'task, to-do and goal forms must expose their distinct functional fields');
 assert.ok(ui.includes("/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)"), 'planner add/edit forms must accept valid ISO dates');
 assert.ok(css.includes('.planner-week-grid') && css.includes('.planner-week-time') && css.includes('.planner-item-goals') && css.includes('.planner-goal-progress'), 'week timetable and premium planner item states must be styled');
 assert.ok(css.includes('.schedule-block') && css.includes('.planner-task-card') && css.includes('.planner-todo-row') && css.includes('.planner-goal-card') && css.includes('.planner-repeat-panel'), 'schedule blocks, unique subpages and recurrence bottom sheet must have dedicated premium styling');
