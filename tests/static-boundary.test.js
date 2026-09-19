@@ -29,7 +29,7 @@ assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classific
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
 assert.match(index, /content-controls\.css\?v=20260919-7/, 'the unified content control presentation must be loaded');
-assert.match(index, /content-controls\.js\?v=20260919-7/, 'the unified content control controller must be loaded');
+assert.match(index, /content-controls\.js\?v=20260919-8/, 'the unified content control controller must be loaded');
 assert.match(index, /delete-manager\.css\?v=20260919-1/, 'the replacement delete manager presentation must be loaded');
 assert.match(index, /delete-manager\.js\?v=20260919-1/, 'the replacement delete manager controller must be loaded');
 assert.match(index, /student-suite\.js\?v=20260919-3/, 'student suite CRUD endpoints must use the unified content control build');
@@ -39,8 +39,8 @@ assert.match(index, /app\.js\?v=20260919-3/, 'the cleaned subject interface must
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
-assert.match(index, /calendar\.js\?v=20260919-5/, 'the cleaned calendar interface must be loaded');
-assert.match(index, /calendar\.css\?v=20260918-3/, 'retired calendar toolbar styling must be removed from the active asset');
+assert.match(index, /calendar\.js\?v=20260919-6/, 'the cleaned calendar interface must be loaded');
+assert.match(index, /calendar\.css\?v=20260919-4/, 'retired calendar toolbar styling must be removed from the active asset');
 assert.match(index, /role-panels\.js\?v=20260918-1/, 'the redesigned dashboard management entry must be loaded');
 assert.match(index, /role-panels\.css\?v=20260915-2/, 'the redesigned management entry styling must be loaded');
 assert.doesNotMatch(index, /premium-theme\.css|premium-shell\.js|navigation-layout(?:-fix)?\.css/, 'retired presentation layers must not be loaded');
