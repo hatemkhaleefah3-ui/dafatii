@@ -392,6 +392,7 @@
     document.getElementById('subject-r-add-assignment')?.addEventListener('click',()=>subject&&openAssignmentRedesign(subject));
     document.getElementById('subject-r-add-assignment-bottom')?.addEventListener('click',()=>subject&&openAssignmentRedesign(subject));
     document.getElementById('subject-r-add-content')?.addEventListener('click',()=>subject&&openAddContent(subject));
+    document.querySelectorAll('[data-edit-chapter]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const target=state.subjects.find(s=>s.id===button.dataset.editChapter);if(target)openChapterSheet(target);}));
 
     document.querySelectorAll('[data-open-lecture]').forEach(el=>el.addEventListener('click',()=>{
       const s=state.subjects.find(x=>x.id===el.dataset.subjectId);if(!s)return;
@@ -415,12 +416,61 @@
   }
 
   function openAddContent(subject){
+    const actions=[];
+    if(canContent('add_content'))actions.push('<button data-add-kind="lecture"><span>▶</span><strong>Lecture</strong><small>Add material or a lecture link</small></button>');
+    if(canPlan('add_content')){
+      actions.push('<button data-add-kind="exam"><span>▤</span><strong>Exam</strong><small>Schedule an exam or record a result</small></button>');
+      actions.push('<button data-add-kind="assignment"><span>✓</span><strong>Assignment</strong><small>Create coursework with a due date</small></button>');
+    }
+    if(!actions.length){showToast('You do not have permission to add content here.');return;}
     const root=document.getElementById('overlay-root');if(!root)return;
-    root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-content-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)}</div><h2>Add content</h2></div><button class="icon-btn" id="subject-r-content-close">×</button></div><div class="subject-r-content-actions"><button data-add-kind="lecture"><span>▶</span><strong>Lecture</strong><small>Add material or a lecture link</small></button><button data-add-kind="exam"><span>▤</span><strong>Exam</strong><small>Schedule an exam or record a result</small></button><button data-add-kind="assignment"><span>✓</span><strong>Assignment</strong><small>Create coursework with a due date</small></button></div></section></div>`;
+    root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-content-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)}</div><h2>Add content</h2></div><button class="icon-btn" id="subject-r-content-close">×</button></div><div class="subject-r-content-actions">${actions.join('')}</div></section></div>`;
     const close=()=>{root.innerHTML='';};
     document.getElementById('subject-r-content-close').onclick=close;
     document.getElementById('subject-r-content-overlay').onclick=e=>{if(e.target.id==='subject-r-content-overlay')close();};
     root.querySelectorAll('[data-add-kind]').forEach(b=>b.onclick=()=>{const kind=b.dataset.addKind;close();if(kind==='lecture')openLectureSheet(subject);if(kind==='exam')openExamRedesign(subject);if(kind==='assignment')openAssignmentRedesign(subject);});
+  }
+
+  function openChapterSheet(subject){
+    if(!canContent('edit_content'))return;
+    const root=document.getElementById('overlay-root');if(!root)return;
+    root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-chapter-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)}</div><h2>Chapter</h2></div><button class="icon-btn" id="subject-r-chapter-close">×</button></div><form id="subject-r-chapter-form"><div class="field"><label>Chapter name</label><input id="subject-r-chapter-input" maxlength="80" required value="${esc(chapterName(subject))}" placeholder="e.g. Chapter 1"></div><button class="btn btn-primary entity-submit">Save chapter</button></form></section></div>`;
+    const close=()=>{root.innerHTML='';};
+    document.getElementById('subject-r-chapter-close').onclick=close;
+    document.getElementById('subject-r-chapter-overlay').onclick=e=>{if(e.target.id==='subject-r-chapter-overlay')close();};
+    document.getElementById('subject-r-chapter-form').onsubmit=e=>{e.preventDefault();const value=document.getElementById('subject-r-chapter-input').value.trim();if(!value)return;subject.chapter=value;saveSubjects();close();render();};
+  }
+
+  function readOnlySheet(subject,title,rows,action=''){
+    const root=document.getElementById('overlay-root');if(!root)return null;
+    root.innerHTML=`<div class="entity-sheet-overlay" id="subject-r-readonly-overlay"><section class="entity-sheet subject-r-sheet" role="dialog" aria-modal="true"><div class="entity-sheet-handle"></div><div class="entity-sheet-head"><div><div class="eyebrow">${esc(subject.name)}</div><h2>${esc(title)}</h2></div><button class="icon-btn" id="subject-r-readonly-close">×</button></div><div class="subject-r-readonly">${rows.map(([label,value])=>`<div><small>${esc(label)}</small><strong>${esc(value||'—')}</strong></div>`).join('')}</div>${action}</section></div>`;
+    const close=()=>{root.innerHTML='';};
+    document.getElementById('subject-r-readonly-close').onclick=close;
+    document.getElementById('subject-r-readonly-overlay').onclick=e=>{if(e.target.id==='subject-r-readonly-overlay')close();};
+    return {root,close};
+  }
+  function openLectureDetails(subject,lecture){
+    if(!lecture)return;
+    const link=String(lecture.link||'').trim();
+    const action=link?'<button class="btn btn-primary entity-submit" id="subject-r-open-lecture-link">Open lecture link</button>':'';
+    readOnlySheet(subject,lecture.name,[['Notes',lecture.notes||'No notes added.'],['Link',link||'No link attached.']],action);
+    document.getElementById('subject-r-open-lecture-link')?.addEventListener('click',()=>{let raw=link;if(!/^https?:\/\//i.test(raw))raw='https://'+raw;try{const url=new URL(raw);if(!['http:','https:'].includes(url.protocol))throw new Error();const win=window.open(url.href,'_blank','noopener,noreferrer');if(win)win.opener=null;}catch{showToast('The lecture link is invalid.');}});
+  }
+  function openExamDetails(subject,exam){
+    readOnlySheet(subject,exam.title||'Exam',[
+      ['Date',dateLabel(exam.day)+(exam.time?' · '+exam.time:'')],
+      ['Status',isExamPast(exam)?(hasDegree(exam)?'Graded':'Completed'):'Upcoming'],
+      ['Degree',hasDegree(exam)?formatNumber(Number(exam.degree)):'Not entered'],
+      ['Notes',exam.notes||'No notes added.']
+    ]);
+  }
+  function openAssignmentDetails(subject,assignment){
+    readOnlySheet(subject,assignment.title,[
+      ['Due',assignment.dueDate?dateLabel(assignment.dueDate)+(assignment.dueTime?' · '+assignment.dueTime:''):'No due date'],
+      ['Status',assignmentDone(assignment)?'Submitted':assignment.status==='doing'?'In progress':'Not started'],
+      ['Priority',(assignment.priority||'medium')[0].toUpperCase()+(assignment.priority||'medium').slice(1)],
+      ['Notes',assignment.notes||'No notes added.']
+    ]);
   }
 
   function openExamRedesign(subject,examId=''){
