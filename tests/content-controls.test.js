@@ -17,12 +17,15 @@ assert.ok(js.includes("blockDeleteItemPress") && js.includes("document.addEventL
 assert.ok(js.includes("ENTITY_OWNER_SELECTOR") && js.includes("'[data-subject-id]'") && js.includes("const substructure ="), 'delete selection must resolve full semantic items instead of inner card header fragments');
 assert.ok(js.includes("document.addEventListener('touchstart', blockDeleteItemPress") && js.includes("document.addEventListener('keydown', onCapturedKeydown, true)"), 'delete mode must block touch and keyboard activation as well as pointer/click activation');
 assert.ok(js.includes("ensureDeleteHitbox(item)") && js.includes("toggleDeleteSelection(item)") && js.includes("hitbox.addEventListener('click'"), 'delete mode must install a dedicated full-item interception hitbox instead of relying only on event capture');
+assert.ok(js.includes("if (state.selected.has(item)) state.selected.delete(item)") && js.includes("else state.selected.add(item)") && !/function toggleDeleteSelection\(item\)[\s\S]{0,220}toggleDeleteSelection\(item\);/.test(js), 'delete selection toggle must mutate selection rather than recursively calling itself');
+assert.ok(js.includes(".dcc-delete-portal,.dcc-delete-hitbox") && js.includes("ensureDeletePortal().appendChild(hitbox)"), 'delete interception UI must be excluded from CRUD discovery and portaled outside card stacking contexts');
+assert.ok(js.includes("document.addEventListener('scroll', scheduleDeleteHitboxSync, true)") && js.includes("window.visualViewport?.addEventListener('resize', scheduleDeleteHitboxSync)"), 'portal hitboxes must track scrolling and mobile visual-viewport changes');
 assert.ok(js.includes("state.selected = new Set([...state.itemActions.keys()])") && js.includes("domOrderReverse") && js.includes("liveControl(entry.control,entry.selector)") && js.includes("fireControl(control)"), 'delete mode must support select-all and resolve live controls during reliable reverse-order batch execution');
 assert.ok(js.includes("function uniqueAddActions()") && js.includes("route.startsWith('calendar/schedule')") && js.includes("label: 'Add schedule item'"), 'schedule add must collapse slot-specific actions into one canonical form action');
 assert.ok(js.includes("withSynthetic(() =>") && js.includes("primaryControlFor(item,'edit')"), 'edit mode must route selected items to their existing edit forms');
 assert.ok(css.includes('.dcc-native-action{display:none!important}'), 'legacy inline content action buttons must be removed from page surfaces');
 assert.ok(css.includes('inset-inline-end:16px') && css.includes('bottom:calc(max(10px,env(safe-area-inset-bottom)) + 82px)') && css.includes('.dcc-mode-hint'), 'premium controls must be direction-aware, above mobile navigation, and expose a mode status surface');
-assert.ok(css.includes('grid-template-columns:1fr 1.15fr 1fr 1fr') && css.includes('.dcc-delete-hitbox{') && css.includes('z-index:999!important') && css.includes('pointer-events:auto!important') && css.includes('z-index:264') && css.includes('.dcc-selected'), 'delete mode must show four actions above page chrome and overlay a dedicated selection hitbox over each item');
+assert.ok(css.includes('grid-template-columns:1fr 1.15fr 1fr 1fr') && css.includes('.dcc-delete-portal{') && css.includes('z-index:258') && css.includes('.dcc-delete-hitbox{') && css.includes('pointer-events:auto!important') && css.includes('z-index:264') && css.includes('.dcc-selected'), 'delete mode must show four actions above page chrome and portal dedicated selection hitboxes over each item');
 assert.ok(suite.includes('data-content-delete-note') && suite.includes('data-content-delete-resource') && suite.includes('data-content-delete-assignment'), 'suite items without old surface delete buttons must expose hidden delete endpoints to the unified system');
 assert.ok(suite.includes('data-content-edit-note'), 'note cards must expose their edit form through unified edit mode');
 assert.ok(suite.includes('data-content-delete-deadline'), 'custom deadlines must participate in batch-delete selection');
@@ -31,8 +34,8 @@ assert.ok(calendar.includes('data-calendar-edit-entry') && calendar.includes('da
 assert.ok(calendar.includes('function openTimetableEntrySheet('), 'calendar cell edit mode must open a real edit form instead of deleting on normal click');
 assert.ok(social.includes('data-content-edit-room') && social.includes('data-content-delete-room'), 'user-created study rooms must participate in unified edit/delete modes');
 assert.ok(social.includes("function openCreateRoomSheet(roomId='')"), 'study-room add and edit must share the same real form');
-assert.ok(index.includes('content-controls.css?v=20260919-5') && index.includes('content-controls.js?v=20260919-5'), 'unified content control assets must load');
-assert.ok(index.indexOf('content-controls.js?v=20260919-5') > index.indexOf('admin-console.js?v=20260918-4'), 'content controller must load after feature modules so it can centralize their actions');
+assert.ok(index.includes('content-controls.css?v=20260919-6') && index.includes('content-controls.js?v=20260919-6'), 'unified content control assets must load');
+assert.ok(index.indexOf('content-controls.js?v=20260919-6') > index.indexOf('admin-console.js?v=20260918-4'), 'content controller must load after feature modules so it can centralize their actions');
 assert.ok(index.includes('student-suite.js?v=20260919-3'), 'suite CRUD proxy build must be cache-busted');
 
 console.log('unified content controls tests passed');
