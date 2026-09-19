@@ -184,8 +184,12 @@
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'dcc-selection-bar';
-      bar.innerHTML = '<button type="button" data-dcc-cancel><span>×</span><strong>Cancel</strong></button><button type="button" data-dcc-all><span>✓</span><strong>Select all</strong></button><button type="button" class="danger" data-dcc-delete disabled><span class="dcc-trash">⌫</span><strong>Delete</strong><b>0</b></button>';
-      bar.querySelector('[data-dcc-cancel]').onclick = () => { state.selected.clear(); refreshMode(); };
+      bar.innerHTML = '<button type="button" data-dcc-exit><span>×</span><strong>Exit</strong></button><button type="button" class="danger" data-dcc-delete disabled><span class="dcc-trash">⌫</span><strong>Delete</strong><b>0</b></button><button type="button" data-dcc-cancel><span>↶</span><strong>Cancel</strong></button><button type="button" data-dcc-all><span>✓</span><strong>Select all</strong></button>';
+      bar.querySelector('[data-dcc-exit]').onclick = exitMode;
+      bar.querySelector('[data-dcc-cancel]').onclick = () => {
+        state.selected.clear();
+        refreshMode();
+      };
       bar.querySelector('[data-dcc-all]').onclick = () => {
         state.selected = new Set([...state.itemActions.keys()]);
         refreshMode();
@@ -199,10 +203,10 @@
   function updateModeUi() {
     const { exit, hint, bar } = ensureModeUi();
     const active = Boolean(state.mode);
-    exit.hidden = !active;
+    exit.hidden = !active || state.mode === 'delete';
     hint.hidden = !active;
     bar.hidden = state.mode !== 'delete';
-    exit.querySelector('strong').textContent = state.mode === 'edit' ? 'Exit edit' : 'Exit delete';
+    exit.querySelector('strong').textContent = 'Exit edit';
     hint.dataset.mode = state.mode || '';
     const hintStrong = hint.querySelector('strong');
     const hintSmall = hint.querySelector('small');
@@ -219,6 +223,7 @@
       const del = bar.querySelector('[data-dcc-delete]');
       del.disabled = count === 0 || state.deleting;
       del.querySelector('b').textContent = String(count);
+      bar.querySelector('[data-dcc-exit]').disabled = state.deleting;
       bar.querySelector('[data-dcc-all]').disabled = state.itemActions.size === 0 || state.deleting;
       bar.querySelector('[data-dcc-cancel]').disabled = state.deleting;
       bar.dataset.busy = state.deleting ? 'true' : 'false';
@@ -325,10 +330,25 @@
     return actionItems(kind).get(item) || null;
   }
 
+  function modeControlTarget(target) {
+    return target?.closest?.('.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-selection-bar,#overlay-root') || null;
+  }
+
+  function selectableFromEvent(event) {
+    if (!state.mode || state.synthetic || modeControlTarget(event.target)) return null;
+    return event.target?.closest?.('.dcc-selectable') || null;
+  }
+
+  function blockDeleteItemPress(event) {
+    if (state.mode !== 'delete' || state.synthetic) return;
+    const item = selectableFromEvent(event);
+    if (!item) return;
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+
   function onCapturedClick(event) {
-    if (!state.mode || state.synthetic) return;
-    if (event.target.closest('.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-selection-bar,#overlay-root')) return;
-    const item = event.target.closest('.dcc-selectable');
+    const item = selectableFromEvent(event);
     if (!item) return;
 
     event.preventDefault();
@@ -413,6 +433,27 @@
     return 0;
   }
 
+  function controlSelector(control) {
+    if (!control) return '';
+    if (control.id) return `#${CSS.escape(control.id)}`;
+    const dataAttr = [...control.attributes].find(attr =>
+      attr.name.startsWith('data-') && /(delete|remove|archive)/i.test(attr.name) && attr.value
+    );
+    if (!dataAttr) return '';
+    const value = String(dataAttr.value).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+    return `[${dataAttr.name}="${value}"]`;
+  }
+
+  function liveControl(control, selector) {
+    if (selector) {
+      try {
+        const live = scope()?.querySelector(selector);
+        if (live) return live;
+      } catch {}
+    }
+    return control?.isConnected ? control : null;
+  }
+
   function fireControl(control) {
     if (!control) return false;
     try {
@@ -429,7 +470,10 @@
     const items = [...state.selected].filter(item => state.itemActions.has(item));
     if (!items.length) return;
     const entries = items
-      .map(item => ({ item, control: state.itemActions.get(item) }))
+      .map(item => {
+        const control = state.itemActions.get(item);
+        return { item, control, selector: controlSelector(control) };
+      })
       .filter(entry => entry.control)
       .sort((a,b) => domOrderReverse(a.item,b.item));
     if (!entries.length) {
@@ -446,8 +490,9 @@
     try {
       state.synthetic = true;
       for (const entry of entries) {
-        if (fireControl(entry.control)) fired++;
-        await Promise.resolve();
+        const control = liveControl(entry.control,entry.selector);
+        if (fireControl(control)) fired++;
+        await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
       }
     } finally {
       state.synthetic = false;
@@ -497,6 +542,8 @@
     requestAnimationFrame(sync);
   }
 
+  document.addEventListener('pointerdown', blockDeleteItemPress, true);
+  document.addEventListener('pointerup', blockDeleteItemPress, true);
   document.addEventListener('click', onCapturedClick, true);
   window.addEventListener('hashchange', () => { exitMode(); closeSheet(); scheduleSync(); });
   window.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
