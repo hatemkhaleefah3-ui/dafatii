@@ -22,7 +22,7 @@
   const workspace = () => document.querySelector('.workspace,.quiet-workspace');
   const scope = () => document.querySelector('.workspace-main') || document.querySelector('.quiet-main') || workspace();
   const excluded = el => Boolean(el.closest(
-    '#overlay-root,.entity-sheet-overlay,.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-selection-bar,' +
+    '#overlay-root,.entity-sheet-overlay,.dcc-shell,.dcc-trigger,.dcc-mode-exit,.dcc-mode-hint,.dcc-selection-bar,.dcc-delete-portal,.dcc-delete-hitbox,' +
     '.main-nav,.settings-nav,.sub-nav,.sidebar,.bottom-nav,.quiet-toolbar,.quiet-sidebar,.quiet-desktop-tabs,' +
     '.chat-app-page,.chatpro-page'
   ));
