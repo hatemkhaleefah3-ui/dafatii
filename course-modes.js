@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 2;
+  const META_VERSION = 3;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
   const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -104,24 +104,24 @@
 
   const COPY = {
     en:{
-      home:'Home',letters:'Letters & writing',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
+      home:'Home',letters:'Letters & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
       complete:'Mark section complete',completed:'Completed',locked:'Locked',listen:'Play voice',check:'Check answer',
       speak:'Speak this sentence',start:'Start recognition',notes:'My notes',save:'Save notes',level:'Level',step:'Step',box:'Box',
       pass:'Pass mark: 80%',takeExam:'Take exam',submitExam:'Submit exam',welcome:'Welcome',resume:'Resume learning',
       changeLevel:'Change level',progress:'Course progress',current:'Current',available:'Available',passed:'Passed',
       lettersIntro:'Letter, pronunciation, spelling and writing practice',voiceIntro:'Dictation and reverse speaking practice',
       grammarIntro:'Grammar, naming, spelling and typing rules',reviewIntro:'Retrieval, learning tricks and durable notes',
-      examIntro:'Every box has its own exam. Finish all required learning pages for the box before its exam can be taken.'
+      examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
     },
     ar:{
-      home:'الرئيسية',letters:'الحروف والكتابة',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
+      home:'الرئيسية',letters:'الحروف والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
       complete:'إكمال هذا الجزء',completed:'مكتمل',locked:'مغلق',listen:'تشغيل الصوت',check:'تحقق من الإجابة',
       speak:'انطق هذه الجملة',start:'ابدأ التعرّف على الصوت',notes:'ملاحظاتي',save:'حفظ الملاحظات',level:'المستوى',step:'الخطوة',box:'الصندوق',
       pass:'درجة النجاح: 80٪',takeExam:'ابدأ الاختبار',submitExam:'إرسال الاختبار',welcome:'مرحباً',resume:'متابعة التعلّم',
       changeLevel:'تغيير المستوى',progress:'تقدم الدورة',current:'الحالي',available:'متاح',passed:'مجتاز',
       lettersIntro:'تدريب الحروف والنطق والإملاء والكتابة',voiceIntro:'إملاء صوتي وتدريب عكسي على النطق',
       grammarIntro:'القواعد والتسمية والإملاء والكتابة',reviewIntro:'استرجاع ومهارات تعلّم وملاحظات ثابتة',
-      examIntro:'لكل صندوق اختبار خاص. يجب إكمال صفحات التعلم المطلوبة للصندوق قبل فتح اختباره.'
+      examIntro:'تتغير صفحة الاختبار حسب موقعك: اختبار صندوق أو خطوة أو مستوى أو اختبار اللغة الكامل. ويمكن تحدي أي مستوى في أي وقت.'
     }
   };
 
@@ -144,20 +144,57 @@
   function defaultLanguageLearning(){
     return {
       version:META_VERSION,targetLanguage:'English',selectedLevel:0,selectedStep:1,selectedBox:1,
-      passedBoxes:[],modules:{},letterProgress:{},activeLetterByStep:{},notes:{},examHistory:[]
+      passedBoxes:[],passedSteps:[],passedLevels:[],languagePassed:false,
+      modules:{},letterProgress:{},activeLetterByStep:{},videoResponses:{},watchedVideos:{},notes:{},examHistory:[],
+      onboardingComplete:false,placementPending:false,placementResult:null,entryLevel:0,challengeLevel:null
     };
   }
-  const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v2';
+  const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v3';
+  const legacyProgressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v2';
+  function migrateLegacyLanguage(value){
+    value.version=META_VERSION;
+    value.passedSteps=[];
+    value.passedLevels=[];
+    for(let li=0;li<CEFR.length;li++){
+      const count=li===0?26:25;
+      for(let step=1;step<=5;step++){
+        let complete=true;
+        for(let box=1;box<=count;box++) if(!value.passedBoxes.includes(keyBox(CEFR[li].id,step,box))){complete=false;break;}
+        if(complete)value.passedSteps.push(keyStep(CEFR[li].id,step));
+      }
+      if([1,2,3,4,5].every(step=>value.passedSteps.includes(keyStep(CEFR[li].id,step))))value.passedLevels.push(CEFR[li].id);
+    }
+    value.languagePassed=value.passedLevels.includes('C1');
+    value.videoResponses={};value.watchedVideos={};
+    value.onboardingComplete=true;value.placementPending=false;value.placementResult=null;value.entryLevel=0;value.challengeLevel=null;
+    return value;
+  }
   function languageState(){
-    const stored=window.DafatiiData.readJSON(progressKey(),null);
+    let stored=window.DafatiiData.readJSON(progressKey(),null);
+    if(!stored){
+      const legacy=window.DafatiiData.readJSON(legacyProgressKey(),null);
+      if(legacy&&typeof legacy==='object'&&!Array.isArray(legacy)){
+        stored=migrateLegacyLanguage(legacy);
+        window.DafatiiData.writeJSON(progressKey(),stored);
+      }
+    }
     const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
     value.version=META_VERSION;
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
+    value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
+    value.passedLevels=Array.isArray(value.passedLevels)?value.passedLevels:[];
+    value.languagePassed=Boolean(value.languagePassed);
     value.modules=value.modules&&typeof value.modules==='object'?value.modules:{};
     value.letterProgress=value.letterProgress&&typeof value.letterProgress==='object'?value.letterProgress:{};
     value.activeLetterByStep=value.activeLetterByStep&&typeof value.activeLetterByStep==='object'?value.activeLetterByStep:{};
+    value.videoResponses=value.videoResponses&&typeof value.videoResponses==='object'?value.videoResponses:{};
+    value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
     value.examHistory=Array.isArray(value.examHistory)?value.examHistory:[];
+    value.onboardingComplete=Boolean(value.onboardingComplete);
+    value.placementPending=Boolean(value.placementPending);
+    value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
+    value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
     return value;
   }
   function updateLanguage(mutator){
@@ -183,7 +220,7 @@
       if(type==='language'){
         const initialProgress=defaultLanguageLearning();
         initialProgress.targetLanguage=input.targetLanguage||'English';
-        window.DafatiiData.writeJSON('dafatii:language-progress:'+String(course.id)+':v2',initialProgress);
+        window.DafatiiData.writeJSON('dafatii:language-progress:'+String(course.id)+':v3',initialProgress);
         window.DafatiiCourses.writeJSON('dafatii:subjects',[]);
         window.DafatiiCourses.writeJSON('dafatii:lectures',{});
         window.DafatiiCourses.writeJSON('dafatii:chatState:v1',{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});
@@ -289,21 +326,22 @@
   function isLetterBox(li,box){ return li===0 && box===1; }
   function letterProgressKey(li,step){ return keyStep(CEFR[li].id,step); }
   function isBoxPassed(state,li,step,box){ return state.passedBoxes.includes(keyBox(CEFR[li].id,step,box)); }
-  function isStepPassed(state,li,step){
-    for(let box=1;box<=boxCount(li);box++) if(!isBoxPassed(state,li,step,box)) return false;
+  function isStepPassed(state,li,step){ return state.passedSteps.includes(keyStep(CEFR[li].id,step)); }
+  function isLevelPassed(state,li){ return state.passedLevels.includes(CEFR[li].id); }
+  function levelUnlocked(state,li){
+    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+    if(li<entry)return false;
+    if(li===entry)return true;
+    for(let level=entry;level<li;level++) if(!isLevelPassed(state,level))return false;
     return true;
   }
-  function isLevelPassed(state,li){
-    for(let step=1;step<=5;step++) if(!isStepPassed(state,li,step)) return false;
-    return true;
-  }
-  function levelUnlocked(state,li){ return li===0 || isLevelPassed(state,li-1); }
   function stepUnlocked(state,li,step){ return levelUnlocked(state,li) && (step===1 || isStepPassed(state,li,step-1)); }
   function boxUnlocked(state,li,step,box){ return stepUnlocked(state,li,step) && (box===1 || isBoxPassed(state,li,step,box-1)); }
 
   function clampSelection(state){
-    let li=Math.min(4,Math.max(0,Number(state.selectedLevel)||0));
-    while(li>0&&!levelUnlocked(state,li))li--;
+    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+    let li=Math.min(4,Math.max(0,Number(state.selectedLevel)||entry));
+    if(!levelUnlocked(state,li))li=entry;
     let step=Math.min(5,Math.max(1,Number(state.selectedStep)||1));
     while(step>1&&!stepUnlocked(state,li,step))step--;
     let box=Math.min(boxCount(li),Math.max(1,Number(state.selectedBox)||1));
@@ -345,13 +383,28 @@
     };
   }
 
+  function videoLessonData(li,step,box){
+    const data=boxData(li,step,box);
+    return {
+      id:keyBox(CEFR[li].id,step,box),
+      title:data.title,
+      frames:[
+        'Today we are working with '+data.topic+'.',
+        'Listen for the function of '+data.languageFunction+' and notice the phrase '+data.words[0]+'.',
+        data.grammarExample1,
+        'The key idea is to use '+data.grammarTitle+' while communicating clearly about '+data.topic+'.'
+      ],
+      responseLanguage:li<=2?'Arabic':'English'
+    };
+  }
   function boxStudyComplete(state,li,step,box){
     const id=keyBox(CEFR[li].id,step,box),module=state.modules[id]||{};
     if(isLetterBox(li,box)){
       const practiced=state.letterProgress[letterProgressKey(li,step)]||[];
       return LETTERS.every(letter=>practiced.includes(letter));
     }
-    return ['pronunciation','voice','grammar','review'].every(name=>module[name]===true);
+    const required=li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    return required.every(name=>module[name]===true);
   }
   function boxExamPassed(state,li,step,box){
     return Boolean((state.modules[keyBox(CEFR[li].id,step,box)]||{}).exam);
@@ -363,11 +416,6 @@
     if(!complete)state.passedBoxes=state.passedBoxes.filter(item=>item!==id);
     state.passedBoxes=arrayUnique(state.passedBoxes);
     return complete;
-  }
-  function advanceSelection(state,li,step,box){
-    if(box<boxCount(li)){state.selectedLevel=li;state.selectedStep=step;state.selectedBox=box+1;return;}
-    if(step<5){state.selectedLevel=li;state.selectedStep=step+1;state.selectedBox=1;return;}
-    if(li<4){state.selectedLevel=li+1;state.selectedStep=1;state.selectedBox=1;}
   }
   function markModule(module){
     updateLanguage(state=>{
@@ -383,7 +431,8 @@
   function nextBoxRoute(state,pos){
     if(isLetterBox(pos.li,pos.box))return 'language-letters';
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    if(!module.pronunciation)return 'language-letters';
+    if(pos.li===0&&!module.pronunciation)return 'language-letters';
+    if(pos.li>0&&!module.video)return 'language-letters';
     if(!module.voice)return 'language-voice';
     if(!module.grammar)return 'language-grammar';
     if(!module.review)return 'language-review';
@@ -396,8 +445,79 @@
       return missing.length?['Practice and draw '+missing.length+' remaining letter'+(missing.length===1?'':'s')]:[];
     }
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    const labels={pronunciation:'Pronunciation & writing',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
-    return ['pronunciation','voice','grammar','review'].filter(name=>!module[name]).map(name=>labels[name]);
+    const required=pos.li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    const labels={pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
+    return required.filter(name=>!module[name]).map(name=>labels[name]);
+  }
+  function boundaryReady(state,li,step){
+    const last=boxCount(li);
+    for(let box=1;box<last;box++) if(!isBoxPassed(state,li,step,box))return false;
+    return boxStudyComplete(state,li,step,last);
+  }
+  function currentAssessment(state,pos){
+    const last=boxCount(pos.li);
+    if(pos.box<last)return {scope:'box',li:pos.li,step:pos.step,box:pos.box};
+    if(pos.step<5)return {scope:'step',li:pos.li,step:pos.step,box:last};
+    if(pos.li<4)return {scope:'level',li:pos.li,step:5,box:last};
+    return {scope:'language',li:4,step:5,box:last};
+  }
+  function assessmentMissing(state,ctx){
+    if(ctx.scope==='box')return missingRequirements(state,{li:ctx.li,step:ctx.step,box:ctx.box});
+    if(ctx.scope==='step'){
+      if(!boundaryReady(state,ctx.li,ctx.step))return ['Finish every earlier box in this step and complete the last box learning pages'];
+      return [];
+    }
+    if(ctx.scope==='level'){
+      for(let step=1;step<5;step++)if(!isStepPassed(state,ctx.li,step))return ['Pass Steps 1–4 before the level examination'];
+      if(!boundaryReady(state,ctx.li,5))return ['Finish every box in Step 5 before the level examination'];
+      return [];
+    }
+    if(ctx.scope==='language'){
+      const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+      for(let li=entry;li<4;li++)if(!isLevelPassed(state,li))return ['Finish each level in your enrolled pathway before the whole-language examination'];
+      for(let step=1;step<5;step++)if(!isStepPassed(state,4,step))return ['Pass C1 Steps 1–4 before the whole-language examination'];
+      if(!boundaryReady(state,4,5))return ['Finish every box in the final C1 step before the whole-language examination'];
+      return [];
+    }
+    return [];
+  }
+  function assessmentPassed(state,ctx){
+    if(ctx.scope==='box')return boxExamPassed(state,ctx.li,ctx.step,ctx.box);
+    if(ctx.scope==='step')return isStepPassed(state,ctx.li,ctx.step);
+    if(ctx.scope==='level')return isLevelPassed(state,ctx.li);
+    if(ctx.scope==='language')return state.languagePassed;
+    return false;
+  }
+  function applyAssessmentPass(state,ctx){
+    const id=CEFR[ctx.li].id,last=boxCount(ctx.li),finalId=keyBox(id,ctx.step,last);
+    if(ctx.scope==='box'){
+      const boxId=keyBox(id,ctx.step,ctx.box);
+      state.modules[boxId]=state.modules[boxId]||{};
+      state.modules[boxId].exam=true;
+      if(syncBoxCompletion(state,ctx.li,ctx.step,ctx.box)){
+        state.selectedLevel=ctx.li;state.selectedStep=ctx.step;state.selectedBox=Math.min(last,ctx.box+1);
+      }
+      return;
+    }
+    state.modules[finalId]=state.modules[finalId]||{};
+    state.modules[finalId].exam=true;
+    syncBoxCompletion(state,ctx.li,ctx.step,last);
+    if(ctx.scope==='step'){
+      state.passedSteps=arrayUnique([...state.passedSteps,keyStep(id,ctx.step)]);
+      state.selectedLevel=ctx.li;state.selectedStep=ctx.step+1;state.selectedBox=1;
+      return;
+    }
+    state.passedSteps=arrayUnique([...state.passedSteps,keyStep(id,5)]);
+    state.passedLevels=arrayUnique([...state.passedLevels,id]);
+    if(ctx.scope==='level'){
+      state.selectedLevel=Math.min(4,ctx.li+1);state.selectedStep=1;state.selectedBox=1;
+      return;
+    }
+    state.languagePassed=true;
+  }
+  function applyLevelChallengePass(state,li){
+    state.passedLevels=arrayUnique([...state.passedLevels,CEFR[li].id]);
+    state.challengeLevel=null;
   }
 
   function languageHeader(state,pos,kicker,title,description){
@@ -406,23 +526,41 @@
   }
 
   function progressPercent(state){
-    return Math.min(100,Math.round((state.passedBoxes.length/TOTAL_LANGUAGE_BOXES)*100));
+    let completed=0;
+    for(let li=0;li<CEFR.length;li++){
+      const total=boxCount(li)*5;
+      if(isLevelPassed(state,li)){completed+=total;continue;}
+      const prefix=CEFR[li].id+':';
+      completed+=state.passedBoxes.filter(id=>id.startsWith(prefix)).length;
+    }
+    return Math.min(100,Math.round((completed/TOTAL_LANGUAGE_BOXES)*100));
+  }
+  function onboardingPage(){
+    return '<section class="language-course-page language-onboarding">'+
+      '<header class="language-onboarding-hero"><small>English learning · first setup</small><h1>Where should your course begin?</h1><p>Choose the full pathway from A1, or take a demanding placement examination to start at the level that matches your current English.</p></header>'+
+      '<div class="language-entry-grid">'+
+        '<button type="button" data-language-start-zero><span>01</span><small>Full pathway</small><h2>Start from zero</h2><p>Begin at A1 · Step 1 · Letters and build every prerequisite in order.</p><b>Start A1 →</b></button>'+
+        '<button type="button" data-language-placement-start><span>02</span><small>Placement</small><h2>Examine my level</h2><p>Take a hard multimodal exam with listening, dictation, image description, advanced grammar and complex translation.</p><b>Start placement exam →</b></button>'+
+      '</div><p class="language-entry-note">Placement chooses your starting level only. It does not mark skipped lower levels as completed.</p></section>';
   }
 
   function homePage(){
-    const state=languageState(),pos=clampSelection(state),level=CEFR[pos.li],name=window.DafatiiAuth.user && window.DafatiiAuth.user.displayName || 'Student';
+    const state=languageState();
+    if(!state.onboardingComplete&&!state.placementPending)return onboardingPage();
+    const pos=clampSelection(state),level=CEFR[pos.li],name=window.DafatiiAuth.user && window.DafatiiAuth.user.displayName || 'Student';
     const levels=CEFR.map((item,index)=>{
       const unlocked=levelUnlocked(state,index),passed=isLevelPassed(state,index),selected=index===pos.li;
-      return '<button class="language-level-card '+(selected?'selected ':'')+(passed?'passed ':'')+(!unlocked?'locked':'')+'" data-language-level="'+index+'" '+(unlocked?'':'disabled')+'><span>'+item.id+'</span><div><strong>'+esc(lang()==='ar'?item.ar:item.title)+'</strong><p>'+esc(item.description)+'</p></div><b>'+(passed?'✓':unlocked?'→':'🔒')+'</b></button>';
+      const placement=index===state.entryLevel&&state.placementResult;
+      return '<button class="language-level-card '+(selected?'selected ':'')+(passed?'passed ':'')+(!unlocked?'locked':'')+'" data-language-level="'+index+'" '+(unlocked?'':'disabled')+'><span>'+item.id+'</span><div><strong>'+esc(lang()==='ar'?item.ar:item.title)+'</strong><p>'+esc(item.description)+(placement?' · Placement start':'')+'</p></div><b>'+(passed?'✓':unlocked?'→':'🔒')+'</b></button>';
     }).join('');
     const steps=[1,2,3,4,5].map(step=>{
       const unlocked=stepUnlocked(state,pos.li,step),passed=isStepPassed(state,pos.li,step);
       const completed=Array.from({length:boxCount(pos.li)},(_,i)=>i+1).filter(box=>isBoxPassed(state,pos.li,step,box)).length;
-      return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-home-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><small>'+t('step')+' '+step+'</small><strong>'+completed+' / '+boxCount(pos.li)+'</strong><span>'+(passed?'Complete':unlocked?'Continue':'Locked')+'</span></button>';
+      return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-home-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><small>'+t('step')+' '+step+'</small><strong>'+completed+' / '+boxCount(pos.li)+'</strong><span>'+(passed?'Exam passed':unlocked?'Continue':'Locked')+'</span></button>';
     }).join('');
-    const goal=isLetterBox(pos.li,pos.box)?'Hear, see and draw all 26 English letters one at a time, then pass the Letters box exam.':boxData(pos.li,pos.step,pos.box).goal;
+    const goal=isLetterBox(pos.li,pos.box)?'Hear, see and draw all 26 English letters one at a time, then continue through the A1 pathway.':boxData(pos.li,pos.step,pos.box).goal;
     return '<section class="language-course-page language-home">'+languageHeader(state,pos,t('welcome')+', '+name,level.id+' · '+(lang()==='ar'?level.ar:level.title),level.description)+
-      '<div class="language-hero-grid"><article class="language-progress-hero"><div><small>'+t('progress')+'</small><strong>'+progressPercent(state)+'%</strong><p>'+TOTAL_LANGUAGE_BOXES+' structured boxes · '+state.passedBoxes.length+' fully completed</p></div><div class="language-ring" style="--value:'+progressPercent(state)+'"><span>'+progressPercent(state)+'%</span></div></article>'+
+      '<div class="language-hero-grid"><article class="language-progress-hero"><div><small>'+t('progress')+'</small><strong>'+progressPercent(state)+'%</strong><p>'+TOTAL_LANGUAGE_BOXES+' structured boxes · formal step and level assessments required</p></div><div class="language-ring" style="--value:'+progressPercent(state)+'"><span>'+progressPercent(state)+'%</span></div></article>'+
       '<article class="language-resume-card"><small>'+t('current')+'</small><h2>'+level.id+' · '+t('step')+' '+pos.step+' · '+t('box')+' '+pos.box+'</h2><p>'+esc(goal)+'</p><a href="#'+nextBoxRoute(state,pos)+'">'+t('resume')+' →</a></article></div>'+
       '<section class="language-step-overview"><div class="language-section-title"><div><small>Current level</small><h2>Five-step completion path</h2></div><span>'+boxCount(pos.li)+' boxes / step</span></div><div class="language-home-steps">'+steps+'</div></section>'+
       '<section class="language-levels"><div class="language-section-title"><div><small>CEFR pathway</small><h2>'+t('changeLevel')+'</h2></div><span>A1 → C1</span></div>'+levels+'</section></section>';
@@ -468,8 +606,20 @@
       '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):'Complete the writing task first')+'</button></section>';
   }
 
+  function videoUnderstandingPage(state,pos){
+    const data=boxData(pos.li,pos.step,pos.box),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id,module=state.modules[id]||{};
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'';
+    const arabic=video.responseLanguage==='Arabic';
+    const prompt=arabic?'اكتب بالعربية ما فهمته من الفيديو. اذكر الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English what you understood from the video. State the main idea and at least two supporting details.';
+    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One narrated understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
+      '<article class="language-video-player" data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>Video understanding</small><h2>'+esc(video.title)+'</h2><p>Press play. The lesson will present four narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>'+
+      '<article class="language-video-response"><small>Understanding response · '+video.responseLanguage+'</small><h2>'+(arabic?'اشرح ما فهمته':'Explain what you understood')+'</h2><p>'+prompt+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+(arabic?'اكتب فهمك هنا…':'Write your understanding here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>'+
+      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):'Watch the video and complete your response')+'</button></section>';
+  }
+
   function lettersPage(){
     const state=languageState(),pos=clampSelection(state);
+    if(pos.li>0)return videoUnderstandingPage(state,pos);
     return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
@@ -517,8 +667,7 @@
     ];
     return sample.map(item=>({prompt:item[0],correct:item[1],options:item[2]}));
   }
-
-  function examQuestions(li,step,box){
+  function boxQuestionSet(li,step,box){
     if(isLetterBox(li,box))return letterExamQuestions(step);
     const level=CEFR[li],data=boxData(li,step,box);
     const grammarIndex=Math.max(0,level.grammar.findIndex(rule=>rule[0]===data.grammarTitle));
@@ -534,17 +683,134 @@
       {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]}
     ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
+  function representativeBoxes(li){
+    const last=boxCount(li);
+    return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
+  }
+  function assessmentQuestions(ctx){
+    if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
+    const out=[];
+    if(ctx.scope==='step'){
+      representativeBoxes(ctx.li).forEach((box,index)=>{
+        const set=boxQuestionSet(ctx.li,ctx.step,box);
+        out.push(set[index%set.length],set[(index+2)%set.length]);
+      });
+      return out.slice(0,10);
+    }
+    if(ctx.scope==='level'){
+      for(let step=1;step<=5;step++){
+        const reps=representativeBoxes(ctx.li);
+        [reps[1],reps[3],reps[5]].forEach((box,index)=>{
+          const set=boxQuestionSet(ctx.li,step,box);
+          out.push(set[(step+index)%set.length]);
+        });
+      }
+      return out.slice(0,15);
+    }
+    for(let li=0;li<CEFR.length;li++){
+      const reps=representativeBoxes(li);
+      [1,2,3,4].forEach((step,index)=>{
+        const box=reps[(index+1)%reps.length],set=boxQuestionSet(li,step,box);
+        out.push(set[(li+index)%set.length]);
+      });
+    }
+    return out.slice(0,20);
+  }
 
+  function placementScene(kind){
+    if(kind==='station')return '<svg viewBox="0 0 420 220" role="img" aria-label="A train platform scene"><rect width="420" height="220" rx="20" fill="#eaf2ff"/><rect y="154" width="420" height="66" fill="#cbd5e1"/><rect x="40" y="72" width="250" height="82" rx="12" fill="#2563eb"/><rect x="61" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><rect x="129" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><circle cx="92" cy="161" r="18" fill="#334155"/><circle cx="240" cy="161" r="18" fill="#334155"/><circle cx="337" cy="90" r="16" fill="#f59e0b"/><path d="M337 106v45M337 120l-23 25M337 121l25 18" stroke="#475569" stroke-width="8" stroke-linecap="round"/><rect x="311" y="150" width="55" height="8" rx="4" fill="#64748b"/></svg>';
+    return '<svg viewBox="0 0 420 220" role="img" aria-label="A meeting and presentation scene"><rect width="420" height="220" rx="20" fill="#f8fafc"/><rect x="24" y="24" width="210" height="115" rx="12" fill="#dbeafe"/><path d="M52 111L98 73l42 18 55-44" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round"/><rect x="72" y="166" width="276" height="18" rx="9" fill="#94a3b8"/><circle cx="285" cy="75" r="18" fill="#f59e0b"/><path d="M285 94v58M285 112l-30 24M285 112l34 20" stroke="#475569" stroke-width="9" stroke-linecap="round"/><circle cx="363" cy="120" r="14" fill="#fb7185"/><path d="M363 134v35" stroke="#475569" stroke-width="8" stroke-linecap="round"/></svg>';
+  }
+  function placementQuestions(){
+    return [
+      {type:'mcq',prompt:'Choose the grammatically correct sentence.',correct:'She has been working here since 2022.',options:['She has been working here since 2022.','She works here since 2022.','She has working here since 2022.','She is work here since 2022.']},
+      {type:'listen-fill',prompt:'Voice → text: write exactly what you hear.',audio:'Had I known about the delay, I would have taken an earlier train.',correct:'Had I known about the delay, I would have taken an earlier train.'},
+      {type:'tts-mcq',prompt:'Text → voice: listen to the sentence, then choose its closest meaning.',audio:'The proposal is unlikely to be approved unless the committee revises its underlying assumptions.',correct:'Approval probably requires the committee to change its basic assumptions.',options:['Approval probably requires the committee to change its basic assumptions.','The proposal has already been approved without changes.','The committee rejected every assumption before reading the proposal.','Approval is certain even if the assumptions remain unchanged.']},
+      {type:'image-fill',prompt:'Image → text: describe what is happening in one precise English sentence.',scene:'station',keywords:['train','platform','person'],correct:'A person is waiting on a platform beside a train.'},
+      {type:'translate-fill',prompt:'Translate into precise English: لو كنت قد راجعت البيانات بعناية أكبر، لما توصلت إلى ذلك الاستنتاج.',correct:'If I had reviewed the data more carefully, I would not have reached that conclusion.'},
+      {type:'mcq',prompt:'Which sentence uses hedging appropriately in formal analysis?',correct:'The findings appear to suggest that the policy may have had a limited effect.',options:['The findings appear to suggest that the policy may have had a limited effect.','The findings absolutely prove everything forever.','The findings maybe are effecting policy definitely.','The findings proved perhaps certainly a limited effect.']},
+      {type:'listen-fill',prompt:'Voice → text: transcribe the sentence exactly.',audio:'Not only did the intervention fail to reduce costs, but it also introduced additional administrative complexity.',correct:'Not only did the intervention fail to reduce costs, but it also introduced additional administrative complexity.'},
+      {type:'image-fill',prompt:'Image → text: explain the scene in a complete English sentence.',scene:'presentation',keywords:['presentation','chart','people'],correct:'A presenter is explaining a chart to another person.'},
+      {type:'translate-fill',prompt:'Translate into English: على الرغم من أن الأدلة تبدو مقنعة للوهلة الأولى، فإنها لا تبرر استنتاجاً قاطعاً.',correct:'Although the evidence appears convincing at first glance, it does not justify a definitive conclusion.'},
+      {type:'tts-mcq',prompt:'Listen and choose the implication.',audio:'Much as I appreciate the ambition of the project, its implementation remains financially unsustainable.',correct:'The speaker respects the ambition but considers the implementation too costly to sustain.',options:['The speaker respects the ambition but considers the implementation too costly to sustain.','The speaker believes the project has no ambition.','The project has already become financially sustainable.','The speaker refuses to discuss implementation.']},
+      {type:'mcq',prompt:'Choose the sentence with correct inversion.',correct:'Rarely have we encountered such a persistent discrepancy.',options:['Rarely have we encountered such a persistent discrepancy.','Rarely we have encountered such a persistent discrepancy.','Rarely did encountered we such discrepancy.','Rarely have encountered we such a discrepancy.']},
+      {type:'translate-fill',prompt:'Translate into English: لولا القيود الزمنية، لكان من الممكن إجراء تحليل أكثر شمولاً للنتائج المتعارضة.',correct:'But for the time constraints, a more comprehensive analysis of the conflicting results could have been conducted.'},
+      {type:'mcq',prompt:'Which option is the most precise C1-style reformulation?',correct:'The apparent correlation should not be interpreted as evidence of causality without further analysis.',options:['The apparent correlation should not be interpreted as evidence of causality without further analysis.','Correlation means causation and no more work is needed.','The things are related so one surely causes the other.','The apparent correlation is causal because it appears so.']},
+      {type:'listen-fill',prompt:'Voice → text: transcribe this advanced sentence.',audio:'Were the underlying assumptions to change, the model would require substantial recalibration.',correct:'Were the underlying assumptions to change, the model would require substantial recalibration.'},
+      {type:'translate-fill',prompt:'Translate into English: من المرجح أن يكون التباين ناتجاً جزئياً عن اختلاف طرق أخذ العينات، لا عن تغير حقيقي في الظاهرة نفسها.',correct:'The variation is likely to result partly from differences in sampling methods rather than from a genuine change in the phenomenon itself.'}
+    ];
+  }
+  function answerSimilarity(value,correct){return similarity(value,correct);}
+  function placementQuestionCorrect(question,value){
+    const answer=String(value||'').trim();
+    if(question.type==='mcq'||question.type==='tts-mcq')return answer===question.correct;
+    if(question.keywords){
+      const normalized=normalizeText(answer);
+      const hits=question.keywords.filter(word=>normalized.includes(normalizeText(word))).length;
+      return hits>=2&&normalized.split(' ').length>=5;
+    }
+    return answerSimilarity(answer,question.correct)>=.72;
+  }
+  function placementRecommendedLevel(score){
+    if(score<30)return 0;
+    if(score<45)return 1;
+    if(score<62)return 2;
+    if(score<80)return 3;
+    return 4;
+  }
+  function renderPlacementQuestion(question,index){
+    const name='placement-q'+index;
+    if(question.type==='mcq'||question.type==='tts-mcq'){
+      return '<fieldset class="placement-question"><legend><span>'+(index+1)+'</span>'+esc(question.prompt)+'</legend>'+
+        (question.type==='tts-mcq'?'<button type="button" class="placement-listen" data-placement-listen="'+esc(question.audio)+'">▶ Play voice</button>':'')+
+        question.options.map(option=>'<label><input type="radio" name="'+name+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>';
+    }
+    const visual=question.type==='image-fill'?'<div class="placement-scene">'+placementScene(question.scene)+'</div>':'';
+    const listen=question.type==='listen-fill'?'<button type="button" class="placement-listen" data-placement-listen="'+esc(question.audio)+'">▶ Play voice</button>':'';
+    return '<fieldset class="placement-question fill"><legend><span>'+(index+1)+'</span>'+esc(question.prompt)+'</legend>'+visual+listen+'<input type="text" name="'+name+'" autocomplete="off" required placeholder="Type your answer"></fieldset>';
+  }
+  function placementExamPage(){
+    const questions=placementQuestions();
+    return '<section class="language-course-page language-placement-page"><header class="language-page-head placement"><div><small>Placement examination</small><h1>Find my English level</h1><p>This is intentionally difficult. It combines text-to-voice, voice-to-text, image-to-text, advanced grammar and complex translation. It chooses a starting level; it does not complete skipped levels.</p></div><div class="language-context"><span>15 tasks</span><span>Multimodal</span><span>A1–C1</span></div></header>'+
+      '<div class="placement-warning"><strong>Do not use translation tools.</strong><span>Your result starts you at Level · Step 1 · first box.</span></div>'+
+      '<form id="language-placement-form" class="language-exam-form placement-form">'+questions.map(renderPlacementQuestion).join('')+'<button class="btn btn-primary" type="submit">Evaluate my level</button><div class="language-exam-result" id="language-placement-result"></div></form></section>';
+  }
+  function levelChallengePanel(state){
+    return '<section class="language-level-challenges"><div><small>Independent level challenges</small><h2>Examine any level</h2><p>Score greater than 80% to mark only that level complete. Lower levels are not credited, and a gap still blocks studying higher levels.</p></div><div class="language-challenge-grid">'+CEFR.map((level,index)=>'<button type="button" data-challenge-level="'+index+'" class="'+(isLevelPassed(state,index)?'passed':'')+'"><span>'+level.id+'</span><strong>'+(isLevelPassed(state,index)?'✓ Completed':'Challenge level')+'</strong></button>').join('')+'</div></section>';
+  }
+  function assessmentTitle(ctx){
+    if(ctx.scope==='box')return 'Box '+ctx.box+' examination';
+    if(ctx.scope==='step')return 'Step '+ctx.step+' examination';
+    if(ctx.scope==='level')return CEFR[ctx.li].id+' level examination';
+    return 'Whole English language examination';
+  }
+  function assessmentDescription(ctx){
+    if(ctx.scope==='box')return 'Pass at 80% or higher to finish this box.';
+    if(ctx.scope==='step')return 'The last box has no separate box exam. This assessment covers the entire step and completes its last box when passed.';
+    if(ctx.scope==='level')return 'The final step ends with one whole-level examination instead of a separate Step 5 final-box exam.';
+    return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
+  }
+  function examFormMarkup(questions,mode,passed){
+    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
+  }
   function examinePage(){
-    const state=languageState(),pos=clampSelection(state),missing=missingRequirements(state,pos),ready=missing.length===0;
-    const questions=ready?examQuestions(pos.li,pos.step,pos.box):[];
-    const id=keyBox(CEFR[pos.li].id,pos.step,pos.box),passed=Boolean((state.modules[id]||{}).exam);
-    return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),'Box '+pos.box+' examination',t('examIntro'))+
+    const state=languageState();
+    if(state.placementPending)return placementExamPage();
+    const pos=clampSelection(state);
+    if(Number.isInteger(state.challengeLevel)){
+      const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
+      return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),CEFR[li].id+' challenge examination','This challenge is independent of normal progression. Passing it completes only '+CEFR[li].id+'.')+
+        '<div class="language-exam-summary challenge"><div><small>Level challenge · '+CEFR[li].id+'</small><h2>Score greater than 80%</h2><p>Lower levels stay unchanged. You still need every earlier required level before studying a higher locked level.</p></div><span class="ready">'+(passed?'Completed':'Challenge')+'</span></div>'+
+        '<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>← Return to current exam</button>'+
+        examFormMarkup(questions,'challenge',passed)+'</section>';
+    }
+    const ctx=currentAssessment(state,pos),missing=assessmentMissing(state,ctx),ready=missing.length===0,passed=assessmentPassed(state,ctx);
+    const questions=ready?assessmentQuestions(ctx):[];
+    return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),assessmentTitle(ctx),t('examIntro'))+
       boxSelector(state,pos)+
-      '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+(isLetterBox(pos.li,pos.box)?'Letters box':'Dedicated Box '+pos.box+' exam')+'</h2><p>'+(ready?'All required learning pages are complete. Pass at 80% or higher to finish this box.':'Complete the remaining box content before this exam unlocks.')+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
-      (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':
-      '<form id="language-exam-form" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>')+
-      '</section>';
+      '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+assessmentTitle(ctx)+'</h2><p>'+assessmentDescription(ctx)+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
+      (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed))+
+      levelChallengePanel(state)+'</section>';
   }
 
   let personalTimer=null;
@@ -580,8 +846,11 @@
     const previousWorkspace=workspace;
     workspace=function(current){
       const type=courseType(),page=String(current||'').split('/')[0];
-      if(type==='language' && window.DafatiiCourses.active().id && !LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){
-        setHash('language-home');return;
+      if(type==='language' && window.DafatiiCourses.active().id){
+        const state=languageState();
+        if(state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
+        if(!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
       previousWorkspace(current);
@@ -596,11 +865,16 @@
     ['language-grammar','file','grammar'],['language-review','star','review'],['language-examine','check','examine']
   ];
   function icon(name){return window.DafatiiIcons && window.DafatiiIcons.icon ? window.DafatiiIcons.icon(name) : '<span>•</span>';}
+  function languageNavLabel(item){
+    if(item[0]!=='language-letters')return t(item[2]);
+    const state=languageState(),li=Math.min(4,Math.max(0,Number(state.selectedLevel)||Number(state.entryLevel)||0));
+    return li>0?t('video'):t('letters');
+  }
   function sideLanguageNav(current){
-    return navSpec.map(item=>'<a href="#'+item[0]+'" class="quiet-link '+(current===item[0]?'selected':'')+'" '+(current===item[0]?'aria-current="page"':'')+'>'+icon(item[1])+'<span>'+esc(t(item[2]))+'</span></a>').join('');
+    return navSpec.map(item=>'<a href="#'+item[0]+'" class="quiet-link '+(current===item[0]?'selected':'')+'" '+(current===item[0]?'aria-current="page"':'')+'>'+icon(item[1])+'<span>'+esc(languageNavLabel(item))+'</span></a>').join('');
   }
   function bottomLanguageNav(current){
-    return navSpec.map(item=>'<a href="#'+item[0]+'" class="bottom-nav-item language-bottom-item '+(current===item[0]?'is-active':'')+'" '+(current===item[0]?'aria-current="page"':'')+'><span class="bottom-nav-icon">'+icon(item[1])+'</span><span class="bottom-nav-label">'+esc(t(item[2]))+'</span></a>').join('');
+    return navSpec.map(item=>'<a href="#'+item[0]+'" class="bottom-nav-item language-bottom-item '+(current===item[0]?'is-active':'')+'" '+(current===item[0]?'aria-current="page"':'')+'><span class="bottom-nav-icon">'+icon(item[1])+'</span><span class="bottom-nav-label">'+esc(languageNavLabel(item))+'</span></a>').join('');
   }
   function adaptNavigation(){
     const type=courseType(),current=(location.hash||'#language-home').replace(/^#\/?/,'').split('/')[0];
@@ -748,10 +1022,90 @@
     update();
   }
 
+  function videoResponseValid(li,value){
+    const text=String(value||'').trim();
+    if(li<=2){
+      const arabic=(text.match(/[\u0600-\u06FF]/g)||[]).length;
+      return arabic>=30&&text.split(/\s+/).length>=8;
+    }
+    const latin=(text.match(/[A-Za-z]/g)||[]).length;
+    const arabic=(text.match(/[\u0600-\u06FF]/g)||[]).length;
+    return latin>=50&&arabic<8&&text.split(/\s+/).length>=12;
+  }
+  function bindVideoUnderstanding(){
+    const play=document.querySelector('[data-play-language-video]'),field=document.getElementById('language-video-response');
+    const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
+    if(!play||!field||!complete)return;
+    const state=languageState(),pos=clampSelection(state),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id;
+    let watched=Boolean(state.watchedVideos[id]),playing=false,timer=null,index=0;
+    const frame=document.querySelector('[data-video-frame]'),bar=document.querySelector('[data-video-progress]'),status=document.querySelector('[data-video-status]');
+    const updateGate=()=>{
+      const valid=videoResponseValid(pos.li,field.value);
+      complete.disabled=complete.classList.contains('done')?false:!(watched&&valid);
+      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+video.responseLanguage):'Watch the full video first';
+      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(video.responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
+    };
+    const finish=()=>{
+      if(timer){clearInterval(timer);timer=null;}playing=false;watched=true;
+      updateLanguage(value=>{value.watchedVideos[id]=true;});
+      if(bar)bar.style.width='100%';if(status)status.textContent='Watched completely';play.textContent='Replay video';updateGate();
+    };
+    const showFrame=()=>{
+      if(index>=video.frames.length){finish();return;}
+      const text=video.frames[index];
+      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+video.frames.length+'</small><h2>'+esc(video.title)+'</h2><p>'+esc(text)+'</p>';
+      if(bar)bar.style.width=Math.round((index/video.frames.length)*100)+'%';
+      speak(text);index++;
+    };
+    play.onclick=()=>{
+      if(playing)return;
+      if(timer)clearInterval(timer);
+      playing=true;index=0;play.textContent='Playing…';if(status)status.textContent='Watch and listen to every scene';
+      showFrame();timer=setInterval(showFrame,4200);
+    };
+    field.addEventListener('input',updateGate);
+    field.addEventListener('blur',()=>updateLanguage(value=>{value.videoResponses[id]=field.value;}));
+    complete.onclick=()=>{
+      if(complete.disabled)return;
+      updateLanguage(value=>{value.videoResponses[id]=field.value;});
+      markModule('video');
+    };
+    updateGate();
+  }
+  function bindPlacementExam(){
+    document.querySelectorAll('[data-placement-listen]').forEach(button=>button.onclick=()=>speak(button.dataset.placementListen));
+    const form=document.getElementById('language-placement-form');
+    if(!form)return;
+    form.onsubmit=event=>{
+      event.preventDefault();
+      const questions=placementQuestions(),data=new FormData(form);
+      let correct=0;
+      questions.forEach((question,index)=>{if(placementQuestionCorrect(question,data.get('placement-q'+index)))correct++;});
+      const score=Math.round(correct/questions.length*100),li=placementRecommendedLevel(score),result=document.getElementById('language-placement-result');
+      updateLanguage(state=>{
+        state.onboardingComplete=true;state.placementPending=false;state.placementResult={score,level:CEFR[li].id,at:Date.now()};
+        state.entryLevel=li;state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;state.challengeLevel=null;
+        state.examHistory.push({scope:'placement',score,level:CEFR[li].id,at:Date.now()});
+      });
+      result.className='language-exam-result passed';
+      result.textContent='Placement result · '+score+'% · Start at '+CEFR[li].id+' · Step 1 · first box. Skipped lower levels were not marked complete.';
+      setTimeout(()=>setHash('language-home'),1200);
+    };
+  }
   function bindLanguagePage(){
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
+
+    document.querySelector('[data-language-start-zero]')?.addEventListener('click',()=>{
+      updateLanguage(state=>{state.onboardingComplete=true;state.placementPending=false;state.placementResult=null;state.entryLevel=0;state.selectedLevel=0;state.selectedStep=1;state.selectedBox=1;});
+      render();
+    });
+    document.querySelector('[data-language-placement-start]')?.addEventListener('click',()=>{
+      updateLanguage(state=>{state.placementPending=true;state.challengeLevel=null;});
+      setHash('language-examine');
+    });
+
     document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
     document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
     document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
@@ -776,7 +1130,10 @@
       grammarWriting.addEventListener('input',update);update();
     }
 
-    document.querySelectorAll('[data-language-module]').forEach(button=>button.onclick=()=>{if(!button.disabled)markModule(button.dataset.languageModule);});
+    document.querySelectorAll('[data-language-module]').forEach(button=>{
+      if(button.dataset.languageModule==='video')return;
+      button.onclick=()=>{if(!button.disabled)markModule(button.dataset.languageModule);};
+    });
 
     const voiceComplete=document.querySelector('[data-language-module="voice"]');
     let dictationPassed=false,reversePassed=false;
@@ -800,22 +1157,48 @@
 
     document.querySelector('[data-save-language-notes]')?.addEventListener('click',event=>{const id=event.currentTarget.dataset.saveLanguageNotes,value=document.getElementById('language-box-notes').value;updateLanguage(state=>{state.notes[id]=value;});event.currentTarget.textContent='✓ '+t('save');});
 
+    document.querySelectorAll('[data-challenge-level]').forEach(button=>button.onclick=()=>{
+      updateLanguage(state=>{state.challengeLevel=Number(button.dataset.challengeLevel);state.placementPending=false;});
+      render();
+    });
+    document.querySelector('[data-cancel-level-challenge]')?.addEventListener('click',()=>{updateLanguage(state=>{state.challengeLevel=null;});render();});
+
     const exam=document.getElementById('language-exam-form');
     if(exam)exam.onsubmit=event=>{
       event.preventDefault();
-      const state=languageState(),pos=clampSelection(state);
-      if(missingRequirements(state,pos).length)return;
-      const questions=examQuestions(pos.li,pos.step,pos.box),form=new FormData(exam);
+      const state=languageState(),mode=exam.dataset.examMode||'natural';
+      let ctx;
+      if(mode==='challenge'){
+        const li=state.challengeLevel;if(!Number.isInteger(li))return;
+        ctx={scope:'level',li,step:5,box:boxCount(li)};
+      }else{
+        const pos=clampSelection(state);ctx=currentAssessment(state,pos);
+        if(assessmentMissing(state,ctx).length)return;
+      }
+      const questions=assessmentQuestions(ctx),form=new FormData(exam);
       let correct=0;questions.forEach((q,index)=>{if(form.get('q'+index)===q.correct)correct++;});
-      const score=Math.round((correct/questions.length)*100),passed=score>=80,result=document.getElementById('language-exam-result');
+      const score=Math.round((correct/questions.length)*100),passed=mode==='challenge'?score>80:score>=80,result=document.getElementById('language-exam-result');
       updateLanguage(value=>{
-        const id=keyBox(CEFR[pos.li].id,pos.step,pos.box);value.modules[id]=value.modules[id]||{};
-        value.examHistory.push({scope:'box',level:CEFR[pos.li].id,step:pos.step,box:pos.box,score,passed,at:Date.now()});
-        if(passed){value.modules[id].exam=true;if(syncBoxCompletion(value,pos.li,pos.step,pos.box))advanceSelection(value,pos.li,pos.step,pos.box);}
+        value.examHistory.push({scope:mode==='challenge'?'level-challenge':ctx.scope,level:CEFR[ctx.li].id,step:ctx.step,box:ctx.box,score,passed,at:Date.now()});
+        if(passed){
+          if(mode==='challenge')applyLevelChallengePass(value,ctx.li);
+          else applyAssessmentPass(value,ctx);
+        }
       });
-      if(passed){result.className='language-exam-result passed';result.textContent='Passed · '+score+'%. This box is complete because all page content and its exam are finished.';setTimeout(()=>render(),900);}
-      else{result.className='language-exam-result failed';result.textContent='Score '+score+'%. The box remains incomplete. Review its learning pages and retry.';}
+      if(passed){
+        result.className='language-exam-result passed';
+        result.textContent=mode==='challenge'
+          ? 'Passed · '+score+'%. '+CEFR[ctx.li].id+' is complete. Lower levels were not changed.'
+          : 'Passed · '+score+'%. '+assessmentTitle(ctx)+' is complete.';
+        setTimeout(()=>render(),1000);
+      }else{
+        result.className='language-exam-result failed';
+        result.textContent='Score '+score+'%. '+(mode==='challenge'?'A level challenge requires greater than 80%.':'Pass mark is 80%. Review and retry.');
+      }
     };
+
+    bindPlacementExam();
+    bindVideoUnderstanding();
     bindLetterDrawing();
   }
 
