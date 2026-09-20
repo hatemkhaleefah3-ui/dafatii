@@ -142,10 +142,10 @@
       passedLevels:[],passedSteps:[],passedBoxes:[],modules:{},notes:{},examHistory:[]
     };
   }
+  const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v1';
   function languageState(){
-    const suite=readSuite();
-    if(!suite.languageLearning || typeof suite.languageLearning!=='object') suite.languageLearning=defaultLanguageLearning();
-    const value=suite.languageLearning;
+    const stored=window.DafatiiData.readJSON(progressKey(),null);
+    const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
     value.passedLevels=Array.isArray(value.passedLevels)?value.passedLevels:[];
     value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
@@ -155,11 +155,9 @@
     return value;
   }
   function updateLanguage(mutator){
-    const suite=readSuite();
-    const state=suite.languageLearning && typeof suite.languageLearning==='object' ? suite.languageLearning : defaultLanguageLearning();
+    const state=languageState();
     mutator(state);
-    suite.languageLearning=state;
-    writeSuite(suite);
+    window.DafatiiData.writeJSON(progressKey(),state);
     return state;
   }
 
@@ -177,8 +175,9 @@
         studyType:type==='language'?'language':(input.studyType||'courses')
       };
       if(type==='language'){
-        suite.languageLearning=defaultLanguageLearning();
-        suite.languageLearning.targetLanguage=input.targetLanguage||'English';
+        const initialProgress=defaultLanguageLearning();
+        initialProgress.targetLanguage=input.targetLanguage||'English';
+        window.DafatiiData.writeJSON('dafatii:language-progress:'+String(course.id)+':v1',initialProgress);
         window.DafatiiCourses.writeJSON('dafatii:subjects',[]);
         window.DafatiiCourses.writeJSON('dafatii:lectures',{});
         window.DafatiiCourses.writeJSON('dafatii:chatState:v1',{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});
@@ -470,15 +469,16 @@
   }
 
   let personalTimer=null;
+  const personalRoomKey=()=> 'dafatii:personal-focus-room:'+String(window.DafatiiCourses.active().id||'none')+':v1';
   function personalRoomPage(){
-    const suite=readSuite(),room=suite.personalRoom||{goal:'',notes:'',minutes:50,sessions:0};
+    const room=window.DafatiiData.readJSON(personalRoomKey(),{goal:'',notes:'',minutes:50,sessions:0})||{goal:'',notes:'',minutes:50,sessions:0};
     return '<section class="language-course-page personal-focus-page"><header class="personal-focus-hero"><div><small>Personal course · one private room</small><h1>My Focus Room</h1><p>A single distraction-controlled studio for deliberate study, session timing, working notes and materials.</p></div><div class="personal-focus-stat"><strong>'+Number(room.sessions||0)+'</strong><span>focus sessions</span></div></header><div class="personal-focus-grid"><article class="personal-focus-timer"><small>Focus block</small><div id="personal-focus-clock">'+String(Number(room.minutes||50)).padStart(2,'0')+':00</div><div><button type="button" data-personal-timer="start">Start</button><button type="button" data-personal-timer="reset">Reset</button></div><label>Minutes<input id="personal-focus-minutes" type="number" min="5" max="180" value="'+Number(room.minutes||50)+'"></label></article><article class="personal-focus-card"><small>One outcome</small><h2>What must be true when this block ends?</h2><textarea id="personal-focus-goal" rows="4" placeholder="Define one observable outcome…">'+esc(room.goal||'')+'</textarea><button type="button" data-personal-save>Save room</button></article><article class="personal-focus-card wide"><small>Working notes</small><h2>Keep the room quiet; capture only useful thinking.</h2><textarea id="personal-focus-notes" rows="10" placeholder="Notes, questions, formulas, links…">'+esc(room.notes||'')+'</textarea></article></div></section>';
   }
-  function savePersonalRoom(extra={}){const suite=readSuite(),previous=suite.personalRoom||{};suite.personalRoom={...previous,...extra};writeSuite(suite);}
+  function savePersonalRoom(extra={}){const previous=window.DafatiiData.readJSON(personalRoomKey(),{})||{};window.DafatiiData.writeJSON(personalRoomKey(),{...previous,...extra});}
   function bindPersonalRoom(){
     document.querySelector('[data-personal-save]')?.addEventListener('click',()=>{savePersonalRoom({goal:document.getElementById('personal-focus-goal').value,notes:document.getElementById('personal-focus-notes').value,minutes:Number(document.getElementById('personal-focus-minutes').value)||50});});
     document.querySelector('[data-personal-timer="reset"]')?.addEventListener('click',()=>{if(personalTimer){clearInterval(personalTimer);personalTimer=null;}const m=Number(document.getElementById('personal-focus-minutes').value)||50;document.getElementById('personal-focus-clock').textContent=String(m).padStart(2,'0')+':00';});
-    document.querySelector('[data-personal-timer="start"]')?.addEventListener('click',()=>{if(personalTimer)return;let remaining=(Number(document.getElementById('personal-focus-minutes').value)||50)*60;const clock=document.getElementById('personal-focus-clock');personalTimer=setInterval(()=>{remaining--;clock.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(remaining<=0){clearInterval(personalTimer);personalTimer=null;const suite=readSuite(),room=suite.personalRoom||{};savePersonalRoom({sessions:Number(room.sessions||0)+1,goal:document.getElementById('personal-focus-goal').value,notes:document.getElementById('personal-focus-notes').value,minutes:Number(document.getElementById('personal-focus-minutes').value)||50});}},1000);});
+    document.querySelector('[data-personal-timer="start"]')?.addEventListener('click',()=>{if(personalTimer)return;let remaining=(Number(document.getElementById('personal-focus-minutes').value)||50)*60;const clock=document.getElementById('personal-focus-clock');personalTimer=setInterval(()=>{remaining--;clock.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(remaining<=0){clearInterval(personalTimer);personalTimer=null;const room=window.DafatiiData.readJSON(personalRoomKey(),{})||{};savePersonalRoom({sessions:Number(room.sessions||0)+1,goal:document.getElementById('personal-focus-goal').value,notes:document.getElementById('personal-focus-notes').value,minutes:Number(document.getElementById('personal-focus-minutes').value)||50});}},1000);});
   }
 
   function languageContent(page){
