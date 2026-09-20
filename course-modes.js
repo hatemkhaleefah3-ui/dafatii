@@ -1229,6 +1229,12 @@
       return;
     }
     if(type!=='language')return;
+    document.querySelector('.quiet-workspace>.sub-nav')?.remove();
+    const activeNav=navSpec.find(item=>item[0]===current);
+    const toolbarTitle=document.querySelector('.quiet-toolbar-title strong');
+    const toolbarKicker=document.querySelector('.quiet-toolbar-title small');
+    if(toolbarTitle)toolbarTitle.textContent=activeNav?languageNavLabel(activeNav):'English course';
+    if(toolbarKicker)toolbarKicker.textContent='English course';
     const side=document.querySelector('.quiet-sidebar > nav');
     if(side)side.innerHTML=sideLanguageNav(current);
     const desktop=document.querySelector('.quiet-desktop-tabs');

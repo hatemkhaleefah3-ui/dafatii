@@ -171,6 +171,10 @@
       button.addEventListener('click',() => state.sheetOpen ? closeSheet() : openSheet());
       document.body.appendChild(button);
     }
+    const languageDock=isLanguageCourse()&&isLanguageRoute()?document.querySelector('.quiet-toolbar-actions'):null;
+    button.classList.toggle('dcc-trigger-language-docked',Boolean(languageDock));
+    if(languageDock&&button.parentElement!==languageDock)languageDock.prepend(button);
+    if(!languageDock&&button.parentElement!==document.body)document.body.appendChild(button);
     return button;
   }
 
