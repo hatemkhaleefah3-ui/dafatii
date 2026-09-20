@@ -391,15 +391,11 @@
 
   function videoLessonData(li,step,box){
     const data=boxData(li,step,box);
+    const query=['English',CEFR[li].id,data.topic,data.grammarTitle,'listening lesson'].join(' ');
     return {
       id:keyBox(CEFR[li].id,step,box),
       title:data.title,
-      frames:[
-        'Today we are working with '+data.topic+'.',
-        'Listen for the function of '+data.languageFunction+' and notice the phrase '+data.words[0]+'.',
-        data.grammarExample1,
-        'The key idea is to use '+data.grammarTitle+' while communicating clearly about '+data.topic+'.'
-      ],
+      youtubeUrl:'https://www.youtube.com/results?search_query='+encodeURIComponent(query),
       responseLanguage:li<=2?'Arabic':'English'
     };
   }
