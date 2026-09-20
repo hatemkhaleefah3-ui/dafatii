@@ -56,6 +56,12 @@ assert.doesNotMatch(js,/name:'scenes'/,'video items must not contain narrated sc
 assert.match(js,/return out\.slice\(0,15\)/,'step exams must include a 15-question generated bank');
 assert.match(js,/return out\.slice\(0,25\)/,'level exams must include a 25-question generated bank');
 assert.match(js,/return out\.slice\(0,40\)/,'whole-language exam must include a 40-question generated bank');
+for (const type of ['mcq','true-false','multi-select','fill','short-answer','listen-choice','listen-fill','ordering']) {
+  assert.ok(js.includes("type:'"+type+"'"),'natural exams missing question type '+type);
+}
+assert.match(js,/function examAnswerCorrect\(question,form,index\)/,'mixed exam types must use a shared scorer');
+assert.match(js,/data-ordering=/,'sentence-order questions must render an interactive builder');
+assert.match(js,/examTypeLabel/,'exam question types must be visibly labeled');
 assert.match(js,/id:'voice-rubric'/,'normal boxes must include a dedicated voice self-check item');
 assert.match(js,/id:'grammar-error'/,'normal boxes must include a grammar error-analysis item');
 assert.match(js,/id:'review-memory'/,'normal boxes must include a memory/retrieval item');
@@ -122,8 +128,8 @@ for (const selector of [
 assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.language-video-screen/,'new assessment/video surfaces must have mobile styling');
 assert.match(css,/touch-action:none!important/,'validated letter canvases must remain touch-safe');
 
-assert.ok(index.includes('course-modes.css?v=20260920-6'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-8'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-8') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260920-9'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-9'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-9') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
