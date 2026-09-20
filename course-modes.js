@@ -777,7 +777,7 @@
   function boxSelector(state,pos){
     let html='<div class="language-box-strip">';
     for(let box=1;box<=boxCount(pos.li);box++){
-      const unlocked=boxUnlocked(state,pos.li,pos.step,box),passed=isBoxPassed(state,pos.li,pos.step,box),letter=isLetterBox(pos.li,box);
+      const unlocked=adminLanguageAuthoring()||boxUnlocked(state,pos.li,pos.step,box),passed=isBoxPassed(state,pos.li,pos.step,box),letter=isLetterBox(pos.li,box);
       html+='<button type="button" data-language-box="'+box+'" '+(unlocked?'':'disabled')+' class="'+(box===pos.box?'active ':'')+(passed?'passed ':'')+(letter?'letter-box':'')+'">'+(letter?'Aa':box)+'</button>';
     }
     return html+'</div>';
@@ -802,7 +802,7 @@
       return '<button type="button" data-letter-select="'+item+'" '+(allowed?'':'disabled')+' class="'+(item===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item+'</strong><span>'+item.toLowerCase()+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
     }).join('');
     return '<section class="language-course-page language-letters-mobile">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'Learn A–Z in order. Hear the letter name by itself, then trace its uppercase and lowercase shapes accurately before continuing.')+
-      '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+(stepUnlocked(state,pos.li,step)?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
+      '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+((adminLanguageAuthoring()||stepUnlocked(state,pos.li,step))?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
       boxSelector(state,pos)+
       '<div class="language-content-item-grid">'+items.map(item=>infoItemCard(item,'letter-information-item')).join('')+'</div>'+
       '<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
@@ -842,12 +842,6 @@
 
   function lettersPage(){
     const state=languageState(),pos=activeLanguagePosition(state);
-    if(pos.li>0)return videoUnderstandingPage(state,pos);
-    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
-  }
-
-  function lettersPage(){
-    const state=languageState(),pos=clampSelection(state);
     if(pos.li>0)return videoUnderstandingPage(state,pos);
     return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
