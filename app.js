@@ -1,4 +1,5 @@
 const app = document.getElementById('app');
+const ADMIN_ACCESS_EMAIL = 'hatemkhaleefah3@gmail.com';
 
 const DEFAULT_SUBJECTS = [
   { id: 'mathematics', name: 'Mathematics', icon: '∑' },
@@ -46,8 +47,8 @@ const LANDING_COPY = {
   en:{home:'Home',about:'About us',contact:'Contact us',join:'Join us',eyebrow:'Your study life, one place',title:'Study less scattered.',titleAccent:'Learn more.',intro:'Dafatii brings materials, subjects, schedules, rooms and conversations into one focused workspace for school, university and independent learners.',start:'Start studying',explore:'Explore features',proofOne:'One workspace for every course',proofTwo:'Built for focus, not clutter',today:'Today',workspace:'Study workspace',physics:'Physics',calculus:'Calculus',upcoming:'Upcoming',focus:'Focus mode',ready:'Ready when you are.',materials:'Materials',reach:'Everything in reach.',designed:'Designed around students',everything:'Everything has a place.',calm:'A calm interface for complex academic life.',planning:'Planning',community:'Community',materialText:'Keep subjects, notes and resources organized around the way you actually study.',planningText:'Put classes, exams, deadlines and study sessions on one coherent timeline.',communityText:'Move from solo study to focused rooms and conversations when collaboration helps.',aboutTitle:'An academic workspace you control',aboutText:'Dafatii brings content, planning, collaboration, and course administration together with clear permissions for students, representatives, and administrators.',contactTitle:'Contact the Dafatii team',contactText:'For questions, feedback, or support, email us and we will follow up.',contactAction:'Send email',cta:'Your next semester deserves a cleaner system.'}
 };
 const AUTH_COPY = {
-  ar:{join:'انضم إلى مساحة الدراسة',build:'ابنِ بيتك الأكاديمي.',description:'لطلاب المدارس والجامعات والمتعلمين المستقلين الذين يريدون المواد والتخطيط والتعاون في نظام واحد.',subjects:'المواد',calendar:'التقويم',rooms:'غرف الدراسة',chat:'المحادثات',signin:'تسجيل الدخول',signup:'إنشاء حساب',create:'أنشئ حسابك',welcome:'مرحباً بعودتك',createText:'جهّز مساحة دفاتري الخاصة بك خلال ثوانٍ.',signinText:'سجّل الدخول للمتابعة إلى مساحتك.',name:'الاسم الكامل',namePlaceholder:'اسمك',email:'البريد الإلكتروني',password:'كلمة المرور',accountType:'نوع الحساب',student:'طالب',representer:'ممثل دورة',stage:'المرحلة الدراسية',school:'المدرسة',university:'الجامعة',independent:'تعلم مستقل',createButton:'إنشاء الحساب',offline:'تعذر فحص الاتصال تلقائياً. ما زال بإمكانك إرسال النموذج أو إعادة المحاولة.',secure:'يتحقق خادم دفاتري من بيانات الدخول والأدوار والتسجيل وصلاحيات الدورات.',retry:'حاول مرة أخرى',reconnecting:'جارٍ إعادة الاتصال…',stillOffline:'الخادم غير متاح بعد. تحقق من اتصالك وحاول مرة أخرى.',creating:'جارٍ إنشاء الحساب…',signing:'جارٍ تسجيل الدخول…',failed:'فشلت المصادقة.'},
-  en:{join:'Join the workspace',build:'Build your academic home.',description:'For school students, university students and independent learners who want materials, planning and collaboration in one focused system.',subjects:'Subjects',calendar:'Calendar',rooms:'Study rooms',chat:'Chat',signin:'Sign in',signup:'Sign up',create:'Create your account',welcome:'Welcome back',createText:'Set up your Dafatii workspace in a few seconds.',signinText:'Sign in to continue to your workspace.',name:'Full name',namePlaceholder:'Your name',email:'Email',password:'Password',accountType:'Account type',student:'Student',representer:'Course representer',stage:'Student stage',school:'School',university:'University',independent:'Independent',createButton:'Create account',offline:'The automatic connection check failed. You can still submit the form or try the check again.',secure:'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.',retry:'Try again',reconnecting:'Reconnecting…',stillOffline:'The server is still unavailable. Check your connection and try again.',creating:'Creating account…',signing:'Signing in…',failed:'Authentication failed.'}
+  ar:{join:'انضم إلى مساحة الدراسة',build:'ابنِ بيتك الأكاديمي.',description:'لطلاب المدارس والجامعات والمتعلمين المستقلين الذين يريدون المواد والتخطيط والتعاون في نظام واحد.',subjects:'المواد',calendar:'التقويم',rooms:'غرف الدراسة',chat:'المحادثات',signin:'تسجيل الدخول',signup:'إنشاء حساب',create:'أنشئ حسابك',welcome:'مرحباً بعودتك',createText:'جهّز مساحة دفاتري الخاصة بك خلال ثوانٍ.',signinText:'سجّل الدخول للمتابعة إلى مساحتك.',name:'الاسم الكامل',namePlaceholder:'اسمك',email:'البريد الإلكتروني',password:'كلمة المرور',accountType:'نوع الحساب',student:'طالب',representer:'ممثل دورة',stage:'المرحلة الدراسية',school:'المدرسة',university:'الجامعة',independent:'تعلم مستقل',createButton:'إنشاء الحساب',offline:'تعذر فحص الاتصال تلقائياً. ما زال بإمكانك إرسال النموذج أو إعادة المحاولة.',secure:'يتحقق خادم دفاتري من بيانات الدخول والأدوار والتسجيل وصلاحيات الدورات.',retry:'حاول مرة أخرى',reconnecting:'جارٍ إعادة الاتصال…',stillOffline:'الخادم غير متاح بعد. تحقق من اتصالك وحاول مرة أخرى.',creating:'جارٍ إنشاء الحساب…',signing:'جارٍ تسجيل الدخول…',failed:'فشلت المصادقة.',adminAccess:'دخول المشرف',adminAccount:'حساب المشرف',adminPin:'رمز المشرف المكون من 4 أرقام',adminPinHint:'يتم التحقق من الرمز والصلاحية على الخادم.',adminEnter:'الدخول كمسؤول',adminChecking:'جارٍ التحقق من حساب المشرف…',adminRejected:'تعذر التحقق من حساب المشرف أو صلاحياته.'},
+  en:{join:'Join the workspace',build:'Build your academic home.',description:'For school students, university students and independent learners who want materials, planning and collaboration in one focused system.',subjects:'Subjects',calendar:'Calendar',rooms:'Study rooms',chat:'Chat',signin:'Sign in',signup:'Sign up',create:'Create your account',welcome:'Welcome back',createText:'Set up your Dafatii workspace in a few seconds.',signinText:'Sign in to continue to your workspace.',name:'Full name',namePlaceholder:'Your name',email:'Email',password:'Password',accountType:'Account type',student:'Student',representer:'Course representer',stage:'Student stage',school:'School',university:'University',independent:'Independent',createButton:'Create account',offline:'The automatic connection check failed. You can still submit the form or try the check again.',secure:'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.',retry:'Try again',reconnecting:'Reconnecting…',stillOffline:'The server is still unavailable. Check your connection and try again.',creating:'Creating account…',signing:'Signing in…',failed:'Authentication failed.',adminAccess:'Admin access',adminAccount:'Administrator account',adminPin:'4-digit administrator PIN',adminPinHint:'The PIN and administrator role are verified by the server.',adminEnter:'Enter as administrator',adminChecking:'Verifying administrator account…',adminRejected:'The administrator account or role could not be verified.'}
 };
 
 const LABELS = {
@@ -63,6 +64,11 @@ function icon(name){
 
 function setHash(hash){ location.hash = hash; }
 function route(){ return location.hash.replace(/^#\/?/,'') || 'landing'; }
+async function enterAuthenticatedWorkspace(){
+  state.joined=true;
+  await window.DafatiiCourses.refresh();
+  setHash(window.DafatiiAuth?.user?.studentStage==='school'?'dashboard':window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
+}
 function saveSubjects(){ window.DafatiiCourses.writeJSON('dafatii:subjects', state.subjects); }
 function saveLectures(){ window.DafatiiCourses.writeJSON('dafatii:lectures', state.lectures); }
 function subjectLectures(subjectId){ return Array.isArray(state.lectures[subjectId]) ? state.lectures[subjectId] : []; }
@@ -151,6 +157,15 @@ function join(){
           ${isSignup ? `<div class="field"><label>${escapeHtml(c.accountType)}</label><select name="accountType"><option value="student">${escapeHtml(c.student)}</option><option value="representer">${escapeHtml(c.representer)}</option></select></div><div class="field"><label>${escapeHtml(c.stage)}</label><select name="studentStage"><option value="school">${escapeHtml(c.school)}</option><option value="university" selected>${escapeHtml(c.university)}</option><option value="independent">${escapeHtml(c.independent)}</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit">${escapeHtml(isSignup ? c.createButton : c.signin)} →</button>
         </form>
+        ${isSignup?'':`<div class="admin-access-divider"><span>${escapeHtml(c.adminAccount)}</span></div>
+        <button class="admin-access-button" id="admin-access-toggle" type="button" aria-expanded="false" aria-controls="admin-pin-panel"><span aria-hidden="true">◆</span><strong>${escapeHtml(c.adminAccess)}</strong><b>→</b></button>
+        <form class="admin-pin-panel" id="admin-pin-panel" hidden>
+          <div class="admin-account-row"><span>H</span><div><small>${escapeHtml(c.adminAccount)}</small><strong>${escapeHtml(ADMIN_ACCESS_EMAIL)}</strong></div></div>
+          <label class="admin-pin-label" for="admin-pin">${escapeHtml(c.adminPin)}</label>
+          <input id="admin-pin" name="adminPin" type="password" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4}" minlength="4" maxlength="4" required aria-describedby="admin-pin-hint">
+          <small id="admin-pin-hint">${escapeHtml(c.adminPinHint)}</small>
+          <button class="btn btn-primary" type="submit">${escapeHtml(c.adminEnter)} →</button>
+        </form>`}
         <div class="auth-note" id="auth-status">${escapeHtml(authOffline ? c.offline : c.secure)}</div>
         ${authOffline ? `<button class="btn btn-ghost auth-retry" id="auth-retry" type="button">${escapeHtml(c.retry)}</button>` : ''}
       </div>
@@ -158,6 +173,34 @@ function join(){
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
   document.querySelector('[data-interface-language]')?.addEventListener('click',event=>{applyInterfaceLanguage(event.currentTarget.dataset.interfaceLanguage);join();});
+  const adminToggle=document.getElementById('admin-access-toggle');
+  const adminPanel=document.getElementById('admin-pin-panel');
+  if(adminToggle&&adminPanel){
+    adminToggle.onclick=()=>{
+      const opening=adminPanel.hidden;
+      adminPanel.hidden=!opening;
+      adminToggle.setAttribute('aria-expanded',String(opening));
+      if(opening)setTimeout(()=>document.getElementById('admin-pin')?.focus(),30);
+    };
+    const pinInput=document.getElementById('admin-pin');
+    pinInput.oninput=()=>{pinInput.value=pinInput.value.replace(/\D/g,'').slice(0,4);};
+    adminPanel.onsubmit=async event=>{
+      event.preventDefault();
+      const submit=adminPanel.querySelector('[type="submit"]'),status=document.getElementById('auth-status'),authForm=document.getElementById('auth-form');
+      submit.disabled=true;adminPanel.dataset.submitting='true';authForm.dataset.submitting='true';status.textContent=c.adminChecking;
+      try{
+        const authenticated=await window.DafatiiAuth.login({email:ADMIN_ACCESS_EMAIL,pin:pinInput.value});
+        if(String(authenticated?.email||'').toLowerCase()!==ADMIN_ACCESS_EMAIL||authenticated?.platformRole!=='admin'){
+          await window.DafatiiAuth.logout();
+          throw new Error(c.adminRejected);
+        }
+        await enterAuthenticatedWorkspace();
+      }catch(error){
+        status.textContent=error?.status===429?(error.message||c.adminRejected):c.adminRejected;
+        pinInput.value='';submit.disabled=false;delete adminPanel.dataset.submitting;delete authForm.dataset.submitting;pinInput.focus();
+      }
+    };
+  }
   const retry=document.getElementById('auth-retry');
   if(retry) retry.onclick=async()=>{
     retry.disabled=true;
@@ -176,7 +219,7 @@ function join(){
       const values=new FormData(form);
       if(isSignup) await window.DafatiiAuth.signup({email:values.get('email'),password:values.get('password'),displayName:values.get('name'),accountType:values.get('accountType'),studentStage:values.get('studentStage')});
       else await window.DafatiiAuth.login({email:values.get('email'),password:values.get('password')});
-      state.joined = true; await window.DafatiiCourses.refresh(); setHash(window.DafatiiAuth?.user?.studentStage==='school'?'dashboard':window.DafatiiCourses.active().id?'dashboard/overview':'change-course');
+      await enterAuthenticatedWorkspace();
     }catch(error){
       const suffix=error.code?` (${error.code})`:'';
       status.textContent=`${error.message||c.failed}${suffix}`;
