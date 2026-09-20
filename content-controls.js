@@ -22,6 +22,10 @@
     return decodeURIComponent(String(location.hash || '').replace(/^#/, ''));
   };
   const isChat = () => /^chat(?:\/|$)/i.test(routeName());
+  const isAdmin = () => {
+    const actor = window.DafatiiCourses?.actor || window.DafatiiAuth?.user;
+    return actor?.platformRole === 'admin';
+  };
   const workspace = () => document.querySelector('.workspace,.quiet-workspace');
   const scope = () => document.querySelector('.workspace-main') || document.querySelector('.quiet-main') || workspace();
 
@@ -598,7 +602,7 @@
   }
 
   function eligible() {
-    return Boolean(workspace() && scope() && !isChat());
+    return Boolean(isAdmin() && workspace() && scope() && !isChat());
   }
 
   function sync() {
@@ -635,6 +639,15 @@
     scheduleSync();
   });
   window.addEventListener('dafatii:delete-mode',scheduleSync);
+  window.addEventListener('dafatii:auth:changed',scheduleSync);
+  window.addEventListener('dafatii:coursesloaded',scheduleSync);
+  window.addEventListener('dafatii:coursechanged',scheduleSync);
+  window.addEventListener('dafatii:languageauthoringtarget',event=>{
+    if(state.languageAuthoring!=='content'||!state.languageSelection)return;
+    state.languageSelection={...state.languageSelection,...(event.detail||{})};
+    state.languageSelectedItem='';
+    activateLanguageContentBar(state.languageSelection);
+  });
   window.addEventListener('DOMContentLoaded',scheduleSync,{once:true});
 
   const observer = new MutationObserver(records => {

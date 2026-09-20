@@ -9,6 +9,8 @@ const social=fs.readFileSync('student-social.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"), 'chat app must be excluded from unified content controls');
+assert.match(js,/const isAdmin = \(\) => \{[\s\S]*platformRole === 'admin'/,'Manage Content access must be determined by the platform admin role');
+assert.match(js,/return Boolean\(isAdmin\(\) && workspace\(\) && scope\(\) && !isChat\(\)\)/,'the content-control access button must be admin-only');
 assert.ok(js.includes("dcc-trigger-icon") && js.includes(">⌃</span>") && js.includes("<strong>Manage</strong>"), 'eligible pages need the premium Manage Content button');
 assert.ok(js.includes('data-dcc-action="delete"') && js.includes('data-dcc-action="edit"') && js.includes('data-dcc-action="add"'), 'content sheet must expose delete, edit, and add');
 assert.ok(js.includes("window.DafatiiDeleteManager?.activate?.()"), 'Delete must delegate to the replacement delete manager');
@@ -45,8 +47,8 @@ assert.ok(calendar.includes('data-planner-add-type') && calendar.includes('data-
 assert.ok(js.includes("const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷'}") && !js.includes("attendance:'◎'"), 'planner add metadata must include only the four remaining planner sections');
 assert.ok(social.includes('data-content-edit-room') && social.includes('data-content-delete-room'), 'user-created study rooms must expose edit/delete endpoints');
 
-assert.ok(index.includes('content-controls.css?v=20260920-1') && index.includes('content-controls.js?v=20260920-1'), 'new content-control assets must load');
+assert.ok(index.includes('content-controls.css?v=20260920-1') && index.includes('content-controls.js?v=20260920-2'), 'new content-control assets must load');
 assert.ok(index.includes('delete-manager.css?v=20260919-1') && index.includes('delete-manager.js?v=20260919-1'), 'replacement delete manager assets must load');
-assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260920-1'), 'delete manager must load before content controls delegate to it');
+assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260920-2'), 'delete manager must load before content controls delegate to it');
 
 console.log('unified content controls tests passed');

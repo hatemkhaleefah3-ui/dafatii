@@ -140,6 +140,10 @@
   function courseMeta(){ return readSuite().courseMeta || {}; }
   function courseType(){ return String(courseMeta().courseType || 'dafaa'); }
   function isLanguage(){ return courseType()==='language'; }
+  function isAdminActor(){
+    const actor=window.DafatiiCourses?.actor||window.DafatiiAuth?.user;
+    return actor?.platformRole==='admin';
+  }
 
   function defaultLanguageLearning(){
     return {
@@ -211,6 +215,7 @@
     const originalRoomSeeds=api.roomSeeds.bind(api);
     api.createCourse=async input => {
       const type=COURSE_TYPES.includes(input.courseType)?input.courseType:'dafaa';
+      if(type==='language'&&!isAdminActor())throw new Error('Administrator access is required for Language Course creation.');
       const course=await originalCreate(input);
       const suite=readSuite();
       suite.courseMeta={
@@ -255,7 +260,7 @@
       ['personal','◎','Create Personal course','Private solo course. No Chat app; Study Rooms becomes one focused personal room.','إنشاء دورة شخصية','دورة فردية بلا تطبيق المحادثة ومع غرفة دراسة شخصية واحدة.'],
       ['teaching','▣','Create Teaching course','The existing course workspace prepared for teaching and course management.','إنشاء دورة تدريس','مساحة الدورة الحالية مع أدوات التدريس والإدارة.'],
       ['language','Aa','Create Language course','A dedicated language-learning system with gated CEFR progression and six specialized pages.','إنشاء دورة لغة','نظام مستقل لتعلم اللغة مع تقدم CEFR وست صفحات متخصصة.']
-    ];
+    ].filter(card=>card[0]!=='language'||isAdminActor());
     sheet(lang()==='ar'?'إنشاء دورة':'Create a course','<div class="course-type-grid">'+cards.map(card=>{
       const title=lang()==='ar'?card[4]:card[2],desc=lang()==='ar'?card[5]:card[3];
       return '<button class="course-type-card '+card[0]+'" type="button" data-course-type="'+card[0]+'"><span>'+card[1]+'</span><div><strong>'+esc(title)+'</strong><p>'+esc(desc)+'</p></div><b>›</b></button>';
@@ -271,6 +276,7 @@
     const templates=window.DafatiiCourses.templates();
     const actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
     const isAdmin=actor && actor.platformRole==='admin';
+    if(type==='language'&&!isAdmin)return;
     const isLang=type==='language',isPersonal=type==='personal';
     const defaultName=isLang?'English Learning':isPersonal?'My Personal Course':'';
     const personalSecret=isPersonal
@@ -411,13 +417,27 @@
     };
   }
   function writeLanguageContentStore(store){
+    if(!isAdminActor())throw new Error('Administrator access is required for Language Course authoring.');
     window.DafatiiCourses.writeJSON(languageContentStoreKey(),store);
     return store;
   }
   function contentPageKey(li,step,box,page){return CEFR[li].id+':'+step+':'+box+':'+page;}
   function examStoreKey(ctx){return ctx.scope+':'+CEFR[ctx.li].id+':'+ctx.step+':'+ctx.box;}
   function contentItemId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);}
-  function activeLanguagePosition(state){return languageAuthoringTarget?{...languageAuthoringTarget}:clampSelection(state);}
+  function adminLanguageAuthoring(){return isAdminActor()&&Boolean(languageAuthoringTarget);}
+  function normalizeAuthoringTarget(selection={}){
+    const li=Math.min(4,Math.max(0,Number(selection.li)||0));
+    const step=Math.min(5,Math.max(1,Number(selection.step)||1));
+    const box=Math.min(boxCount(li),Math.max(1,Number(selection.box)||1));
+    return {li,step,box};
+  }
+  function setLanguageAuthoringTarget(selection={}){
+    if(!isAdminActor())return false;
+    languageAuthoringTarget=normalizeAuthoringTarget({...languageAuthoringTarget,...selection});
+    window.dispatchEvent(new CustomEvent('dafatii:languageauthoringtarget',{detail:{...languageAuthoringTarget}}));
+    return true;
+  }
+  function activeLanguagePosition(state){return adminLanguageAuthoring()?{...languageAuthoringTarget}:clampSelection(state);}
   function languagePageName(page,li){
     if(page==='letters')return li===0?'Letters & writing':'Video understanding';
     return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
@@ -577,9 +597,11 @@
   function deleteExamQuestion(selection,id){return mutateExamQuestions(selection,items=>items.filter(item=>(item.id||'')!==id));}
   function emptyExamQuestions(selection){return mutateExamQuestions(selection,()=>[]);}
   function beginLanguageAuthoring(selection){
-    languageAuthoringTarget={li:selection.li,step:selection.step,box:selection.box};
+    if(!isAdminActor())return false;
+    setLanguageAuthoringTarget(selection);
     const route=LANGUAGE_CONTENT_PAGE_ROUTES[selection.page]||'language-letters';
     if((location.hash||'').replace(/^#\/?/,'').split('/')[0]===route)render();else setHash(route);
+    return true;
   }
   function endLanguageAuthoring(){languageAuthoringTarget=null;render();}
 
@@ -755,7 +777,7 @@
   function boxSelector(state,pos){
     let html='<div class="language-box-strip">';
     for(let box=1;box<=boxCount(pos.li);box++){
-      const unlocked=boxUnlocked(state,pos.li,pos.step,box),passed=isBoxPassed(state,pos.li,pos.step,box),letter=isLetterBox(pos.li,box);
+      const unlocked=adminLanguageAuthoring()||boxUnlocked(state,pos.li,pos.step,box),passed=isBoxPassed(state,pos.li,pos.step,box),letter=isLetterBox(pos.li,box);
       html+='<button type="button" data-language-box="'+box+'" '+(unlocked?'':'disabled')+' class="'+(box===pos.box?'active ':'')+(passed?'passed ':'')+(letter?'letter-box':'')+'">'+(letter?'Aa':box)+'</button>';
     }
     return html+'</div>';
@@ -780,7 +802,7 @@
       return '<button type="button" data-letter-select="'+item+'" '+(allowed?'':'disabled')+' class="'+(item===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item+'</strong><span>'+item.toLowerCase()+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
     }).join('');
     return '<section class="language-course-page language-letters-mobile">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'Learn A–Z in order. Hear the letter name by itself, then trace its uppercase and lowercase shapes accurately before continuing.')+
-      '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+(stepUnlocked(state,pos.li,step)?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
+      '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+((adminLanguageAuthoring()||stepUnlocked(state,pos.li,step))?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
       boxSelector(state,pos)+
       '<div class="language-content-item-grid">'+items.map(item=>infoItemCard(item,'letter-information-item')).join('')+'</div>'+
       '<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
@@ -824,13 +846,11 @@
     return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
-  function lettersPage(){
-    const state=languageState(),pos=clampSelection(state);
-    if(pos.li>0)return videoUnderstandingPage(state,pos);
-    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
+  function currentLearningBox(state,pos){
+    if(!isLetterBox(pos.li,pos.box))return boxData(pos.li,pos.step,pos.box);
+    if(adminLanguageAuthoring())return {box:pos.box,title:CEFR[pos.li].id+' · Step '+pos.step+' · Letters box',grammarTitle:'Letters box'};
+    return null;
   }
-
-  function currentLearningBox(state,pos){ return isLetterBox(pos.li,pos.box)?null:boxData(pos.li,pos.step,pos.box); }
   function boxOneGate(state,pos,title,intro){
     const practiced=state.letterProgress[letterProgressKey(pos.li,pos.step)]||[];
     return '<section class="language-course-page">'+languageHeader(state,pos,title,title,intro)+'<article class="language-box-one-gate"><span>Aa</span><div><small>Letters box prerequisite</small><h2>Finish the complete A–Z Letters box first.</h2><p>Each letter must be heard and drawn separately in uppercase and lowercase. Then pass the Letters box exam. '+practiced.length+' / 26 letters are practiced.</p></div><div><a href="#language-letters">Open Letters box</a><a href="#language-examine">Examine</a></div></article></section>';
@@ -1332,6 +1352,7 @@
     };
   }
   function bindLanguagePage(){
+    const authoring=adminLanguageAuthoring();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
@@ -1345,9 +1366,11 @@
       setHash('language-examine');
     });
 
-    document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
-    document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
-    document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
+    document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);if(authoring){setLanguageAuthoringTarget({li,step:1,box:1});render();return;}updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
+    document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);if(authoring){setLanguageAuthoringTarget({step,box:1});render();return;}updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
+    document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);if(authoring){setLanguageAuthoringTarget({box});render();return;}updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
+
+    if(authoring){bindLetterDrawing();return;}
 
     document.querySelectorAll('[data-letter-select]').forEach(button=>button.onclick=()=>{const letter=button.dataset.letterSelect;updateLanguage(state=>{const pos=clampSelection(state);state.activeLetterByStep[letterProgressKey(pos.li,pos.step)]=letter;});render();});
     document.querySelector('[data-letter-next]')?.addEventListener('click',event=>{if(event.currentTarget.disabled)return;updateLanguage(state=>{const pos=clampSelection(state),pkey=letterProgressKey(pos.li,pos.step),current=state.activeLetterByStep[pkey]||LETTERS.find(letter=>!(state.letterProgress[pkey]||[]).includes(letter))||'A';const index=LETTERS.indexOf(current);state.activeLetterByStep[pkey]=LETTERS[(index+1)%LETTERS.length];});render();});

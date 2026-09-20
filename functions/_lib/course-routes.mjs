@@ -1,6 +1,6 @@
 import { normalizeEmail, requireUser } from './auth.mjs';
 import {
-  PERMISSIONS, accessCodeHash, actorFor, assertContentPermissions, audit, can, courseDto,
+  LANGUAGE_AUTHORING_KEY, PERMISSIONS, accessCodeHash, actorFor, assertContentPermissions, audit, can, courseDto,
   courseWithMembership, enrollmentCode, ensureCourseDiscoverySchema, fullPermissions, noPermissions, permissionInput, publicActor,
   requireCourseView, requirePermission, requiredContentPermissions, validateCourseInput,
   validateCourseRecord, validateMemberPatch
@@ -107,6 +107,9 @@ async function createCourse(context, currentActor) {
     throw new HttpError(403, 'COURSE_CREATION_NOT_ALLOWED', 'Only administrators and students above school level can create Courses.');
   }
   const input = await readJson(context.request, 65536);
+  if (String(input?.courseType || '').toLowerCase() === 'language' && !currentActor.isAdmin) {
+    throw new HttpError(403, 'LANGUAGE_COURSE_ADMIN_REQUIRED', 'Only administrators can create Language Courses.');
+  }
   const value = validateCourseInput(input);
   if (!currentActor.isAdmin && value.visibility !== 'private') {
     throw new HttpError(403, 'PUBLIC_COURSE_ADMIN_REQUIRED', 'Only administrators can create public Courses.');
@@ -348,6 +351,13 @@ async function mutateContent(context, currentActor, courseId) {
   const existing = await context.env.DB.prepare('SELECT value_json, deleted, revision FROM course_content_records WHERE course_id = ? AND record_key = ?').bind(courseId, record.key).first();
   const previousValue = existing && !existing.deleted ? parseJson(existing.value_json) : undefined;
   const nextValue = record.deleted ? undefined : parseJson(record.valueJson);
+  const languageMeta = value => String(value?.courseMeta?.courseType || '').toLowerCase() === 'language';
+  if (!currentActor.isAdmin && record.key === LANGUAGE_AUTHORING_KEY) {
+    throw new HttpError(403, 'LANGUAGE_AUTHORING_ADMIN_REQUIRED', 'Only administrators can change Language Course content or exams.');
+  }
+  if (!currentActor.isAdmin && record.key === 'dafatii:studentSuite:v1' && (languageMeta(previousValue) || languageMeta(nextValue))) {
+    throw new HttpError(403, 'LANGUAGE_COURSE_ADMIN_REQUIRED', 'Only administrators can create or change Language Course configuration.');
+  }
   const required = requiredContentPermissions(previousValue, nextValue, Boolean(record.deleted));
   assertContentPermissions(course, currentActor, required);
   const now = Date.now(), revision = baseRevision + 1, response = { key: record.key, revision, updatedAt: now };
