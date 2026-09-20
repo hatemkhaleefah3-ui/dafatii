@@ -6,6 +6,7 @@
   const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
+  const LETTER_SPEECH = {A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'ef',G:'jee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'ar',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
   const TOTAL_LANGUAGE_BOXES = 5*26 + 4*5*25;
   const LANGUAGE_FUNCTIONS = ['introducing','identifying','describing','asking for information','answering precisely','comparing','sequencing','locating','expressing time','expressing quantity','stating preferences','expressing ability','expressing obligation','giving reasons','explaining results','expressing conditions','contrasting ideas','describing experience','making plans','giving instructions','stating opinions','supporting with evidence','correcting meaning','summarizing','reflecting'];
   const CEFR = [
@@ -438,17 +439,23 @@
 
   function letterBoxPage(state,pos){
     const pkey=letterProgressKey(pos.li,pos.step),practiced=state.letterProgress[pkey]||[];
-    const stored=state.activeLetterByStep[pkey],firstMissing=LETTERS.find(letter=>!practiced.includes(letter))||'A';
-    const letter=LETTERS.includes(stored)?stored:firstMissing,lower=letter.toLowerCase(),word=LETTER_WORDS[letter],done=practiced.includes(letter),allDone=LETTERS.every(item=>practiced.includes(item));
-    const selectors=LETTERS.map(item=>'<button type="button" data-letter-select="'+item+'" class="'+(item===letter?'active ':'')+(practiced.includes(item)?'done':'')+'"><strong>'+item+'</strong><span>'+item.toLowerCase()+'</span><b>'+(practiced.includes(item)?'✓':'')+'</b></button>').join('');
-    return '<section class="language-course-page">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'One letter at a time: hear it separately, study its forms, draw uppercase and lowercase separately, then complete that letter.')+
+    const firstMissing=LETTERS.find(letter=>!practiced.includes(letter))||'A';
+    const stored=state.activeLetterByStep[pkey];
+    const storedAllowed=practiced.includes(stored)||stored===firstMissing;
+    const letter=storedAllowed?stored:firstMissing,lower=letter.toLowerCase(),word=LETTER_WORDS[letter],done=practiced.includes(letter),allDone=LETTERS.every(item=>practiced.includes(item));
+    const selectors=LETTERS.map(item=>{
+      const itemDone=practiced.includes(item),allowed=itemDone||item===firstMissing;
+      return '<button type="button" data-letter-select="'+item+'" '+(allowed?'':'disabled')+' class="'+(item===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item+'</strong><span>'+item.toLowerCase()+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
+    }).join('');
+    return '<section class="language-course-page language-letters-mobile">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'Learn A–Z in order. Hear the letter name by itself, then trace its uppercase and lowercase shapes accurately before continuing.')+
       '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+(stepUnlocked(state,pos.li,step)?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
       boxSelector(state,pos)+
-      '<div class="letter-sequence-head"><div><small>Letters practiced</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
-      '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>Current letter</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example word</span><strong>'+esc(word)+'</strong><button type="button" data-speak="'+esc(word)+'">Hear word</button></div><p>The letter name is played by itself. Draw both uppercase and lowercase forms below before completing this letter.</p></article></div>'+
-      '<div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span>'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span>'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div>'+
-      '<div class="letter-complete-row"><button type="button" data-letter-complete="'+letter+'" disabled>'+(done?'✓ '+letter+' practiced':'Draw both forms to complete '+letter)+'</button><button type="button" data-letter-next>Next letter →</button></div>'+
-      (allDone?'<a class="language-exam-cta" href="#language-examine"><span>✓</span><div><strong>Letters box examination</strong><p>All 26 letters are practiced. Pass the dedicated exam to complete this box.</p></div><b>→</b></a>':'<div class="language-exam-cta locked"><span>26</span><div><strong>Letters exam locked</strong><p>Practice every letter separately first. '+(26-practiced.length)+' remain.</p></div><b>🔒</b></div>')+
+      '<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
+      '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>Current letter</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'" aria-label="Hear letter '+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example word</span><strong>'+esc(word)+'</strong><button type="button" data-speak="'+esc(word)+'">Hear word</button></div><p>Audio says the letter name only. Follow the guide with your finger and complete both shapes before moving forward.</p></article></div>'+
+      '<div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div>'+
+      '<div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?'This letter is already completed. You can review it or continue.':'Trace both forms. The app checks shape coverage and off-guide strokes before allowing completion.')+'</div>'+
+      '<div class="letter-complete-row"><button type="button" data-letter-complete="'+letter+'" data-letter-done="'+(done?'true':'false')+'" disabled>'+(done?'✓ '+letter+' completed':'Complete '+letter)+'</button><button type="button" data-letter-next '+(done?'':'disabled')+'>Next letter →</button></div>'+
+      (allDone?'<a class="language-exam-cta" href="#language-examine"><span>✓</span><div><strong>Letters box examination</strong><p>All 26 letters are complete. Pass the dedicated exam to complete this box.</p></div><b>→</b></a>':'<div class="language-exam-cta locked"><span>26</span><div><strong>Letters exam locked</strong><p>Complete every letter correctly first. '+(26-practiced.length)+' remain.</p></div><b>🔒</b></div>')+
       '</section>';
   }
 
@@ -627,35 +634,130 @@
     speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(String(text||''));utterance.lang='en-US';utterance.rate=.88;speechSynthesis.speak(utterance);
   }
-  function bindDrawingCanvas(canvas,onDraw){
+  function speakLetter(letter){
+    const key=String(letter||'').toUpperCase();
+    speak(LETTER_SPEECH[key]||key);
+  }
+  function rasterGrid(data,width,height,cols=30,rows=18){
+    const grid=new Uint8Array(cols*rows);
+    for(let row=0;row<rows;row++){
+      const y0=Math.floor(row*height/rows),y1=Math.max(y0+1,Math.floor((row+1)*height/rows));
+      for(let col=0;col<cols;col++){
+        const x0=Math.floor(col*width/cols),x1=Math.max(x0+1,Math.floor((col+1)*width/cols));
+        let hits=0,samples=0;
+        for(let y=y0;y<y1;y+=2){
+          for(let x=x0;x<x1;x+=2){
+            samples++;
+            if(data[(y*width+x)*4+3]>24)hits++;
+          }
+        }
+        if(samples&&hits/samples>=.035)grid[row*cols+col]=1;
+      }
+    }
+    return {grid,cols,rows};
+  }
+  function glyphGuideGrid(canvas,letter,kind){
+    const guide=document.createElement('canvas');guide.width=canvas.width;guide.height=canvas.height;
+    const ctx=guide.getContext('2d',{willReadFrequently:true});
+    const glyph=kind==='lower'?String(letter).toLowerCase():String(letter).toUpperCase();
+    ctx.clearRect(0,0,guide.width,guide.height);
+    ctx.fillStyle='#000';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='900 '+Math.round(guide.height*.72)+'px Manrope, "DM Sans", sans-serif';
+    ctx.fillText(glyph,guide.width/2,guide.height/2+guide.height*.035);
+    return rasterGrid(ctx.getImageData(0,0,guide.width,guide.height).data,guide.width,guide.height);
+  }
+  function hasNeighbor(grid,col,row,cols,rows,radius=1){
+    for(let y=Math.max(0,row-radius);y<=Math.min(rows-1,row+radius);y++){
+      for(let x=Math.max(0,col-radius);x<=Math.min(cols-1,col+radius);x++){
+        if(grid[y*cols+x])return true;
+      }
+    }
+    return false;
+  }
+  function scoreLetterCanvas(canvas,letter,kind){
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    const user=rasterGrid(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);
+    const guide=glyphGuideGrid(canvas,letter,kind);
+    let guideCount=0,userCount=0,covered=0,onGuide=0;
+    for(let row=0;row<guide.rows;row++){
+      for(let col=0;col<guide.cols;col++){
+        const index=row*guide.cols+col;
+        if(guide.grid[index]){
+          guideCount++;
+          if(hasNeighbor(user.grid,col,row,user.cols,user.rows,1))covered++;
+        }
+        if(user.grid[index]){
+          userCount++;
+          if(hasNeighbor(guide.grid,col,row,guide.cols,guide.rows,1))onGuide++;
+        }
+      }
+    }
+    if(!guideCount||!userCount)return {valid:false,score:0,coverage:0,precision:0};
+    const coverage=covered/guideCount,precision=onGuide/userCount;
+    const score=coverage*.58+precision*.42;
+    const enoughInk=userCount>=Math.max(5,guideCount*.36);
+    return {valid:enoughInk&&coverage>=.60&&precision>=.58&&score>=.64,score,coverage,precision};
+  }
+  function bindValidatedLetterCanvas(canvas,letter,kind,onScore){
     if(!canvas)return;
-    const ctx=canvas.getContext('2d');ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
-    let drawing=false;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.lineWidth=Math.max(10,Math.round(canvas.width/62));ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111827';
+    let drawing=false,last=null;
     const point=e=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};};
-    canvas.onpointerdown=e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y);canvas.dataset.drawn='true';if(onDraw)onDraw();};
-    canvas.onpointermove=e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();};
-    canvas.onpointerup=canvas.onpointercancel=()=>{drawing=false;};
+    const drawEvent=e=>{
+      const events=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[e];
+      for(const item of events){
+        const p=point(item);
+        if(!last){ctx.beginPath();ctx.moveTo(p.x,p.y);last=p;continue;}
+        const mid={x:(last.x+p.x)/2,y:(last.y+p.y)/2};
+        ctx.quadraticCurveTo(last.x,last.y,mid.x,mid.y);ctx.stroke();last=p;
+      }
+    };
+    const evaluate=()=>{const result=scoreLetterCanvas(canvas,letter,kind);canvas.dataset.valid=String(result.valid);canvas.dataset.score=String(result.score);onScore(result);};
+    canvas.onpointerdown=e=>{if(e.cancelable)e.preventDefault();drawing=true;canvas.setPointerCapture(e.pointerId);last=null;drawEvent(e);};
+    canvas.onpointermove=e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawEvent(e);};
+    canvas.onpointerup=e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawEvent(e);drawing=false;last=null;evaluate();};
+    canvas.onpointercancel=()=>{drawing=false;last=null;evaluate();};
+    canvas.__letterClear=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);canvas.dataset.valid='false';canvas.dataset.score='0';onScore({valid:false,score:0,coverage:0,precision:0});};
   }
   function bindLetterDrawing(){
-    const upper=document.getElementById('letter-upper-canvas'),lower=document.getElementById('letter-lower-canvas'),complete=document.querySelector('[data-letter-complete]');
-    const update=()=>{if(complete&&!complete.textContent.startsWith('✓'))complete.disabled=!(upper?.dataset.drawn==='true'&&lower?.dataset.drawn==='true');};
-    bindDrawingCanvas(upper,update);bindDrawingCanvas(lower,update);
+    const upper=document.getElementById('letter-upper-canvas'),lower=document.getElementById('letter-lower-canvas');
+    const complete=document.querySelector('[data-letter-complete]'),next=document.querySelector('[data-letter-next]'),feedback=document.querySelector('[data-letter-feedback]');
+    if(!upper||!lower||!complete)return;
+    const letter=complete.dataset.letterComplete||'A',alreadyDone=complete.dataset.letterDone==='true';
+    let upperResult={valid:false,score:0},lowerResult={valid:false,score:0};
+    const update=()=>{
+      if(alreadyDone){
+        complete.disabled=true;if(next)next.disabled=false;
+        if(feedback)feedback.textContent='✓ '+letter+' is already completed. You can retrace it for practice or continue.';
+        return;
+      }
+      const valid=upperResult.valid&&lowerResult.valid;
+      complete.disabled=!valid;if(next)next.disabled=true;
+      const upperPct=Math.round((upperResult.score||0)*100),lowerPct=Math.round((lowerResult.score||0)*100);
+      if(feedback)feedback.textContent=valid
+        ? '✓ Both shapes match the guide closely enough. Complete '+letter+' to continue.'
+        : 'Keep tracing the gray guide · uppercase '+upperPct+'% · lowercase '+lowerPct+'%.';
+    };
+    bindValidatedLetterCanvas(upper,letter,'upper',result=>{upperResult=result;update();});
+    bindValidatedLetterCanvas(lower,letter,'lower',result=>{lowerResult=result;update();});
     document.querySelectorAll('[data-canvas-clear]').forEach(button=>button.onclick=()=>{
-      const canvas=document.getElementById(button.dataset.canvasClear);if(!canvas)return;
-      canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);canvas.dataset.drawn='false';update();
+      const canvas=document.getElementById(button.dataset.canvasClear);canvas?.__letterClear?.();
     });
+    update();
   }
 
   function bindLanguagePage(){
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
-    document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speak(button.dataset.speakLetter));
+    document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
     document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
     document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
     document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
 
     document.querySelectorAll('[data-letter-select]').forEach(button=>button.onclick=()=>{const letter=button.dataset.letterSelect;updateLanguage(state=>{const pos=clampSelection(state);state.activeLetterByStep[letterProgressKey(pos.li,pos.step)]=letter;});render();});
-    document.querySelector('[data-letter-next]')?.addEventListener('click',()=>{updateLanguage(state=>{const pos=clampSelection(state),pkey=letterProgressKey(pos.li,pos.step),current=state.activeLetterByStep[pkey]||LETTERS.find(letter=>!(state.letterProgress[pkey]||[]).includes(letter))||'A';const index=LETTERS.indexOf(current);state.activeLetterByStep[pkey]=LETTERS[(index+1)%LETTERS.length];});render();});
+    document.querySelector('[data-letter-next]')?.addEventListener('click',event=>{if(event.currentTarget.disabled)return;updateLanguage(state=>{const pos=clampSelection(state),pkey=letterProgressKey(pos.li,pos.step),current=state.activeLetterByStep[pkey]||LETTERS.find(letter=>!(state.letterProgress[pkey]||[]).includes(letter))||'A';const index=LETTERS.indexOf(current);state.activeLetterByStep[pkey]=LETTERS[(index+1)%LETTERS.length];});render();});
     document.querySelector('[data-letter-complete]')?.addEventListener('click',event=>{
       if(event.currentTarget.disabled)return;
       const letter=event.currentTarget.dataset.letterComplete;

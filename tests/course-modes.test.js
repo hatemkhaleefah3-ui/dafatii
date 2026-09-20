@@ -31,6 +31,18 @@ assert.doesNotMatch(js,/function markPass\(/,'exams must not bulk-credit unfinis
 assert.match(js,/score>=80/,'box exam pass threshold must be enforced');
 
 assert.match(js,/data-speak-letter=/,'letters must have individual pronunciation controls');
+
+assert.match(js,/const LETTER_SPEECH = \{A:'ay',B:'bee'/,'letter playback must use spoken letter names instead of raw capital characters');
+assert.match(js,/function speakLetter\(letter\)/,'letters must use a dedicated pronunciation function');
+assert.match(js,/speak\(LETTER_SPEECH\[key\]\|\|key\)/,'letter speech must route through the spoken-name map');
+assert.match(js,/function scoreLetterCanvas\(canvas,letter,kind\)/,'letter drawings must be shape-scored');
+assert.match(js,/coverage>=\.60&&precision>=\.58&&score>=\.64/,'letter validation must reject low-coverage or off-guide drawings');
+assert.match(js,/getCoalescedEvents/,'finger drawing must use coalesced pointer events when available');
+assert.match(js,/quadraticCurveTo/,'finger strokes must be smoothed');
+assert.match(js,/data-letter-next '\+\(done\?'':'disabled'\)/,'next letter must stay disabled until the current letter is completed');
+assert.match(js,/itemDone\|\|item===firstMissing/,'future unpracticed letters must remain locked in sequence');
+assert.match(js,/data-letter-feedback/,'letter tracing must expose validation feedback');
+
 assert.match(js,/id="letter-upper-canvas"/,'each letter must have a separate uppercase drawing canvas');
 assert.match(js,/id="letter-lower-canvas"/,'each letter must have a separate lowercase drawing canvas');
 assert.match(js,/data-letter-complete=/,'letters must be completed individually');
@@ -51,11 +63,14 @@ assert.match(js,/name="pricing" value="free"/,'personal courses must remain free
 assert.match(js,/personal-focus-room/,'personal courses must retain one focus room');
 assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal Study Rooms must remain the single focus studio');
 
-for (const selector of ['.language-course-page','.course-type-grid','.language-home-steps','.letter-index-grid','.letter-trace-grid','.language-exam-summary']) {
+for (const selector of ['.language-course-page','.course-type-grid','.language-home-steps','.letter-index-grid','.letter-trace-grid','.language-exam-summary','.letter-draw-feedback']) {
   assert.ok(css.includes(selector),'missing redesigned language style '+selector);
 }
-assert.ok(index.includes('course-modes.css?v=20260920-2'),'redesigned language CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-3'),'redesigned language JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-3') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260920-3'),'mobile English CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-4'),'mobile English JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-4') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
+assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.language-page-head/,'English mobile redesign must be scoped to mobile language-course pages');
+assert.match(css,/touch-action:none!important/,'letter canvases must suppress touch scrolling while finger drawing');
+assert.match(css,/bottom:calc\(72px \+ env\(safe-area-inset-bottom\)\)/,'letter actions must stay thumb-accessible above the mobile navigation');
 
 console.log('course modes v2 tests passed');
