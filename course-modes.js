@@ -754,8 +754,16 @@
     return html+'</div>';
   }
 
+  function contentItemAttrs(item){return ' data-language-content-item="'+esc(item.id)+'" data-language-content-type="'+esc(item.type||'info')+'"';}
+  function infoItemCard(item,extraClass=''){
+    return '<article class="language-content-item '+extraClass+'"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Untitled item')+'</h2>'+(item.body?'<p>'+esc(item.body)+'</p>':'')+'</article>';
+  }
+  function itemWords(item){return Array.isArray(item.words)?item.words:String(item.words||'').split(/\n|,/).map(value=>value.trim()).filter(Boolean);}
+  function itemLines(item,name){const value=item[name];return Array.isArray(value)?value:String(value||'').split(/\n/).map(line=>line.trim()).filter(Boolean);}
+
   function letterBoxPage(state,pos){
     const pkey=letterProgressKey(pos.li,pos.step),practiced=state.letterProgress[pkey]||[];
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters');
     const firstMissing=LETTERS.find(letter=>!practiced.includes(letter))||'A';
     const stored=state.activeLetterByStep[pkey];
     const storedAllowed=practiced.includes(stored)||stored===firstMissing;
@@ -767,6 +775,7 @@
     return '<section class="language-course-page language-letters-mobile">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'Learn A–Z in order. Hear the letter name by itself, then trace its uppercase and lowercase shapes accurately before continuing.')+
       '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+(stepUnlocked(state,pos.li,step)?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
       boxSelector(state,pos)+
+      '<div class="language-content-item-grid">'+items.map(item=>infoItemCard(item,'letter-information-item')).join('')+'</div>'+
       '<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
       '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>Current letter</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'" aria-label="Hear letter '+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example word</span><strong>'+esc(word)+'</strong><button type="button" data-speak="'+esc(word)+'">Hear word</button></div><p>Audio says the letter name only. Follow the guide with your finger and complete both shapes before moving forward.</p></article></div>'+
       '<div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div>'+
@@ -777,23 +786,34 @@
   }
 
   function pronunciationPage(state,pos){
-    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
+    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{},items=languagePageItems(pos.li,pos.step,pos.box,'letters');
+    const body=items.map(item=>{
+      if(item.type==='sound')return '<article class="language-sound-hero language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'Pronunciation focus')+'</small><h2>'+esc(item.title||'Sound focus')+'</h2><p>'+esc(item.body||'')+'</p></div>'+(item.audioText?'<button class="btn btn-primary" type="button" data-speak="'+esc(item.audioText)+'">'+t('listen')+'</button>':'')+'</article>';
+      if(item.type==='words')return '<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div></article>';
+      if(item.type==='writing')return '<article class="language-writing-task language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Writing task')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
+      return infoItemCard(item);
+    }).join('');
+    const hasWriting=items.some(item=>item.type==='writing');
     return '<section class="language-course-page">'+languageHeader(state,pos,t('letters'),data.title,t('lettersIntro'))+boxSelector(state,pos)+
-      '<div class="language-pronunciation-lesson"><article class="language-sound-hero"><div><small>Pronunciation focus</small><h2>'+esc(data.pronunciationFocus)+'</h2><p>Hear each target separately, repeat it, then complete this page’s writing task.</p></div><button class="btn btn-primary" type="button" data-speak="'+esc(data.voicePrompt)+'">'+t('listen')+'</button></article>'+
-      '<div class="language-pronunciation-grid">'+data.pronunciationWords.map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div>'+
-      '<article class="language-writing-task"><small>Writing for this box</small><h2>Write, then read it aloud.</h2><p>'+esc(data.writingPrompt)+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="Write your two sentences here."></textarea></article></div>'+
-      '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):'Complete the writing task first')+'</button></section>';
+      '<div class="language-pronunciation-lesson">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation||hasWriting?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):(hasWriting?'Complete the writing task first':'Add a writing item before completion'))+'</button></section>';
   }
 
   function videoUnderstandingPage(state,pos){
-    const data=boxData(pos.li,pos.step,pos.box),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id,module=state.modules[id]||{};
-    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'';
-    const arabic=video.responseLanguage==='Arabic';
-    const prompt=arabic?'اكتب بالعربية ما فهمته من الفيديو. اذكر الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English what you understood from the video. State the main idea and at least two supporting details.';
-    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One narrated understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
-      '<article class="language-video-player" data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>Video understanding</small><h2>'+esc(video.title)+'</h2><p>Press play. The lesson will present four narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>'+
-      '<article class="language-video-response"><small>Understanding response · '+video.responseLanguage+'</small><h2>'+(arabic?'اشرح ما فهمته':'Explain what you understood')+'</h2><p>'+prompt+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+(arabic?'اكتب فهمك هنا…':'Write your understanding here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>'+
-      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):'Watch the video and complete your response')+'</button></section>';
+    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=videoItem?.responseLanguage||'English',arabic=responseLanguage==='Arabic';
+    const videoMarkup=videoItem?'<article class="language-video-player language-content-item"'+contentItemAttrs(videoItem)+' data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>'+esc(videoItem.eyebrow||'Video understanding')+'</small><h2>'+esc(videoItem.title||data.title)+'</h2><p>Press play. The lesson will present '+itemLines(videoItem,'scenes').length+' narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>':'';
+    const responseMarkup=responseItem?'<article class="language-video-response language-content-item"'+contentItemAttrs(responseItem)+'><small>'+esc(responseItem.eyebrow||'Understanding response')+' · '+esc(responseLanguage)+'</small><h2>'+esc(responseItem.title||'Explain what you understood')+'</h2><p>'+esc(responseItem.body||'')+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+esc(responseItem.placeholder||'Write here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>':'';
+    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
+      videoMarkup+responseMarkup+
+      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem?'Watch the video and complete your response':'Add both video and response items before completion'))+'</button></section>';
+  }
+
+  function lettersPage(){
+    const state=languageState(),pos=activeLanguagePosition(state);
+    if(pos.li>0)return videoUnderstandingPage(state,pos);
+    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
   function lettersPage(){
@@ -809,31 +829,50 @@
   }
 
   function voicePage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);
     if(!data)return boxOneGate(state,pos,t('voice'),t('voiceIntro'));
-    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
+    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'voice');
+    const body=items.map(item=>{
+      if(item.type==='dictation')return '<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
+      if(item.type==='speaking')return '<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote>'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(item.body||'')+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(item.body||'')+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';
+      return infoItemCard(item);
+    }).join('');
+    const completeReady=items.some(item=>item.type==='dictation')&&items.some(item=>item.type==='speaking');
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('voice'),data.title,t('voiceIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-practice-grid"><article class="language-practice-card dictation"><small>Voice → text</small><h2>Listen, then write exactly what you hear.</h2><button class="language-audio-button" type="button" data-speak="'+esc(data.voicePrompt)+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="Type the sentence you hear"></textarea><button type="button" data-check-dictation="'+esc(data.voicePrompt)+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>'+
-      '<article class="language-practice-card reverse"><small>Text → voice</small><h2>'+t('speak')+'</h2><blockquote>'+esc(data.reversePrompt)+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(data.reversePrompt)+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="Recognition transcript or type your spoken sentence here"></textarea><button type="button" data-check-reverse="'+esc(data.reversePrompt)+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article></div>'+
-      '<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):'Complete both voice exercises first')+'</button></section>';
+      '<div class="language-practice-grid">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice||completeReady?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):(completeReady?'Complete both voice exercises first':'Add both voice exercise items before completion'))+'</button></section>';
   }
 
   function grammarPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
-    return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('grammar'),data.grammarTitle,t('grammarIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-rule-layout"><article class="language-rule-card primary"><span>01</span><small>Grammar rule</small><h2>'+esc(data.grammarTitle)+'</h2><p>'+esc(data.grammarRule)+'</p><div class="language-examples"><code>'+esc(data.grammarExample1)+'</code><code>'+esc(data.grammarExample2)+'</code></div></article>'+
-      '<article class="language-rule-card"><span>02</span><small>Naming</small><h2>Clear noun choices</h2><p>'+esc(data.naming)+'</p><div class="language-word-row">'+data.words.slice(0,4).map(word=>'<b>'+esc(word)+'</b>').join('')+'</div></article>'+
-      '<article class="language-rule-card"><span>03</span><small>Typing & spelling</small><h2>Write for the reader</h2><p>'+esc(data.typing)+'</p><textarea id="language-grammar-writing" rows="5" placeholder="Write two examples that follow these rules."></textarea></article></div>'+
-      '<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):'Write your examples first')+'</button></section>';
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));
+    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'grammar');
+    const body=items.map((item,index)=>{
+      if(item.type==='rule')return '<article class="language-rule-card primary language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Grammar rule')+'</small><h2>'+esc(item.title||'Grammar rule')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-examples">'+(item.example1?'<code>'+esc(item.example1)+'</code>':'')+(item.example2?'<code>'+esc(item.example2)+'</code>':'')+'</div></article>';
+      if(item.type==='writing')return '<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Write for the reader')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" rows="5" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
+      if(item.type==='info'){
+        const words=itemWords(item);
+        return '<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Information')+'</h2><p>'+esc(item.body||'')+'</p>'+(words.length?'<div class="language-word-row">'+words.map(word=>'<b>'+esc(word)+'</b>').join('')+'</div>':'')+'</article>';
+      }
+      return infoItemCard(item);
+    }).join('');
+    const hasWriting=items.some(item=>item.type==='writing');
+    return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('grammar'),items.find(item=>item.type==='rule')?.title||data.grammarTitle,t('grammarIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
+      '<div class="language-rule-layout">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar||hasWriting?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):(hasWriting?'Write your examples first':'Add a writing item before completion'))+'</button></section>';
   }
 
   function reviewPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('review'),t('reviewIntro'));const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'';
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('review'),t('reviewIntro'));
+    const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'',items=languagePageItems(pos.li,pos.step,pos.box,'review');
+    const body=items.map(item=>{
+      if(item.type==='words')return '<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Active vocabulary')+'</small><h2>'+esc(item.title||'Vocabulary')+'</h2><div class="language-vocab-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>';
+      if(item.type==='steps')return '<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Learning trick')+'</small><h2>'+esc(item.title||'Learning method')+'</h2><p>'+esc(item.body||'')+'</p><ol>'+itemLines(item,'steps').map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></article>';
+      if(item.type==='notes')return '<article class="language-memory-card notes language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||t('notes'))+'</small><h2>'+esc(item.title||'Notes')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-box-notes" rows="8" placeholder="'+esc(item.placeholder||'Notes…')+'">'+esc(notes)+'</textarea><button type="button" data-save-language-notes="'+esc(id)+'">'+t('save')+'</button></article>';
+      return infoItemCard(item);
+    }).join('');
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('review'),data.title,t('reviewIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-review-grid"><article class="language-memory-card"><small>Active vocabulary</small><h2>Retrieve before you reveal</h2><div class="language-vocab-grid">'+data.words.map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>'+
-      '<article class="language-memory-card"><small>Learning trick</small><h2>'+esc(data.trick)+'</h2><p>'+esc(data.recall)+'</p><ol><li>Attempt from memory.</li><li>Check only after the attempt.</li><li>Correct the smallest specific error.</li><li>Repeat after a short delay.</li></ol></article>'+
-      '<article class="language-memory-card notes"><small>'+t('notes')+'</small><h2>Keep only what will help future recall.</h2><textarea id="language-box-notes" rows="8" placeholder="Examples, mistakes, mnemonics, Arabic explanation…">'+esc(notes)+'</textarea><button type="button" data-save-language-notes="'+esc(id)+'">'+t('save')+'</button></article></div>'+
-      '<button class="language-complete-bar '+(module.review?'done':'')+'" type="button" data-language-module="review">'+(module.review?'✓ '+t('completed'):t('complete'))+'</button></section>';
+      '<div class="language-review-grid">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.review?'done':'')+'" type="button" data-language-module="review" '+(items.length?'':'disabled')+'>'+(module.review?'✓ '+t('completed'):(items.length?t('complete'):'Add at least one review item'))+'</button></section>';
   }
 
   function letterExamQuestions(step){
