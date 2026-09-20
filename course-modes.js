@@ -391,15 +391,11 @@
 
   function videoLessonData(li,step,box){
     const data=boxData(li,step,box);
+    const query=['English',CEFR[li].id,data.topic,data.grammarTitle,'listening lesson'].join(' ');
     return {
       id:keyBox(CEFR[li].id,step,box),
       title:data.title,
-      frames:[
-        'Today we are working with '+data.topic+'.',
-        'Listen for the function of '+data.languageFunction+' and notice the phrase '+data.words[0]+'.',
-        data.grammarExample1,
-        'The key idea is to use '+data.grammarTitle+' while communicating clearly about '+data.topic+'.'
-      ],
+      youtubeUrl:'https://www.youtube.com/results?search_query='+encodeURIComponent(query),
       responseLanguage:li<=2?'Arabic':'English'
     };
   }
@@ -447,53 +443,66 @@
     if(page==='letters'&&li===0&&isLetterBox(li,box)){
       return [
         {id:'letter-purpose',type:'info',eyebrow:'Letters box',title:'Learn each English letter separately',body:'Hear the letter name, study uppercase and lowercase forms, then trace both accurately before moving forward.'},
-        {id:'letter-example',type:'info',eyebrow:'How to learn',title:'Listen · Look · Draw · Check',body:'Use the example word only after hearing the isolated letter name. Draw uppercase and lowercase separately and repeat any weak form.'}
+        {id:'letter-method',type:'info',eyebrow:'Learning method',title:'Listen · Look · Draw · Check',body:'Hear the isolated letter name, inspect both forms, draw uppercase and lowercase separately, and repeat any weak form before continuing.'},
+        {id:'letter-phonics',type:'info',eyebrow:'Phonics',title:'Connect names, shapes and sounds',body:'Letter names identify symbols; example words help connect each symbol to a common English sound. Complete A–Z in every A1 step.'}
       ];
     }
     if(!data&&page!=='examine')return [];
     if(page==='letters'&&li===0){
       return [
-        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear each target separately, repeat it, then use the writing task.',audioText:data.voicePrompt},
-        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',words:data.pronunciationWords},
-        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write your two sentences here.'}
+        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear the target sound inside meaningful English, repeat slowly, then repeat at natural speed.',audioText:data.voicePrompt},
+        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',body:'Listen to every target word, then say it without looking at the written model.',words:data.pronunciationWords},
+        {id:'micro-dialogue',type:'info',eyebrow:'Micro dialogue',title:'Use pronunciation inside meaning',body:'Speaker A: '+data.grammarExample1+' Speaker B: '+data.grammarExample2},
+        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write 3–5 complete sentences here.'},
+        {id:'pronunciation-recall',type:'info',eyebrow:'Quick recall',title:'Retrieve before moving on',body:'Without looking back, say the target sound, two active words and one complete sentence that performs '+data.languageFunction+'.'}
       ];
     }
     if(page==='letters'&&li>0){
-      const video=videoLessonData(li,step,box);
+      const video=videoLessonData(li,step,box),arabic=video.responseLanguage==='Arabic';
       return [
-        {id:'video-lesson',type:'video',eyebrow:'Video understanding',title:video.title,scenes:video.frames,responseLanguage:video.responseLanguage},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:video.responseLanguage==='Arabic'?'اشرح ما فهمته':'Explain what you understood',body:video.responseLanguage==='Arabic'?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English: state the main idea and at least two supporting details.',placeholder:video.responseLanguage==='Arabic'?'اكتب فهمك هنا…':'Write your understanding here…'}
+        {id:'video-lesson',type:'video',eyebrow:'YouTube video',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
+        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:'Watch for meaning, detail and language',body:'Identify the main idea, two supporting details, one example of '+data.grammarTitle+', and at least two target words: '+data.words.slice(0,4).join(', ')+'.'},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:arabic?'اشرح ما فهمته':'Explain what you understood',body:arabic?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل، ثم اذكر كلمة أو تركيباً إنجليزياً مهماً.':'Write the main idea, at least two supporting details, and one important English expression from the video.',placeholder:arabic?'اكتب فهمك هنا…':'Write your understanding here…'},
+        {id:'video-vocabulary',type:'words',eyebrow:'Video vocabulary',title:'Key expressions to notice',body:'Use these expressions to confirm meaning after watching.',words:data.words}
       ];
     }
     if(page==='voice'){
       return [
-        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the sentence you hear'},
-        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target sentence',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here'}
+        {id:'listen-repeat',type:'info',eyebrow:'Listen & repeat',title:'Build a clean spoken model',body:'Topic: '+data.topic+'. Pronunciation focus: '+data.pronunciationFocus+'. Repeat the model slowly, then at natural speed.'},
+        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
+        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target meaning',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'},
+        {id:'voice-rubric',type:'info',eyebrow:'Self-check',title:'Meaning · grammar · stress · rhythm',body:'Your response should be understandable, use '+data.grammarTitle+', include at least two target words, and keep pauses aligned with meaning.'}
       ];
     }
     if(page==='grammar'){
       return [
         {id:'grammar-rule',type:'rule',eyebrow:'Grammar rule',title:data.grammarTitle,body:data.grammarRule,example1:data.grammarExample1,example2:data.grammarExample2},
-        {id:'naming',type:'info',eyebrow:'Naming',title:'Clear noun choices',body:data.naming,words:data.words.slice(0,4)},
-        {id:'typing',type:'writing',eyebrow:'Typing & spelling',title:'Write for the reader',body:data.typing,placeholder:'Write two examples that follow these rules.'}
+        {id:'grammar-examples',type:'info',eyebrow:'Examples',title:'See the form inside meaning',body:'Model 1: '+data.grammarExample1+' Model 2: '+data.grammarExample2},
+        {id:'grammar-error',type:'info',eyebrow:'Common error',title:'Correct the smallest specific mistake',body:'A common failure is using the right vocabulary with the wrong form. Rewrite one sentence so it accurately demonstrates '+data.grammarTitle+'.'},
+        {id:'naming',type:'info',eyebrow:'Naming & register',title:'Choose precise words',body:data.naming,words:data.words.slice(0,5)},
+        {id:'typing',type:'writing',eyebrow:'Production',title:'Write for the reader',body:data.typing+' '+data.writingPrompt,placeholder:'Write two examples that follow the rule.'}
       ];
     }
     if(page==='review'){
       return [
-        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',words:data.words},
-        {id:'review-trick',type:'steps',eyebrow:'Learning trick',title:data.trick,body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
-        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save examples, mistakes, mnemonics or an Arabic explanation.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
+        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',body:'Try to define or use each word before listening or looking back.',words:data.words},
+        {id:'review-trick',type:'steps',eyebrow:'Learning method',title:'Four-pass retrieval cycle',body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
+        {id:'review-memory',type:'info',eyebrow:'Memory trick',title:'Compress · contrast · reconstruct',body:'Compress '+data.grammarTitle+' into one sentence, contrast a correct example with a near-miss, then reconstruct the rule from memory.'},
+        {id:'review-recall',type:'info',eyebrow:'Free recall',title:'Explain without looking',body:data.recall},
+        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save difficult examples, corrections, mnemonics or a short Arabic explanation if useful.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
       ];
     }
     if(page==='examine'){
       return [
-        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'},
+        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically resolves to the correct box, step, level or whole-language assessment for this position.'},
         {id:'exam-pass-rule',type:'info',eyebrow:'Pass rule',title:'Accuracy matters',body:'Natural course assessments require at least 80%. Independent level challenges require a score greater than 80%.'},
-        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Read every option carefully',body:'Use the language from the selected box, step or level. Review grammar, vocabulary, listening and meaning before you submit.'}
+        {id:'exam-scope',type:'info',eyebrow:'Coverage',title:'Questions sample the whole required scope',body:'Step exams draw from boxes across the step, level exams draw from all five steps, and the whole-language exam draws from A1 through C1.'},
+        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Grammar · vocabulary · listening · meaning',body:'Review weak items, then answer without returning to the lesson pages during the attempt.'}
       ];
     }
     return [];
   }
+
   function languagePageItems(li,step,box,page){
     const store=languageContentStore(),key=contentPageKey(li,step,box,page);
     return Object.prototype.hasOwnProperty.call(store.pages,key)
@@ -515,7 +524,7 @@
     ]};
     const schemas={
       letters: li>0 ? [
-        {type:'video',label:'Video lesson',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'scenes',label:'Narrated scenes (one per line)',kind:'lines'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
+        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
         {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
         commonInfo
       ] : [
@@ -832,12 +841,18 @@
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
     const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=videoItem?.responseLanguage||'English',arabic=responseLanguage==='Arabic';
-    const videoMarkup=videoItem?'<article class="language-video-player language-content-item"'+contentItemAttrs(videoItem)+' data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>'+esc(videoItem.eyebrow||'Video understanding')+'</small><h2>'+esc(videoItem.title||data.title)+'</h2><p>Press play. The lesson will present '+itemLines(videoItem,'scenes').length+' narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>':'';
+    const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
+    const videoMarkup=videoItem?'<article class="language-youtube-card language-content-item"'+contentItemAttrs(videoItem)+'><div><small>'+esc(videoItem.eyebrow||'YouTube video')+'</small><h2>'+esc(videoItem.title||data.title)+'</h2><p>This lesson uses a YouTube link only. Open it in YouTube, watch it, then return to complete the understanding response.</p></div><div class="language-youtube-actions">'+
+      (validYouTube?'<a href="'+esc(youtubeUrl)+'" target="_blank" rel="noopener noreferrer" data-youtube-video>▶ Open YouTube video</a>':'<span class="language-youtube-missing">Add a valid YouTube link from Content Control.</span>')+
+      '<button type="button" data-video-watched '+(validYouTube?'':'disabled')+'>'+(watched?'✓ Watched':'I finished watching')+'</button></div></article>':'';
     const responseMarkup=responseItem?'<article class="language-video-response language-content-item"'+contentItemAttrs(responseItem)+'><small>'+esc(responseItem.eyebrow||'Understanding response')+' · '+esc(responseLanguage)+'</small><h2>'+esc(responseItem.title||'Explain what you understood')+'</h2><p>'+esc(responseItem.body||'')+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+esc(responseItem.placeholder||'Write here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>':'';
-    const extraMarkup=items.filter(item=>!['video','response'].includes(item.type)).map(item=>infoItemCard(item,'video-information-item')).join('');
-    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
-      videoMarkup+responseMarkup+extraMarkup+
-      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem?'Watch the video and complete your response':'Add both video and response items before completion'))+'</button></section>';
+    const extraMarkup=items.filter(item=>!['video','response'].includes(item.type)).map(item=>{
+      if(item.type==='words')return '<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Vocabulary')+'</small><h2>'+esc(item.title||'Key expressions')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-vocab-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>';
+      return infoItemCard(item,'video-information-item');
+    }).join('');
+    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'Open the YouTube lesson, watch it, then explain what you understood in the required language.')+boxSelector(state,pos)+
+      videoMarkup+extraMarkup+responseMarkup+
+      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem&&validYouTube?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem&&validYouTube?'Watch the YouTube video and complete your response':'Add a valid YouTube video link and response item first'))+'</button></section>';
   }
 
   function lettersPage(){
@@ -904,14 +919,22 @@
   }
 
   function letterExamQuestions(step){
-    const sample=[
-      ['Which uppercase letter matches lowercase a?','A',['A','E','H','R']],
-      ['Which lowercase letter matches uppercase G?','g',['g','q','c','j']],
-      ['Which letter comes immediately after M?','N',['N','L','O','P']],
-      ['Which letter comes immediately before T?','S',['S','R','U','V']],
-      ['Which pair shows the same letter?','B / b',['B / b','D / p','Q / g','M / n']]
-    ];
-    return sample.map(item=>({prompt:item[0],correct:item[1],options:item[2]}));
+    const offset=(step-1)*5;
+    const letters=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+    const pick=index=>letters[(offset+index)%letters.length];
+    const a=pick(0),b=pick(1),c=pick(2),d=pick(3),e=pick(4);
+    return [
+      {prompt:'Which uppercase letter matches lowercase '+a.toLowerCase()+'?',correct:a,options:[a,b,c,d]},
+      {prompt:'Which lowercase letter matches uppercase '+b+'?',correct:b.toLowerCase(),options:[b.toLowerCase(),c.toLowerCase(),d.toLowerCase(),e.toLowerCase()]},
+      {prompt:'Which letter comes immediately after '+c+'?',correct:letters[(letters.indexOf(c)+1)%26],options:[letters[(letters.indexOf(c)+1)%26],b,d,e]},
+      {prompt:'Which letter comes immediately before '+e+'?',correct:letters[(letters.indexOf(e)+25)%26],options:[letters[(letters.indexOf(e)+25)%26],a,b,c]},
+      {prompt:'Which pair shows the same letter?',correct:d+' / '+d.toLowerCase(),options:[d+' / '+d.toLowerCase(),d+' / '+e.toLowerCase(),c+' / '+d.toLowerCase(),a+' / '+b.toLowerCase()]},
+      {prompt:'Which option contains the uppercase form of '+a.toLowerCase()+'?',correct:a,options:[a,b,d,e]},
+      {prompt:'Which option contains the lowercase form of '+c+'?',correct:c.toLowerCase(),options:[c.toLowerCase(),a.toLowerCase(),d.toLowerCase(),e.toLowerCase()]},
+      {prompt:'Which letter is two places after '+a+'?',correct:letters[(letters.indexOf(a)+2)%26],options:[letters[(letters.indexOf(a)+2)%26],b,d,e]},
+      {prompt:'Which pair is NOT the same letter?',correct:b+' / '+c.toLowerCase(),options:[a+' / '+a.toLowerCase(),d+' / '+d.toLowerCase(),e+' / '+e.toLowerCase(),b+' / '+c.toLowerCase()]},
+      {prompt:'Which sequence is in correct alphabetical order?',correct:a+', '+b+', '+c,options:[a+', '+b+', '+c,c+', '+b+', '+a,b+', '+a+', '+c,a+', '+c+', '+b]}
+    ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function boxQuestionSet(li,step,box){
     if(isLetterBox(li,box))return letterExamQuestions(step);
@@ -921,17 +944,23 @@
     const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1;
     const adjacent=boxData(li,step,nextBox);
     const unpunctuated=data.grammarExample1.charAt(0).toLowerCase()+data.grammarExample1.slice(1).replace(/[.!?]$/,'');
-    return [
+    const questions=[
       {prompt:'Which sentence best demonstrates this box’s target grammar?',correct:data.grammarExample1,options:[data.grammarExample1,unpunctuated+' '+data.words[0],data.words.slice(0,4).join(' '),adjacent.reversePrompt]},
       {prompt:'Which statement correctly describes this box’s grammar focus?',correct:data.grammarRule,options:[data.grammarRule,otherRule[1],'Word order never affects meaning.','Punctuation replaces grammar.']},
       {prompt:'Which sentence is the listening model for this box?',correct:data.voicePrompt,options:[data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,data.words.slice(0,5).join(' ')]},
       {prompt:'Which word belongs to this box’s active vocabulary?',correct:data.words[0],options:[data.words[0],adjacent.words[0],otherRule[0],adjacent.topic]},
-      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]}
-    ].map(q=>({...q,options:arrayUnique(q.options)}));
+      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]},
+      {prompt:'What is the communicative function of this box?',correct:data.languageFunction,options:[data.languageFunction,adjacent.languageFunction,'spelling isolated letters','avoiding communication']},
+      {prompt:'Which pronunciation focus belongs to this box?',correct:data.pronunciationFocus,options:[data.pronunciationFocus,adjacent.pronunciationFocus,otherRule[0],adjacent.topic]},
+      {prompt:'Which instruction best matches the writing task?',correct:data.writingPrompt,options:[data.writingPrompt,adjacent.writingPrompt,'Copy the vocabulary list without sentences.','Do not use the target grammar.']},
+      {prompt:'Which statement best matches the writing/typing rule for this level?',correct:data.typing,options:[data.typing,adjacent.naming,'Punctuation is never needed.','Use random capitalization to show emphasis.']},
+      {prompt:'Which prompt best tests free recall for this box?',correct:data.recall,options:[data.recall,adjacent.recall,'Repeat one word ten times without context.','Skip the grammar and guess the topic.']}
+    ];
+    return questions.map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function representativeBoxes(li){
-    const last=boxCount(li);
-    return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
+    const last=boxCount(li),first=firstLearningBox(li);
+    return arrayUnique([1,first,Math.max(first,Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
   }
   function defaultAssessmentQuestions(ctx){
     if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
@@ -939,28 +968,30 @@
     if(ctx.scope==='step'){
       representativeBoxes(ctx.li).forEach((box,index)=>{
         const set=boxQuestionSet(ctx.li,ctx.step,box);
-        out.push(set[index%set.length],set[(index+2)%set.length]);
+        out.push(set[index%set.length],set[(index+3)%set.length],set[(index+6)%set.length]);
       });
-      return out.slice(0,10);
+      return out.slice(0,15);
     }
     if(ctx.scope==='level'){
       for(let step=1;step<=5;step++){
         const reps=representativeBoxes(ctx.li);
-        [reps[1],reps[3],reps[5]].forEach((box,index)=>{
+        [reps[1],reps[2],reps[3],reps[4],reps[reps.length-1]].forEach((box,index)=>{
           const set=boxQuestionSet(ctx.li,step,box);
-          out.push(set[(step+index)%set.length]);
+          out.push(set[(step+index*2)%set.length]);
         });
       }
-      return out.slice(0,15);
+      return out.slice(0,25);
     }
     for(let li=0;li<CEFR.length;li++){
       const reps=representativeBoxes(li);
-      [1,2,3,4].forEach((step,index)=>{
-        const box=reps[(index+1)%reps.length],set=boxQuestionSet(li,step,box);
-        out.push(set[(li+index)%set.length]);
+      [1,2,3,4,5].forEach((step,index)=>{
+        [reps[1],reps[3],reps[reps.length-1]].forEach((box,offset)=>{
+          const set=boxQuestionSet(li,step,box);
+          out.push(set[(li+index+offset*3)%set.length]);
+        });
       });
     }
-    return out.slice(0,20);
+    return out.slice(0,40);
   }
 
   function assessmentQuestions(ctx){return examQuestionsFor(ctx);}
@@ -1288,39 +1319,28 @@
     return latin>=50&&arabic<8&&text.split(/\s+/).length>=12;
   }
   function bindVideoUnderstanding(){
-    const play=document.querySelector('[data-play-language-video]'),field=document.getElementById('language-video-response');
+    const watchedButton=document.querySelector('[data-video-watched]'),field=document.getElementById('language-video-response');
     const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
-    if(!play||!field||!complete)return;
+    if(!field||!complete)return;
     const state=languageState(),pos=activeLanguagePosition(state),id=keyBox(CEFR[pos.li].id,pos.step,pos.box);
     const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     if(!videoItem||!responseItem)return;
-    const frames=itemLines(videoItem,'scenes'),responseLanguage=videoItem.responseLanguage||'English';
-    let watched=Boolean(state.watchedVideos[id]),playing=false,timer=null,index=0;
-    const frame=document.querySelector('[data-video-frame]'),bar=document.querySelector('[data-video-progress]'),status=document.querySelector('[data-video-status]');
+    const youtubeUrl=String(videoItem.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
+    const responseLanguage=videoItem.responseLanguage||'English';
+    let watched=Boolean(state.watchedVideos[id]);
     const updateGate=()=>{
       const valid=videoResponseValid(pos.li,field.value);
-      complete.disabled=complete.classList.contains('done')?false:!(watched&&valid);
-      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+responseLanguage):'Watch the full video first';
+      complete.disabled=complete.classList.contains('done')?false:!(validYouTube&&watched&&valid);
+      if(!complete.classList.contains('done'))complete.textContent=!validYouTube?'Add a valid YouTube video link first':!watched?'Watch the YouTube video first':(valid?t('complete'):'Write a fuller response in '+responseLanguage);
       if(feedback)feedback.textContent=valid?'Response length and language are ready.':(responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
     };
-    const finish=()=>{
-      if(timer){clearInterval(timer);timer=null;}playing=false;watched=true;
+    watchedButton?.addEventListener('click',()=>{
+      if(!validYouTube)return;
+      watched=true;
+      watchedButton.textContent='✓ Watched';
       updateLanguage(value=>{value.watchedVideos[id]=true;});
-      if(bar)bar.style.width='100%';if(status)status.textContent='Watched completely';play.textContent='Replay video';updateGate();
-    };
-    const showFrame=()=>{
-      if(index>=frames.length){finish();return;}
-      const text=frames[index];
-      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+frames.length+'</small><h2>'+esc(videoItem.title||'Video understanding')+'</h2><p>'+esc(text)+'</p>';
-      if(bar)bar.style.width=Math.round((index/Math.max(1,frames.length))*100)+'%';
-      speak(text);index++;
-    };
-    play.onclick=()=>{
-      if(playing||!frames.length)return;
-      if(timer)clearInterval(timer);
-      playing=true;index=0;play.textContent='Playing…';if(status)status.textContent='Watch and listen to every scene';
-      showFrame();timer=setInterval(showFrame,4200);
-    };
+      updateGate();
+    });
     field.addEventListener('input',updateGate);
     field.addEventListener('blur',()=>updateLanguage(value=>{value.videoResponses[id]=field.value;}));
     complete.onclick=()=>{
