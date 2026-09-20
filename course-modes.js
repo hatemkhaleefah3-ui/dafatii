@@ -443,53 +443,66 @@
     if(page==='letters'&&li===0&&isLetterBox(li,box)){
       return [
         {id:'letter-purpose',type:'info',eyebrow:'Letters box',title:'Learn each English letter separately',body:'Hear the letter name, study uppercase and lowercase forms, then trace both accurately before moving forward.'},
-        {id:'letter-example',type:'info',eyebrow:'How to learn',title:'Listen · Look · Draw · Check',body:'Use the example word only after hearing the isolated letter name. Draw uppercase and lowercase separately and repeat any weak form.'}
+        {id:'letter-method',type:'info',eyebrow:'Learning method',title:'Listen · Look · Draw · Check',body:'Hear the isolated letter name, inspect both forms, draw uppercase and lowercase separately, and repeat any weak form before continuing.'},
+        {id:'letter-phonics',type:'info',eyebrow:'Phonics',title:'Connect names, shapes and sounds',body:'Letter names identify symbols; example words help connect each symbol to a common English sound. Complete A–Z in every A1 step.'}
       ];
     }
     if(!data&&page!=='examine')return [];
     if(page==='letters'&&li===0){
       return [
-        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear each target separately, repeat it, then use the writing task.',audioText:data.voicePrompt},
-        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',words:data.pronunciationWords},
-        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write your two sentences here.'}
+        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear the target sound inside meaningful English, repeat slowly, then repeat at natural speed.',audioText:data.voicePrompt},
+        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',body:'Listen to every target word, then say it without looking at the written model.',words:data.pronunciationWords},
+        {id:'micro-dialogue',type:'info',eyebrow:'Micro dialogue',title:'Use pronunciation inside meaning',body:'Speaker A: '+data.grammarExample1+' Speaker B: '+data.grammarExample2},
+        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write 3–5 complete sentences here.'},
+        {id:'pronunciation-recall',type:'info',eyebrow:'Quick recall',title:'Retrieve before moving on',body:'Without looking back, say the target sound, two active words and one complete sentence that performs '+data.languageFunction+'.'}
       ];
     }
     if(page==='letters'&&li>0){
-      const video=videoLessonData(li,step,box);
+      const video=videoLessonData(li,step,box),arabic=video.responseLanguage==='Arabic';
       return [
-        {id:'video-lesson',type:'video',eyebrow:'Video understanding',title:video.title,scenes:video.frames,responseLanguage:video.responseLanguage},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:video.responseLanguage==='Arabic'?'اشرح ما فهمته':'Explain what you understood',body:video.responseLanguage==='Arabic'?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English: state the main idea and at least two supporting details.',placeholder:video.responseLanguage==='Arabic'?'اكتب فهمك هنا…':'Write your understanding here…'}
+        {id:'video-lesson',type:'video',eyebrow:'YouTube video',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
+        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:'Watch for meaning, detail and language',body:'Identify the main idea, two supporting details, one example of '+data.grammarTitle+', and at least two target words: '+data.words.slice(0,4).join(', ')+'.'},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:arabic?'اشرح ما فهمته':'Explain what you understood',body:arabic?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل، ثم اذكر كلمة أو تركيباً إنجليزياً مهماً.':'Write the main idea, at least two supporting details, and one important English expression from the video.',placeholder:arabic?'اكتب فهمك هنا…':'Write your understanding here…'},
+        {id:'video-vocabulary',type:'words',eyebrow:'Video vocabulary',title:'Key expressions to notice',body:'Use these expressions to confirm meaning after watching.',words:data.words}
       ];
     }
     if(page==='voice'){
       return [
-        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the sentence you hear'},
-        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target sentence',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here'}
+        {id:'listen-repeat',type:'info',eyebrow:'Listen & repeat',title:'Build a clean spoken model',body:'Topic: '+data.topic+'. Pronunciation focus: '+data.pronunciationFocus+'. Repeat the model slowly, then at natural speed.'},
+        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
+        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target meaning',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'},
+        {id:'voice-rubric',type:'info',eyebrow:'Self-check',title:'Meaning · grammar · stress · rhythm',body:'Your response should be understandable, use '+data.grammarTitle+', include at least two target words, and keep pauses aligned with meaning.'}
       ];
     }
     if(page==='grammar'){
       return [
         {id:'grammar-rule',type:'rule',eyebrow:'Grammar rule',title:data.grammarTitle,body:data.grammarRule,example1:data.grammarExample1,example2:data.grammarExample2},
-        {id:'naming',type:'info',eyebrow:'Naming',title:'Clear noun choices',body:data.naming,words:data.words.slice(0,4)},
-        {id:'typing',type:'writing',eyebrow:'Typing & spelling',title:'Write for the reader',body:data.typing,placeholder:'Write two examples that follow these rules.'}
+        {id:'grammar-examples',type:'info',eyebrow:'Examples',title:'See the form inside meaning',body:'Model 1: '+data.grammarExample1+' Model 2: '+data.grammarExample2},
+        {id:'grammar-error',type:'info',eyebrow:'Common error',title:'Correct the smallest specific mistake',body:'A common failure is using the right vocabulary with the wrong form. Rewrite one sentence so it accurately demonstrates '+data.grammarTitle+'.'},
+        {id:'naming',type:'info',eyebrow:'Naming & register',title:'Choose precise words',body:data.naming,words:data.words.slice(0,5)},
+        {id:'typing',type:'writing',eyebrow:'Production',title:'Write for the reader',body:data.typing+' '+data.writingPrompt,placeholder:'Write two examples that follow the rule.'}
       ];
     }
     if(page==='review'){
       return [
-        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',words:data.words},
-        {id:'review-trick',type:'steps',eyebrow:'Learning trick',title:data.trick,body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
-        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save examples, mistakes, mnemonics or an Arabic explanation.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
+        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',body:'Try to define or use each word before listening or looking back.',words:data.words},
+        {id:'review-trick',type:'steps',eyebrow:'Learning method',title:'Four-pass retrieval cycle',body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
+        {id:'review-memory',type:'info',eyebrow:'Memory trick',title:'Compress · contrast · reconstruct',body:'Compress '+data.grammarTitle+' into one sentence, contrast a correct example with a near-miss, then reconstruct the rule from memory.'},
+        {id:'review-recall',type:'info',eyebrow:'Free recall',title:'Explain without looking',body:data.recall},
+        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save difficult examples, corrections, mnemonics or a short Arabic explanation if useful.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
       ];
     }
     if(page==='examine'){
       return [
-        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'},
+        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically resolves to the correct box, step, level or whole-language assessment for this position.'},
         {id:'exam-pass-rule',type:'info',eyebrow:'Pass rule',title:'Accuracy matters',body:'Natural course assessments require at least 80%. Independent level challenges require a score greater than 80%.'},
-        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Read every option carefully',body:'Use the language from the selected box, step or level. Review grammar, vocabulary, listening and meaning before you submit.'}
+        {id:'exam-scope',type:'info',eyebrow:'Coverage',title:'Questions sample the whole required scope',body:'Step exams draw from boxes across the step, level exams draw from all five steps, and the whole-language exam draws from A1 through C1.'},
+        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Grammar · vocabulary · listening · meaning',body:'Review weak items, then answer without returning to the lesson pages during the attempt.'}
       ];
     }
     return [];
   }
+
   function languagePageItems(li,step,box,page){
     const store=languageContentStore(),key=contentPageKey(li,step,box,page);
     return Object.prototype.hasOwnProperty.call(store.pages,key)
@@ -511,7 +524,7 @@
     ]};
     const schemas={
       letters: li>0 ? [
-        {type:'video',label:'Video lesson',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'scenes',label:'Narrated scenes (one per line)',kind:'lines'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
+        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
         {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
         commonInfo
       ] : [
