@@ -526,23 +526,41 @@
   }
 
   function progressPercent(state){
-    return Math.min(100,Math.round((state.passedBoxes.length/TOTAL_LANGUAGE_BOXES)*100));
+    let completed=0;
+    for(let li=0;li<CEFR.length;li++){
+      const total=boxCount(li)*5;
+      if(isLevelPassed(state,li)){completed+=total;continue;}
+      const prefix=CEFR[li].id+':';
+      completed+=state.passedBoxes.filter(id=>id.startsWith(prefix)).length;
+    }
+    return Math.min(100,Math.round((completed/TOTAL_LANGUAGE_BOXES)*100));
+  }
+  function onboardingPage(){
+    return '<section class="language-course-page language-onboarding">'+
+      '<header class="language-onboarding-hero"><small>English learning · first setup</small><h1>Where should your course begin?</h1><p>Choose the full pathway from A1, or take a demanding placement examination to start at the level that matches your current English.</p></header>'+
+      '<div class="language-entry-grid">'+
+        '<button type="button" data-language-start-zero><span>01</span><small>Full pathway</small><h2>Start from zero</h2><p>Begin at A1 · Step 1 · Letters and build every prerequisite in order.</p><b>Start A1 →</b></button>'+
+        '<button type="button" data-language-placement-start><span>02</span><small>Placement</small><h2>Examine my level</h2><p>Take a hard multimodal exam with listening, dictation, image description, advanced grammar and complex translation.</p><b>Start placement exam →</b></button>'+
+      '</div><p class="language-entry-note">Placement chooses your starting level only. It does not mark skipped lower levels as completed.</p></section>';
   }
 
   function homePage(){
-    const state=languageState(),pos=clampSelection(state),level=CEFR[pos.li],name=window.DafatiiAuth.user && window.DafatiiAuth.user.displayName || 'Student';
+    const state=languageState();
+    if(!state.onboardingComplete&&!state.placementPending)return onboardingPage();
+    const pos=clampSelection(state),level=CEFR[pos.li],name=window.DafatiiAuth.user && window.DafatiiAuth.user.displayName || 'Student';
     const levels=CEFR.map((item,index)=>{
       const unlocked=levelUnlocked(state,index),passed=isLevelPassed(state,index),selected=index===pos.li;
-      return '<button class="language-level-card '+(selected?'selected ':'')+(passed?'passed ':'')+(!unlocked?'locked':'')+'" data-language-level="'+index+'" '+(unlocked?'':'disabled')+'><span>'+item.id+'</span><div><strong>'+esc(lang()==='ar'?item.ar:item.title)+'</strong><p>'+esc(item.description)+'</p></div><b>'+(passed?'✓':unlocked?'→':'🔒')+'</b></button>';
+      const placement=index===state.entryLevel&&state.placementResult;
+      return '<button class="language-level-card '+(selected?'selected ':'')+(passed?'passed ':'')+(!unlocked?'locked':'')+'" data-language-level="'+index+'" '+(unlocked?'':'disabled')+'><span>'+item.id+'</span><div><strong>'+esc(lang()==='ar'?item.ar:item.title)+'</strong><p>'+esc(item.description)+(placement?' · Placement start':'')+'</p></div><b>'+(passed?'✓':unlocked?'→':'🔒')+'</b></button>';
     }).join('');
     const steps=[1,2,3,4,5].map(step=>{
       const unlocked=stepUnlocked(state,pos.li,step),passed=isStepPassed(state,pos.li,step);
       const completed=Array.from({length:boxCount(pos.li)},(_,i)=>i+1).filter(box=>isBoxPassed(state,pos.li,step,box)).length;
-      return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-home-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><small>'+t('step')+' '+step+'</small><strong>'+completed+' / '+boxCount(pos.li)+'</strong><span>'+(passed?'Complete':unlocked?'Continue':'Locked')+'</span></button>';
+      return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-home-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><small>'+t('step')+' '+step+'</small><strong>'+completed+' / '+boxCount(pos.li)+'</strong><span>'+(passed?'Exam passed':unlocked?'Continue':'Locked')+'</span></button>';
     }).join('');
-    const goal=isLetterBox(pos.li,pos.box)?'Hear, see and draw all 26 English letters one at a time, then pass the Letters box exam.':boxData(pos.li,pos.step,pos.box).goal;
+    const goal=isLetterBox(pos.li,pos.box)?'Hear, see and draw all 26 English letters one at a time, then continue through the A1 pathway.':boxData(pos.li,pos.step,pos.box).goal;
     return '<section class="language-course-page language-home">'+languageHeader(state,pos,t('welcome')+', '+name,level.id+' · '+(lang()==='ar'?level.ar:level.title),level.description)+
-      '<div class="language-hero-grid"><article class="language-progress-hero"><div><small>'+t('progress')+'</small><strong>'+progressPercent(state)+'%</strong><p>'+TOTAL_LANGUAGE_BOXES+' structured boxes · '+state.passedBoxes.length+' fully completed</p></div><div class="language-ring" style="--value:'+progressPercent(state)+'"><span>'+progressPercent(state)+'%</span></div></article>'+
+      '<div class="language-hero-grid"><article class="language-progress-hero"><div><small>'+t('progress')+'</small><strong>'+progressPercent(state)+'%</strong><p>'+TOTAL_LANGUAGE_BOXES+' structured boxes · formal step and level assessments required</p></div><div class="language-ring" style="--value:'+progressPercent(state)+'"><span>'+progressPercent(state)+'%</span></div></article>'+
       '<article class="language-resume-card"><small>'+t('current')+'</small><h2>'+level.id+' · '+t('step')+' '+pos.step+' · '+t('box')+' '+pos.box+'</h2><p>'+esc(goal)+'</p><a href="#'+nextBoxRoute(state,pos)+'">'+t('resume')+' →</a></article></div>'+
       '<section class="language-step-overview"><div class="language-section-title"><div><small>Current level</small><h2>Five-step completion path</h2></div><span>'+boxCount(pos.li)+' boxes / step</span></div><div class="language-home-steps">'+steps+'</div></section>'+
       '<section class="language-levels"><div class="language-section-title"><div><small>CEFR pathway</small><h2>'+t('changeLevel')+'</h2></div><span>A1 → C1</span></div>'+levels+'</section></section>';
