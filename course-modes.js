@@ -397,6 +397,185 @@
       responseLanguage:li<=2?'Arabic':'English'
     };
   }
+
+  const LANGUAGE_CONTENT_PAGE_ROUTES = {
+    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',review:'language-review',examine:'language-examine'
+  };
+  const languageContentStoreKey=()=> 'dafatii:language-authoring:v1';
+  let languageAuthoringTarget=null;
+  function languageContentStore(){
+    const raw=window.DafatiiCourses.readJSON(languageContentStoreKey(),{})||{};
+    return {
+      pages:raw.pages&&typeof raw.pages==='object'?raw.pages:{},
+      exams:raw.exams&&typeof raw.exams==='object'?raw.exams:{}
+    };
+  }
+  function writeLanguageContentStore(store){
+    window.DafatiiCourses.writeJSON(languageContentStoreKey(),store);
+    return store;
+  }
+  function contentPageKey(li,step,box,page){return CEFR[li].id+':'+step+':'+box+':'+page;}
+  function examStoreKey(ctx){return ctx.scope+':'+CEFR[ctx.li].id+':'+ctx.step+':'+ctx.box;}
+  function contentItemId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);}
+  function activeLanguagePosition(state){return languageAuthoringTarget?{...languageAuthoringTarget}:clampSelection(state);}
+  function languagePageName(page,li){
+    if(page==='letters')return li===0?'Letters & writing':'Video understanding';
+    return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
+  }
+  function defaultLanguageContentItems(li,step,box,page){
+    const data=isLetterBox(li,box)?null:boxData(li,step,box);
+    if(page==='letters'&&li===0&&isLetterBox(li,box)){
+      return [
+        {id:'letter-purpose',type:'info',eyebrow:'Letters box',title:'Learn each English letter separately',body:'Hear the letter name, study uppercase and lowercase forms, then trace both accurately before moving forward.'},
+        {id:'letter-example',type:'info',eyebrow:'How to learn',title:'Listen · Look · Draw · Check',body:'Use the example word only after hearing the isolated letter name. Draw uppercase and lowercase separately and repeat any weak form.'}
+      ];
+    }
+    if(page==='letters'&&li===0){
+      return [
+        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear each target separately, repeat it, then use the writing task.',audioText:data.voicePrompt},
+        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',words:data.pronunciationWords},
+        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write your two sentences here.'}
+      ];
+    }
+    if(page==='letters'&&li>0){
+      const video=videoLessonData(li,step,box);
+      return [
+        {id:'video-lesson',type:'video',eyebrow:'Video understanding',title:video.title,scenes:video.frames,responseLanguage:video.responseLanguage},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:video.responseLanguage==='Arabic'?'اشرح ما فهمته':'Explain what you understood',body:video.responseLanguage==='Arabic'?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English: state the main idea and at least two supporting details.',placeholder:video.responseLanguage==='Arabic'?'اكتب فهمك هنا…':'Write your understanding here…'}
+      ];
+    }
+    if(page==='voice'){
+      return [
+        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the sentence you hear'},
+        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target sentence',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here'}
+      ];
+    }
+    if(page==='grammar'){
+      return [
+        {id:'grammar-rule',type:'rule',eyebrow:'Grammar rule',title:data.grammarTitle,body:data.grammarRule,example1:data.grammarExample1,example2:data.grammarExample2},
+        {id:'naming',type:'info',eyebrow:'Naming',title:'Clear noun choices',body:data.naming,words:data.words.slice(0,4)},
+        {id:'typing',type:'writing',eyebrow:'Typing & spelling',title:'Write for the reader',body:data.typing,placeholder:'Write two examples that follow these rules.'}
+      ];
+    }
+    if(page==='review'){
+      return [
+        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',words:data.words},
+        {id:'review-trick',type:'steps',eyebrow:'Learning trick',title:data.trick,body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
+        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save examples, mistakes, mnemonics or an Arabic explanation.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
+      ];
+    }
+    if(page==='examine'){
+      return [
+        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'}
+      ];
+    }
+    return [];
+  }
+  function languagePageItems(li,step,box,page){
+    const store=languageContentStore(),key=contentPageKey(li,step,box,page);
+    return Object.prototype.hasOwnProperty.call(store.pages,key)
+      ? (Array.isArray(store.pages[key])?store.pages[key]:[])
+      : defaultLanguageContentItems(li,step,box,page);
+  }
+  function mutateLanguagePageItems(selection,mutator){
+    const store=languageContentStore(),key=contentPageKey(selection.li,selection.step,selection.box,selection.page);
+    const items=Object.prototype.hasOwnProperty.call(store.pages,key)
+      ? (Array.isArray(store.pages[key])?[...store.pages[key]]:[])
+      : defaultLanguageContentItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item}));
+    store.pages[key]=mutator(items)||items;
+    writeLanguageContentStore(store);
+    return store.pages[key];
+  }
+  function languageItemSchemas(page,li){
+    const commonInfo={type:'info',label:'Information',fields:[
+      {name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Body',kind:'textarea'}
+    ]};
+    const schemas={
+      letters: li>0 ? [
+        {type:'video',label:'Video lesson',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'scenes',label:'Narrated scenes (one per line)',kind:'lines'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
+        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ] : [
+        {type:'sound',label:'Pronunciation focus',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'audioText',label:'Audio text',kind:'textarea'}]},
+        {type:'words',label:'Word set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      voice:[
+        {type:'dictation',label:'Voice to text',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'audioText',label:'Audio text',kind:'textarea'},{name:'placeholder',label:'Input placeholder',kind:'text'}]},
+        {type:'speaking',label:'Text to voice',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Text to speak',kind:'textarea'},{name:'placeholder',label:'Transcript placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      grammar:[
+        {type:'rule',label:'Grammar rule',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Rule title',kind:'text'},{name:'body',label:'Rule explanation',kind:'textarea'},{name:'example1',label:'Example 1',kind:'text'},{name:'example2',label:'Example 2',kind:'text'}]},
+        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      review:[
+        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+        {type:'steps',label:'Learning method',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Recall prompt',kind:'textarea'},{name:'steps',label:'Steps (one per line)',kind:'lines'}]},
+        {type:'notes',label:'Notes box',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      examine:[commonInfo]
+    };
+    return schemas[page]||[commonInfo];
+  }
+  function createLanguageItem(selection,type){
+    const schema=(languageItemSchemas(selection.page,selection.li).find(item=>item.type===type)||languageItemSchemas(selection.page,selection.li)[0]);
+    const item={id:contentItemId(type),type:schema.type};
+    schema.fields.forEach(field=>{item[field.name]=field.kind==='lines'?[]:(field.kind==='select'?(field.options?.[0]||''):'');});
+    return item;
+  }
+  function saveLanguageItem(selection,item){
+    const normalized={...item,id:item.id||contentItemId(item.type||'item')};
+    return mutateLanguagePageItems(selection,items=>{
+      const index=items.findIndex(candidate=>candidate.id===normalized.id);
+      if(index>=0)items[index]=normalized;else items.push(normalized);
+      return items;
+    });
+  }
+  function deleteLanguageItem(selection,id){return mutateLanguagePageItems(selection,items=>items.filter(item=>item.id!==id));}
+  function emptyLanguagePage(selection){return mutateLanguagePageItems(selection,()=>[]);}
+  function resetLanguagePage(selection){
+    const store=languageContentStore(),key=contentPageKey(selection.li,selection.step,selection.box,selection.page);
+    delete store.pages[key];writeLanguageContentStore(store);
+    return languagePageItems(selection.li,selection.step,selection.box,selection.page);
+  }
+  function naturalExamContext(li,step,box){
+    const last=boxCount(li);
+    if(box<last)return {scope:'box',li,step,box};
+    if(step<5)return {scope:'step',li,step,box:last};
+    if(li<4)return {scope:'level',li,step:5,box:last};
+    return {scope:'language',li:4,step:5,box:last};
+  }
+  function defaultExamQuestions(ctx){return defaultAssessmentQuestions(ctx);}
+  function examQuestionsFor(ctx){
+    const store=languageContentStore(),key=examStoreKey(ctx);
+    return Object.prototype.hasOwnProperty.call(store.exams,key)
+      ? (Array.isArray(store.exams[key])?store.exams[key]:[])
+      : defaultExamQuestions(ctx);
+  }
+  function mutateExamQuestions(selection,mutator){
+    const ctx=naturalExamContext(selection.li,selection.step,selection.box),store=languageContentStore(),key=examStoreKey(ctx);
+    const questions=Object.prototype.hasOwnProperty.call(store.exams,key)
+      ? (Array.isArray(store.exams[key])?[...store.exams[key]]:[])
+      : defaultExamQuestions(ctx).map((q,index)=>({...q,id:q.id||'q-'+index+'-'+ctx.scope}));
+    store.exams[key]=mutator(questions)||questions;writeLanguageContentStore(store);return store.exams[key];
+  }
+  function saveExamQuestion(selection,question){
+    const q={...question,id:question.id||contentItemId('question'),options:Array.isArray(question.options)?question.options:[]};
+    return mutateExamQuestions(selection,items=>{const index=items.findIndex(item=>item.id===q.id);if(index>=0)items[index]=q;else items.push(q);return items;});
+  }
+  function deleteExamQuestion(selection,id){return mutateExamQuestions(selection,items=>items.filter(item=>(item.id||'')!==id));}
+  function emptyExamQuestions(selection){return mutateExamQuestions(selection,()=>[]);}
+  function beginLanguageAuthoring(selection){
+    languageAuthoringTarget={li:selection.li,step:selection.step,box:selection.box};
+    const route=LANGUAGE_CONTENT_PAGE_ROUTES[selection.page]||'language-letters';
+    if((location.hash||'').replace(/^#\/?/,'').split('/')[0]===route)render();else setHash(route);
+  }
+  function endLanguageAuthoring(){languageAuthoringTarget=null;render();}
+
   function boxStudyComplete(state,li,step,box){
     const id=keyBox(CEFR[li].id,step,box),module=state.modules[id]||{};
     if(isLetterBox(li,box)){
@@ -687,7 +866,7 @@
     const last=boxCount(li);
     return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
   }
-  function assessmentQuestions(ctx){
+  function defaultAssessmentQuestions(ctx){
     if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
     const out=[];
     if(ctx.scope==='step'){
@@ -716,6 +895,8 @@
     }
     return out.slice(0,20);
   }
+
+  function assessmentQuestions(ctx){return examQuestionsFor(ctx);}
 
   function placementScene(kind){
     if(kind==='station')return '<svg viewBox="0 0 420 220" role="img" aria-label="A train platform scene"><rect width="420" height="220" rx="20" fill="#eaf2ff"/><rect y="154" width="420" height="66" fill="#cbd5e1"/><rect x="40" y="72" width="250" height="82" rx="12" fill="#2563eb"/><rect x="61" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><rect x="129" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><circle cx="92" cy="161" r="18" fill="#334155"/><circle cx="240" cy="161" r="18" fill="#334155"/><circle cx="337" cy="90" r="16" fill="#f59e0b"/><path d="M337 106v45M337 120l-23 25M337 121l25 18" stroke="#475569" stroke-width="8" stroke-linecap="round"/><rect x="311" y="150" width="55" height="8" rx="4" fill="#64748b"/></svg>';
