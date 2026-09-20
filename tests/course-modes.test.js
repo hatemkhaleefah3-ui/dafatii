@@ -54,6 +54,15 @@ assert.match(js,/function videoResponseValid\(li,value\)/,'video response langua
 assert.match(js,/value\.watchedVideos\[id\]=true/,'video must be fully watched before completion can unlock');
 assert.match(js,/function languageNavLabel\(item\)/,'dynamic second navigation label must exist');
 assert.match(js,/dafatii:language-authoring:v1/,'language authored content must use a course-scoped content store');
+assert.match(js,/function isAdminActor\(\)/,'language controls must resolve the platform admin role');
+assert.match(js,/if\(type==='language'&&!isAdminActor\(\)\)throw new Error/,'client course creation must reject non-admin Language Course creation');
+assert.match(js,/\.filter\(card=>card\[0\]!=='language'\|\|isAdminActor\(\)\)/,'non-admin course chooser must not expose Language Course creation');
+assert.match(js,/if\(type==='language'&&!isAdmin\)return/,'direct Language Course form access must be blocked for non-admin users');
+assert.match(js,/function adminLanguageAuthoring\(\)/,'admin language authoring mode must be explicit');
+assert.match(js,/function beginLanguageAuthoring\(selection\)\{[\s\S]{0,160}if\(!isAdminActor\(\)\)return false/,'only an admin may enter language authoring mode');
+assert.match(js,/const unlocked=adminLanguageAuthoring\(\)\|\|boxUnlocked/,'admin authoring must bypass learner box locks');
+assert.match(js,/if\(authoring\)\{setLanguageAuthoringTarget\(\{li,step:1,box:1\}\);render\(\);return;\}/,'admin level browsing must not write learner progress');
+assert.equal((js.match(/function lettersPage\(\)/g)||[]).length,1,'Letters/Video route must have exactly one implementation so admin authoring bypass is not shadowed');
 assert.match(js,/function defaultLanguageContentItems\(li,step,box,page\)/,'every learning page must resolve itemized default content');
 assert.match(js,/data-language-content-item/,'learner-facing language information must render as selectable item boxes');
 assert.match(js,/function languageItemSchemas\(page,li\)/,'language items must expose page-specific edit/add form schemas');
@@ -101,7 +110,7 @@ assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.la
 assert.match(css,/touch-action:none!important/,'validated letter canvases must remain touch-safe');
 
 assert.ok(index.includes('course-modes.css?v=20260920-5'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-6'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-6') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.js?v=20260920-7'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-7') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
