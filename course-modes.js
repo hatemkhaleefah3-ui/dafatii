@@ -140,6 +140,10 @@
   function courseMeta(){ return readSuite().courseMeta || {}; }
   function courseType(){ return String(courseMeta().courseType || 'dafaa'); }
   function isLanguage(){ return courseType()==='language'; }
+  function isAdminActor(){
+    const actor=window.DafatiiCourses?.actor||window.DafatiiAuth?.user;
+    return actor?.platformRole==='admin';
+  }
 
   function defaultLanguageLearning(){
     return {
