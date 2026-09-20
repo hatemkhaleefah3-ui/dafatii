@@ -846,8 +846,11 @@
     const previousWorkspace=workspace;
     workspace=function(current){
       const type=courseType(),page=String(current||'').split('/')[0];
-      if(type==='language' && window.DafatiiCourses.active().id && !LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){
-        setHash('language-home');return;
+      if(type==='language' && window.DafatiiCourses.active().id){
+        const state=languageState();
+        if(state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
+        if(!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
       previousWorkspace(current);
