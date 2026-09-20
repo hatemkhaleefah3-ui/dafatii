@@ -47,6 +47,19 @@ assert.match(js,/state\.placementPending&&page!=='language-examine'/,'placement 
 assert.match(js,/!state\.onboardingComplete&&!state\.placementPending&&page!=='language-home'/,'first enrollment choice must not be bypassable');
 
 assert.match(js,/function videoUnderstandingPage\(state,pos\)/,'post-A1 Video Understanding page must exist');
+assert.match(js,/youtubeUrl:'https:\/\/www\.youtube\.com\/results\?search_query='/,'every generated Video Understanding lesson must be represented by a YouTube link');
+assert.match(js,/name:'youtubeUrl',label:'YouTube URL'/,'admin video item forms must edit a YouTube URL field');
+assert.match(js,/data-youtube-video/,'learner Video Understanding must render an external YouTube link');
+assert.match(js,/data-video-watched/,'learner must explicitly confirm the YouTube video was watched');
+assert.doesNotMatch(js,/data-play-language-video/,'Video Understanding must not use the old simulated video player');
+assert.doesNotMatch(js,/name:'scenes'/,'video items must not contain narrated scene fields');
+assert.match(js,/return out\.slice\(0,15\)/,'step exams must include a 15-question generated bank');
+assert.match(js,/return out\.slice\(0,25\)/,'level exams must include a 25-question generated bank');
+assert.match(js,/return out\.slice\(0,40\)/,'whole-language exam must include a 40-question generated bank');
+assert.match(js,/id:'voice-rubric'/,'normal boxes must include a dedicated voice self-check item');
+assert.match(js,/id:'grammar-error'/,'normal boxes must include a grammar error-analysis item');
+assert.match(js,/id:'review-memory'/,'normal boxes must include a memory/retrieval item');
+assert.match(js,/id:'exam-scope'/,'Examine pages must include explicit assessment-scope content');
 assert.match(js,/if\(pos\.li>0\)return videoUnderstandingPage\(state,pos\)/,'Letters route must become Video Understanding after A1');
 assert.match(js,/responseLanguage:li<=2\?'Arabic':'English'/,'A2/B1 responses must be Arabic and B2/C1 responses English');
 assert.match(js,/const required=li===0\?\['pronunciation','voice','grammar','review'\]:\['video','voice','grammar','review'\]/,'post-A1 boxes must require Video Understanding instead of pronunciation page');
@@ -109,8 +122,8 @@ for (const selector of [
 assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.language-video-screen/,'new assessment/video surfaces must have mobile styling');
 assert.match(css,/touch-action:none!important/,'validated letter canvases must remain touch-safe');
 
-assert.ok(index.includes('course-modes.css?v=20260920-5'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-7'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-7') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260920-6'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-8'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-8') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
