@@ -128,8 +128,11 @@ for (const selector of [
 assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.language-video-screen/,'new assessment/video surfaces must have mobile styling');
 assert.match(css,/touch-action:none!important/,'validated letter canvases must remain touch-safe');
 
-assert.ok(index.includes('course-modes.css?v=20260920-9'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-9'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-9') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.match(js,/querySelector\('\.quiet-workspace>\.sub-nav'\)\?\.remove\(\)/,'language routes must remove the redundant workspace capsule');
+assert.match(js,/toolbarTitle\.textContent=activeNav\?languageNavLabel/,'language routes must replace raw route names with clear labels');
+assert.ok(css.includes('English course v10 · grounded editorial layout'),'grounded language layout must be present');
+assert.ok(index.includes('course-modes.css?v=20260920-10'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-10'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-10') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
