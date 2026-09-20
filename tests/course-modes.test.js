@@ -53,6 +53,18 @@ assert.match(js,/const required=li===0\?\['pronunciation','voice','grammar','rev
 assert.match(js,/function videoResponseValid\(li,value\)/,'video response language/length validation must exist');
 assert.match(js,/value\.watchedVideos\[id\]=true/,'video must be fully watched before completion can unlock');
 assert.match(js,/function languageNavLabel\(item\)/,'dynamic second navigation label must exist');
+assert.match(js,/dafatii:language-authoring:v1/,'language authored content must use a course-scoped content store');
+assert.match(js,/function defaultLanguageContentItems\(li,step,box,page\)/,'every learning page must resolve itemized default content');
+assert.match(js,/data-language-content-item/,'learner-facing language information must render as selectable item boxes');
+assert.match(js,/function languageItemSchemas\(page,li\)/,'language items must expose page-specific edit/add form schemas');
+assert.match(js,/function saveLanguageItem\(selection,item\)/,'language item edits must persist');
+assert.match(js,/function deleteLanguageItem\(selection,id\)/,'language items must support deletion');
+assert.match(js,/function emptyLanguagePage\(selection\)/,'language pages must support removing all items');
+assert.match(js,/pages:\['letters','voice','grammar','review','examine'\]/,'content authoring must include every language page except Home');
+assert.match(js,/getExamQuestions:selection=>examQuestionsFor/,'exam control must expose the resolved assessment question set');
+assert.match(js,/saveExamQuestion/,'exam questions must support editing and adding');
+assert.match(js,/emptyExamQuestions/,'exam controls must support removing all questions');
+assert.match(js,/if\(!questions\.length\)return '<div class="language-exam-prereqs"/,'an emptied exam must become unavailable rather than auto-scoring');
 assert.match(js,/return li>0\?t\('video'\):t\('letters'\)/,'navigation must switch from Letters to Video Understanding after A1');
 
 assert.match(js,/const LETTER_SPEECH = \{A:'ay',B:'bee'/,'letter audio must use spoken names');
@@ -88,8 +100,8 @@ for (const selector of [
 assert.match(css,/@media\(max-width:820px\)\{[\s\S]*\.language-course-shell \.language-video-screen/,'new assessment/video surfaces must have mobile styling');
 assert.match(css,/touch-action:none!important/,'validated letter canvases must remain touch-safe');
 
-assert.ok(index.includes('course-modes.css?v=20260920-4'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-5'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-5') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260920-5'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-6'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-6') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
