@@ -215,6 +215,7 @@
     const originalRoomSeeds=api.roomSeeds.bind(api);
     api.createCourse=async input => {
       const type=COURSE_TYPES.includes(input.courseType)?input.courseType:'dafaa';
+      if(type==='language'&&!isAdminActor())throw new Error('Administrator access is required for Language Course creation.');
       const course=await originalCreate(input);
       const suite=readSuite();
       suite.courseMeta={
