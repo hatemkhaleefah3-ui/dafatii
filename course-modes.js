@@ -228,14 +228,30 @@
     const templates=window.DafatiiCourses.templates();
     const actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
     const isAdmin=actor && actor.platformRole==='admin';
-    const isLang=type==='language';
-    const defaultName=isLang?'English Learning':'';
+    const isLang=type==='language',isPersonal=type==='personal';
+    const defaultName=isLang?'English Learning':isPersonal?'My Personal Course':'';
+    const personalSecret=isPersonal
+      ? (crypto.randomUUID?crypto.randomUUID().replace(/-/g,'').slice(0,20):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,20))
+      : '';
     const templateField=isLang?'<input type="hidden" name="templateName" value="Computer Science">':'<div class="field"><label>Content template</label><select name="templateName">'+templates.map(name=>'<option>'+esc(name)+'</option>').join('')+'</select></div>';
     const studyField=isLang?'<input type="hidden" name="studyType" value="language"><div class="field"><label>Target language</label><select name="targetLanguage"><option value="English" selected>English · الإنجليزية</option></select><p class="auth-note">Five levels: A1, A2, B1, B2 and C1 · 5 steps per level · 26 boxes per step.</p></div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
-    const visibility=isAdmin?'<div class="field"><label>Visibility</label><select name="visibility"><option value="public">Public</option><option value="private">Private by code</option></select></div>':'<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Private · your academic profile remains protected</div></div>';
+    const visibility=isPersonal
+      ? '<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Personal · only this account uses the workspace</div></div>'
+      : isAdmin
+        ? '<div class="field"><label>Visibility</label><select name="visibility"><option value="public">Public</option><option value="private">Private by code</option></select></div>'
+        : '<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Private · your academic profile remains protected</div></div>';
+    const pricing=isPersonal
+      ? '<input type="hidden" name="pricing" value="free"><input type="hidden" name="priceMinor" value="0">'
+      : '<div class="field"><label>Pricing</label><select name="pricing"><option value="free">Free</option><option value="paid">Paid</option></select></div><div class="field"><label>Price (minor units)</label><input name="priceMinor" type="number" min="0" value="0"></div>';
+    const joinPolicy=isPersonal
+      ? '<input type="hidden" name="joinPolicy" value="approval">'
+      : '<div class="field"><label>Join policy</label><select name="joinPolicy"><option value="approval">Needs acceptance</option><option value="direct">Direct join</option></select></div>';
+    const access=isPersonal
+      ? '<input type="hidden" name="accessCode" value="'+esc(personalSecret)+'"><div class="course-private-lock">Solo mode: Chat is disabled and Study Rooms is replaced by one private Focus Room.</div>'
+      : '<div class="field"><label>Private access code</label><input name="accessCode" type="password" minlength="6" maxlength="64" '+(isAdmin?'':'required')+'></div>';
     const adminMetadata=isAdmin?'<div class="field"><label>Learning field</label><input name="learningField" maxlength="80" value="'+(isLang?'Languages':'')+'"></div><div class="field"><label>Difficulty</label><select name="difficultyLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>':'';
     const title={dafaa:'Create Dafaa',personal:'Create Personal course',teaching:'Create Teaching course',language:'Create Language course'}[type]||'Create course';
-    const close=sheet(title,'<form id="course-mode-form"><input type="hidden" name="courseType" value="'+esc(type)+'"><div class="field"><label>Course name</label><input name="name" maxlength="120" value="'+esc(defaultName)+'" required></div>'+templateField+studyField+'<div class="suite-form-grid"><div class="field"><label>Institution</label><input name="institution" maxlength="160"></div>'+(isAdmin?'<div class="field"><label>Stage</label><select name="stage"><option value="university" selected>Higher education</option><option value="independent">Independent</option></select></div>':'<input type="hidden" name="stage" value="university">')+'<div class="field"><label>Pricing</label><select name="pricing"><option value="free">Free</option><option value="paid">Paid</option></select></div><div class="field"><label>Price (minor units)</label><input name="priceMinor" type="number" min="0" value="0"></div>'+visibility+'<div class="field"><label>Join policy</label><select name="joinPolicy"><option value="approval">Needs acceptance</option><option value="direct">Direct join</option></select></div>'+adminMetadata+'</div><div class="field"><label>Private access code</label><input name="accessCode" type="password" minlength="6" maxlength="64" '+(isAdmin?'':'required')+'></div><button class="btn btn-primary auth-submit" type="submit">Create course</button><p class="auth-note" id="course-mode-status"></p></form>');
+    const close=sheet(title,'<form id="course-mode-form"><input type="hidden" name="courseType" value="'+esc(type)+'"><div class="field"><label>Course name</label><input name="name" maxlength="120" value="'+esc(defaultName)+'" required></div>'+templateField+studyField+'<div class="suite-form-grid"><div class="field"><label>Institution</label><input name="institution" maxlength="160"></div>'+(isAdmin?'<div class="field"><label>Stage</label><select name="stage"><option value="university" selected>Higher education</option><option value="independent">Independent</option></select></div>':'<input type="hidden" name="stage" value="university">')+pricing+visibility+joinPolicy+adminMetadata+'</div>'+access+'<button class="btn btn-primary auth-submit" type="submit">Create course</button><p class="auth-note" id="course-mode-status"></p></form>');
     const form=document.getElementById('course-mode-form');
     form.onsubmit=async event=>{
       event.preventDefault();
@@ -309,13 +325,17 @@
     };
   }
 
+  function creditBox(state,id){
+    state.passedBoxes.push(id);
+    state.modules[id]={...(state.modules[id]||{}),letters:true,voice:true,grammar:true,review:true,exam:true};
+  }
   function markPriorLevels(state,li){
     for(let l=0;l<li;l++){
       const id=CEFR[l].id;
       state.passedLevels.push(id);
       for(let s=1;s<=5;s++){
         state.passedSteps.push(keyStep(id,s));
-        for(let b=1;b<=26;b++)state.passedBoxes.push(keyBox(id,s,b));
+        for(let b=1;b<=26;b++)creditBox(state,keyBox(id,s,b));
       }
     }
   }
@@ -324,23 +344,24 @@
       state.passedLevels=Array.isArray(state.passedLevels)?state.passedLevels:[];
       state.passedSteps=Array.isArray(state.passedSteps)?state.passedSteps:[];
       state.passedBoxes=Array.isArray(state.passedBoxes)?state.passedBoxes:[];
+      state.modules=state.modules&&typeof state.modules==='object'?state.modules:{};
       markPriorLevels(state,li);
       const id=CEFR[li].id;
       for(let s=1;s<step;s++){
         state.passedSteps.push(keyStep(id,s));
-        for(let b=1;b<=26;b++)state.passedBoxes.push(keyBox(id,s,b));
+        for(let b=1;b<=26;b++)creditBox(state,keyBox(id,s,b));
       }
       if(scope==='box'){
-        for(let b=1;b<=box;b++)state.passedBoxes.push(keyBox(id,step,b));
+        for(let b=1;b<=box;b++)creditBox(state,keyBox(id,step,b));
         state.selectedLevel=li;state.selectedStep=step;state.selectedBox=Math.min(26,box+1);
       }else if(scope==='step'){
-        for(let b=1;b<=26;b++)state.passedBoxes.push(keyBox(id,step,b));
+        for(let b=1;b<=26;b++)creditBox(state,keyBox(id,step,b));
         state.passedSteps.push(keyStep(id,step));
         state.selectedLevel=li;state.selectedStep=Math.min(5,step+1);state.selectedBox=1;
       }else{
         for(let s=1;s<=5;s++){
           state.passedSteps.push(keyStep(id,s));
-          for(let b=1;b<=26;b++)state.passedBoxes.push(keyBox(id,s,b));
+          for(let b=1;b<=26;b++)creditBox(state,keyBox(id,s,b));
         }
         state.passedLevels.push(id);
         state.selectedLevel=Math.min(4,li+1);state.selectedStep=1;state.selectedBox=1;
@@ -449,10 +470,19 @@
     else [1,2,3,4,5].forEach((s,index)=>targets.push(boxData(li,s,[4,9,14,19,24][index])));
     while(targets.length<5)targets.push(targets[0]);
     return targets.slice(0,5).map((data,index)=>{
-      const grammarOptions=[data.grammarTitle,'A random word order','No punctuation is ever needed','Every verb must use -ing'];
-      const sentenceOptions=[data.voicePrompt,'Words can appear in any order without changing meaning.','Grammar is optional when speaking.','One word is always enough for a C1 argument.'];
-      const correct=index%2===0?data.grammarTitle:data.voicePrompt;
-      return {prompt:index%2===0?'Which language rule belongs to '+data.topic+' in this curriculum?':'Which sentence is the target model for '+data.topic+'?',options:index%2===0?grammarOptions:sentenceOptions,correct};
+      const grammarIndex=Math.max(0,level.grammar.findIndex(rule=>rule[0]===data.grammarTitle));
+      const otherRule=level.grammar[(grammarIndex+3)%level.grammar.length];
+      const adjacent=boxData(li,data.step,data.box===26?25:data.box+1);
+      const unpunctuated=data.grammarExample1.charAt(0).toLowerCase()+data.grammarExample1.slice(1).replace(/[.!?]$/,'');
+      const tests=[
+        {prompt:'Which sentence best demonstrates the target grammar accurately?',correct:data.grammarExample1,options:[data.grammarExample1,unpunctuated+'  '+data.words[0],data.words.slice(0,4).join(' '),adjacent.reversePrompt]},
+        {prompt:'Which statement correctly describes the grammar focus?',correct:data.grammarRule,options:[data.grammarRule,otherRule[1],'Word order never affects meaning.','Punctuation replaces grammar.']},
+        {prompt:'Which sentence is the listening model for this box?',correct:data.voicePrompt,options:[data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,data.words.slice(0,5).join(' ')]},
+        {prompt:'Which item belongs to the active vocabulary set for this box?',correct:data.words[0],options:[data.words[0],pickWrapped(CEFR[(li+1)%CEFR.length].words,index*2,1)[0],otherRule[0],adjacent.topic]},
+        {prompt:'Which option is a complete, reader-ready model?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]}
+      ];
+      const test=tests[index%tests.length];
+      return {prompt:test.prompt,options:arrayUnique(test.options),correct:test.correct};
     });
   }
 
@@ -526,7 +556,8 @@
   function adaptNavigation(){
     const type=courseType(),current=(location.hash||'#language-home').replace(/^#\/?/,'').split('/')[0];
     if(type==='personal'){
-      document.querySelectorAll('a[href^="#chat"]').forEach(node=>node.remove());
+      document.querySelectorAll('a[href^="#chat"],[data-page="chat"],[data-bottom-nav-item="chat"]').forEach(node=>node.remove());
+      if(current==='study-rooms')document.querySelector('.quiet-workspace>.sub-nav')?.remove();
       return;
     }
     if(type!=='language')return;
