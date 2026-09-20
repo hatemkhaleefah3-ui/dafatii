@@ -383,13 +383,28 @@
     };
   }
 
+  function videoLessonData(li,step,box){
+    const data=boxData(li,step,box);
+    return {
+      id:keyBox(CEFR[li].id,step,box),
+      title:data.title,
+      frames:[
+        'Today we are working with '+data.topic+'.',
+        'Listen for the function of '+data.languageFunction+' and notice the phrase '+data.words[0]+'.',
+        data.grammarExample1,
+        'The key idea is to use '+data.grammarTitle+' while communicating clearly about '+data.topic+'.'
+      ],
+      responseLanguage:li<=2?'Arabic':'English'
+    };
+  }
   function boxStudyComplete(state,li,step,box){
     const id=keyBox(CEFR[li].id,step,box),module=state.modules[id]||{};
     if(isLetterBox(li,box)){
       const practiced=state.letterProgress[letterProgressKey(li,step)]||[];
       return LETTERS.every(letter=>practiced.includes(letter));
     }
-    return ['pronunciation','voice','grammar','review'].every(name=>module[name]===true);
+    const required=li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    return required.every(name=>module[name]===true);
   }
   function boxExamPassed(state,li,step,box){
     return Boolean((state.modules[keyBox(CEFR[li].id,step,box)]||{}).exam);
@@ -401,11 +416,6 @@
     if(!complete)state.passedBoxes=state.passedBoxes.filter(item=>item!==id);
     state.passedBoxes=arrayUnique(state.passedBoxes);
     return complete;
-  }
-  function advanceSelection(state,li,step,box){
-    if(box<boxCount(li)){state.selectedLevel=li;state.selectedStep=step;state.selectedBox=box+1;return;}
-    if(step<5){state.selectedLevel=li;state.selectedStep=step+1;state.selectedBox=1;return;}
-    if(li<4){state.selectedLevel=li+1;state.selectedStep=1;state.selectedBox=1;}
   }
   function markModule(module){
     updateLanguage(state=>{
@@ -421,7 +431,8 @@
   function nextBoxRoute(state,pos){
     if(isLetterBox(pos.li,pos.box))return 'language-letters';
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    if(!module.pronunciation)return 'language-letters';
+    if(pos.li===0&&!module.pronunciation)return 'language-letters';
+    if(pos.li>0&&!module.video)return 'language-letters';
     if(!module.voice)return 'language-voice';
     if(!module.grammar)return 'language-grammar';
     if(!module.review)return 'language-review';
@@ -434,8 +445,79 @@
       return missing.length?['Practice and draw '+missing.length+' remaining letter'+(missing.length===1?'':'s')]:[];
     }
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    const labels={pronunciation:'Pronunciation & writing',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
-    return ['pronunciation','voice','grammar','review'].filter(name=>!module[name]).map(name=>labels[name]);
+    const required=pos.li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    const labels={pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
+    return required.filter(name=>!module[name]).map(name=>labels[name]);
+  }
+  function boundaryReady(state,li,step){
+    const last=boxCount(li);
+    for(let box=1;box<last;box++) if(!isBoxPassed(state,li,step,box))return false;
+    return boxStudyComplete(state,li,step,last);
+  }
+  function currentAssessment(state,pos){
+    const last=boxCount(pos.li);
+    if(pos.box<last)return {scope:'box',li:pos.li,step:pos.step,box:pos.box};
+    if(pos.step<5)return {scope:'step',li:pos.li,step:pos.step,box:last};
+    if(pos.li<4)return {scope:'level',li:pos.li,step:5,box:last};
+    return {scope:'language',li:4,step:5,box:last};
+  }
+  function assessmentMissing(state,ctx){
+    if(ctx.scope==='box')return missingRequirements(state,{li:ctx.li,step:ctx.step,box:ctx.box});
+    if(ctx.scope==='step'){
+      if(!boundaryReady(state,ctx.li,ctx.step))return ['Finish every earlier box in this step and complete the last box learning pages'];
+      return [];
+    }
+    if(ctx.scope==='level'){
+      for(let step=1;step<5;step++)if(!isStepPassed(state,ctx.li,step))return ['Pass Steps 1–4 before the level examination'];
+      if(!boundaryReady(state,ctx.li,5))return ['Finish every box in Step 5 before the level examination'];
+      return [];
+    }
+    if(ctx.scope==='language'){
+      const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+      for(let li=entry;li<4;li++)if(!isLevelPassed(state,li))return ['Finish each level in your enrolled pathway before the whole-language examination'];
+      for(let step=1;step<5;step++)if(!isStepPassed(state,4,step))return ['Pass C1 Steps 1–4 before the whole-language examination'];
+      if(!boundaryReady(state,4,5))return ['Finish every box in the final C1 step before the whole-language examination'];
+      return [];
+    }
+    return [];
+  }
+  function assessmentPassed(state,ctx){
+    if(ctx.scope==='box')return boxExamPassed(state,ctx.li,ctx.step,ctx.box);
+    if(ctx.scope==='step')return isStepPassed(state,ctx.li,ctx.step);
+    if(ctx.scope==='level')return isLevelPassed(state,ctx.li);
+    if(ctx.scope==='language')return state.languagePassed;
+    return false;
+  }
+  function applyAssessmentPass(state,ctx){
+    const id=CEFR[ctx.li].id,last=boxCount(ctx.li),finalId=keyBox(id,ctx.step,last);
+    if(ctx.scope==='box'){
+      const boxId=keyBox(id,ctx.step,ctx.box);
+      state.modules[boxId]=state.modules[boxId]||{};
+      state.modules[boxId].exam=true;
+      if(syncBoxCompletion(state,ctx.li,ctx.step,ctx.box)){
+        state.selectedLevel=ctx.li;state.selectedStep=ctx.step;state.selectedBox=Math.min(last,ctx.box+1);
+      }
+      return;
+    }
+    state.modules[finalId]=state.modules[finalId]||{};
+    state.modules[finalId].exam=true;
+    syncBoxCompletion(state,ctx.li,ctx.step,last);
+    if(ctx.scope==='step'){
+      state.passedSteps=arrayUnique([...state.passedSteps,keyStep(id,ctx.step)]);
+      state.selectedLevel=ctx.li;state.selectedStep=ctx.step+1;state.selectedBox=1;
+      return;
+    }
+    state.passedSteps=arrayUnique([...state.passedSteps,keyStep(id,5)]);
+    state.passedLevels=arrayUnique([...state.passedLevels,id]);
+    if(ctx.scope==='level'){
+      state.selectedLevel=Math.min(4,ctx.li+1);state.selectedStep=1;state.selectedBox=1;
+      return;
+    }
+    state.languagePassed=true;
+  }
+  function applyLevelChallengePass(state,li){
+    state.passedLevels=arrayUnique([...state.passedLevels,CEFR[li].id]);
+    state.challengeLevel=null;
   }
 
   function languageHeader(state,pos,kicker,title,description){
