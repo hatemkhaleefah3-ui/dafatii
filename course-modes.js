@@ -276,6 +276,7 @@
     const templates=window.DafatiiCourses.templates();
     const actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
     const isAdmin=actor && actor.platformRole==='admin';
+    if(type==='language'&&!isAdmin)return;
     const isLang=type==='language',isPersonal=type==='personal';
     const defaultName=isLang?'English Learning':isPersonal?'My Personal Course':'';
     const personalSecret=isPersonal
