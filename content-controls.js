@@ -642,6 +642,12 @@
   window.addEventListener('dafatii:auth:changed',scheduleSync);
   window.addEventListener('dafatii:coursesloaded',scheduleSync);
   window.addEventListener('dafatii:coursechanged',scheduleSync);
+  window.addEventListener('dafatii:languageauthoringtarget',event=>{
+    if(state.languageAuthoring!=='content'||!state.languageSelection)return;
+    state.languageSelection={...state.languageSelection,...(event.detail||{})};
+    state.languageSelectedItem='';
+    activateLanguageContentBar(state.languageSelection);
+  });
   window.addEventListener('DOMContentLoaded',scheduleSync,{once:true});
 
   const observer = new MutationObserver(records => {
