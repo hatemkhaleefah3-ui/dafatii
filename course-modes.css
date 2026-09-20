@@ -408,6 +408,225 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
 }
 @media(prefers-reduced-motion:reduce){.language-flow-stage,.language-answer-options label>span{transition:none}}
 
+/* English course v11 · native mobile learning app */
+@media(max-width:820px){
+  .language-course-shell{
+    --mobile-course-accent:#2563eb;
+    --mobile-course-accent-2:#0f3d91;
+    --mobile-course-tint:color-mix(in srgb,var(--mobile-course-accent) 8%,var(--surface));
+    --mobile-course-line:color-mix(in srgb,var(--text) 11%,transparent);
+  }
+  .language-course-shell[data-language-page="letters"]{--mobile-course-accent:#e56b2f;--mobile-course-accent-2:#9a3412}
+  .language-course-shell[data-language-page="voice"]{--mobile-course-accent:#7c3aed;--mobile-course-accent-2:#4c1d95}
+  .language-course-shell[data-language-page="grammar"]{--mobile-course-accent:#3155c6;--mobile-course-accent-2:#1e3a8a}
+  .language-course-shell[data-language-page="review"]{--mobile-course-accent:#07866b;--mobile-course-accent-2:#065f46}
+  .language-course-shell[data-language-page="examine"]{--mobile-course-accent:#d53f4f;--mobile-course-accent-2:#8f1d2c}
+
+  .language-course-shell>.quiet-toolbar{
+    position:fixed!important;top:0!important;inset-inline:0!important;width:100%!important;
+    height:calc(64px + env(safe-area-inset-top))!important;margin:0!important;
+    padding:env(safe-area-inset-top) 14px 0!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;
+    border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;
+    background:color-mix(in srgb,var(--surface) 96%,transparent)!important;
+    box-shadow:none!important;backdrop-filter:blur(22px) saturate(1.35)!important;
+    -webkit-backdrop-filter:blur(22px) saturate(1.35)!important;
+  }
+  .language-course-shell .quiet-toolbar-title{gap:0!important}
+  .language-course-shell .quiet-toolbar-title>div{display:grid!important;gap:1px!important}
+  .language-course-shell .quiet-toolbar-title small{display:block!important;margin:0!important;color:var(--mobile-course-accent)!important;font-size:8px!important;font-weight:850!important;letter-spacing:.12em!important;text-transform:uppercase!important}
+  .language-course-shell .quiet-toolbar-title strong{display:block!important;max-width:48vw!important;color:var(--text)!important;font:850 17px/1.15 Manrope,sans-serif!important;letter-spacing:-.025em!important}
+  .language-course-shell .quiet-toolbar-actions{gap:5px!important}
+  .language-course-shell .quiet-course-button,.language-course-shell .quiet-avatar,.language-course-shell .dcc-trigger-language-docked{
+    width:40px!important;min-width:40px!important;height:40px!important;border:0!important;border-radius:12px!important;
+    background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important;box-shadow:none!important;
+  }
+  .language-course-shell .quiet-course-button{display:grid!important;place-items:center!important;padding:0!important}
+  .language-course-shell .quiet-course-button span{display:none!important}
+  .language-course-shell .dcc-trigger-language-docked{padding:5px!important}
+  .language-course-shell .dcc-trigger-language-docked .dcc-trigger-icon{width:30px!important;height:30px!important;background:var(--mobile-course-accent)!important;color:#fff!important;border-radius:9px!important}
+  .language-course-shell>.quiet-return-button{display:none!important}
+
+  body .quiet-workspace.language-course-shell>.workspace-main{
+    width:100%!important;min-height:100dvh!important;margin:0!important;
+    padding:calc(64px + env(safe-area-inset-top)) 0 calc(88px + env(safe-area-inset-bottom))!important;
+    background:color-mix(in srgb,var(--surface-2) 72%,var(--bg))!important;overflow-x:hidden!important;
+  }
+  .language-course-shell .language-course-page{
+    width:100%!important;margin:0!important;padding:0 16px 32px!important;overflow:visible!important;
+  }
+
+  .language-course-shell .language-page-head,
+  .language-course-shell .language-page-head.placement{
+    position:relative!important;display:block!important;margin:0 -16px 0!important;padding:28px 18px 24px!important;
+    min-height:190px!important;border:0!important;border-radius:0!important;
+    background:
+      radial-gradient(circle at 92% 8%,rgba(255,255,255,.18),transparent 30%),
+      linear-gradient(145deg,var(--mobile-course-accent),var(--mobile-course-accent-2))!important;
+    color:#fff!important;box-shadow:none!important;overflow:hidden!important;
+  }
+  .language-course-shell .language-page-head:before{
+    content:"EN"!important;display:block!important;position:absolute!important;inset:auto -12px -28px auto!important;
+    color:rgba(255,255,255,.09)!important;font:950 118px/.8 Manrope,sans-serif!important;letter-spacing:-.11em!important;
+  }
+  .language-course-shell .language-page-head:after{display:none!important}
+  .language-course-shell .language-page-head small{position:relative!important;color:rgba(255,255,255,.76)!important;font-size:9px!important;letter-spacing:.18em!important}
+  .language-course-shell .language-page-head h1{position:relative!important;max-width:92%!important;margin:8px 0 9px!important;color:#fff!important;font:900 clamp(34px,10.5vw,46px)/.96 Manrope,sans-serif!important;letter-spacing:-.052em!important}
+  .language-course-shell .language-page-head p{position:relative!important;display:block!important;max-width:92%!important;margin:0!important;color:rgba(255,255,255,.79)!important;font-size:13px!important;line-height:1.5!important;overflow:visible!important;-webkit-line-clamp:unset!important}
+  .language-course-shell .language-context{position:relative!important;display:flex!important;justify-content:flex-start!important;gap:7px!important;margin-top:18px!important;padding:0!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .language-course-shell .language-context::-webkit-scrollbar{display:none}
+  .language-course-shell .language-context span,.language-course-shell .language-context button{
+    flex:0 0 auto!important;min-height:31px!important;padding:7px 10px!important;border:1px solid rgba(255,255,255,.22)!important;
+    border-radius:999px!important;background:rgba(255,255,255,.1)!important;color:#fff!important;font-size:10px!important;backdrop-filter:blur(8px)!important;
+  }
+  .language-course-shell .language-context span:first-of-type{background:#fff!important;color:var(--mobile-course-accent-2)!important;border-color:#fff!important}
+
+  .language-course-shell .language-hero-grid{display:grid!important;grid-template-columns:1fr!important;gap:0!important;margin:0 -16px!important;border:0!important;background:var(--surface)!important}
+  .language-course-shell .language-progress-hero{
+    min-height:0!important;padding:22px 18px!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;
+    border-radius:0!important;background:var(--surface)!important;color:var(--text)!important;box-shadow:none!important;
+  }
+  .language-course-shell .language-progress-hero small,.language-course-shell .language-progress-hero p{color:var(--muted)!important}
+  .language-course-shell .language-progress-hero strong{font-size:52px!important;color:var(--text)!important;letter-spacing:-.06em!important}
+  .language-course-shell .language-progress-hero .language-ring{width:78px!important;height:78px!important;background:conic-gradient(var(--mobile-course-accent) calc(var(--value)*1%),var(--mobile-course-line) 0)!important}
+  .language-course-shell .language-progress-hero .language-ring:before{background:var(--surface)!important}
+  .language-course-shell .language-progress-meta{gap:10px!important}
+  .language-course-shell .language-progress-meta span{padding:0!important;border:0!important;background:transparent!important;color:var(--muted)!important}
+  .language-course-shell .language-resume-card{
+    min-height:0!important;padding:23px 18px 25px!important;border:0!important;border-radius:0!important;
+    background:linear-gradient(135deg,var(--mobile-course-accent-2),var(--mobile-course-accent))!important;color:#fff!important;box-shadow:none!important;
+  }
+  .language-course-shell .language-mission-label{color:rgba(255,255,255,.7)!important}
+  .language-course-shell .language-mission-label span{background:rgba(255,255,255,.14)!important;color:#fff!important;border-radius:999px!important;padding:5px 9px!important}
+  .language-course-shell .language-resume-card h2{margin:12px 0 8px!important;color:#fff!important;font-size:clamp(28px,8vw,36px)!important;line-height:1.02!important}
+  .language-course-shell .language-resume-card p{color:rgba(255,255,255,.74)!important}
+  .language-course-shell .language-primary-cta{
+    width:100%!important;min-height:52px!important;margin-top:17px!important;padding:0 14px!important;border:0!important;border-radius:14px!important;
+    background:#fff!important;color:var(--mobile-course-accent-2)!important;justify-content:space-between!important;text-decoration:none!important;
+  }
+  .language-course-shell .language-primary-cta b{display:grid!important;place-items:center!important;width:28px!important;height:28px!important;border-radius:9px!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+
+  .language-course-shell .language-course-flow,.language-course-shell .language-step-overview,.language-course-shell .language-levels{margin-top:30px!important}
+  .language-course-shell .language-section-title{padding:0 0 12px!important;border-bottom:1px solid var(--mobile-course-line)!important}
+  .language-course-shell .language-section-title h2{font-size:22px!important;letter-spacing:-.035em!important}
+  .language-course-shell .language-flow-grid{display:grid!important;grid-template-columns:1fr!important;gap:0!important;border:0!important;padding-inline-start:8px!important}
+  .language-course-shell .language-flow-stage,.language-course-shell .language-flow-stage:last-child{
+    position:relative!important;display:grid!important;grid-template-columns:42px minmax(0,1fr) 18px!important;gap:11px!important;
+    min-height:74px!important;padding:11px 6px 11px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  }
+  .language-course-shell .language-flow-stage:before{content:"";position:absolute;inset-inline-start:20px;top:53px;bottom:-21px;width:2px;background:var(--mobile-course-line)}
+  .language-course-shell .language-flow-stage:last-child:before{display:none}
+  .language-course-shell .language-flow-stage>span{position:relative;z-index:1;width:42px!important;height:42px!important;border:2px solid var(--mobile-course-line)!important;border-radius:14px!important;background:var(--surface)!important;color:var(--muted)!important}
+  .language-course-shell .language-flow-stage.current{box-shadow:none!important}
+  .language-course-shell .language-flow-stage.current>span{border-color:var(--mobile-course-accent)!important;background:var(--mobile-course-accent)!important;color:#fff!important;box-shadow:0 8px 20px color-mix(in srgb,var(--mobile-course-accent) 25%,transparent)!important}
+  .language-course-shell .language-flow-stage.done>span{border-color:color-mix(in srgb,#07866b 34%,transparent)!important;background:color-mix(in srgb,#07866b 9%,var(--surface))!important;color:#07866b!important}
+  .language-course-shell .language-flow-stage small{color:var(--mobile-course-accent)!important;font-size:8px!important}.language-course-shell .language-flow-stage strong{font-size:13px!important}
+
+  .language-course-shell .language-home-steps{
+    display:flex!important;grid-template-columns:none!important;gap:9px!important;margin:0 -16px!important;padding:14px 16px 5px!important;
+    border:0!important;overflow-x:auto!important;scroll-snap-type:x mandatory!important;scrollbar-width:none!important;
+  }
+  .language-course-shell .language-home-steps::-webkit-scrollbar{display:none}
+  .language-course-shell .language-home-step,.language-course-shell .language-home-step:last-child{
+    flex:0 0 min(74vw,280px)!important;min-height:116px!important;padding:16px!important;border:1px solid var(--mobile-course-line)!important;
+    border-radius:17px!important;background:var(--surface)!important;box-shadow:none!important;scroll-snap-align:start!important;
+  }
+  .language-course-shell .language-home-step.active{border-color:var(--mobile-course-accent)!important;background:var(--mobile-course-tint)!important;box-shadow:inset 0 3px var(--mobile-course-accent)!important}
+  .language-course-shell .language-home-step.passed{background:color-mix(in srgb,#07866b 7%,var(--surface))!important}
+  .language-course-shell .language-level-card{
+    grid-template-columns:50px minmax(0,1fr) 20px!important;gap:12px!important;min-height:82px!important;margin:0!important;padding:12px 2px!important;
+    border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  }
+  .language-course-shell .language-level-card>span{width:48px!important;height:48px!important;border:0!important;border-radius:15px!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+  .language-course-shell .language-level-card.selected{background:transparent!important;box-shadow:inset 3px 0 var(--mobile-course-accent)!important;padding-inline-start:10px!important}
+
+  .language-course-shell .language-step-switch{
+    display:flex!important;gap:5px!important;margin:16px -16px 0!important;padding:10px 16px!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;
+    background:var(--surface)!important;overflow-x:auto!important;scrollbar-width:none!important;
+  }
+  .language-course-shell .language-step-switch::-webkit-scrollbar{display:none}
+  .language-course-shell .language-step-switch button{flex:0 0 auto!important;min-width:70px!important;min-height:39px!important;padding:0 12px!important;border:0!important;border-radius:12px!important;background:var(--surface-2)!important}
+  .language-course-shell .language-step-switch button.active{background:var(--mobile-course-accent)!important;color:#fff!important;box-shadow:none!important}
+  .language-course-shell .language-box-strip{display:flex!important;gap:7px!important;margin:0 -16px 16px!important;padding:10px 16px!important;border:0!important;background:var(--surface)!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .language-course-shell .language-box-strip::-webkit-scrollbar{display:none}
+  .language-course-shell .language-box-strip button{flex:0 0 auto!important;min-width:42px!important;min-height:36px!important;border:1px solid var(--mobile-course-line)!important;border-radius:11px!important;background:transparent!important}
+  .language-course-shell .language-box-strip button.active{border-color:var(--mobile-course-accent)!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+
+  .language-course-shell .language-content-item-grid{display:block!important;margin:18px 0!important}
+  .language-course-shell .language-content-item,.language-course-shell .language-premium-item{
+    display:block!important;min-height:0!important;margin:0!important;padding:21px 0!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;
+    border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;
+  }
+  .language-course-shell .language-item-top{display:grid!important;grid-template-columns:40px minmax(0,1fr) auto!important;align-items:center!important;gap:10px!important;margin-bottom:13px!important}
+  .language-course-shell .language-item-icon{width:40px!important;height:40px!important;margin:0!important;border:0!important;border-radius:13px!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+  .language-course-shell .language-item-top small{font-size:8px!important;color:var(--mobile-course-accent)!important}.language-course-shell .language-item-top b{margin:0!important;font-size:9px!important}
+  .language-course-shell .language-premium-item h2{font-size:25px!important;line-height:1.08!important}.language-course-shell .language-premium-item p{margin-top:8px!important;font-size:14px!important;line-height:1.58!important}
+
+  .language-course-shell .language-practice-grid,.language-course-shell .language-rule-layout,.language-course-shell .language-review-grid{display:grid!important;grid-template-columns:1fr!important;gap:0!important;margin:20px 0 0!important;border-top:1px solid var(--mobile-course-line)!important}
+  .language-course-shell .language-practice-card,.language-course-shell .language-rule-card,.language-course-shell .language-memory-card,.language-course-shell .language-writing-task,.language-course-shell .language-sound-hero,.language-course-shell .language-video-response,.language-course-shell .language-youtube-card,.language-course-shell .letter-focus-card,.language-course-shell .letter-index-grid,.language-course-shell .letter-trace-grid>article{
+    margin:0!important;padding:22px 0!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  }
+  .language-course-shell textarea,.language-course-shell input[type="text"]{min-height:52px!important;border:1px solid var(--mobile-course-line)!important;border-radius:13px!important;background:var(--surface)!important;font-size:16px!important}
+  .language-course-shell .language-audio-button,.language-course-shell .language-complete-bar,.language-course-shell .language-practice-card>button,.language-course-shell .language-memory-card button{min-height:52px!important;border-radius:14px!important;background:var(--mobile-course-accent)!important;color:#fff!important}
+  .language-course-shell .language-pronunciation-grid,.language-course-shell .language-vocab-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+
+  .language-course-shell .letter-index-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;padding:14px 0!important}
+  .language-course-shell .letter-index-grid button{min-height:50px!important;border-radius:12px!important}
+  .language-course-shell .letter-focus-card{background:var(--mobile-course-tint)!important;margin-inline:-16px!important;padding-inline:16px!important}
+  .language-course-shell .letter-trace-grid{grid-template-columns:1fr!important;gap:0!important}
+  .language-course-shell .letter-trace-stage{min-height:245px!important;border-color:color-mix(in srgb,var(--mobile-course-accent) 32%,var(--mobile-course-line))!important;border-radius:18px!important;background:var(--surface)!important}
+  .language-course-shell .letter-complete-row{bottom:calc(76px + env(safe-area-inset-bottom))!important;margin-inline:-8px!important;border:1px solid var(--mobile-course-line)!important;border-radius:18px!important;background:color-mix(in srgb,var(--surface) 96%,transparent)!important;box-shadow:0 12px 28px rgba(15,23,42,.12)!important}
+
+  .language-course-shell .language-onboarding-hero{margin:0 -16px!important;padding:26px 18px!important;border:0!important;border-radius:0!important;background:linear-gradient(145deg,var(--mobile-course-accent),var(--mobile-course-accent-2))!important;color:#fff!important;box-shadow:none!important}
+  .language-course-shell .language-onboarding-hero small,.language-course-shell .language-onboarding-hero p{color:rgba(255,255,255,.76)!important}
+  .language-course-shell .language-entry-grid{grid-template-columns:1fr!important;gap:0!important}.language-course-shell .language-entry-grid>button{min-height:108px;padding:17px 0!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+  .language-course-shell .language-entry-grid>button>span{background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+
+  .language-course-shell .language-exam-summary{margin:18px -16px 0!important;padding:20px 16px!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:var(--surface)!important}
+  .language-course-shell .language-exam-toolbar{position:sticky!important;top:calc(64px + env(safe-area-inset-top))!important;z-index:20!important;margin:0 -16px!important;padding:11px 16px!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:color-mix(in srgb,var(--surface) 96%,transparent)!important;box-shadow:none!important;backdrop-filter:blur(18px)!important}
+  .language-course-shell .language-exam-type-chips{display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:6px!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .language-course-shell .language-exam-type-chips::-webkit-scrollbar{display:none}.language-course-shell .language-exam-type-chips span{flex:0 0 auto!important;border-radius:999px!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+  .language-course-shell .language-exam-form{gap:0!important}
+  .language-course-shell .language-exam-question-item,.language-course-shell .placement-question{
+    margin:0!important;padding:22px 0!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  }
+  .language-course-shell .language-question-head{grid-template-columns:40px minmax(0,1fr)!important;gap:11px!important}.language-course-shell .language-question-head>span{width:40px!important;height:40px!important;border-radius:13px!important;background:var(--mobile-course-tint)!important;color:var(--mobile-course-accent)!important}
+  .language-course-shell .language-answer-options{grid-template-columns:1fr!important;gap:8px!important}.language-course-shell .language-answer-options label>span{min-height:56px!important;padding:13px!important;border:1px solid var(--mobile-course-line)!important;border-radius:14px!important;background:var(--surface)!important}
+  .language-course-shell .language-answer-options input:checked+span{border-color:var(--mobile-course-accent)!important;background:var(--mobile-course-tint)!important}.language-course-shell .language-answer-options input:checked+span>i{border-color:var(--mobile-course-accent)!important}
+  .language-course-shell .language-exam-submit{
+    position:sticky!important;bottom:calc(74px + env(safe-area-inset-bottom))!important;z-index:30!important;display:grid!important;grid-template-columns:1fr!important;
+    margin:14px -8px 0!important;padding:10px!important;border:1px solid var(--mobile-course-line)!important;border-radius:18px!important;
+    background:color-mix(in srgb,var(--surface) 96%,transparent)!important;box-shadow:0 12px 30px rgba(15,23,42,.14)!important;backdrop-filter:blur(20px)!important;
+  }
+  .language-course-shell .language-exam-submit .btn{width:100%!important;min-height:52px!important;margin:0!important;border-radius:14px!important;background:var(--mobile-course-accent)!important}
+
+  .language-course-shell>.bottom-nav{
+    position:fixed!important;inset:auto 0 0!important;z-index:120!important;width:100%!important;max-width:none!important;
+    height:calc(70px + env(safe-area-inset-bottom))!important;margin:0!important;padding:6px 4px env(safe-area-inset-bottom)!important;
+    display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-auto-flow:unset!important;grid-auto-columns:unset!important;gap:0!important;
+    transform:none!important;border:0!important;border-top:1px solid var(--mobile-course-line)!important;border-radius:0!important;
+    background:color-mix(in srgb,var(--surface) 97%,transparent)!important;box-shadow:0 -8px 24px rgba(15,23,42,.07)!important;
+    backdrop-filter:blur(22px) saturate(1.35)!important;-webkit-backdrop-filter:blur(22px) saturate(1.35)!important;
+  }
+  .language-course-shell>.bottom-nav .language-bottom-item{
+    height:62px!important;min-width:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+    gap:2px!important;padding:3px 0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted)!important;
+  }
+  .language-course-shell>.bottom-nav .bottom-nav-icon{width:34px!important;height:30px!important;border-radius:11px!important;display:grid!important;place-items:center!important}
+  .language-course-shell>.bottom-nav .bottom-nav-icon .ui-icon{width:20px!important;height:20px!important}
+  .language-course-shell>.bottom-nav .bottom-nav-label{position:static!important;width:auto!important;height:auto!important;max-width:100%!important;overflow:hidden!important;clip-path:none!important;color:inherit!important;font-size:7.5px!important;font-weight:800!important;line-height:1.1!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  .language-course-shell>.bottom-nav .language-bottom-item.is-active{color:var(--mobile-course-accent)!important}
+  .language-course-shell>.bottom-nav .language-bottom-item.is-active .bottom-nav-icon{background:var(--mobile-course-tint)!important;box-shadow:none!important;animation:none!important}
+}
+
+@media(max-width:370px){
+  .language-course-shell .quiet-course-button{display:none!important}
+  .language-course-shell .quiet-toolbar-title strong{max-width:58vw!important;font-size:15px!important}
+  .language-course-shell .language-page-head h1{font-size:33px!important}
+  .language-course-shell>.bottom-nav .bottom-nav-label{font-size:6.8px!important}
+  .language-course-shell .language-home-step{flex-basis:82vw!important}
+}
+
 /* English course v10 · grounded editorial layout */
 .language-course-shell{--language-rule:color-mix(in srgb,var(--text) 13%,transparent);--language-soft:color-mix(in srgb,var(--language-blue) 5%,var(--surface))}
 .language-course-shell .workspace-main{background:var(--bg)!important}
@@ -530,4 +749,40 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
   .language-course-shell .language-exam-toolbar{top:auto!important;display:block;padding:16px 0!important;border-radius:0!important}
   .language-course-shell .language-exam-type-chips{margin-top:10px;overflow:auto}
   .language-course-shell .language-exam-submit{display:block;padding:20px 0!important;border-radius:0!important}.language-course-shell .language-exam-submit .btn{margin-top:14px}
+}
+
+/* v11 must remain the final mobile cascade after the desktop editorial layer. */
+@media(max-width:820px){
+  .language-course-shell .language-course-page{width:100%!important;margin:0!important;padding:0 16px 32px!important}
+  .language-course-shell .language-page-head,.language-course-shell .language-page-head.placement{
+    position:relative!important;display:block!important;margin:0 -16px!important;padding:28px 18px 24px!important;min-height:190px!important;
+    border:0!important;border-radius:0!important;background:radial-gradient(circle at 92% 8%,rgba(255,255,255,.18),transparent 30%),linear-gradient(145deg,var(--mobile-course-accent),var(--mobile-course-accent-2))!important;
+    color:#fff!important;box-shadow:none!important;overflow:hidden!important
+  }
+  .language-course-shell .language-page-head:before{content:"EN"!important;display:block!important;position:absolute!important;inset:auto -12px -28px auto!important;color:rgba(255,255,255,.09)!important;font:950 118px/.8 Manrope,sans-serif!important;letter-spacing:-.11em!important}
+  .language-course-shell .language-page-head h1{max-width:92%!important;margin:8px 0 9px!important;color:#fff!important;font:900 clamp(34px,10.5vw,46px)/.96 Manrope,sans-serif!important;letter-spacing:-.052em!important}
+  .language-course-shell .language-page-head p{max-width:92%!important;margin:0!important;color:rgba(255,255,255,.79)!important;font-size:13px!important;line-height:1.5!important}
+  .language-course-shell .language-context{margin-top:18px!important;padding:0!important;gap:7px!important}
+  .language-course-shell .language-context span,.language-course-shell .language-context button{min-height:31px!important;padding:7px 10px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:999px!important;background:rgba(255,255,255,.1)!important;color:#fff!important}
+  .language-course-shell .language-context span:first-of-type{background:#fff!important;color:var(--mobile-course-accent-2)!important;border-color:#fff!important;border-radius:999px!important}
+  .language-course-shell .language-hero-grid{grid-template-columns:1fr!important;margin:0 -16px!important}
+  .language-course-shell .language-progress-hero{padding:22px 18px!important;border:0!important;border-bottom:1px solid var(--mobile-course-line)!important;border-radius:0!important;background:var(--surface)!important}
+  .language-course-shell .language-progress-hero strong{font-size:52px!important}
+  .language-course-shell .language-resume-card{padding:23px 18px 25px!important;border:0!important;border-radius:0!important;background:linear-gradient(135deg,var(--mobile-course-accent-2),var(--mobile-course-accent))!important;color:#fff!important}
+  .language-course-shell .language-resume-card h2{font-size:clamp(28px,8vw,36px)!important;line-height:1.02!important}
+  .language-course-shell .language-course-flow,.language-course-shell .language-step-overview,.language-course-shell .language-levels{margin-top:30px!important}
+  .language-course-shell .language-flow-stage,.language-course-shell .language-flow-stage:last-child{min-height:74px!important;padding:11px 6px 11px 0!important;border:0!important;border-radius:0!important}
+  .language-course-shell .language-home-steps{display:flex!important;grid-template-columns:none!important;gap:9px!important;margin:0 -16px!important;padding:14px 16px 5px!important}
+  .language-course-shell .language-home-step,.language-course-shell .language-home-step:last-child{flex:0 0 min(74vw,280px)!important;min-height:116px!important;padding:16px!important;border:1px solid var(--mobile-course-line)!important;border-radius:17px!important}
+  .language-course-shell .language-level-card{padding:12px 2px!important;border-radius:0!important}
+  .language-course-shell .language-step-switch{margin:16px -16px 0!important}
+  .language-course-shell .language-box-strip{margin:0 -16px 16px!important;padding:10px 16px!important}
+  .language-course-shell .language-content-item,.language-course-shell .language-premium-item{padding:21px 0!important;border-radius:0!important}
+  .language-course-shell .language-item-top{display:grid!important;grid-template-columns:40px minmax(0,1fr) auto!important;gap:10px!important;margin-bottom:13px!important}
+  .language-course-shell .language-item-icon{width:40px!important;height:40px!important;margin:0!important}
+  .language-course-shell .language-item-top b{margin:0!important}
+  .language-course-shell .language-premium-item h2{font-size:25px!important}
+  .language-course-shell .language-practice-card,.language-course-shell .language-rule-card,.language-course-shell .language-memory-card,.language-course-shell .language-exam-question-item{padding:22px 0!important;border-radius:0!important}
+  .language-course-shell .language-exam-toolbar{top:calc(64px + env(safe-area-inset-top))!important;display:block!important;padding:11px 16px!important;border-radius:0!important}
+  .language-course-shell .language-exam-submit{display:grid!important;padding:10px!important;border-radius:18px!important}.language-course-shell .language-exam-submit .btn{margin:0!important}
 }
