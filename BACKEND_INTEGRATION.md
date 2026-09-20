@@ -68,6 +68,7 @@ Set these plaintext variables in both environments:
 - `ADMIN_EMAILS`
 - `MAX_UPLOAD_BYTES` (default 512 MiB)
 - `AUTH_ATTEMPT_LIMIT`, `UPLOAD_INIT_LIMIT`, `USER_STORAGE_QUOTA_BYTES`
+- `PASSWORD_RESET_FROM` (for example `Dafatii <account@your-verified-domain.com>`)
 
 Set these as encrypted secrets:
 
@@ -75,6 +76,9 @@ Set these as encrypted secrets:
 - `GOOGLE_DRIVE_CLIENT_SECRET`
 - `GOOGLE_DRIVE_REFRESH_TOKEN`
 - `RATE_LIMIT_PEPPER`
+- `RESEND_API_KEY`
+
+Password recovery sends a non-enumerating, single-use link through Resend. Reset tokens expire after 30 minutes, are stored only as SHA-256 hashes, and become unusable after the first successful reset. A reset revokes every existing session for that account. Verify the sender domain in Resend before setting `PASSWORD_RESET_FROM`; without both email settings the API returns `PASSWORD_RECOVERY_UNAVAILABLE` for every address.
 
 Keep legacy `GCS_BUCKET`, `GCS_CLIENT_EMAIL` and `GCS_PRIVATE_KEY` while old GCS files still exist. Redeploy after bindings or variables change.
 

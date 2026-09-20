@@ -6,6 +6,7 @@ import { canConvertLegacyOffice, convertLegacyOfficeToPdf, deleteDriveFile, driv
 import { completionDisposition, inspectObject, inspectObjectPrefix, signedObjectUrl, verifyCompletedObject, verifyMagicBytes } from '../../_lib/gcs.mjs';
 import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../../_lib/http.mjs';
 import { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } from '../../_lib/policy.mjs';
+import { requestPasswordRecovery, resetPassword } from '../../_lib/password-recovery.mjs';
 import { translateInterfaceText } from '../../_lib/translate.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
@@ -71,6 +72,16 @@ async function session(context) {
 async function logout(context) {
   await revokeCurrentSession(context);
   return ok({ loggedOut: true }, 200, { 'Set-Cookie': clearSessionCookie(context.request) });
+}
+
+async function passwordRecoveryRequest(context) {
+  const input = await readJson(context.request, 4096);
+  return ok(await requestPasswordRecovery(context, input.email));
+}
+
+async function passwordRecoveryReset(context) {
+  const input = await readJson(context.request, 8192);
+  return ok(await resetPassword(context, input.token, input.password));
 }
 
 async function hydrate(context, user) {
@@ -330,6 +341,8 @@ async function dispatch(context) {
   const path = routePath(context.request);
   if (method === 'POST' && path === 'auth/signup') return signup(context);
   if (method === 'POST' && path === 'auth/login') return login(context);
+  if (method === 'POST' && path === 'auth/password-recovery/request') return passwordRecoveryRequest(context);
+  if (method === 'POST' && path === 'auth/password-recovery/reset') return passwordRecoveryReset(context);
   if (method === 'GET' && path === 'auth/session') return session(context);
   if (method === 'POST' && path === 'auth/logout') return logout(context);
   const courseResponse = await dispatchCourseRoute(context, method, path);

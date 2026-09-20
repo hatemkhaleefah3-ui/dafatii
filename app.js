@@ -50,6 +50,10 @@ const AUTH_COPY = {
   ar:{join:'انضم إلى مساحة الدراسة',build:'ابنِ بيتك الأكاديمي.',description:'لطلاب المدارس والجامعات والمتعلمين المستقلين الذين يريدون المواد والتخطيط والتعاون في نظام واحد.',subjects:'المواد',calendar:'التقويم',rooms:'غرف الدراسة',chat:'المحادثات',signin:'تسجيل الدخول',signup:'إنشاء حساب',create:'أنشئ حسابك',welcome:'مرحباً بعودتك',createText:'جهّز مساحة دفاتري الخاصة بك خلال ثوانٍ.',signinText:'سجّل الدخول للمتابعة إلى مساحتك.',name:'الاسم الكامل',namePlaceholder:'اسمك',email:'البريد الإلكتروني',password:'كلمة المرور',accountType:'نوع الحساب',student:'طالب',representer:'ممثل دورة',stage:'المرحلة الدراسية',school:'المدرسة',university:'الجامعة',independent:'تعلم مستقل',createButton:'إنشاء الحساب',offline:'تعذر فحص الاتصال تلقائياً. ما زال بإمكانك إرسال النموذج أو إعادة المحاولة.',secure:'يتحقق خادم دفاتري من بيانات الدخول والأدوار والتسجيل وصلاحيات الدورات.',retry:'حاول مرة أخرى',reconnecting:'جارٍ إعادة الاتصال…',stillOffline:'الخادم غير متاح بعد. تحقق من اتصالك وحاول مرة أخرى.',creating:'جارٍ إنشاء الحساب…',signing:'جارٍ تسجيل الدخول…',failed:'فشلت المصادقة.',adminAccess:'دخول المشرف',adminAccount:'حساب المشرف',adminPin:'رمز المشرف المكون من 4 أرقام',adminPinHint:'يتم التحقق من الرمز والصلاحية على الخادم.',adminEnter:'الدخول كمسؤول',adminChecking:'جارٍ التحقق من حساب المشرف…',adminRejected:'تعذر التحقق من حساب المشرف أو صلاحياته.'},
   en:{join:'Join the workspace',build:'Build your academic home.',description:'For school students, university students and independent learners who want materials, planning and collaboration in one focused system.',subjects:'Subjects',calendar:'Calendar',rooms:'Study rooms',chat:'Chat',signin:'Sign in',signup:'Sign up',create:'Create your account',welcome:'Welcome back',createText:'Set up your Dafatii workspace in a few seconds.',signinText:'Sign in to continue to your workspace.',name:'Full name',namePlaceholder:'Your name',email:'Email',password:'Password',accountType:'Account type',student:'Student',representer:'Course representer',stage:'Student stage',school:'School',university:'University',independent:'Independent',createButton:'Create account',offline:'The automatic connection check failed. You can still submit the form or try the check again.',secure:'Credentials, roles, enrollment and course permissions are verified by Dafatii’s server.',retry:'Try again',reconnecting:'Reconnecting…',stillOffline:'The server is still unavailable. Check your connection and try again.',creating:'Creating account…',signing:'Signing in…',failed:'Authentication failed.',adminAccess:'Admin access',adminAccount:'Administrator account',adminPin:'4-digit administrator PIN',adminPinHint:'The PIN and administrator role are verified by the server.',adminEnter:'Enter as administrator',adminChecking:'Verifying administrator account…',adminRejected:'The administrator account or role could not be verified.'}
 };
+const RECOVERY_COPY = {
+  ar:{forgot:'نسيت كلمة المرور؟',title:'استعادة كلمة المرور',intro:'أدخل بريد حسابك وسنرسل رابط استعادة صالحاً لمدة 30 دقيقة.',send:'إرسال رابط الاستعادة',sending:'جارٍ إرسال الرابط…',sent:'إذا كان الحساب موجوداً، أُرسل رابط الاستعادة إلى بريده.',email:'البريد الإلكتروني للحساب',back:'العودة إلى تسجيل الدخول',resetTitle:'اختر كلمة مرور جديدة',resetIntro:'استخدم 12 حرفاً على الأقل مع مزيج قوي من الأحرف والأرقام والرموز.',newPassword:'كلمة المرور الجديدة',confirmPassword:'تأكيد كلمة المرور',reset:'تعيين كلمة المرور',resetting:'جارٍ تأمين الحساب…',mismatch:'كلمتا المرور غير متطابقتين.',done:'تم تغيير كلمة المرور وإلغاء الجلسات القديمة. سجّل الدخول بكلمة المرور الجديدة.',invalid:'رابط الاستعادة غير صالح أو منتهي.'},
+  en:{forgot:'Forgot password?',title:'Recover your password',intro:'Enter your account email and we will send a single-use link valid for 30 minutes.',send:'Send recovery link',sending:'Sending recovery link…',sent:'If the account exists, a recovery link has been sent to its email.',email:'Account email',back:'Back to sign in',resetTitle:'Choose a new password',resetIntro:'Use at least 12 characters with a strong mix of letters, numbers, and symbols.',newPassword:'New password',confirmPassword:'Confirm password',reset:'Set new password',resetting:'Securing account…',mismatch:'The passwords do not match.',done:'Your password was changed and older sessions were revoked. Sign in with the new password.',invalid:'This recovery link is invalid or expired.'}
+};
 
 const LABELS = {
   dashboard: 'Dashboard', subjects: 'Subjects', calendar: 'Calendar',
@@ -157,7 +161,14 @@ function join(){
           ${isSignup ? `<div class="field"><label>${escapeHtml(c.accountType)}</label><select name="accountType"><option value="student">${escapeHtml(c.student)}</option><option value="representer">${escapeHtml(c.representer)}</option></select></div><div class="field"><label>${escapeHtml(c.stage)}</label><select name="studentStage"><option value="school">${escapeHtml(c.school)}</option><option value="university" selected>${escapeHtml(c.university)}</option><option value="independent">${escapeHtml(c.independent)}</option></select></div>` : ''}
           <button class="btn btn-primary auth-submit" type="submit">${escapeHtml(isSignup ? c.createButton : c.signin)} →</button>
         </form>
-        ${isSignup?'':`<div class="admin-access-divider"><span>${escapeHtml(c.adminAccount)}</span></div>
+        ${isSignup?'':`<button class="forgot-password-button" id="password-recovery-toggle" type="button" aria-expanded="false" aria-controls="password-recovery-panel">${escapeHtml(RECOVERY_COPY[interfaceLanguage()].forgot)}</button>
+        <form class="password-recovery-panel" id="password-recovery-panel" hidden>
+          <div class="password-recovery-head"><span aria-hidden="true">↺</span><div><h3>${escapeHtml(RECOVERY_COPY[interfaceLanguage()].title)}</h3><p>${escapeHtml(RECOVERY_COPY[interfaceLanguage()].intro)}</p></div></div>
+          <label for="recovery-email">${escapeHtml(RECOVERY_COPY[interfaceLanguage()].email)}</label>
+          <input id="recovery-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+          <button class="btn btn-primary" type="submit">${escapeHtml(RECOVERY_COPY[interfaceLanguage()].send)} →</button>
+        </form>
+        <div class="admin-access-divider"><span>${escapeHtml(c.adminAccount)}</span></div>
         <button class="admin-access-button" id="admin-access-toggle" type="button" aria-expanded="false" aria-controls="admin-pin-panel"><span aria-hidden="true">◆</span><strong>${escapeHtml(c.adminAccess)}</strong><b>→</b></button>
         <form class="admin-pin-panel" id="admin-pin-panel" hidden>
           <div class="admin-account-row"><span>H</span><div><small>${escapeHtml(c.adminAccount)}</small><strong>${escapeHtml(ADMIN_ACCESS_EMAIL)}</strong></div></div>
@@ -173,6 +184,27 @@ function join(){
   </div>`;
   document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{state.authMode=b.dataset.auth;join();});
   document.querySelector('[data-interface-language]')?.addEventListener('click',event=>{applyInterfaceLanguage(event.currentTarget.dataset.interfaceLanguage);join();});
+  const recoveryToggle=document.getElementById('password-recovery-toggle');
+  const recoveryPanel=document.getElementById('password-recovery-panel');
+  if(recoveryToggle&&recoveryPanel){
+    const rc=RECOVERY_COPY[interfaceLanguage()];
+    recoveryToggle.onclick=()=>{
+      const opening=recoveryPanel.hidden;
+      recoveryPanel.hidden=!opening;
+      recoveryToggle.setAttribute('aria-expanded',String(opening));
+      if(opening)setTimeout(()=>document.getElementById('recovery-email')?.focus(),30);
+    };
+    recoveryPanel.onsubmit=async event=>{
+      event.preventDefault();
+      const submit=recoveryPanel.querySelector('[type="submit"]'),status=document.getElementById('auth-status'),authForm=document.getElementById('auth-form');
+      submit.disabled=true;recoveryPanel.dataset.submitting='true';authForm.dataset.submitting='true';status.textContent=rc.sending;
+      try{
+        await window.DafatiiApi.request('/auth/password-recovery/request',{method:'POST',body:{email:new FormData(recoveryPanel).get('email')}});
+        status.textContent=rc.sent;recoveryPanel.reset();recoveryPanel.hidden=true;recoveryToggle.setAttribute('aria-expanded','false');
+      }catch(error){status.textContent=error.message||rc.invalid;}
+      submit.disabled=false;delete recoveryPanel.dataset.submitting;delete authForm.dataset.submitting;
+    };
+  }
   const adminToggle=document.getElementById('admin-access-toggle');
   const adminPanel=document.getElementById('admin-pin-panel');
   if(adminToggle&&adminPanel){
@@ -226,6 +258,27 @@ function join(){
       submit.disabled=false;
       delete form.dataset.submitting;
     }
+  };
+}
+
+function passwordResetPage(encodedToken){
+  const c=RECOVERY_COPY[interfaceLanguage()];
+  let token='';try{token=decodeURIComponent(encodedToken||'');}catch{}
+  app.innerHTML=`<div class="join-page password-reset-page"><section class="join-panel"><div class="join-brand">${brand()}</div><div class="join-copy"><div class="eyebrow">Dafatii security</div><h1>${escapeHtml(c.resetTitle)}</h1><p>${escapeHtml(c.resetIntro)}</p></div></section><section class="auth-side"><div class="auth-card password-reset-card"><div class="auth-card-tools"><button class="landing-language" data-interface-language="${interfaceLanguage()==='ar'?'en':'ar'}">${interfaceLanguage()==='ar'?'EN':'ع'}</button></div><span class="password-reset-icon" aria-hidden="true">↺</span><h2>${escapeHtml(c.resetTitle)}</h2><p>${escapeHtml(c.resetIntro)}</p><form id="password-reset-form"><div class="field"><label>${escapeHtml(c.newPassword)}</label><input type="password" name="password" minlength="12" maxlength="256" autocomplete="new-password" required></div><div class="field"><label>${escapeHtml(c.confirmPassword)}</label><input type="password" name="confirmPassword" minlength="12" maxlength="256" autocomplete="new-password" required></div><button class="btn btn-primary auth-submit" type="submit">${escapeHtml(c.reset)} →</button></form><div class="auth-note" id="password-reset-status">${escapeHtml(token?c.resetIntro:c.invalid)}</div><button class="forgot-password-button" type="button" data-reset-back>${escapeHtml(c.back)}</button></div></section></div>`;
+  document.querySelector('[data-interface-language]')?.addEventListener('click',event=>{applyInterfaceLanguage(event.currentTarget.dataset.interfaceLanguage);passwordResetPage(encodedToken);});
+  document.querySelector('[data-reset-back]').onclick=()=>{state.authMode='signin';setHash('join');};
+  const form=document.getElementById('password-reset-form');
+  if(!token){form.querySelectorAll('input,button').forEach(node=>node.disabled=true);return;}
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    const values=new FormData(form),password=String(values.get('password')||''),confirm=String(values.get('confirmPassword')||''),submit=form.querySelector('[type="submit"]'),status=document.getElementById('password-reset-status');
+    if(password!==confirm){status.textContent=c.mismatch;return;}
+    submit.disabled=true;status.textContent=c.resetting;
+    try{
+      await window.DafatiiApi.request('/auth/password-recovery/reset',{method:'POST',body:{token,password}});
+      form.reset();form.querySelectorAll('input,button').forEach(node=>node.disabled=true);status.textContent=c.done;
+      setTimeout(()=>{state.authMode='signin';setHash('join');},1800);
+    }catch(error){status.textContent=error.message||c.invalid;submit.disabled=false;}
   };
 }
 
@@ -573,6 +626,7 @@ function render(){
   const r=route();
   if(r==='landing'){ landing(); return; }
   if(r==='join'){ join(); return; }
+  if(r.startsWith('reset-password/')){passwordResetPage(r.slice('reset-password/'.length));return;}
   if(!state.authReady){ app.innerHTML='<div class="join-page"><section class="auth-side"><div class="auth-card"><h2>Checking your session…</h2><p>Your secure workspace is loading.</p></div></section></div>'; return; }
   if(!state.joined){ setHash('join'); return; }
   if(window.DafatiiOnboarding?.blocks?.()){void window.DafatiiOnboarding.render();return;}

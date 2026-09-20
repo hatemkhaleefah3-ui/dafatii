@@ -35,7 +35,7 @@ assert.match(index, /delete-manager\.js\?v=20260919-1/, 'the replacement delete 
 assert.match(index, /student-suite\.js\?v=20260919-3/, 'student suite CRUD endpoints must use the unified content control build');
 assert.match(index, /quiet-shell\.js\?v=15/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
-assert.match(index, /app\.js\?v=20260920-5/, 'the verified administrator access build must be loaded');
+assert.match(index, /app\.js\?v=20260920-6/, 'the password recovery build must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
 assert.match(index, /onboarding-flow\.js\?v=20260918-6/, 'the sequential onboarding controller must be loaded');
 assert.doesNotMatch(index, /pre-course\.css/, 'the obsolete pre-course website stylesheet must not be loaded');
@@ -149,7 +149,7 @@ assert.ok(lectureMedia.includes("parts[1]==='lecture-study'") && lectureMedia.in
 assert.ok(lectureMediaCss.includes('Lecture study tools v2') && lectureMediaCss.includes('.flashcard-stage') && lectureMediaCss.includes('.mcq-exam-card') && lectureMediaCss.includes('.qa-exam-card') && lectureMediaCss.includes('.lecture-study-manager'), 'the three study pages and their manager must have dedicated responsive styling');
 assert.ok(index.includes('lecture-media.js?v=20260919-4') && index.includes('lecture-media.css?v=20260919-4'), 'lecture study assets must be cache-busted');
 const app = fs.readFileSync('app.js', 'utf8');
-assert.match(index, /styles\.css\?v=20260920-5/, 'administrator access styling must be cache-busted');
+assert.match(index, /styles\.css\?v=20260920-6/, 'password recovery styling must be cache-busted');
 assert.match(app, /const ADMIN_ACCESS_EMAIL = 'hatemkhaleefah3@gmail\.com'/, 'administrator access must target the requested account only');
 assert.match(app, /name="adminPin"[^>]*inputmode="numeric"[^>]*pattern="\[0-9\]\{4\}"/, 'administrator access must accept exactly four numeric digits');
 assert.match(app, /authenticated\?\.platformRole!=='admin'/, 'the client must reject a PIN-authenticated non-admin account');

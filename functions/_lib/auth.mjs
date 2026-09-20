@@ -8,7 +8,7 @@ const SESSION_SECONDS = 60 * 60 * 24 * 30;
 const DUMMY_PASSWORD_HASH = 'pbkdf2-sha256-p1$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const normalizeEmail = value => String(value || '').trim().normalize('NFKC').toLowerCase();
 
-function validateStrongPassword(password, signup) {
+export function validateStrongPassword(password, signup) {
   if (password.length < 12 || password.length > 256) throw new HttpError(400, 'INVALID_CREDENTIALS', signup ? 'Password must be 12–256 characters and at least medium strength.' : 'Identifier or credential is invalid.');
   if (!signup) return;
   const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9\s]/].reduce((count, pattern) => count + Number(pattern.test(password)), 0);
