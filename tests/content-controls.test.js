@@ -12,6 +12,23 @@ assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"
 assert.ok(js.includes("dcc-trigger-icon") && js.includes(">⌃</span>") && js.includes("<strong>Manage</strong>"), 'eligible pages need the premium Manage Content button');
 assert.ok(js.includes('data-dcc-action="delete"') && js.includes('data-dcc-action="edit"') && js.includes('data-dcc-action="add"'), 'content sheet must expose delete, edit, and add');
 assert.ok(js.includes("window.DafatiiDeleteManager?.activate?.()"), 'Delete must delegate to the replacement delete manager');
+assert.match(js,/data-dcc-language-root="content"/,'language Content Control must offer Control the content');
+assert.match(js,/data-dcc-language-root="exam"/,'language Content Control must offer Control the exam');
+assert.match(js,/function openLanguageContentSelector\(\)/,'language content selector must exist');
+for (const selector of ['level','step','box','page']) {
+  assert.ok(js.includes('data-dcc-language-select="'+selector+'"'),'language content control missing selector '+selector);
+}
+for (const action of ['edit','delete','empty','add']) {
+  assert.ok(js.includes('data-dcc-language-item-action="'+action+'"'),'language item control missing '+action);
+}
+assert.match(js,/function onLanguageItemClick\(event\)/,'language content selection mode must be item-selective');
+assert.match(js,/api\.emptyPage\(selection\)/,'Empty the page must remove all selected page items');
+assert.match(js,/api\.saveItem\(selection,next\)/,'item edit/add forms must persist the selected item');
+assert.match(js,/api\.deleteItem\(selection,id\)/,'selected language items must be deletable');
+assert.match(js,/function openLanguageExamManager\(selection\)/,'Control the exam must open a question manager');
+assert.match(js,/api\.saveExamQuestion/,'exam questions must be addable/editable');
+assert.match(js,/api\.deleteExamQuestion/,'exam questions must be deletable');
+assert.match(js,/api\.emptyExamQuestions/,'exam controls must support emptying an exam');
 assert.ok(!js.includes('dcc-delete-hitbox') && !js.includes('dcc-selection-bar') && !js.includes('toggleDeleteSelection'), 'legacy delete-selection implementation must be removed from content-controls.js');
 assert.ok(js.includes("function beginEdit()") && js.includes("state.editItems = buildEditItems()"), 'edit mode must remain item-driven');
 assert.ok(js.includes("function uniqueAddActions()") && js.includes("route.startsWith('calendar/schedule')") && js.includes("const control=actions.find(candidate=>candidate.dataset?.plannerAddType)") && js.includes("return [{control,label:labels[type]||'Item',type}]"), 'Manage Content Add must open the active planner subpage form directly');
@@ -28,8 +45,8 @@ assert.ok(calendar.includes('data-planner-add-type') && calendar.includes('data-
 assert.ok(js.includes("const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷'}") && !js.includes("attendance:'◎'"), 'planner add metadata must include only the four remaining planner sections');
 assert.ok(social.includes('data-content-edit-room') && social.includes('data-content-delete-room'), 'user-created study rooms must expose edit/delete endpoints');
 
-assert.ok(index.includes('content-controls.css?v=20260919-7') && index.includes('content-controls.js?v=20260919-10'), 'new content-control assets must load');
+assert.ok(index.includes('content-controls.css?v=20260920-1') && index.includes('content-controls.js?v=20260920-1'), 'new content-control assets must load');
 assert.ok(index.includes('delete-manager.css?v=20260919-1') && index.includes('delete-manager.js?v=20260919-1'), 'replacement delete manager assets must load');
-assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260919-10'), 'delete manager must load before content controls delegate to it');
+assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260920-1'), 'delete manager must load before content controls delegate to it');
 
 console.log('unified content controls tests passed');
