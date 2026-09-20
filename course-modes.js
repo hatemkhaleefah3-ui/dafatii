@@ -430,6 +430,7 @@
         {id:'letter-example',type:'info',eyebrow:'How to learn',title:'Listen · Look · Draw · Check',body:'Use the example word only after hearing the isolated letter name. Draw uppercase and lowercase separately and repeat any weak form.'}
       ];
     }
+    if(!data&&page!=='examine')return [];
     if(page==='letters'&&li===0){
       return [
         {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear each target separately, repeat it, then use the writing task.',audioText:data.voicePrompt},
@@ -809,8 +810,9 @@
     const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=videoItem?.responseLanguage||'English',arabic=responseLanguage==='Arabic';
     const videoMarkup=videoItem?'<article class="language-video-player language-content-item"'+contentItemAttrs(videoItem)+' data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>'+esc(videoItem.eyebrow||'Video understanding')+'</small><h2>'+esc(videoItem.title||data.title)+'</h2><p>Press play. The lesson will present '+itemLines(videoItem,'scenes').length+' narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>':'';
     const responseMarkup=responseItem?'<article class="language-video-response language-content-item"'+contentItemAttrs(responseItem)+'><small>'+esc(responseItem.eyebrow||'Understanding response')+' · '+esc(responseLanguage)+'</small><h2>'+esc(responseItem.title||'Explain what you understood')+'</h2><p>'+esc(responseItem.body||'')+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+esc(responseItem.placeholder||'Write here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>':'';
+    const extraMarkup=items.filter(item=>!['video','response'].includes(item.type)).map(item=>infoItemCard(item,'video-information-item')).join('');
     return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
-      videoMarkup+responseMarkup+
+      videoMarkup+responseMarkup+extraMarkup+
       '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem?'Watch the video and complete your response':'Add both video and response items before completion'))+'</button></section>';
   }
 
@@ -1078,8 +1080,8 @@
       const type=courseType(),page=String(current||'').split('/')[0];
       if(type==='language' && window.DafatiiCourses.active().id){
         const state=languageState();
-        if(state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
-        if(!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
+        if(!languageAuthoringTarget&&!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
         if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
