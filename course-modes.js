@@ -417,13 +417,27 @@
     };
   }
   function writeLanguageContentStore(store){
+    if(!isAdminActor())throw new Error('Administrator access is required for Language Course authoring.');
     window.DafatiiCourses.writeJSON(languageContentStoreKey(),store);
     return store;
   }
   function contentPageKey(li,step,box,page){return CEFR[li].id+':'+step+':'+box+':'+page;}
   function examStoreKey(ctx){return ctx.scope+':'+CEFR[ctx.li].id+':'+ctx.step+':'+ctx.box;}
   function contentItemId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);}
-  function activeLanguagePosition(state){return languageAuthoringTarget?{...languageAuthoringTarget}:clampSelection(state);}
+  function adminLanguageAuthoring(){return isAdminActor()&&Boolean(languageAuthoringTarget);}
+  function normalizeAuthoringTarget(selection={}){
+    const li=Math.min(4,Math.max(0,Number(selection.li)||0));
+    const step=Math.min(5,Math.max(1,Number(selection.step)||1));
+    const box=Math.min(boxCount(li),Math.max(1,Number(selection.box)||1));
+    return {li,step,box};
+  }
+  function setLanguageAuthoringTarget(selection={}){
+    if(!isAdminActor())return false;
+    languageAuthoringTarget=normalizeAuthoringTarget({...languageAuthoringTarget,...selection});
+    window.dispatchEvent(new CustomEvent('dafatii:languageauthoringtarget',{detail:{...languageAuthoringTarget}}));
+    return true;
+  }
+  function activeLanguagePosition(state){return adminLanguageAuthoring()?{...languageAuthoringTarget}:clampSelection(state);}
   function languagePageName(page,li){
     if(page==='letters')return li===0?'Letters & writing':'Video understanding';
     return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
@@ -583,9 +597,11 @@
   function deleteExamQuestion(selection,id){return mutateExamQuestions(selection,items=>items.filter(item=>(item.id||'')!==id));}
   function emptyExamQuestions(selection){return mutateExamQuestions(selection,()=>[]);}
   function beginLanguageAuthoring(selection){
-    languageAuthoringTarget={li:selection.li,step:selection.step,box:selection.box};
+    if(!isAdminActor())return false;
+    setLanguageAuthoringTarget(selection);
     const route=LANGUAGE_CONTENT_PAGE_ROUTES[selection.page]||'language-letters';
     if((location.hash||'').replace(/^#\/?/,'').split('/')[0]===route)render();else setHash(route);
+    return true;
   }
   function endLanguageAuthoring(){languageAuthoringTarget=null;render();}
 
