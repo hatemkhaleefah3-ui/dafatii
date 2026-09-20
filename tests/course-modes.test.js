@@ -14,33 +14,48 @@ for (const level of ['A1','A2','B1','B2','C1']) {
 for (const route of ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine']) {
   assert.ok(js.includes(route), 'missing language navigation route '+route);
 }
-assert.match(js,/5\*5\*26/,'language program must model five levels, five steps and twenty-six boxes');
-assert.match(js,/boxUnlocked\(state,li,step,box\)/,'box progression must be explicitly gated');
-assert.match(js,/stepUnlocked\(state,li,step\)/,'step progression must be explicitly gated');
-assert.match(js,/levelUnlocked\(state,li\)/,'level progression must be explicitly gated');
-assert.match(js,/scope==='box'/,'box assessments must exist');
-assert.match(js,/scope==='step'/,'step assessments must exist');
-assert.match(js,/scope==='level'/,'level assessments must exist');
-assert.match(js,/score>=80/,'assessment pass threshold must be enforced');
-assert.match(js,/dafatii:language-progress:/,'language learner progress must be isolated per user/course rather than stored in shared course content');
-assert.match(js,/function creditBox\(state,id\)/,'challenge exam credit must mark the credited learning content complete');
-assert.match(js,/letters:true,voice:true,grammar:true,review:true,exam:true/,'passing an assessment must credit every module in that box');
-assert.match(js,/return pos\.box<2\?null:boxData/,'voice, grammar and revision must not expose Box 2 before Box 1 is passed');
-assert.match(js,/name="studyType" value="courses"/,'language course creation must submit a backend-supported study structure');
-assert.doesNotMatch(js,/name="studyType" value="language"/,'language mode must not be sent as an invalid backend study structure');
-assert.match(js,/isPersonal=type==='personal'/,'personal course creation must have an explicit solo setup path');
-assert.match(js,/name="pricing" value="free"/,'personal courses must not expose paid enrollment');
-assert.match(js,/name="accessCode" value="/,'personal courses must use an internal access secret instead of asking the learner to distribute one');
-assert.match(js,/Which sentence best demonstrates the target grammar accurately\?/,'language exams must assess language use rather than only curriculum metadata');
-assert.match(js,/SpeechSynthesisUtterance/,'voice playback must be functional');
-assert.match(js,/SpeechRecognition\|\|window\.webkitSpeechRecognition/,'reverse voice-to-text practice must use browser speech recognition when available');
-assert.match(js,/language-trace-canvas/,'letters page must include a drawing surface');
-assert.match(js,/courseType\(\)==='personal'/,'personal courses must have dedicated behavior');
-assert.match(js,/personal-focus-room/,'personal courses must expose exactly one seeded focus room');
-assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal Study Rooms route must render the single focus studio');
-assert.match(js,/data-language-ui-switch/,'language workspace must expose an Arabic-English switcher');
-assert.ok(css.includes('.language-course-page') && css.includes('.personal-focus-grid') && css.includes('.course-type-grid'),'course mode styles must be loaded');
-assert.ok(index.includes('course-modes.css?v=20260920-1') && index.includes('course-modes.js?v=20260920-2'),'course mode assets must be cache-busted and loaded');
-assert.ok(index.indexOf('course-modes.js?v=20260920-2') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
 
-console.log('course modes tests passed');
+assert.match(js,/TOTAL_LANGUAGE_BOXES = 5\*26 \+ 4\*5\*25/,'course must contain 630 boxes: A1 has 26 per step; A2-C1 have 25');
+assert.match(js,/function boxCount\(li\)\{ return li===0 \? 26 : 25; \}/,'box count must differ between A1 and later levels');
+assert.match(js,/for\(let step=1;step<=5;step\+\+\) if\(!isStepPassed/,'a level must require all five steps');
+assert.match(js,/for\(let box=1;box<=boxCount\(li\);box\+\+\) if\(!isBoxPassed/,'a step must require all of its boxes');
+assert.match(js,/boxStudyComplete\(state,li,step,box\)&&boxExamPassed\(state,li,step,box\)/,'a box must require both learning content and its dedicated exam');
+assert.match(js,/\['pronunciation','voice','grammar','review'\]\.every/,'normal boxes must require all learning pages');
+assert.match(js,/LETTERS\.every\(letter=>practiced\.includes\(letter\)\)/,'the A1 letters box must require all 26 letters');
+assert.match(js,/LANGUAGE_FUNCTIONS = \[/,'normal boxes must have explicit per-box communication functions');
+assert.match(js,/languageFunction,phase,title:/,'box content must carry its own learning function and step phase');
+assert.match(js,/function examQuestions\(li,step,box\)/,'each box must have a dedicated exam generator');
+assert.doesNotMatch(js,/scope==='step'/,'step exams must not bypass box completion');
+assert.doesNotMatch(js,/scope==='level'/,'level exams must not bypass step completion');
+assert.doesNotMatch(js,/function markPass\(/,'exams must not bulk-credit unfinished prerequisite content');
+assert.match(js,/score>=80/,'box exam pass threshold must be enforced');
+
+assert.match(js,/data-speak-letter=/,'letters must have individual pronunciation controls');
+assert.match(js,/id="letter-upper-canvas"/,'each letter must have a separate uppercase drawing canvas');
+assert.match(js,/id="letter-lower-canvas"/,'each letter must have a separate lowercase drawing canvas');
+assert.match(js,/data-letter-complete=/,'letters must be completed individually');
+assert.match(js,/activeLetterByStep/,'the selected letter must persist per A1 step');
+assert.match(js,/letterProgress/,'per-letter practice progress must be persisted');
+
+assert.match(js,/name="studyType" value="courses"/,'language course creation must submit a backend-supported study structure');
+assert.doesNotMatch(js,/name="studyType" value="language"/,'language mode must not be submitted as an invalid backend study structure');
+assert.match(js,/dafatii:language-progress:/,'language learner progress must remain per user/course');
+assert.match(js,/:v2/,'redesigned progression must use the v2 progress state');
+
+assert.match(js,/SpeechSynthesisUtterance/,'pronunciation playback must remain functional');
+assert.match(js,/SpeechRecognition\|\|window\.webkitSpeechRecognition/,'voice-to-text practice must use speech recognition where available');
+assert.match(js,/data-language-ui-switch/,'language workspace must expose the Arabic-English switcher');
+
+assert.match(js,/isPersonal=type==='personal'/,'personal course creation must retain its solo setup path');
+assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
+assert.match(js,/personal-focus-room/,'personal courses must retain one focus room');
+assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal Study Rooms must remain the single focus studio');
+
+for (const selector of ['.language-course-page','.course-type-grid','.language-home-steps','.letter-index-grid','.letter-trace-grid','.language-exam-summary']) {
+  assert.ok(css.includes(selector),'missing redesigned language style '+selector);
+}
+assert.ok(index.includes('course-modes.css?v=20260920-2'),'redesigned language CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-3'),'redesigned language JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-3') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
+
+console.log('course modes v2 tests passed');
