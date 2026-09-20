@@ -1303,39 +1303,28 @@
     return latin>=50&&arabic<8&&text.split(/\s+/).length>=12;
   }
   function bindVideoUnderstanding(){
-    const play=document.querySelector('[data-play-language-video]'),field=document.getElementById('language-video-response');
+    const watchedButton=document.querySelector('[data-video-watched]'),field=document.getElementById('language-video-response');
     const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
-    if(!play||!field||!complete)return;
+    if(!field||!complete)return;
     const state=languageState(),pos=activeLanguagePosition(state),id=keyBox(CEFR[pos.li].id,pos.step,pos.box);
     const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     if(!videoItem||!responseItem)return;
-    const frames=itemLines(videoItem,'scenes'),responseLanguage=videoItem.responseLanguage||'English';
-    let watched=Boolean(state.watchedVideos[id]),playing=false,timer=null,index=0;
-    const frame=document.querySelector('[data-video-frame]'),bar=document.querySelector('[data-video-progress]'),status=document.querySelector('[data-video-status]');
+    const youtubeUrl=String(videoItem.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
+    const responseLanguage=videoItem.responseLanguage||'English';
+    let watched=Boolean(state.watchedVideos[id]);
     const updateGate=()=>{
       const valid=videoResponseValid(pos.li,field.value);
-      complete.disabled=complete.classList.contains('done')?false:!(watched&&valid);
-      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+responseLanguage):'Watch the full video first';
+      complete.disabled=complete.classList.contains('done')?false:!(validYouTube&&watched&&valid);
+      if(!complete.classList.contains('done'))complete.textContent=!validYouTube?'Add a valid YouTube video link first':!watched?'Watch the YouTube video first':(valid?t('complete'):'Write a fuller response in '+responseLanguage);
       if(feedback)feedback.textContent=valid?'Response length and language are ready.':(responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
     };
-    const finish=()=>{
-      if(timer){clearInterval(timer);timer=null;}playing=false;watched=true;
+    watchedButton?.addEventListener('click',()=>{
+      if(!validYouTube)return;
+      watched=true;
+      watchedButton.textContent='✓ Watched';
       updateLanguage(value=>{value.watchedVideos[id]=true;});
-      if(bar)bar.style.width='100%';if(status)status.textContent='Watched completely';play.textContent='Replay video';updateGate();
-    };
-    const showFrame=()=>{
-      if(index>=frames.length){finish();return;}
-      const text=frames[index];
-      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+frames.length+'</small><h2>'+esc(videoItem.title||'Video understanding')+'</h2><p>'+esc(text)+'</p>';
-      if(bar)bar.style.width=Math.round((index/Math.max(1,frames.length))*100)+'%';
-      speak(text);index++;
-    };
-    play.onclick=()=>{
-      if(playing||!frames.length)return;
-      if(timer)clearInterval(timer);
-      playing=true;index=0;play.textContent='Playing…';if(status)status.textContent='Watch and listen to every scene';
-      showFrame();timer=setInterval(showFrame,4200);
-    };
+      updateGate();
+    });
     field.addEventListener('input',updateGate);
     field.addEventListener('blur',()=>updateLanguage(value=>{value.videoResponses[id]=field.value;}));
     complete.onclick=()=>{
