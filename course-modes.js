@@ -1348,6 +1348,7 @@
     };
   }
   function bindLanguagePage(){
+    const authoring=adminLanguageAuthoring();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
@@ -1361,9 +1362,11 @@
       setHash('language-examine');
     });
 
-    document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
-    document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
-    document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
+    document.querySelectorAll('[data-language-level]').forEach(button=>button.onclick=()=>{const li=Number(button.dataset.languageLevel);if(authoring){setLanguageAuthoringTarget({li,step:1,box:1});render();return;}updateLanguage(state=>{if(levelUnlocked(state,li)){state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;}});render();});
+    document.querySelectorAll('[data-language-step]').forEach(button=>button.onclick=()=>{const step=Number(button.dataset.languageStep);if(authoring){setLanguageAuthoringTarget({step,box:1});render();return;}updateLanguage(state=>{const pos=clampSelection(state);if(stepUnlocked(state,pos.li,step)){state.selectedStep=step;state.selectedBox=1;}});render();});
+    document.querySelectorAll('[data-language-box]').forEach(button=>button.onclick=()=>{const box=Number(button.dataset.languageBox);if(authoring){setLanguageAuthoringTarget({box});render();return;}updateLanguage(state=>{const pos=clampSelection(state);if(boxUnlocked(state,pos.li,pos.step,box))state.selectedBox=box;});render();});
+
+    if(authoring){bindLetterDrawing();return;}
 
     document.querySelectorAll('[data-letter-select]').forEach(button=>button.onclick=()=>{const letter=button.dataset.letterSelect;updateLanguage(state=>{const pos=clampSelection(state);state.activeLetterByStep[letterProgressKey(pos.li,pos.step)]=letter;});render();});
     document.querySelector('[data-letter-next]')?.addEventListener('click',event=>{if(event.currentTarget.disabled)return;updateLanguage(state=>{const pos=clampSelection(state),pkey=letterProgressKey(pos.li,pos.step),current=state.activeLetterByStep[pkey]||LETTERS.find(letter=>!(state.letterProgress[pkey]||[]).includes(letter))||'A';const index=LETTERS.indexOf(current);state.activeLetterByStep[pkey]=LETTERS[(index+1)%LETTERS.length];});render();});
