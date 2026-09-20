@@ -409,15 +409,15 @@
   }
 
   function currentLearningBox(state,pos){
-    if(pos.box<2){
-      updateLanguage(s=>{s.selectedBox=boxUnlocked(s,pos.li,pos.step,2)?2:1;});
-      return boxData(pos.li,pos.step,Math.max(2,pos.box));
-    }
-    return boxData(pos.li,pos.step,pos.box);
+    return pos.box<2?null:boxData(pos.li,pos.step,pos.box);
+  }
+  function boxOneGate(state,pos,title,intro){
+    return '<section class="language-course-page">'+languageHeader(state,pos,title,title,intro)+'<article class="language-box-one-gate"><span>1</span><div><small>Box 1 prerequisite</small><h2>Finish the sound & writing box first.</h2><p>Box 2–26 stay locked until you pass the Box 1 examination. You can take that assessment at any time from Examine.</p></div><div><a href="#language-letters">Open Box 1</a><a href="#language-examine">Examine</a></div></article></section>';
   }
 
   function voicePage(){
     const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);
+    if(!data)return boxOneGate(state,pos,t('voice'),t('voiceIntro'));
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('voice'),data.title,t('voiceIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
       '<div class="language-practice-grid"><article class="language-practice-card dictation"><small>Voice → text</small><h2>Listen, then write exactly what you hear.</h2><button class="language-audio-button" type="button" data-speak="'+esc(data.voicePrompt)+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="Type the sentence you hear"></textarea><button type="button" data-check-dictation="'+esc(data.voicePrompt)+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>'+
@@ -426,7 +426,7 @@
   }
 
   function grammarPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos),module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
+    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('grammar'),data.grammarTitle,t('grammarIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
       '<div class="language-rule-layout"><article class="language-rule-card primary"><span>01</span><small>Grammar rule</small><h2>'+esc(data.grammarTitle)+'</h2><p>'+esc(data.grammarRule)+'</p><div class="language-examples"><code>'+esc(data.grammarExample1)+'</code><code>'+esc(data.grammarExample2)+'</code></div></article>'+
       '<article class="language-rule-card"><span>02</span><small>Naming</small><h2>Clear noun choices</h2><p>'+esc(data.naming)+'</p><div class="language-word-row">'+data.words.slice(0,4).map(word=>'<b>'+esc(word)+'</b>').join('')+'</div></article>'+
@@ -435,7 +435,7 @@
   }
 
   function reviewPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos),id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'';
+    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('review'),t('reviewIntro'));const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'';
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('review'),data.title,t('reviewIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
       '<div class="language-review-grid"><article class="language-memory-card"><small>Active vocabulary</small><h2>Retrieve before you reveal</h2><div class="language-vocab-grid">'+data.words.map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>'+
       '<article class="language-memory-card"><small>Learning trick</small><h2>'+esc(data.trick)+'</h2><p>'+esc(data.recall)+'</p><ol><li>Attempt from memory.</li><li>Check only after the attempt.</li><li>Correct the smallest specific error.</li><li>Repeat after a short delay.</li></ol></article>'+
@@ -469,6 +469,18 @@
       '<form id="language-exam-form" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit">'+t('submitExam')+'</button><div class="language-exam-result" id="language-exam-result"></div></form></section>';
   }
 
+  let personalTimer=null;
+  function personalRoomPage(){
+    const suite=readSuite(),room=suite.personalRoom||{goal:'',notes:'',minutes:50,sessions:0};
+    return '<section class="language-course-page personal-focus-page"><header class="personal-focus-hero"><div><small>Personal course · one private room</small><h1>My Focus Room</h1><p>A single distraction-controlled studio for deliberate study, session timing, working notes and materials.</p></div><div class="personal-focus-stat"><strong>'+Number(room.sessions||0)+'</strong><span>focus sessions</span></div></header><div class="personal-focus-grid"><article class="personal-focus-timer"><small>Focus block</small><div id="personal-focus-clock">'+String(Number(room.minutes||50)).padStart(2,'0')+':00</div><div><button type="button" data-personal-timer="start">Start</button><button type="button" data-personal-timer="reset">Reset</button></div><label>Minutes<input id="personal-focus-minutes" type="number" min="5" max="180" value="'+Number(room.minutes||50)+'"></label></article><article class="personal-focus-card"><small>One outcome</small><h2>What must be true when this block ends?</h2><textarea id="personal-focus-goal" rows="4" placeholder="Define one observable outcome…">'+esc(room.goal||'')+'</textarea><button type="button" data-personal-save>Save room</button></article><article class="personal-focus-card wide"><small>Working notes</small><h2>Keep the room quiet; capture only useful thinking.</h2><textarea id="personal-focus-notes" rows="10" placeholder="Notes, questions, formulas, links…">'+esc(room.notes||'')+'</textarea></article></div></section>';
+  }
+  function savePersonalRoom(extra={}){const suite=readSuite(),previous=suite.personalRoom||{};suite.personalRoom={...previous,...extra};writeSuite(suite);}
+  function bindPersonalRoom(){
+    document.querySelector('[data-personal-save]')?.addEventListener('click',()=>{savePersonalRoom({goal:document.getElementById('personal-focus-goal').value,notes:document.getElementById('personal-focus-notes').value,minutes:Number(document.getElementById('personal-focus-minutes').value)||50});});
+    document.querySelector('[data-personal-timer="reset"]')?.addEventListener('click',()=>{if(personalTimer){clearInterval(personalTimer);personalTimer=null;}const m=Number(document.getElementById('personal-focus-minutes').value)||50;document.getElementById('personal-focus-clock').textContent=String(m).padStart(2,'0')+':00';});
+    document.querySelector('[data-personal-timer="start"]')?.addEventListener('click',()=>{if(personalTimer)return;let remaining=(Number(document.getElementById('personal-focus-minutes').value)||50)*60;const clock=document.getElementById('personal-focus-clock');personalTimer=setInterval(()=>{remaining--;clock.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(remaining<=0){clearInterval(personalTimer);personalTimer=null;const suite=readSuite(),room=suite.personalRoom||{};savePersonalRoom({sessions:Number(room.sessions||0)+1,goal:document.getElementById('personal-focus-goal').value,notes:document.getElementById('personal-focus-notes').value,minutes:Number(document.getElementById('personal-focus-minutes').value)||50});}},1000);});
+  }
+
   function languageContent(page){
     if(page==='language-home')return homePage();
     if(page==='language-letters')return lettersPage();
@@ -483,6 +495,7 @@
     const previousContent=workspaceContent;
     workspaceContent=function(page,parts,title){
       if(isLanguage()&&LANGUAGE_ROUTES.includes(page))return languageContent(page);
+      if(courseType()==='personal'&&page==='study-rooms')return personalRoomPage();
       return previousContent(page,parts,title);
     };
     const previousWorkspace=workspace;
@@ -495,6 +508,7 @@
       previousWorkspace(current);
       adaptNavigation();
       if(type==='language')bindLanguagePage();
+      if(type==='personal'&&page==='study-rooms')bindPersonalRoom();
     };
   }
 
