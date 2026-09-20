@@ -667,8 +667,7 @@
     ];
     return sample.map(item=>({prompt:item[0],correct:item[1],options:item[2]}));
   }
-
-  function examQuestions(li,step,box){
+  function boxQuestionSet(li,step,box){
     if(isLetterBox(li,box))return letterExamQuestions(step);
     const level=CEFR[li],data=boxData(li,step,box);
     const grammarIndex=Math.max(0,level.grammar.findIndex(rule=>rule[0]===data.grammarTitle));
@@ -684,17 +683,134 @@
       {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]}
     ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
+  function representativeBoxes(li){
+    const last=boxCount(li);
+    return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
+  }
+  function assessmentQuestions(ctx){
+    if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
+    const out=[];
+    if(ctx.scope==='step'){
+      representativeBoxes(ctx.li).forEach((box,index)=>{
+        const set=boxQuestionSet(ctx.li,ctx.step,box);
+        out.push(set[index%set.length],set[(index+2)%set.length]);
+      });
+      return out.slice(0,10);
+    }
+    if(ctx.scope==='level'){
+      for(let step=1;step<=5;step++){
+        const reps=representativeBoxes(ctx.li);
+        [reps[1],reps[3],reps[5]].forEach((box,index)=>{
+          const set=boxQuestionSet(ctx.li,step,box);
+          out.push(set[(step+index)%set.length]);
+        });
+      }
+      return out.slice(0,15);
+    }
+    for(let li=0;li<CEFR.length;li++){
+      const reps=representativeBoxes(li);
+      [1,2,3,4].forEach((step,index)=>{
+        const box=reps[(index+1)%reps.length],set=boxQuestionSet(li,step,box);
+        out.push(set[(li+index)%set.length]);
+      });
+    }
+    return out.slice(0,20);
+  }
 
+  function placementScene(kind){
+    if(kind==='station')return '<svg viewBox="0 0 420 220" role="img" aria-label="A train platform scene"><rect width="420" height="220" rx="20" fill="#eaf2ff"/><rect y="154" width="420" height="66" fill="#cbd5e1"/><rect x="40" y="72" width="250" height="82" rx="12" fill="#2563eb"/><rect x="61" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><rect x="129" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><circle cx="92" cy="161" r="18" fill="#334155"/><circle cx="240" cy="161" r="18" fill="#334155"/><circle cx="337" cy="90" r="16" fill="#f59e0b"/><path d="M337 106v45M337 120l-23 25M337 121l25 18" stroke="#475569" stroke-width="8" stroke-linecap="round"/><rect x="311" y="150" width="55" height="8" rx="4" fill="#64748b"/></svg>';
+    return '<svg viewBox="0 0 420 220" role="img" aria-label="A meeting and presentation scene"><rect width="420" height="220" rx="20" fill="#f8fafc"/><rect x="24" y="24" width="210" height="115" rx="12" fill="#dbeafe"/><path d="M52 111L98 73l42 18 55-44" fill="none" stroke="#2563eb" stroke-width="7" stroke-linecap="round"/><rect x="72" y="166" width="276" height="18" rx="9" fill="#94a3b8"/><circle cx="285" cy="75" r="18" fill="#f59e0b"/><path d="M285 94v58M285 112l-30 24M285 112l34 20" stroke="#475569" stroke-width="9" stroke-linecap="round"/><circle cx="363" cy="120" r="14" fill="#fb7185"/><path d="M363 134v35" stroke="#475569" stroke-width="8" stroke-linecap="round"/></svg>';
+  }
+  function placementQuestions(){
+    return [
+      {type:'mcq',prompt:'Choose the grammatically correct sentence.',correct:'She has been working here since 2022.',options:['She has been working here since 2022.','She works here since 2022.','She has working here since 2022.','She is work here since 2022.']},
+      {type:'listen-fill',prompt:'Voice → text: write exactly what you hear.',audio:'Had I known about the delay, I would have taken an earlier train.',correct:'Had I known about the delay, I would have taken an earlier train.'},
+      {type:'tts-mcq',prompt:'Text → voice: listen to the sentence, then choose its closest meaning.',audio:'The proposal is unlikely to be approved unless the committee revises its underlying assumptions.',correct:'Approval probably requires the committee to change its basic assumptions.',options:['Approval probably requires the committee to change its basic assumptions.','The proposal has already been approved without changes.','The committee rejected every assumption before reading the proposal.','Approval is certain even if the assumptions remain unchanged.']},
+      {type:'image-fill',prompt:'Image → text: describe what is happening in one precise English sentence.',scene:'station',keywords:['train','platform','person'],correct:'A person is waiting on a platform beside a train.'},
+      {type:'translate-fill',prompt:'Translate into precise English: لو كنت قد راجعت البيانات بعناية أكبر، لما توصلت إلى ذلك الاستنتاج.',correct:'If I had reviewed the data more carefully, I would not have reached that conclusion.'},
+      {type:'mcq',prompt:'Which sentence uses hedging appropriately in formal analysis?',correct:'The findings appear to suggest that the policy may have had a limited effect.',options:['The findings appear to suggest that the policy may have had a limited effect.','The findings absolutely prove everything forever.','The findings maybe are effecting policy definitely.','The findings proved perhaps certainly a limited effect.']},
+      {type:'listen-fill',prompt:'Voice → text: transcribe the sentence exactly.',audio:'Not only did the intervention fail to reduce costs, but it also introduced additional administrative complexity.',correct:'Not only did the intervention fail to reduce costs, but it also introduced additional administrative complexity.'},
+      {type:'image-fill',prompt:'Image → text: explain the scene in a complete English sentence.',scene:'presentation',keywords:['presentation','chart','people'],correct:'A presenter is explaining a chart to another person.'},
+      {type:'translate-fill',prompt:'Translate into English: على الرغم من أن الأدلة تبدو مقنعة للوهلة الأولى، فإنها لا تبرر استنتاجاً قاطعاً.',correct:'Although the evidence appears convincing at first glance, it does not justify a definitive conclusion.'},
+      {type:'tts-mcq',prompt:'Listen and choose the implication.',audio:'Much as I appreciate the ambition of the project, its implementation remains financially unsustainable.',correct:'The speaker respects the ambition but considers the implementation too costly to sustain.',options:['The speaker respects the ambition but considers the implementation too costly to sustain.','The speaker believes the project has no ambition.','The project has already become financially sustainable.','The speaker refuses to discuss implementation.']},
+      {type:'mcq',prompt:'Choose the sentence with correct inversion.',correct:'Rarely have we encountered such a persistent discrepancy.',options:['Rarely have we encountered such a persistent discrepancy.','Rarely we have encountered such a persistent discrepancy.','Rarely did encountered we such discrepancy.','Rarely have encountered we such a discrepancy.']},
+      {type:'translate-fill',prompt:'Translate into English: لولا القيود الزمنية، لكان من الممكن إجراء تحليل أكثر شمولاً للنتائج المتعارضة.',correct:'But for the time constraints, a more comprehensive analysis of the conflicting results could have been conducted.'},
+      {type:'mcq',prompt:'Which option is the most precise C1-style reformulation?',correct:'The apparent correlation should not be interpreted as evidence of causality without further analysis.',options:['The apparent correlation should not be interpreted as evidence of causality without further analysis.','Correlation means causation and no more work is needed.','The things are related so one surely causes the other.','The apparent correlation is causal because it appears so.']},
+      {type:'listen-fill',prompt:'Voice → text: transcribe this advanced sentence.',audio:'Were the underlying assumptions to change, the model would require substantial recalibration.',correct:'Were the underlying assumptions to change, the model would require substantial recalibration.'},
+      {type:'translate-fill',prompt:'Translate into English: من المرجح أن يكون التباين ناتجاً جزئياً عن اختلاف طرق أخذ العينات، لا عن تغير حقيقي في الظاهرة نفسها.',correct:'The variation is likely to result partly from differences in sampling methods rather than from a genuine change in the phenomenon itself.'}
+    ];
+  }
+  function answerSimilarity(value,correct){return similarity(value,correct);}
+  function placementQuestionCorrect(question,value){
+    const answer=String(value||'').trim();
+    if(question.type==='mcq'||question.type==='tts-mcq')return answer===question.correct;
+    if(question.keywords){
+      const normalized=normalizeText(answer);
+      const hits=question.keywords.filter(word=>normalized.includes(normalizeText(word))).length;
+      return hits>=2&&normalized.split(' ').length>=5;
+    }
+    return answerSimilarity(answer,question.correct)>=.72;
+  }
+  function placementRecommendedLevel(score){
+    if(score<30)return 0;
+    if(score<45)return 1;
+    if(score<62)return 2;
+    if(score<80)return 3;
+    return 4;
+  }
+  function renderPlacementQuestion(question,index){
+    const name='placement-q'+index;
+    if(question.type==='mcq'||question.type==='tts-mcq'){
+      return '<fieldset class="placement-question"><legend><span>'+(index+1)+'</span>'+esc(question.prompt)+'</legend>'+
+        (question.type==='tts-mcq'?'<button type="button" class="placement-listen" data-placement-listen="'+esc(question.audio)+'">▶ Play voice</button>':'')+
+        question.options.map(option=>'<label><input type="radio" name="'+name+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>';
+    }
+    const visual=question.type==='image-fill'?'<div class="placement-scene">'+placementScene(question.scene)+'</div>':'';
+    const listen=question.type==='listen-fill'?'<button type="button" class="placement-listen" data-placement-listen="'+esc(question.audio)+'">▶ Play voice</button>':'';
+    return '<fieldset class="placement-question fill"><legend><span>'+(index+1)+'</span>'+esc(question.prompt)+'</legend>'+visual+listen+'<input type="text" name="'+name+'" autocomplete="off" required placeholder="Type your answer"></fieldset>';
+  }
+  function placementExamPage(){
+    const questions=placementQuestions();
+    return '<section class="language-course-page language-placement-page"><header class="language-page-head placement"><div><small>Placement examination</small><h1>Find my English level</h1><p>This is intentionally difficult. It combines text-to-voice, voice-to-text, image-to-text, advanced grammar and complex translation. It chooses a starting level; it does not complete skipped levels.</p></div><div class="language-context"><span>15 tasks</span><span>Multimodal</span><span>A1–C1</span></div></header>'+
+      '<div class="placement-warning"><strong>Do not use translation tools.</strong><span>Your result starts you at Level · Step 1 · first box.</span></div>'+
+      '<form id="language-placement-form" class="language-exam-form placement-form">'+questions.map(renderPlacementQuestion).join('')+'<button class="btn btn-primary" type="submit">Evaluate my level</button><div class="language-exam-result" id="language-placement-result"></div></form></section>';
+  }
+  function levelChallengePanel(state){
+    return '<section class="language-level-challenges"><div><small>Independent level challenges</small><h2>Examine any level</h2><p>Score greater than 80% to mark only that level complete. Lower levels are not credited, and a gap still blocks studying higher levels.</p></div><div class="language-challenge-grid">'+CEFR.map((level,index)=>'<button type="button" data-challenge-level="'+index+'" class="'+(isLevelPassed(state,index)?'passed':'')+'"><span>'+level.id+'</span><strong>'+(isLevelPassed(state,index)?'✓ Completed':'Challenge level')+'</strong></button>').join('')+'</div></section>';
+  }
+  function assessmentTitle(ctx){
+    if(ctx.scope==='box')return 'Box '+ctx.box+' examination';
+    if(ctx.scope==='step')return 'Step '+ctx.step+' examination';
+    if(ctx.scope==='level')return CEFR[ctx.li].id+' level examination';
+    return 'Whole English language examination';
+  }
+  function assessmentDescription(ctx){
+    if(ctx.scope==='box')return 'Pass at 80% or higher to finish this box.';
+    if(ctx.scope==='step')return 'The last box has no separate box exam. This assessment covers the entire step and completes its last box when passed.';
+    if(ctx.scope==='level')return 'The final step ends with one whole-level examination instead of a separate Step 5 final-box exam.';
+    return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
+  }
+  function examFormMarkup(questions,mode,passed){
+    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
+  }
   function examinePage(){
-    const state=languageState(),pos=clampSelection(state),missing=missingRequirements(state,pos),ready=missing.length===0;
-    const questions=ready?examQuestions(pos.li,pos.step,pos.box):[];
-    const id=keyBox(CEFR[pos.li].id,pos.step,pos.box),passed=Boolean((state.modules[id]||{}).exam);
-    return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),'Box '+pos.box+' examination',t('examIntro'))+
+    const state=languageState();
+    if(state.placementPending)return placementExamPage();
+    const pos=clampSelection(state);
+    if(Number.isInteger(state.challengeLevel)){
+      const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
+      return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),CEFR[li].id+' challenge examination','This challenge is independent of normal progression. Passing it completes only '+CEFR[li].id+'.')+
+        '<div class="language-exam-summary challenge"><div><small>Level challenge · '+CEFR[li].id+'</small><h2>Score greater than 80%</h2><p>Lower levels stay unchanged. You still need every earlier required level before studying a higher locked level.</p></div><span class="ready">'+(passed?'Completed':'Challenge')+'</span></div>'+
+        '<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>← Return to current exam</button>'+
+        examFormMarkup(questions,'challenge',passed)+'</section>';
+    }
+    const ctx=currentAssessment(state,pos),missing=assessmentMissing(state,ctx),ready=missing.length===0,passed=assessmentPassed(state,ctx);
+    const questions=ready?assessmentQuestions(ctx):[];
+    return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),assessmentTitle(ctx),t('examIntro'))+
       boxSelector(state,pos)+
-      '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+(isLetterBox(pos.li,pos.box)?'Letters box':'Dedicated Box '+pos.box+' exam')+'</h2><p>'+(ready?'All required learning pages are complete. Pass at 80% or higher to finish this box.':'Complete the remaining box content before this exam unlocks.')+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
-      (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':
-      '<form id="language-exam-form" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>')+
-      '</section>';
+      '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+assessmentTitle(ctx)+'</h2><p>'+assessmentDescription(ctx)+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
+      (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed))+
+      levelChallengePanel(state)+'</section>';
   }
 
   let personalTimer=null;
