@@ -846,7 +846,11 @@
     return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
-  function currentLearningBox(state,pos){ return isLetterBox(pos.li,pos.box)?null:boxData(pos.li,pos.step,pos.box); }
+  function currentLearningBox(state,pos){
+    if(!isLetterBox(pos.li,pos.box))return boxData(pos.li,pos.step,pos.box);
+    if(adminLanguageAuthoring())return {box:pos.box,title:CEFR[pos.li].id+' · Step '+pos.step+' · Letters box',grammarTitle:'Letters box'};
+    return null;
+  }
   function boxOneGate(state,pos,title,intro){
     const practiced=state.letterProgress[letterProgressKey(pos.li,pos.step)]||[];
     return '<section class="language-course-page">'+languageHeader(state,pos,title,title,intro)+'<article class="language-box-one-gate"><span>Aa</span><div><small>Letters box prerequisite</small><h2>Finish the complete A–Z Letters box first.</h2><p>Each letter must be heard and drawn separately in uppercase and lowercase. Then pass the Letters box exam. '+practiced.length+' / 26 letters are practiced.</p></div><div><a href="#language-letters">Open Letters box</a><a href="#language-examine">Examine</a></div></article></section>';
