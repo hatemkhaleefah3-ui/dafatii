@@ -26,6 +26,9 @@ assert.match(js,/dafatii:language-progress:/,'language learner progress must be 
 assert.match(js,/function creditBox\(state,id\)/,'challenge exam credit must mark the credited learning content complete');
 assert.match(js,/letters:true,voice:true,grammar:true,review:true,exam:true/,'passing an assessment must credit every module in that box');
 assert.match(js,/return pos\.box<2\?null:boxData/,'voice, grammar and revision must not expose Box 2 before Box 1 is passed');
+assert.match(js,/name="studyType" value="courses"/,'language course creation must submit a backend-supported study structure');
+assert.doesNotMatch(js,/name="studyType" value="language"/,'language mode must not be sent as an invalid backend study structure');
+assert.match(js,/isLang\s*\? '<input type="hidden" name="joinPolicy" value="direct">/,'language course setup must avoid generic enrollment-policy controls');
 assert.match(js,/isPersonal=type==='personal'/,'personal course creation must have an explicit solo setup path');
 assert.match(js,/name="pricing" value="free"/,'personal courses must not expose paid enrollment');
 assert.match(js,/name="accessCode" value="/,'personal courses must use an internal access secret instead of asking the learner to distribute one');
@@ -38,7 +41,7 @@ assert.match(js,/personal-focus-room/,'personal courses must expose exactly one 
 assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal Study Rooms route must render the single focus studio');
 assert.match(js,/data-language-ui-switch/,'language workspace must expose an Arabic-English switcher');
 assert.ok(css.includes('.language-course-page') && css.includes('.personal-focus-grid') && css.includes('.course-type-grid'),'course mode styles must be loaded');
-assert.ok(index.includes('course-modes.css?v=20260920-1') && index.includes('course-modes.js?v=20260920-1'),'course mode assets must be cache-busted and loaded');
-assert.ok(index.indexOf('course-modes.js?v=20260920-1') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260920-1') && index.includes('course-modes.js?v=20260920-2'),'course mode assets must be cache-busted and loaded');
+assert.ok(index.indexOf('course-modes.js?v=20260920-2') > index.indexOf('content-controls.js'),'course modes must load after existing workspace wrappers');
 
 console.log('course modes tests passed');
