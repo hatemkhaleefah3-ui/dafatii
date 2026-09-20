@@ -467,7 +467,9 @@
     }
     if(page==='examine'){
       return [
-        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'}
+        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'},
+        {id:'exam-pass-rule',type:'info',eyebrow:'Pass rule',title:'Accuracy matters',body:'Natural course assessments require at least 80%. Independent level challenges require a score greater than 80%.'},
+        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Read every option carefully',body:'Use the language from the selected box, step or level. Review grammar, vocabulary, listening and meaning before you submit.'}
       ];
     }
     return [];
@@ -1017,6 +1019,7 @@
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
   function examFormMarkup(questions,mode,passed){
+    if(!questions.length)return '<div class="language-exam-prereqs"><strong>Exam unavailable</strong><span>Add at least one exam question from Content Control → Control the exam.</span></div>';
     return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>{
       const qid=q.id||('question-'+index);
       return '<fieldset class="language-exam-question-item" data-language-exam-item="'+esc(qid)+'"><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>';
