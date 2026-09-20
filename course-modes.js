@@ -1230,6 +1230,12 @@
     }
     if(type!=='language')return;
     document.querySelector('.quiet-workspace>.sub-nav')?.remove();
+    document.querySelector('.quiet-return-button')?.remove();
+    const shell=document.querySelector('.quiet-workspace');
+    if(shell){
+      shell.classList.add('language-course-shell');
+      shell.dataset.languagePage=current.replace(/^language-/,'')||'home';
+    }
     const activeNav=navSpec.find(item=>item[0]===current);
     const toolbarTitle=document.querySelector('.quiet-toolbar-title strong');
     const toolbarKicker=document.querySelector('.quiet-toolbar-title small');
@@ -1241,7 +1247,6 @@
     if(desktop)desktop.innerHTML=sideLanguageNav(current);
     const bottom=document.querySelector('.bottom-nav');
     if(bottom)bottom.innerHTML=bottomLanguageNav(current);
-    document.querySelector('.quiet-workspace')?.classList.add('language-course-shell');
   }
 
   function normalizeText(value){

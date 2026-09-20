@@ -130,9 +130,11 @@ assert.match(css,/touch-action:none!important/,'validated letter canvases must r
 
 assert.match(js,/querySelector\('\.quiet-workspace>\.sub-nav'\)\?\.remove\(\)/,'language routes must remove the redundant workspace capsule');
 assert.match(js,/toolbarTitle\.textContent=activeNav\?languageNavLabel/,'language routes must replace raw route names with clear labels');
-assert.ok(css.includes('English course v10 · grounded editorial layout'),'grounded language layout must be present');
-assert.ok(index.includes('course-modes.css?v=20260920-10'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260920-10'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260920-10') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.match(js,/querySelector\('\.quiet-return-button'\)\?\.remove\(\)/,'language routes must remove the floating return control');
+assert.match(js,/shell\.dataset\.languagePage=current\.replace/,'language routes must expose a page identity for mobile themes');
+assert.ok(css.includes('English course v11 · native mobile learning app'),'native mobile course layout must be present');
+assert.ok(index.includes('course-modes.css?v=20260920-11'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260920-11'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260920-11') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v4 tests passed');
