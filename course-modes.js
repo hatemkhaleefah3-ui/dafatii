@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 2;
+  const META_VERSION = 3;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
   const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -104,24 +104,24 @@
 
   const COPY = {
     en:{
-      home:'Home',letters:'Letters & writing',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
+      home:'Home',letters:'Letters & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
       complete:'Mark section complete',completed:'Completed',locked:'Locked',listen:'Play voice',check:'Check answer',
       speak:'Speak this sentence',start:'Start recognition',notes:'My notes',save:'Save notes',level:'Level',step:'Step',box:'Box',
       pass:'Pass mark: 80%',takeExam:'Take exam',submitExam:'Submit exam',welcome:'Welcome',resume:'Resume learning',
       changeLevel:'Change level',progress:'Course progress',current:'Current',available:'Available',passed:'Passed',
       lettersIntro:'Letter, pronunciation, spelling and writing practice',voiceIntro:'Dictation and reverse speaking practice',
       grammarIntro:'Grammar, naming, spelling and typing rules',reviewIntro:'Retrieval, learning tricks and durable notes',
-      examIntro:'Every box has its own exam. Finish all required learning pages for the box before its exam can be taken.'
+      examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
     },
     ar:{
-      home:'الرئيسية',letters:'الحروف والكتابة',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
+      home:'الرئيسية',letters:'الحروف والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
       complete:'إكمال هذا الجزء',completed:'مكتمل',locked:'مغلق',listen:'تشغيل الصوت',check:'تحقق من الإجابة',
       speak:'انطق هذه الجملة',start:'ابدأ التعرّف على الصوت',notes:'ملاحظاتي',save:'حفظ الملاحظات',level:'المستوى',step:'الخطوة',box:'الصندوق',
       pass:'درجة النجاح: 80٪',takeExam:'ابدأ الاختبار',submitExam:'إرسال الاختبار',welcome:'مرحباً',resume:'متابعة التعلّم',
       changeLevel:'تغيير المستوى',progress:'تقدم الدورة',current:'الحالي',available:'متاح',passed:'مجتاز',
       lettersIntro:'تدريب الحروف والنطق والإملاء والكتابة',voiceIntro:'إملاء صوتي وتدريب عكسي على النطق',
       grammarIntro:'القواعد والتسمية والإملاء والكتابة',reviewIntro:'استرجاع ومهارات تعلّم وملاحظات ثابتة',
-      examIntro:'لكل صندوق اختبار خاص. يجب إكمال صفحات التعلم المطلوبة للصندوق قبل فتح اختباره.'
+      examIntro:'تتغير صفحة الاختبار حسب موقعك: اختبار صندوق أو خطوة أو مستوى أو اختبار اللغة الكامل. ويمكن تحدي أي مستوى في أي وقت.'
     }
   };
 
@@ -144,20 +144,57 @@
   function defaultLanguageLearning(){
     return {
       version:META_VERSION,targetLanguage:'English',selectedLevel:0,selectedStep:1,selectedBox:1,
-      passedBoxes:[],modules:{},letterProgress:{},activeLetterByStep:{},notes:{},examHistory:[]
+      passedBoxes:[],passedSteps:[],passedLevels:[],languagePassed:false,
+      modules:{},letterProgress:{},activeLetterByStep:{},videoResponses:{},watchedVideos:{},notes:{},examHistory:[],
+      onboardingComplete:false,placementPending:false,placementResult:null,entryLevel:0,challengeLevel:null
     };
   }
-  const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v2';
+  const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v3';
+  const legacyProgressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v2';
+  function migrateLegacyLanguage(value){
+    value.version=META_VERSION;
+    value.passedSteps=[];
+    value.passedLevels=[];
+    for(let li=0;li<CEFR.length;li++){
+      const count=li===0?26:25;
+      for(let step=1;step<=5;step++){
+        let complete=true;
+        for(let box=1;box<=count;box++) if(!value.passedBoxes.includes(keyBox(CEFR[li].id,step,box))){complete=false;break;}
+        if(complete)value.passedSteps.push(keyStep(CEFR[li].id,step));
+      }
+      if([1,2,3,4,5].every(step=>value.passedSteps.includes(keyStep(CEFR[li].id,step))))value.passedLevels.push(CEFR[li].id);
+    }
+    value.languagePassed=value.passedLevels.includes('C1');
+    value.videoResponses={};value.watchedVideos={};
+    value.onboardingComplete=true;value.placementPending=false;value.placementResult=null;value.entryLevel=0;value.challengeLevel=null;
+    return value;
+  }
   function languageState(){
-    const stored=window.DafatiiData.readJSON(progressKey(),null);
+    let stored=window.DafatiiData.readJSON(progressKey(),null);
+    if(!stored){
+      const legacy=window.DafatiiData.readJSON(legacyProgressKey(),null);
+      if(legacy&&typeof legacy==='object'&&!Array.isArray(legacy)){
+        stored=migrateLegacyLanguage(legacy);
+        window.DafatiiData.writeJSON(progressKey(),stored);
+      }
+    }
     const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
     value.version=META_VERSION;
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
+    value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
+    value.passedLevels=Array.isArray(value.passedLevels)?value.passedLevels:[];
+    value.languagePassed=Boolean(value.languagePassed);
     value.modules=value.modules&&typeof value.modules==='object'?value.modules:{};
     value.letterProgress=value.letterProgress&&typeof value.letterProgress==='object'?value.letterProgress:{};
     value.activeLetterByStep=value.activeLetterByStep&&typeof value.activeLetterByStep==='object'?value.activeLetterByStep:{};
+    value.videoResponses=value.videoResponses&&typeof value.videoResponses==='object'?value.videoResponses:{};
+    value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
     value.examHistory=Array.isArray(value.examHistory)?value.examHistory:[];
+    value.onboardingComplete=Boolean(value.onboardingComplete);
+    value.placementPending=Boolean(value.placementPending);
+    value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
+    value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
     return value;
   }
   function updateLanguage(mutator){
@@ -183,7 +220,7 @@
       if(type==='language'){
         const initialProgress=defaultLanguageLearning();
         initialProgress.targetLanguage=input.targetLanguage||'English';
-        window.DafatiiData.writeJSON('dafatii:language-progress:'+String(course.id)+':v2',initialProgress);
+        window.DafatiiData.writeJSON('dafatii:language-progress:'+String(course.id)+':v3',initialProgress);
         window.DafatiiCourses.writeJSON('dafatii:subjects',[]);
         window.DafatiiCourses.writeJSON('dafatii:lectures',{});
         window.DafatiiCourses.writeJSON('dafatii:chatState:v1',{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});
