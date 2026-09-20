@@ -1011,26 +1011,32 @@
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
   function examFormMarkup(questions,mode,passed){
-    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
+    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>{
+      const qid=q.id||('question-'+index);
+      return '<fieldset class="language-exam-question-item" data-language-exam-item="'+esc(qid)+'"><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>';
+    }).join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
   }
+
   function examinePage(){
     const state=languageState();
     if(state.placementPending)return placementExamPage();
-    const pos=clampSelection(state);
-    if(Number.isInteger(state.challengeLevel)){
+    const pos=activeLanguagePosition(state),infoItems=languagePageItems(pos.li,pos.step,pos.box,'examine');
+    const infoMarkup='<div class="language-content-item-grid language-exam-content-items">'+infoItems.map(item=>infoItemCard(item,'exam-information-item')).join('')+'</div>';
+    if(Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
       const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
       return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),CEFR[li].id+' challenge examination','This challenge is independent of normal progression. Passing it completes only '+CEFR[li].id+'.')+
+        infoMarkup+
         '<div class="language-exam-summary challenge"><div><small>Level challenge · '+CEFR[li].id+'</small><h2>Score greater than 80%</h2><p>Lower levels stay unchanged. You still need every earlier required level before studying a higher locked level.</p></div><span class="ready">'+(passed?'Completed':'Challenge')+'</span></div>'+
         '<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>← Return to current exam</button>'+
         examFormMarkup(questions,'challenge',passed)+'</section>';
     }
-    const ctx=currentAssessment(state,pos),missing=assessmentMissing(state,ctx),ready=missing.length===0,passed=assessmentPassed(state,ctx);
+    const ctx=naturalExamContext(pos.li,pos.step,pos.box),missing=languageAuthoringTarget?[]:assessmentMissing(state,ctx),ready=languageAuthoringTarget||missing.length===0,passed=assessmentPassed(state,ctx);
     const questions=ready?assessmentQuestions(ctx):[];
     return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),assessmentTitle(ctx),t('examIntro'))+
-      boxSelector(state,pos)+
+      boxSelector(state,pos)+infoMarkup+
       '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+assessmentTitle(ctx)+'</h2><p>'+assessmentDescription(ctx)+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
       (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed))+
-      levelChallengePanel(state)+'</section>';
+      (languageAuthoringTarget?'':levelChallengePanel(state))+'</section>';
   }
 
   let personalTimer=null;
@@ -1256,14 +1262,17 @@
     const play=document.querySelector('[data-play-language-video]'),field=document.getElementById('language-video-response');
     const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
     if(!play||!field||!complete)return;
-    const state=languageState(),pos=clampSelection(state),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id;
+    const state=languageState(),pos=activeLanguagePosition(state),id=keyBox(CEFR[pos.li].id,pos.step,pos.box);
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    if(!videoItem||!responseItem)return;
+    const frames=itemLines(videoItem,'scenes'),responseLanguage=videoItem.responseLanguage||'English';
     let watched=Boolean(state.watchedVideos[id]),playing=false,timer=null,index=0;
     const frame=document.querySelector('[data-video-frame]'),bar=document.querySelector('[data-video-progress]'),status=document.querySelector('[data-video-status]');
     const updateGate=()=>{
       const valid=videoResponseValid(pos.li,field.value);
       complete.disabled=complete.classList.contains('done')?false:!(watched&&valid);
-      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+video.responseLanguage):'Watch the full video first';
-      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(video.responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
+      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+responseLanguage):'Watch the full video first';
+      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
     };
     const finish=()=>{
       if(timer){clearInterval(timer);timer=null;}playing=false;watched=true;
@@ -1271,14 +1280,14 @@
       if(bar)bar.style.width='100%';if(status)status.textContent='Watched completely';play.textContent='Replay video';updateGate();
     };
     const showFrame=()=>{
-      if(index>=video.frames.length){finish();return;}
-      const text=video.frames[index];
-      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+video.frames.length+'</small><h2>'+esc(video.title)+'</h2><p>'+esc(text)+'</p>';
-      if(bar)bar.style.width=Math.round((index/video.frames.length)*100)+'%';
+      if(index>=frames.length){finish();return;}
+      const text=frames[index];
+      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+frames.length+'</small><h2>'+esc(videoItem.title||'Video understanding')+'</h2><p>'+esc(text)+'</p>';
+      if(bar)bar.style.width=Math.round((index/Math.max(1,frames.length))*100)+'%';
       speak(text);index++;
     };
     play.onclick=()=>{
-      if(playing)return;
+      if(playing||!frames.length)return;
       if(timer)clearInterval(timer);
       playing=true;index=0;play.textContent='Playing…';if(status)status.textContent='Watch and listen to every scene';
       showFrame();timer=setInterval(showFrame,4200);
@@ -1292,6 +1301,7 @@
     };
     updateGate();
   }
+
   function bindPlacementExam(){
     document.querySelectorAll('[data-placement-listen]').forEach(button=>button.onclick=()=>speak(button.dataset.placementListen));
     const form=document.getElementById('language-placement-form');
@@ -1434,5 +1444,26 @@
   installCreateInterceptor();
   installWorkspaceRoutes();
   installCourseChangeRouting();
-  window.DafatiiCourseModes=Object.freeze({courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser});
+  window.DafatiiCourseModes=Object.freeze({
+    courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
+    languageAuthoring:Object.freeze({
+      pages:['letters','voice','grammar','review','examine'],
+      pageName:languagePageName,
+      getItems:selection=>languagePageItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item})),
+      getSchemas:(page,li)=>languageItemSchemas(page,li),
+      createItem:createLanguageItem,
+      saveItem:saveLanguageItem,
+      deleteItem:deleteLanguageItem,
+      emptyPage:emptyLanguagePage,
+      resetPage:resetLanguagePage,
+      begin:beginLanguageAuthoring,
+      end:endLanguageAuthoring,
+      current:()=>languageAuthoringTarget?{...languageAuthoringTarget}:null,
+      examContext:selection=>naturalExamContext(selection.li,selection.step,selection.box),
+      getExamQuestions:selection=>examQuestionsFor(naturalExamContext(selection.li,selection.step,selection.box)).map((q,index)=>({...q,id:q.id||('q-'+index)})),
+      saveExamQuestion,
+      deleteExamQuestion,
+      emptyExamQuestions
+    })
+  });
 })();
