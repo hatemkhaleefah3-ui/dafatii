@@ -550,17 +550,21 @@
     return {scope:'language',li:4,step:5,box:last};
   }
   function defaultExamQuestions(ctx){return defaultAssessmentQuestions(ctx);}
+  function defaultExamQuestionItems(ctx){
+    const suffix=ctx.scope+'-'+CEFR[ctx.li].id+'-'+ctx.step+'-'+ctx.box;
+    return defaultExamQuestions(ctx).map((q,index)=>({...q,id:q.id||('q-'+index+'-'+suffix)}));
+  }
   function examQuestionsFor(ctx){
     const store=languageContentStore(),key=examStoreKey(ctx);
     return Object.prototype.hasOwnProperty.call(store.exams,key)
       ? (Array.isArray(store.exams[key])?store.exams[key]:[])
-      : defaultExamQuestions(ctx);
+      : defaultExamQuestionItems(ctx);
   }
   function mutateExamQuestions(selection,mutator){
     const ctx=naturalExamContext(selection.li,selection.step,selection.box),store=languageContentStore(),key=examStoreKey(ctx);
     const questions=Object.prototype.hasOwnProperty.call(store.exams,key)
       ? (Array.isArray(store.exams[key])?[...store.exams[key]]:[])
-      : defaultExamQuestions(ctx).map((q,index)=>({...q,id:q.id||'q-'+index+'-'+ctx.scope}));
+      : defaultExamQuestionItems(ctx).map(q=>({...q}));
     store.exams[key]=mutator(questions)||questions;writeLanguageContentStore(store);return store.exams[key];
   }
   function saveExamQuestion(selection,question){
