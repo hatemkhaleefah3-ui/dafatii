@@ -606,8 +606,20 @@
       '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):'Complete the writing task first')+'</button></section>';
   }
 
+  function videoUnderstandingPage(state,pos){
+    const data=boxData(pos.li,pos.step,pos.box),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id,module=state.modules[id]||{};
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'';
+    const arabic=video.responseLanguage==='Arabic';
+    const prompt=arabic?'اكتب بالعربية ما فهمته من الفيديو. اذكر الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English what you understood from the video. State the main idea and at least two supporting details.';
+    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One narrated understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
+      '<article class="language-video-player" data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>Video understanding</small><h2>'+esc(video.title)+'</h2><p>Press play. The lesson will present four narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>'+
+      '<article class="language-video-response"><small>Understanding response · '+video.responseLanguage+'</small><h2>'+(arabic?'اشرح ما فهمته':'Explain what you understood')+'</h2><p>'+prompt+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+(arabic?'اكتب فهمك هنا…':'Write your understanding here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>'+
+      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):'Watch the video and complete your response')+'</button></section>';
+  }
+
   function lettersPage(){
     const state=languageState(),pos=clampSelection(state);
+    if(pos.li>0)return videoUnderstandingPage(state,pos);
     return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
