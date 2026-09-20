@@ -397,6 +397,192 @@
       responseLanguage:li<=2?'Arabic':'English'
     };
   }
+
+  const LANGUAGE_CONTENT_PAGE_ROUTES = {
+    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',review:'language-review',examine:'language-examine'
+  };
+  const languageContentStoreKey=()=> 'dafatii:language-authoring:v1';
+  let languageAuthoringTarget=null;
+  function languageContentStore(){
+    const raw=window.DafatiiCourses.readJSON(languageContentStoreKey(),{})||{};
+    return {
+      pages:raw.pages&&typeof raw.pages==='object'?raw.pages:{},
+      exams:raw.exams&&typeof raw.exams==='object'?raw.exams:{}
+    };
+  }
+  function writeLanguageContentStore(store){
+    window.DafatiiCourses.writeJSON(languageContentStoreKey(),store);
+    return store;
+  }
+  function contentPageKey(li,step,box,page){return CEFR[li].id+':'+step+':'+box+':'+page;}
+  function examStoreKey(ctx){return ctx.scope+':'+CEFR[ctx.li].id+':'+ctx.step+':'+ctx.box;}
+  function contentItemId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);}
+  function activeLanguagePosition(state){return languageAuthoringTarget?{...languageAuthoringTarget}:clampSelection(state);}
+  function languagePageName(page,li){
+    if(page==='letters')return li===0?'Letters & writing':'Video understanding';
+    return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
+  }
+  function defaultLanguageContentItems(li,step,box,page){
+    const data=isLetterBox(li,box)?null:boxData(li,step,box);
+    if(page==='letters'&&li===0&&isLetterBox(li,box)){
+      return [
+        {id:'letter-purpose',type:'info',eyebrow:'Letters box',title:'Learn each English letter separately',body:'Hear the letter name, study uppercase and lowercase forms, then trace both accurately before moving forward.'},
+        {id:'letter-example',type:'info',eyebrow:'How to learn',title:'Listen · Look · Draw · Check',body:'Use the example word only after hearing the isolated letter name. Draw uppercase and lowercase separately and repeat any weak form.'}
+      ];
+    }
+    if(!data&&page!=='examine')return [];
+    if(page==='letters'&&li===0){
+      return [
+        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear each target separately, repeat it, then use the writing task.',audioText:data.voicePrompt},
+        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',words:data.pronunciationWords},
+        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write your two sentences here.'}
+      ];
+    }
+    if(page==='letters'&&li>0){
+      const video=videoLessonData(li,step,box);
+      return [
+        {id:'video-lesson',type:'video',eyebrow:'Video understanding',title:video.title,scenes:video.frames,responseLanguage:video.responseLanguage},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:video.responseLanguage==='Arabic'?'اشرح ما فهمته':'Explain what you understood',body:video.responseLanguage==='Arabic'?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English: state the main idea and at least two supporting details.',placeholder:video.responseLanguage==='Arabic'?'اكتب فهمك هنا…':'Write your understanding here…'}
+      ];
+    }
+    if(page==='voice'){
+      return [
+        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the sentence you hear'},
+        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target sentence',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here'}
+      ];
+    }
+    if(page==='grammar'){
+      return [
+        {id:'grammar-rule',type:'rule',eyebrow:'Grammar rule',title:data.grammarTitle,body:data.grammarRule,example1:data.grammarExample1,example2:data.grammarExample2},
+        {id:'naming',type:'info',eyebrow:'Naming',title:'Clear noun choices',body:data.naming,words:data.words.slice(0,4)},
+        {id:'typing',type:'writing',eyebrow:'Typing & spelling',title:'Write for the reader',body:data.typing,placeholder:'Write two examples that follow these rules.'}
+      ];
+    }
+    if(page==='review'){
+      return [
+        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',words:data.words},
+        {id:'review-trick',type:'steps',eyebrow:'Learning trick',title:data.trick,body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
+        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save examples, mistakes, mnemonics or an Arabic explanation.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
+      ];
+    }
+    if(page==='examine'){
+      return [
+        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically uses the correct box, step, level or whole-language assessment for this position.'},
+        {id:'exam-pass-rule',type:'info',eyebrow:'Pass rule',title:'Accuracy matters',body:'Natural course assessments require at least 80%. Independent level challenges require a score greater than 80%.'},
+        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Read every option carefully',body:'Use the language from the selected box, step or level. Review grammar, vocabulary, listening and meaning before you submit.'}
+      ];
+    }
+    return [];
+  }
+  function languagePageItems(li,step,box,page){
+    const store=languageContentStore(),key=contentPageKey(li,step,box,page);
+    return Object.prototype.hasOwnProperty.call(store.pages,key)
+      ? (Array.isArray(store.pages[key])?store.pages[key]:[])
+      : defaultLanguageContentItems(li,step,box,page);
+  }
+  function mutateLanguagePageItems(selection,mutator){
+    const store=languageContentStore(),key=contentPageKey(selection.li,selection.step,selection.box,selection.page);
+    const items=Object.prototype.hasOwnProperty.call(store.pages,key)
+      ? (Array.isArray(store.pages[key])?[...store.pages[key]]:[])
+      : defaultLanguageContentItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item}));
+    store.pages[key]=mutator(items)||items;
+    writeLanguageContentStore(store);
+    return store.pages[key];
+  }
+  function languageItemSchemas(page,li){
+    const commonInfo={type:'info',label:'Information',fields:[
+      {name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Body',kind:'textarea'}
+    ]};
+    const schemas={
+      letters: li>0 ? [
+        {type:'video',label:'Video lesson',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'scenes',label:'Narrated scenes (one per line)',kind:'lines'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
+        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ] : [
+        {type:'sound',label:'Pronunciation focus',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'audioText',label:'Audio text',kind:'textarea'}]},
+        {type:'words',label:'Word set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      voice:[
+        {type:'dictation',label:'Voice to text',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'audioText',label:'Audio text',kind:'textarea'},{name:'placeholder',label:'Input placeholder',kind:'text'}]},
+        {type:'speaking',label:'Text to voice',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Text to speak',kind:'textarea'},{name:'placeholder',label:'Transcript placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      grammar:[
+        {type:'rule',label:'Grammar rule',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Rule title',kind:'text'},{name:'body',label:'Rule explanation',kind:'textarea'},{name:'example1',label:'Example 1',kind:'text'},{name:'example2',label:'Example 2',kind:'text'}]},
+        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      review:[
+        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+        {type:'steps',label:'Learning method',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Recall prompt',kind:'textarea'},{name:'steps',label:'Steps (one per line)',kind:'lines'}]},
+        {type:'notes',label:'Notes box',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      examine:[commonInfo]
+    };
+    return schemas[page]||[commonInfo];
+  }
+  function createLanguageItem(selection,type){
+    const schema=(languageItemSchemas(selection.page,selection.li).find(item=>item.type===type)||languageItemSchemas(selection.page,selection.li)[0]);
+    const item={id:contentItemId(type),type:schema.type};
+    schema.fields.forEach(field=>{item[field.name]=field.kind==='lines'?[]:(field.kind==='select'?(field.options?.[0]||''):'');});
+    return item;
+  }
+  function saveLanguageItem(selection,item){
+    const normalized={...item,id:item.id||contentItemId(item.type||'item')};
+    return mutateLanguagePageItems(selection,items=>{
+      const index=items.findIndex(candidate=>candidate.id===normalized.id);
+      if(index>=0)items[index]=normalized;else items.push(normalized);
+      return items;
+    });
+  }
+  function deleteLanguageItem(selection,id){return mutateLanguagePageItems(selection,items=>items.filter(item=>item.id!==id));}
+  function emptyLanguagePage(selection){return mutateLanguagePageItems(selection,()=>[]);}
+  function resetLanguagePage(selection){
+    const store=languageContentStore(),key=contentPageKey(selection.li,selection.step,selection.box,selection.page);
+    delete store.pages[key];writeLanguageContentStore(store);
+    return languagePageItems(selection.li,selection.step,selection.box,selection.page);
+  }
+  function naturalExamContext(li,step,box){
+    const last=boxCount(li);
+    if(box<last)return {scope:'box',li,step,box};
+    if(step<5)return {scope:'step',li,step,box:last};
+    if(li<4)return {scope:'level',li,step:5,box:last};
+    return {scope:'language',li:4,step:5,box:last};
+  }
+  function defaultExamQuestions(ctx){return defaultAssessmentQuestions(ctx);}
+  function defaultExamQuestionItems(ctx){
+    const suffix=ctx.scope+'-'+CEFR[ctx.li].id+'-'+ctx.step+'-'+ctx.box;
+    return defaultExamQuestions(ctx).map((q,index)=>({...q,id:q.id||('q-'+index+'-'+suffix)}));
+  }
+  function examQuestionsFor(ctx){
+    const store=languageContentStore(),key=examStoreKey(ctx);
+    return Object.prototype.hasOwnProperty.call(store.exams,key)
+      ? (Array.isArray(store.exams[key])?store.exams[key]:[])
+      : defaultExamQuestionItems(ctx);
+  }
+  function mutateExamQuestions(selection,mutator){
+    const ctx=naturalExamContext(selection.li,selection.step,selection.box),store=languageContentStore(),key=examStoreKey(ctx);
+    const questions=Object.prototype.hasOwnProperty.call(store.exams,key)
+      ? (Array.isArray(store.exams[key])?[...store.exams[key]]:[])
+      : defaultExamQuestionItems(ctx).map(q=>({...q}));
+    store.exams[key]=mutator(questions)||questions;writeLanguageContentStore(store);return store.exams[key];
+  }
+  function saveExamQuestion(selection,question){
+    const q={...question,id:question.id||contentItemId('question'),options:Array.isArray(question.options)?question.options:[]};
+    return mutateExamQuestions(selection,items=>{const index=items.findIndex(item=>item.id===q.id);if(index>=0)items[index]=q;else items.push(q);return items;});
+  }
+  function deleteExamQuestion(selection,id){return mutateExamQuestions(selection,items=>items.filter(item=>(item.id||'')!==id));}
+  function emptyExamQuestions(selection){return mutateExamQuestions(selection,()=>[]);}
+  function beginLanguageAuthoring(selection){
+    languageAuthoringTarget={li:selection.li,step:selection.step,box:selection.box};
+    const route=LANGUAGE_CONTENT_PAGE_ROUTES[selection.page]||'language-letters';
+    if((location.hash||'').replace(/^#\/?/,'').split('/')[0]===route)render();else setHash(route);
+  }
+  function endLanguageAuthoring(){languageAuthoringTarget=null;render();}
+
   function boxStudyComplete(state,li,step,box){
     const id=keyBox(CEFR[li].id,step,box),module=state.modules[id]||{};
     if(isLetterBox(li,box)){
@@ -575,8 +761,16 @@
     return html+'</div>';
   }
 
+  function contentItemAttrs(item){return ' data-language-content-item="'+esc(item.id)+'" data-language-content-type="'+esc(item.type||'info')+'"';}
+  function infoItemCard(item,extraClass=''){
+    return '<article class="language-content-item '+extraClass+'"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Untitled item')+'</h2>'+(item.body?'<p>'+esc(item.body)+'</p>':'')+'</article>';
+  }
+  function itemWords(item){return Array.isArray(item.words)?item.words:String(item.words||'').split(/\n|,/).map(value=>value.trim()).filter(Boolean);}
+  function itemLines(item,name){const value=item[name];return Array.isArray(value)?value:String(value||'').split(/\n/).map(line=>line.trim()).filter(Boolean);}
+
   function letterBoxPage(state,pos){
     const pkey=letterProgressKey(pos.li,pos.step),practiced=state.letterProgress[pkey]||[];
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters');
     const firstMissing=LETTERS.find(letter=>!practiced.includes(letter))||'A';
     const stored=state.activeLetterByStep[pkey];
     const storedAllowed=practiced.includes(stored)||stored===firstMissing;
@@ -588,6 +782,7 @@
     return '<section class="language-course-page language-letters-mobile">'+languageHeader(state,pos,t('letters'),'Letters box · '+CEFR[pos.li].id+' Step '+pos.step,'Learn A–Z in order. Hear the letter name by itself, then trace its uppercase and lowercase shapes accurately before continuing.')+
       '<div class="language-step-switch">'+[1,2,3,4,5].map(step=>'<button data-language-step="'+step+'" '+(stepUnlocked(state,pos.li,step)?'':'disabled')+' class="'+(step===pos.step?'active':'')+'">'+t('step')+' '+step+'</button>').join('')+'</div>'+
       boxSelector(state,pos)+
+      '<div class="language-content-item-grid">'+items.map(item=>infoItemCard(item,'letter-information-item')).join('')+'</div>'+
       '<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
       '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>Current letter</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'" aria-label="Hear letter '+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example word</span><strong>'+esc(word)+'</strong><button type="button" data-speak="'+esc(word)+'">Hear word</button></div><p>Audio says the letter name only. Follow the guide with your finger and complete both shapes before moving forward.</p></article></div>'+
       '<div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div>'+
@@ -598,23 +793,35 @@
   }
 
   function pronunciationPage(state,pos){
-    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
+    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{},items=languagePageItems(pos.li,pos.step,pos.box,'letters');
+    const body=items.map(item=>{
+      if(item.type==='sound')return '<article class="language-sound-hero language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'Pronunciation focus')+'</small><h2>'+esc(item.title||'Sound focus')+'</h2><p>'+esc(item.body||'')+'</p></div>'+(item.audioText?'<button class="btn btn-primary" type="button" data-speak="'+esc(item.audioText)+'">'+t('listen')+'</button>':'')+'</article>';
+      if(item.type==='words')return '<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div></article>';
+      if(item.type==='writing')return '<article class="language-writing-task language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Writing task')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
+      return infoItemCard(item);
+    }).join('');
+    const hasWriting=items.some(item=>item.type==='writing');
     return '<section class="language-course-page">'+languageHeader(state,pos,t('letters'),data.title,t('lettersIntro'))+boxSelector(state,pos)+
-      '<div class="language-pronunciation-lesson"><article class="language-sound-hero"><div><small>Pronunciation focus</small><h2>'+esc(data.pronunciationFocus)+'</h2><p>Hear each target separately, repeat it, then complete this page’s writing task.</p></div><button class="btn btn-primary" type="button" data-speak="'+esc(data.voicePrompt)+'">'+t('listen')+'</button></article>'+
-      '<div class="language-pronunciation-grid">'+data.pronunciationWords.map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div>'+
-      '<article class="language-writing-task"><small>Writing for this box</small><h2>Write, then read it aloud.</h2><p>'+esc(data.writingPrompt)+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="Write your two sentences here."></textarea></article></div>'+
-      '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):'Complete the writing task first')+'</button></section>';
+      '<div class="language-pronunciation-lesson">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation||hasWriting?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):(hasWriting?'Complete the writing task first':'Add a writing item before completion'))+'</button></section>';
   }
 
   function videoUnderstandingPage(state,pos){
-    const data=boxData(pos.li,pos.step,pos.box),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id,module=state.modules[id]||{};
-    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'';
-    const arabic=video.responseLanguage==='Arabic';
-    const prompt=arabic?'اكتب بالعربية ما فهمته من الفيديو. اذكر الفكرة الرئيسية وتفصيلين على الأقل.':'Write in English what you understood from the video. State the main idea and at least two supporting details.';
-    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One narrated understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
-      '<article class="language-video-player" data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>Video understanding</small><h2>'+esc(video.title)+'</h2><p>Press play. The lesson will present four narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>'+
-      '<article class="language-video-response"><small>Understanding response · '+video.responseLanguage+'</small><h2>'+(arabic?'اشرح ما فهمته':'Explain what you understood')+'</h2><p>'+prompt+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+(arabic?'اكتب فهمك هنا…':'Write your understanding here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>'+
-      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):'Watch the video and complete your response')+'</button></section>';
+    const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=videoItem?.responseLanguage||'English',arabic=responseLanguage==='Arabic';
+    const videoMarkup=videoItem?'<article class="language-video-player language-content-item"'+contentItemAttrs(videoItem)+' data-video-player="'+esc(id)+'"><div class="language-video-screen"><div class="language-video-badge">'+CEFR[pos.li].id+' · Step '+pos.step+' · Box '+pos.box+'</div><div class="language-video-frame" data-video-frame><small>'+esc(videoItem.eyebrow||'Video understanding')+'</small><h2>'+esc(videoItem.title||data.title)+'</h2><p>Press play. The lesson will present '+itemLines(videoItem,'scenes').length+' narrated scenes.</p></div><div class="language-video-progress"><i data-video-progress style="width:'+(watched?'100':'0')+'%"></i></div></div><div class="language-video-controls"><button type="button" data-play-language-video="'+esc(id)+'">'+(watched?'Replay video':'▶ Play video')+'</button><span data-video-status>'+(watched?'Watched completely':'Not watched yet')+'</span></div></article>':'';
+    const responseMarkup=responseItem?'<article class="language-video-response language-content-item"'+contentItemAttrs(responseItem)+'><small>'+esc(responseItem.eyebrow||'Understanding response')+' · '+esc(responseLanguage)+'</small><h2>'+esc(responseItem.title||'Explain what you understood')+'</h2><p>'+esc(responseItem.body||'')+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+esc(responseItem.placeholder||'Write here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>':'';
+    const extraMarkup=items.filter(item=>!['video','response'].includes(item.type)).map(item=>infoItemCard(item,'video-information-item')).join('');
+    return '<section class="language-course-page language-video-page">'+languageHeader(state,pos,t('video'),data.title,'One understanding video for this box. Watch it fully, then explain what you understood in the required language.')+boxSelector(state,pos)+
+      videoMarkup+responseMarkup+extraMarkup+
+      '<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem?'Watch the video and complete your response':'Add both video and response items before completion'))+'</button></section>';
+  }
+
+  function lettersPage(){
+    const state=languageState(),pos=activeLanguagePosition(state);
+    if(pos.li>0)return videoUnderstandingPage(state,pos);
+    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
   }
 
   function lettersPage(){
@@ -630,31 +837,50 @@
   }
 
   function voicePage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);
     if(!data)return boxOneGate(state,pos,t('voice'),t('voiceIntro'));
-    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
+    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'voice');
+    const body=items.map(item=>{
+      if(item.type==='dictation')return '<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
+      if(item.type==='speaking')return '<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote>'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(item.body||'')+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(item.body||'')+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';
+      return infoItemCard(item);
+    }).join('');
+    const completeReady=items.some(item=>item.type==='dictation')&&items.some(item=>item.type==='speaking');
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('voice'),data.title,t('voiceIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-practice-grid"><article class="language-practice-card dictation"><small>Voice → text</small><h2>Listen, then write exactly what you hear.</h2><button class="language-audio-button" type="button" data-speak="'+esc(data.voicePrompt)+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="Type the sentence you hear"></textarea><button type="button" data-check-dictation="'+esc(data.voicePrompt)+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>'+
-      '<article class="language-practice-card reverse"><small>Text → voice</small><h2>'+t('speak')+'</h2><blockquote>'+esc(data.reversePrompt)+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(data.reversePrompt)+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="Recognition transcript or type your spoken sentence here"></textarea><button type="button" data-check-reverse="'+esc(data.reversePrompt)+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article></div>'+
-      '<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):'Complete both voice exercises first')+'</button></section>';
+      '<div class="language-practice-grid">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice||completeReady?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):(completeReady?'Complete both voice exercises first':'Add both voice exercise items before completion'))+'</button></section>';
   }
 
   function grammarPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{};
-    return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('grammar'),data.grammarTitle,t('grammarIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-rule-layout"><article class="language-rule-card primary"><span>01</span><small>Grammar rule</small><h2>'+esc(data.grammarTitle)+'</h2><p>'+esc(data.grammarRule)+'</p><div class="language-examples"><code>'+esc(data.grammarExample1)+'</code><code>'+esc(data.grammarExample2)+'</code></div></article>'+
-      '<article class="language-rule-card"><span>02</span><small>Naming</small><h2>Clear noun choices</h2><p>'+esc(data.naming)+'</p><div class="language-word-row">'+data.words.slice(0,4).map(word=>'<b>'+esc(word)+'</b>').join('')+'</div></article>'+
-      '<article class="language-rule-card"><span>03</span><small>Typing & spelling</small><h2>Write for the reader</h2><p>'+esc(data.typing)+'</p><textarea id="language-grammar-writing" rows="5" placeholder="Write two examples that follow these rules."></textarea></article></div>'+
-      '<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):'Write your examples first')+'</button></section>';
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));
+    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'grammar');
+    const body=items.map((item,index)=>{
+      if(item.type==='rule')return '<article class="language-rule-card primary language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Grammar rule')+'</small><h2>'+esc(item.title||'Grammar rule')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-examples">'+(item.example1?'<code>'+esc(item.example1)+'</code>':'')+(item.example2?'<code>'+esc(item.example2)+'</code>':'')+'</div></article>';
+      if(item.type==='writing')return '<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Write for the reader')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" rows="5" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
+      if(item.type==='info'){
+        const words=itemWords(item);
+        return '<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Information')+'</h2><p>'+esc(item.body||'')+'</p>'+(words.length?'<div class="language-word-row">'+words.map(word=>'<b>'+esc(word)+'</b>').join('')+'</div>':'')+'</article>';
+      }
+      return infoItemCard(item);
+    }).join('');
+    const hasWriting=items.some(item=>item.type==='writing');
+    return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('grammar'),items.find(item=>item.type==='rule')?.title||data.grammarTitle,t('grammarIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
+      '<div class="language-rule-layout">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar||hasWriting?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):(hasWriting?'Write your examples first':'Add a writing item before completion'))+'</button></section>';
   }
 
   function reviewPage(){
-    const state=languageState(),pos=clampSelection(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('review'),t('reviewIntro'));const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'';
+    const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('review'),t('reviewIntro'));
+    const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'',items=languagePageItems(pos.li,pos.step,pos.box,'review');
+    const body=items.map(item=>{
+      if(item.type==='words')return '<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Active vocabulary')+'</small><h2>'+esc(item.title||'Vocabulary')+'</h2><div class="language-vocab-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>';
+      if(item.type==='steps')return '<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Learning trick')+'</small><h2>'+esc(item.title||'Learning method')+'</h2><p>'+esc(item.body||'')+'</p><ol>'+itemLines(item,'steps').map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></article>';
+      if(item.type==='notes')return '<article class="language-memory-card notes language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||t('notes'))+'</small><h2>'+esc(item.title||'Notes')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-box-notes" rows="8" placeholder="'+esc(item.placeholder||'Notes…')+'">'+esc(notes)+'</textarea><button type="button" data-save-language-notes="'+esc(id)+'">'+t('save')+'</button></article>';
+      return infoItemCard(item);
+    }).join('');
     return '<section class="language-course-page">'+languageHeader(state,{li:pos.li,step:pos.step,box:data.box},t('review'),data.title,t('reviewIntro'))+boxSelector(state,{li:pos.li,step:pos.step,box:data.box})+
-      '<div class="language-review-grid"><article class="language-memory-card"><small>Active vocabulary</small><h2>Retrieve before you reveal</h2><div class="language-vocab-grid">'+data.words.map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>'+
-      '<article class="language-memory-card"><small>Learning trick</small><h2>'+esc(data.trick)+'</h2><p>'+esc(data.recall)+'</p><ol><li>Attempt from memory.</li><li>Check only after the attempt.</li><li>Correct the smallest specific error.</li><li>Repeat after a short delay.</li></ol></article>'+
-      '<article class="language-memory-card notes"><small>'+t('notes')+'</small><h2>Keep only what will help future recall.</h2><textarea id="language-box-notes" rows="8" placeholder="Examples, mistakes, mnemonics, Arabic explanation…">'+esc(notes)+'</textarea><button type="button" data-save-language-notes="'+esc(id)+'">'+t('save')+'</button></article></div>'+
-      '<button class="language-complete-bar '+(module.review?'done':'')+'" type="button" data-language-module="review">'+(module.review?'✓ '+t('completed'):t('complete'))+'</button></section>';
+      '<div class="language-review-grid">'+body+'</div>'+
+      '<button class="language-complete-bar '+(module.review?'done':'')+'" type="button" data-language-module="review" '+(items.length?'':'disabled')+'>'+(module.review?'✓ '+t('completed'):(items.length?t('complete'):'Add at least one review item'))+'</button></section>';
   }
 
   function letterExamQuestions(step){
@@ -687,7 +913,7 @@
     const last=boxCount(li);
     return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
   }
-  function assessmentQuestions(ctx){
+  function defaultAssessmentQuestions(ctx){
     if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
     const out=[];
     if(ctx.scope==='step'){
@@ -716,6 +942,8 @@
     }
     return out.slice(0,20);
   }
+
+  function assessmentQuestions(ctx){return examQuestionsFor(ctx);}
 
   function placementScene(kind){
     if(kind==='station')return '<svg viewBox="0 0 420 220" role="img" aria-label="A train platform scene"><rect width="420" height="220" rx="20" fill="#eaf2ff"/><rect y="154" width="420" height="66" fill="#cbd5e1"/><rect x="40" y="72" width="250" height="82" rx="12" fill="#2563eb"/><rect x="61" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><rect x="129" y="88" width="54" height="36" rx="4" fill="#dbeafe"/><circle cx="92" cy="161" r="18" fill="#334155"/><circle cx="240" cy="161" r="18" fill="#334155"/><circle cx="337" cy="90" r="16" fill="#f59e0b"/><path d="M337 106v45M337 120l-23 25M337 121l25 18" stroke="#475569" stroke-width="8" stroke-linecap="round"/><rect x="311" y="150" width="55" height="8" rx="4" fill="#64748b"/></svg>';
@@ -791,26 +1019,33 @@
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
   function examFormMarkup(questions,mode,passed){
-    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>'<fieldset><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>').join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
+    if(!questions.length)return '<div class="language-exam-prereqs"><strong>Exam unavailable</strong><span>Add at least one exam question from Content Control → Control the exam.</span></div>';
+    return '<form id="language-exam-form" data-exam-mode="'+mode+'" class="language-exam-form">'+questions.map((q,index)=>{
+      const qid=q.id||('question-'+index);
+      return '<fieldset class="language-exam-question-item" data-language-exam-item="'+esc(qid)+'"><legend><span>'+(index+1)+'</span>'+esc(q.prompt)+'</legend>'+q.options.map(option=>'<label><input type="radio" name="q'+index+'" value="'+esc(option)+'" required><span>'+esc(option)+'</span></label>').join('')+'</fieldset>';
+    }).join('')+'<button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button><div class="language-exam-result" id="language-exam-result"></div></form>';
   }
+
   function examinePage(){
     const state=languageState();
     if(state.placementPending)return placementExamPage();
-    const pos=clampSelection(state);
-    if(Number.isInteger(state.challengeLevel)){
+    const pos=activeLanguagePosition(state),infoItems=languagePageItems(pos.li,pos.step,pos.box,'examine');
+    const infoMarkup='<div class="language-content-item-grid language-exam-content-items">'+infoItems.map(item=>infoItemCard(item,'exam-information-item')).join('')+'</div>';
+    if(Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
       const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
       return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),CEFR[li].id+' challenge examination','This challenge is independent of normal progression. Passing it completes only '+CEFR[li].id+'.')+
+        infoMarkup+
         '<div class="language-exam-summary challenge"><div><small>Level challenge · '+CEFR[li].id+'</small><h2>Score greater than 80%</h2><p>Lower levels stay unchanged. You still need every earlier required level before studying a higher locked level.</p></div><span class="ready">'+(passed?'Completed':'Challenge')+'</span></div>'+
         '<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>← Return to current exam</button>'+
         examFormMarkup(questions,'challenge',passed)+'</section>';
     }
-    const ctx=currentAssessment(state,pos),missing=assessmentMissing(state,ctx),ready=missing.length===0,passed=assessmentPassed(state,ctx);
+    const ctx=naturalExamContext(pos.li,pos.step,pos.box),missing=languageAuthoringTarget?[]:assessmentMissing(state,ctx),ready=languageAuthoringTarget||missing.length===0,passed=assessmentPassed(state,ctx);
     const questions=ready?assessmentQuestions(ctx):[];
     return '<section class="language-course-page">'+languageHeader(state,pos,t('examine'),assessmentTitle(ctx),t('examIntro'))+
-      boxSelector(state,pos)+
+      boxSelector(state,pos)+infoMarkup+
       '<div class="language-exam-summary"><div><small>'+CEFR[pos.li].id+' · '+t('step')+' '+pos.step+'</small><h2>'+assessmentTitle(ctx)+'</h2><p>'+assessmentDescription(ctx)+'</p></div><span class="'+(ready?'ready':'locked')+'">'+(passed?'Passed':ready?'Ready':'Locked')+'</span></div>'+
       (!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed))+
-      levelChallengePanel(state)+'</section>';
+      (languageAuthoringTarget?'':levelChallengePanel(state))+'</section>';
   }
 
   let personalTimer=null;
@@ -848,8 +1083,8 @@
       const type=courseType(),page=String(current||'').split('/')[0];
       if(type==='language' && window.DafatiiCourses.active().id){
         const state=languageState();
-        if(state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
-        if(!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
+        if(!languageAuthoringTarget&&!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
         if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
@@ -1036,14 +1271,17 @@
     const play=document.querySelector('[data-play-language-video]'),field=document.getElementById('language-video-response');
     const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
     if(!play||!field||!complete)return;
-    const state=languageState(),pos=clampSelection(state),video=videoLessonData(pos.li,pos.step,pos.box),id=video.id;
+    const state=languageState(),pos=activeLanguagePosition(state),id=keyBox(CEFR[pos.li].id,pos.step,pos.box);
+    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    if(!videoItem||!responseItem)return;
+    const frames=itemLines(videoItem,'scenes'),responseLanguage=videoItem.responseLanguage||'English';
     let watched=Boolean(state.watchedVideos[id]),playing=false,timer=null,index=0;
     const frame=document.querySelector('[data-video-frame]'),bar=document.querySelector('[data-video-progress]'),status=document.querySelector('[data-video-status]');
     const updateGate=()=>{
       const valid=videoResponseValid(pos.li,field.value);
       complete.disabled=complete.classList.contains('done')?false:!(watched&&valid);
-      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+video.responseLanguage):'Watch the full video first';
-      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(video.responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
+      if(!complete.classList.contains('done'))complete.textContent=watched?(valid?t('complete'):'Write a fuller response in '+responseLanguage):'Watch the full video first';
+      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
     };
     const finish=()=>{
       if(timer){clearInterval(timer);timer=null;}playing=false;watched=true;
@@ -1051,14 +1289,14 @@
       if(bar)bar.style.width='100%';if(status)status.textContent='Watched completely';play.textContent='Replay video';updateGate();
     };
     const showFrame=()=>{
-      if(index>=video.frames.length){finish();return;}
-      const text=video.frames[index];
-      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+video.frames.length+'</small><h2>'+esc(video.title)+'</h2><p>'+esc(text)+'</p>';
-      if(bar)bar.style.width=Math.round((index/video.frames.length)*100)+'%';
+      if(index>=frames.length){finish();return;}
+      const text=frames[index];
+      if(frame)frame.innerHTML='<small>Scene '+(index+1)+' / '+frames.length+'</small><h2>'+esc(videoItem.title||'Video understanding')+'</h2><p>'+esc(text)+'</p>';
+      if(bar)bar.style.width=Math.round((index/Math.max(1,frames.length))*100)+'%';
       speak(text);index++;
     };
     play.onclick=()=>{
-      if(playing)return;
+      if(playing||!frames.length)return;
       if(timer)clearInterval(timer);
       playing=true;index=0;play.textContent='Playing…';if(status)status.textContent='Watch and listen to every scene';
       showFrame();timer=setInterval(showFrame,4200);
@@ -1072,6 +1310,7 @@
     };
     updateGate();
   }
+
   function bindPlacementExam(){
     document.querySelectorAll('[data-placement-listen]').forEach(button=>button.onclick=()=>speak(button.dataset.placementListen));
     const form=document.getElementById('language-placement-form');
@@ -1214,5 +1453,26 @@
   installCreateInterceptor();
   installWorkspaceRoutes();
   installCourseChangeRouting();
-  window.DafatiiCourseModes=Object.freeze({courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser});
+  window.DafatiiCourseModes=Object.freeze({
+    courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
+    languageAuthoring:Object.freeze({
+      pages:['letters','voice','grammar','review','examine'],
+      pageName:languagePageName,
+      getItems:selection=>languagePageItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item})),
+      getSchemas:(page,li)=>languageItemSchemas(page,li),
+      createItem:createLanguageItem,
+      saveItem:saveLanguageItem,
+      deleteItem:deleteLanguageItem,
+      emptyPage:emptyLanguagePage,
+      resetPage:resetLanguagePage,
+      begin:beginLanguageAuthoring,
+      end:endLanguageAuthoring,
+      current:()=>languageAuthoringTarget?{...languageAuthoringTarget}:null,
+      examContext:selection=>naturalExamContext(selection.li,selection.step,selection.box),
+      getExamQuestions:selection=>examQuestionsFor(naturalExamContext(selection.li,selection.step,selection.box)).map((q,index)=>({...q,id:q.id||('q-'+index)})),
+      saveExamQuestion,
+      deleteExamQuestion,
+      emptyExamQuestions
+    })
+  });
 })();
