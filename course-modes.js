@@ -326,21 +326,22 @@
   function isLetterBox(li,box){ return li===0 && box===1; }
   function letterProgressKey(li,step){ return keyStep(CEFR[li].id,step); }
   function isBoxPassed(state,li,step,box){ return state.passedBoxes.includes(keyBox(CEFR[li].id,step,box)); }
-  function isStepPassed(state,li,step){
-    for(let box=1;box<=boxCount(li);box++) if(!isBoxPassed(state,li,step,box)) return false;
+  function isStepPassed(state,li,step){ return state.passedSteps.includes(keyStep(CEFR[li].id,step)); }
+  function isLevelPassed(state,li){ return state.passedLevels.includes(CEFR[li].id); }
+  function levelUnlocked(state,li){
+    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+    if(li<entry)return false;
+    if(li===entry)return true;
+    for(let level=entry;level<li;level++) if(!isLevelPassed(state,level))return false;
     return true;
   }
-  function isLevelPassed(state,li){
-    for(let step=1;step<=5;step++) if(!isStepPassed(state,li,step)) return false;
-    return true;
-  }
-  function levelUnlocked(state,li){ return li===0 || isLevelPassed(state,li-1); }
   function stepUnlocked(state,li,step){ return levelUnlocked(state,li) && (step===1 || isStepPassed(state,li,step-1)); }
   function boxUnlocked(state,li,step,box){ return stepUnlocked(state,li,step) && (box===1 || isBoxPassed(state,li,step,box-1)); }
 
   function clampSelection(state){
-    let li=Math.min(4,Math.max(0,Number(state.selectedLevel)||0));
-    while(li>0&&!levelUnlocked(state,li))li--;
+    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+    let li=Math.min(4,Math.max(0,Number(state.selectedLevel)||entry));
+    if(!levelUnlocked(state,li))li=entry;
     let step=Math.min(5,Math.max(1,Number(state.selectedStep)||1));
     while(step>1&&!stepUnlocked(state,li,step))step--;
     let box=Math.min(boxCount(li),Math.max(1,Number(state.selectedBox)||1));
