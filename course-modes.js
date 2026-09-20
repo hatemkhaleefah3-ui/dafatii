@@ -919,14 +919,22 @@
   }
 
   function letterExamQuestions(step){
-    const sample=[
-      ['Which uppercase letter matches lowercase a?','A',['A','E','H','R']],
-      ['Which lowercase letter matches uppercase G?','g',['g','q','c','j']],
-      ['Which letter comes immediately after M?','N',['N','L','O','P']],
-      ['Which letter comes immediately before T?','S',['S','R','U','V']],
-      ['Which pair shows the same letter?','B / b',['B / b','D / p','Q / g','M / n']]
-    ];
-    return sample.map(item=>({prompt:item[0],correct:item[1],options:item[2]}));
+    const offset=(step-1)*5;
+    const letters=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+    const pick=index=>letters[(offset+index)%letters.length];
+    const a=pick(0),b=pick(1),c=pick(2),d=pick(3),e=pick(4);
+    return [
+      {prompt:'Which uppercase letter matches lowercase '+a.toLowerCase()+'?',correct:a,options:[a,b,c,d]},
+      {prompt:'Which lowercase letter matches uppercase '+b+'?',correct:b.toLowerCase(),options:[b.toLowerCase(),c.toLowerCase(),d.toLowerCase(),e.toLowerCase()]},
+      {prompt:'Which letter comes immediately after '+c+'?',correct:letters[(letters.indexOf(c)+1)%26],options:[letters[(letters.indexOf(c)+1)%26],b,d,e]},
+      {prompt:'Which letter comes immediately before '+e+'?',correct:letters[(letters.indexOf(e)+25)%26],options:[letters[(letters.indexOf(e)+25)%26],a,b,c]},
+      {prompt:'Which pair shows the same letter?',correct:d+' / '+d.toLowerCase(),options:[d+' / '+d.toLowerCase(),d+' / '+e.toLowerCase(),c+' / '+d.toLowerCase(),a+' / '+b.toLowerCase()]},
+      {prompt:'Which option contains the uppercase form of '+a.toLowerCase()+'?',correct:a,options:[a,b,d,e]},
+      {prompt:'Which option contains the lowercase form of '+c+'?',correct:c.toLowerCase(),options:[c.toLowerCase(),a.toLowerCase(),d.toLowerCase(),e.toLowerCase()]},
+      {prompt:'Which letter is two places after '+a+'?',correct:letters[(letters.indexOf(a)+2)%26],options:[letters[(letters.indexOf(a)+2)%26],b,d,e]},
+      {prompt:'Which pair is NOT the same letter?',correct:b+' / '+c.toLowerCase(),options:[a+' / '+a.toLowerCase(),d+' / '+d.toLowerCase(),e+' / '+e.toLowerCase(),b+' / '+c.toLowerCase()]},
+      {prompt:'Which sequence is in correct alphabetical order?',correct:a+', '+b+', '+c,options:[a+', '+b+', '+c,c+', '+b+', '+a,b+', '+a+', '+c,a+', '+c+', '+b]}
+    ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function boxQuestionSet(li,step,box){
     if(isLetterBox(li,box))return letterExamQuestions(step);
@@ -936,17 +944,23 @@
     const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1;
     const adjacent=boxData(li,step,nextBox);
     const unpunctuated=data.grammarExample1.charAt(0).toLowerCase()+data.grammarExample1.slice(1).replace(/[.!?]$/,'');
-    return [
+    const questions=[
       {prompt:'Which sentence best demonstrates this box’s target grammar?',correct:data.grammarExample1,options:[data.grammarExample1,unpunctuated+' '+data.words[0],data.words.slice(0,4).join(' '),adjacent.reversePrompt]},
       {prompt:'Which statement correctly describes this box’s grammar focus?',correct:data.grammarRule,options:[data.grammarRule,otherRule[1],'Word order never affects meaning.','Punctuation replaces grammar.']},
       {prompt:'Which sentence is the listening model for this box?',correct:data.voicePrompt,options:[data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,data.words.slice(0,5).join(' ')]},
       {prompt:'Which word belongs to this box’s active vocabulary?',correct:data.words[0],options:[data.words[0],adjacent.words[0],otherRule[0],adjacent.topic]},
-      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]}
-    ].map(q=>({...q,options:arrayUnique(q.options)}));
+      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]},
+      {prompt:'What is the communicative function of this box?',correct:data.languageFunction,options:[data.languageFunction,adjacent.languageFunction,'spelling isolated letters','avoiding communication']},
+      {prompt:'Which pronunciation focus belongs to this box?',correct:data.pronunciationFocus,options:[data.pronunciationFocus,adjacent.pronunciationFocus,otherRule[0],adjacent.topic]},
+      {prompt:'Which instruction best matches the writing task?',correct:data.writingPrompt,options:[data.writingPrompt,adjacent.writingPrompt,'Copy the vocabulary list without sentences.','Do not use the target grammar.']},
+      {prompt:'Which statement best matches the writing/typing rule for this level?',correct:data.typing,options:[data.typing,adjacent.naming,'Punctuation is never needed.','Use random capitalization to show emphasis.']},
+      {prompt:'Which prompt best tests free recall for this box?',correct:data.recall,options:[data.recall,adjacent.recall,'Repeat one word ten times without context.','Skip the grammar and guess the topic.']}
+    ];
+    return questions.map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function representativeBoxes(li){
-    const last=boxCount(li);
-    return arrayUnique([1,Math.max(firstLearningBox(li),Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
+    const last=boxCount(li),first=firstLearningBox(li);
+    return arrayUnique([1,first,Math.max(first,Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
   }
   function defaultAssessmentQuestions(ctx){
     if(ctx.scope==='box')return boxQuestionSet(ctx.li,ctx.step,ctx.box);
@@ -954,28 +968,30 @@
     if(ctx.scope==='step'){
       representativeBoxes(ctx.li).forEach((box,index)=>{
         const set=boxQuestionSet(ctx.li,ctx.step,box);
-        out.push(set[index%set.length],set[(index+2)%set.length]);
+        out.push(set[index%set.length],set[(index+3)%set.length],set[(index+6)%set.length]);
       });
-      return out.slice(0,10);
+      return out.slice(0,15);
     }
     if(ctx.scope==='level'){
       for(let step=1;step<=5;step++){
         const reps=representativeBoxes(ctx.li);
-        [reps[1],reps[3],reps[5]].forEach((box,index)=>{
+        [reps[1],reps[2],reps[3],reps[4],reps[reps.length-1]].forEach((box,index)=>{
           const set=boxQuestionSet(ctx.li,step,box);
-          out.push(set[(step+index)%set.length]);
+          out.push(set[(step+index*2)%set.length]);
         });
       }
-      return out.slice(0,15);
+      return out.slice(0,25);
     }
     for(let li=0;li<CEFR.length;li++){
       const reps=representativeBoxes(li);
-      [1,2,3,4].forEach((step,index)=>{
-        const box=reps[(index+1)%reps.length],set=boxQuestionSet(li,step,box);
-        out.push(set[(li+index)%set.length]);
+      [1,2,3,4,5].forEach((step,index)=>{
+        [reps[1],reps[3],reps[reps.length-1]].forEach((box,offset)=>{
+          const set=boxQuestionSet(li,step,box);
+          out.push(set[(li+index+offset*3)%set.length]);
+        });
       });
     }
-    return out.slice(0,20);
+    return out.slice(0,40);
   }
 
   function assessmentQuestions(ctx){return examQuestionsFor(ctx);}
