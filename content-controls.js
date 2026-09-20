@@ -461,7 +461,8 @@
   }
 
   function examQuestionMarkup(question,index,selected){
-    return '<button type="button" class="dcc-exam-question-card '+(selected?'selected':'')+'" data-dcc-exam-question="'+escapeHtml(question.id||('q-'+index))+'"><small>Question '+(index+1)+'</small><strong>'+escapeHtml(question.prompt||'Untitled question')+'</strong><span>Correct: '+escapeHtml(question.correct||'')+'</span></button>';
+    const correct=Array.isArray(question.correct)?question.correct.join(' · '):(question.correct||'');
+    return '<button type="button" class="dcc-exam-question-card '+(selected?'selected':'')+'" data-dcc-exam-question="'+escapeHtml(question.id||('q-'+index))+'"><small>Question '+(index+1)+' · '+escapeHtml(question.type||'mcq')+'</small><strong>'+escapeHtml(question.prompt||'Untitled question')+'</strong><span>Correct: '+escapeHtml(correct)+'</span></button>';
   }
   function openLanguageExamManager(selection){
     const api=languageApi();if(!api)return;
@@ -494,10 +495,12 @@
     const api=languageApi(),selection=state.languageExamSelection;if(!api||!selection)return;
     const existing=isNew?null:api.getExamQuestions(selection).find(q=>q.id===state.languageSelectedExam);
     if(!isNew&&!existing)return;
-    const question=existing||{id:'',prompt:'',correct:'',options:['','','','']};
+    const question=existing||{id:'',type:'mcq',prompt:'',audio:'',correct:'',options:['','','','']};
     const body='<form class="dcc-language-item-form dcc-exam-item-form">'+
+      '<label><span>Question type</span><select name="type">'+['mcq','true-false','multi-select','fill','short-answer','listen-choice','listen-fill','ordering'].map(type=>'<option value="'+type+'" '+(type===(question.type||'mcq')?'selected':'')+'>'+type.replace(/-/g,' ')+'</option>').join('')+'</select></label>'+
       '<label><span>Question</span><textarea name="prompt" rows="4">'+escapeHtml(question.prompt||'')+'</textarea></label>'+
-      '<label><span>Correct answer</span><textarea name="correct" rows="2">'+escapeHtml(question.correct||'')+'</textarea></label>'+
+      '<label><span>Audio text · listening types only</span><textarea name="audio" rows="2">'+escapeHtml(question.audio||'')+'</textarea></label>'+
+      '<label><span>Correct answer</span><textarea name="correct" rows="2">'+escapeHtml(Array.isArray(question.correct)?question.correct.join('\n'):(question.correct||''))+'</textarea></label>'+
       '<label><span>Answer options · one per line</span><textarea name="options" rows="7">'+escapeHtml((question.options||[]).join('\n'))+'</textarea></label>'+
       '<button class="dcc-language-form-save" type="submit">'+(isNew?'Add question':'Save question')+'</button></form>';
     const shell=mountSheet(sheetFrame(isNew?'Add exam question':'Edit exam question','Exam control',body,'Include the correct answer among the answer options.'));
@@ -506,7 +509,9 @@
       const data=new FormData(event.currentTarget),correct=String(data.get('correct')||'').trim();
       let options=String(data.get('options')||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
       if(correct&&!options.includes(correct))options.unshift(correct);
-      const saved={...question,prompt:String(data.get('prompt')||'').trim(),correct,options};
+      const type=String(data.get('type')||'mcq'),saved={...question,type,prompt:String(data.get('prompt')||'').trim(),audio:String(data.get('audio')||'').trim(),correct:type==='multi-select'?correct.split(/\r?\n/).map(value=>value.trim()).filter(Boolean):correct,options};
+      if(type==='true-false'){saved.options=['True','False'];if(!saved.options.includes(saved.correct))saved.correct='True';}
+      if(type==='ordering')saved.tokens=saved.correct.split(/\s+/).filter(Boolean).sort((a,b)=>a.localeCompare(b));
       api.saveExamQuestion(selection,saved);state.languageSelectedExam=saved.id||state.languageSelectedExam;openLanguageExamManager(selection);
     });
   }
