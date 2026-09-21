@@ -13,6 +13,15 @@ const navSpecStart=js.indexOf('const navSpec=['),navSpecEnd=js.indexOf('function
 assert.ok(navSpecStart>=0&&navSpecEnd>navSpecStart,'language navSpec must exist');
 const navSpecText=js.slice(navSpecStart,navSpecEnd);
 const routes=['language-home','language-letters','language-voice','language-grammar','language-video','language-examine'];
+const languages=['English','Arabic','Spanish','French','German','Turkish','Persian','Kurdish','Italian','Portuguese','Russian','Chinese','Japanese','Korean','Hindi','Urdu'];
+for (const language of languages) assert.ok(js.includes("['"+language+"'"),'language picker missing '+language);
+assert.match(js,/function openLanguageCourseForm\(\)/,'language creation needs its dedicated selection flow');
+assert.match(js,/data-language-choice=/,'language creation must render language toggle buttons');
+assert.match(js,/id="language-course-create" type="submit" disabled/,'Create must stay disabled until a language is chosen');
+assert.match(js,/target\.value=selected;name\.value=selected\+' Language Course';submit\.disabled=!selected/,'language selection must unlock creation and derive the course identity');
+assert.match(js,/Select a language before creating the course/,'course creation wrapper must reject missing target language');
+assert.doesNotMatch(js,/targetLanguage:'English'|name="targetLanguage" value="English"/,'target language must never be hard-coded to English');
+assert.match(js,/toolbarKicker\.textContent=targetLanguage\(\)\+' course'/,'language shell must show the selected language');
 for (const route of routes) assert.ok(navSpecText.includes("'"+route+"'"),'language nav missing '+route);
 assert.equal((navSpecText.match(/\['language-/g)||[]).length,6,'language course must expose exactly six navigation destinations');
 
@@ -38,8 +47,8 @@ assert.match(js,/name="pricing" value="free"/,'personal courses must remain free
 assert.match(js,/personal-focus-room/,'personal focus room must remain intact');
 assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal study-room override must remain');
 
-assert.ok(index.includes('course-modes.css?v=20260921-7'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-7'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-7') > index.indexOf('content-controls.js'),'course modes must load after content controls');
+assert.ok(index.includes('course-modes.css?v=20260921-8'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-8'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260921-8') > index.indexOf('content-controls.js'),'course modes must load after content controls');
 
 console.log('empty language course shell tests passed');

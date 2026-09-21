@@ -3,6 +3,12 @@
 
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
   const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-video','language-examine'];
+  const LANGUAGE_CHOICES = Object.freeze([
+    ['English','English'],['Arabic','العربية'],['Spanish','Español'],['French','Français'],
+    ['German','Deutsch'],['Turkish','Türkçe'],['Persian','فارسی'],['Kurdish','کوردی'],
+    ['Italian','Italiano'],['Portuguese','Português'],['Russian','Русский'],['Chinese','中文'],
+    ['Japanese','日本語'],['Korean','한국어'],['Hindi','हिन्दी'],['Urdu','اردو']
+  ]);
   const COPY = {
     en:{home:'Home',letters:'Vocabulary & writing',voice:'Listening & talking',grammar:'Grammar & rules',video:'YouTube understanding',examine:'Examining'},
     ar:{home:'الرئيسية',letters:'المفردات والكتابة',voice:'الاستماع والتحدث',grammar:'القواعد والأحكام',video:'فهم يوتيوب',examine:'الاختبارات'}
@@ -20,14 +26,19 @@
   function courseMeta(){ return readSuite().courseMeta || {}; }
   function courseType(){ return String(courseMeta().courseType || 'dafaa'); }
   function isLanguage(){ return courseType()==='language'; }
+  function normalizeTargetLanguage(value){
+    const name=String(value||'').trim();
+    return LANGUAGE_CHOICES.some(item=>item[0]===name)?name:'';
+  }
+  function targetLanguage(){ return normalizeTargetLanguage(courseMeta().targetLanguage)||'Language'; }
   function isAdminActor(){
     const actor=window.DafatiiCourses?.actor||window.DafatiiAuth?.user;
     return actor?.platformRole==='admin';
   }
 
-  function emptyLanguageSeededContent(){
+  function emptyLanguageSeededContent(selectedLanguage){
     const suite=readSuite();
-    suite.courseMeta={version:1,courseType:'language',targetLanguage:'English',studyType:'courses'};
+    suite.courseMeta={version:1,courseType:'language',targetLanguage:normalizeTargetLanguage(selectedLanguage),studyType:'courses'};
     for(const key of ['notes','resources','assignments','deadlines','focusLog','applications','scholarships','volunteer','support','activity']) suite[key]=[];
     writeSuite(suite);
     window.DafatiiCourses.writeJSON('dafatii:subjects',[]);
@@ -56,11 +67,13 @@
     api.createCourse=async input => {
       const type=COURSE_TYPES.includes(input.courseType)?input.courseType:'dafaa';
       if(type==='language'&&!isAdminActor())throw new Error('Administrator access is required for Language Course creation.');
+      const selectedLanguage=type==='language'?normalizeTargetLanguage(input.targetLanguage):'';
+      if(type==='language'&&!selectedLanguage)throw new Error('Select a language before creating the course.');
       const course=await originalCreate(input);
       const suite=readSuite();
-      suite.courseMeta={version:1,courseType:type,targetLanguage:type==='language'?'English':'',studyType:type==='language'?'courses':(input.studyType||'courses')};
+      suite.courseMeta={version:1,courseType:type,targetLanguage:selectedLanguage,studyType:type==='language'?'courses':(input.studyType||'courses')};
       writeSuite(suite);
-      if(type==='language')emptyLanguageSeededContent();
+      if(type==='language')emptyLanguageSeededContent(selectedLanguage);
       if(type==='personal')window.DafatiiCourses.writeJSON('dafatii:chatState:v1',{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});
       return course;
     };
@@ -87,7 +100,7 @@
       ['dafaa','◇','Create Dafaa','Full Dafatii course with subjects, calendar, study rooms and chat.','إنشاء دفعة','دورة دفاتري كاملة بالمواد والتقويم وغرف الدراسة والمحادثة.'],
       ['personal','◎','Create Personal course','Private solo course. No Chat app; Study Rooms becomes one focused personal room.','إنشاء دورة شخصية','دورة فردية بلا تطبيق المحادثة ومع غرفة دراسة شخصية واحدة.'],
       ['teaching','▣','Create Teaching course','The existing course workspace prepared for teaching and course management.','إنشاء دورة تدريس','مساحة الدورة الحالية مع أدوات التدريس والإدارة.'],
-      ['language','Aa','Create Language course','Empty English course shell with six navigation pages ready for future content.','إنشاء دورة لغة','هيكل فارغ لدورة الإنجليزية مع ست صفحات تنقل جاهزة للمحتوى لاحقاً.']
+      ['language','Aa','Create Language course','Choose a language, then create an empty course shell with six navigation pages.','إنشاء دورة لغة','اختر لغة ثم أنشئ هيكل دورة فارغاً مع ست صفحات تنقل.']
     ].filter(card=>card[0]!=='language'||isAdminActor());
     sheet(lang()==='ar'?'إنشاء دورة':'Create a course','<div class="course-type-grid">'+cards.map(card=>{
       const title=lang()==='ar'?card[4]:card[2],desc=lang()==='ar'?card[5]:card[3];
@@ -100,18 +113,46 @@
     return [['courses','Courses'],['chapters','Chapters'],['systems','Systems'],['blocks','Blocks']].map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');
   }
 
+  function openLanguageCourseForm(){
+    const actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
+    if(!actor||actor.platformRole!=='admin')return;
+    const arabic=lang()==='ar';
+    const choices=LANGUAGE_CHOICES.map(([value,native])=>'<button class="language-choice" type="button" data-language-choice="'+esc(value)+'" aria-pressed="false"><strong dir="auto">'+esc(native)+'</strong><span>'+esc(value)+'</span></button>').join('');
+    const close=sheet(arabic?'إنشاء دورة لغة':'Create Language course','<form id="course-mode-form" class="language-course-create"><input type="hidden" name="courseType" value="language"><input type="hidden" name="targetLanguage" value=""><input type="hidden" name="name" value=""><input type="hidden" name="templateName" value="Computer Science"><input type="hidden" name="studyType" value="courses"><input type="hidden" name="institution" value=""><input type="hidden" name="stage" value="university"><input type="hidden" name="pricing" value="free"><input type="hidden" name="priceMinor" value="0"><input type="hidden" name="visibility" value="public"><input type="hidden" name="joinPolicy" value="approval"><input type="hidden" name="learningField" value="Languages"><input type="hidden" name="difficultyLevel" value="beginner"><div class="language-create-intro"><small>'+(arabic?'دورة لغة':'Language course')+'</small><h3>'+(arabic?'اختر اللغة':'Select a language')+'</h3><p>'+(arabic?'اختر لغة واحدة. ستُنشأ الدورة كمساحة فارغة مع صفحات التنقل فقط.':'Choose one language. The course will be created as an empty workspace with navigation only.')+'</p></div><div class="language-picker" role="radiogroup" aria-label="'+(arabic?'لغة الدورة':'Course language')+'">'+choices+'</div><button class="btn btn-primary auth-submit language-create-submit" id="language-course-create" type="submit" disabled>'+(arabic?'إنشاء الدورة':'Create course')+'</button><p class="auth-note" id="course-mode-status">'+(arabic?'اختر لغة للمتابعة.':'Select a language to continue.')+'</p></form>');
+    const form=document.getElementById('course-mode-form');
+    const target=form.querySelector('input[name="targetLanguage"]'),name=form.querySelector('input[name="name"]'),submit=document.getElementById('language-course-create'),status=document.getElementById('course-mode-status');
+    form.querySelectorAll('[data-language-choice]').forEach(button=>button.addEventListener('click',()=>{
+      const selected=normalizeTargetLanguage(button.dataset.languageChoice);
+      form.querySelectorAll('[data-language-choice]').forEach(choice=>{choice.classList.remove('is-selected');choice.setAttribute('aria-pressed','false');});
+      button.classList.add('is-selected');button.setAttribute('aria-pressed','true');
+      target.value=selected;name.value=selected+' Language Course';submit.disabled=!selected;status.textContent='';
+    }));
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      const data=Object.fromEntries(new FormData(form));
+      const selected=normalizeTargetLanguage(data.targetLanguage);
+      if(!selected){status.textContent=arabic?'اختر لغة للمتابعة.':'Select a language to continue.';submit.disabled=true;return;}
+      data.targetLanguage=selected;data.name=selected+' Language Course';data.priceMinor=0;
+      submit.disabled=true;status.textContent=(arabic?'جارٍ إنشاء دورة ':'Creating empty ')+selected+(arabic?' فارغة…':' course…');
+      try{
+        await window.DafatiiCourses.createCourse(data);
+        close();setHash('language-home');
+      }catch(error){status.textContent=error.message;submit.disabled=false;}
+    };
+  }
+
   function openCourseForm(type){
+    if(type==='language'){openLanguageCourseForm();return;}
     const templates=window.DafatiiCourses.templates();
     const actor=window.DafatiiCourses.actor||window.DafatiiAuth.user;
     const isAdmin=actor && actor.platformRole==='admin';
-    if(type==='language'&&!isAdmin)return;
-    const isLang=type==='language',isPersonal=type==='personal';
-    const defaultName=isLang?'English Learning':isPersonal?'My Personal Course':'';
+    const isPersonal=type==='personal';
+    const defaultName=isPersonal?'My Personal Course':'';
     const personalSecret=isPersonal
       ? (crypto.randomUUID?crypto.randomUUID().replace(/-/g,'').slice(0,20):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,20))
       : '';
-    const templateField=isLang?'<input type="hidden" name="templateName" value="Computer Science">':'<div class="field"><label>Content template</label><select name="templateName">'+templates.map(name=>'<option>'+esc(name)+'</option>').join('')+'</select></div>';
-    const studyField=isLang?'<input type="hidden" name="studyType" value="courses"><input type="hidden" name="targetLanguage" value="English"><div class="course-private-lock">English course shell · six empty navigation pages.</div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
+    const templateField='<div class="field"><label>Content template</label><select name="templateName">'+templates.map(name=>'<option>'+esc(name)+'</option>').join('')+'</select></div>';
+    const studyField='<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
     const visibility=isPersonal
       ? '<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Personal · only this account uses the workspace</div></div>'
       : isAdmin
@@ -126,8 +167,8 @@
     const access=isPersonal
       ? '<input type="hidden" name="accessCode" value="'+esc(personalSecret)+'"><div class="course-private-lock">Solo mode: Chat is disabled and Study Rooms is replaced by one private Focus Room.</div>'
       : '<div class="field"><label>Private access code</label><input name="accessCode" type="password" minlength="6" maxlength="64" '+(isAdmin?'':'required')+'></div>';
-    const adminMetadata=isAdmin?'<div class="field"><label>Learning field</label><input name="learningField" maxlength="80" value="'+(isLang?'Languages':'')+'"></div><div class="field"><label>Difficulty</label><select name="difficultyLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>':'';
-    const title={dafaa:'Create Dafaa',personal:'Create Personal course',teaching:'Create Teaching course',language:'Create Language course'}[type]||'Create course';
+    const adminMetadata=isAdmin?'<div class="field"><label>Learning field</label><input name="learningField" maxlength="80"></div><div class="field"><label>Difficulty</label><select name="difficultyLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>':'';
+    const title={dafaa:'Create Dafaa',personal:'Create Personal course',teaching:'Create Teaching course'}[type]||'Create course';
     const close=sheet(title,'<form id="course-mode-form"><input type="hidden" name="courseType" value="'+esc(type)+'"><div class="field"><label>Course name</label><input name="name" maxlength="120" value="'+esc(defaultName)+'" required></div>'+templateField+studyField+'<div class="suite-form-grid"><div class="field"><label>Institution</label><input name="institution" maxlength="160"></div>'+(isAdmin?'<div class="field"><label>Stage</label><select name="stage"><option value="university" selected>Higher education</option><option value="independent">Independent</option></select></div>':'<input type="hidden" name="stage" value="university">')+pricing+visibility+joinPolicy+adminMetadata+'</div>'+access+'<button class="btn btn-primary auth-submit" type="submit">Create course</button><p class="auth-note" id="course-mode-status"></p></form>');
     const form=document.getElementById('course-mode-form');
     form.onsubmit=async event=>{
@@ -135,11 +176,10 @@
       const data=Object.fromEntries(new FormData(form));
       data.priceMinor=Number(data.priceMinor||0);
       const status=document.getElementById('course-mode-status'),submit=form.querySelector('button[type=submit]');
-      submit.disabled=true;status.textContent=isLang?'Creating empty English course shell…':'Creating secure course workspace…';
+      submit.disabled=true;status.textContent='Creating secure course workspace…';
       try{
         await window.DafatiiCourses.createCourse(data);
-        close();
-        setHash(type==='language'?'language-home':'dashboard/overview');
+        close();setHash('dashboard/overview');
       }catch(error){status.textContent=error.message;submit.disabled=false;}
     };
   }
@@ -228,7 +268,7 @@
     const toolbarTitle=document.querySelector('.quiet-toolbar-title strong');
     const toolbarKicker=document.querySelector('.quiet-toolbar-title small');
     if(toolbarTitle)toolbarTitle.textContent=languageNavLabel(activeNav);
-    if(toolbarKicker)toolbarKicker.textContent='English course';
+    if(toolbarKicker)toolbarKicker.textContent=targetLanguage()+' course';
     const side=document.querySelector('.quiet-sidebar > nav'),desktop=document.querySelector('.quiet-desktop-tabs'),bottom=document.querySelector('.bottom-nav');
     if(side)side.innerHTML=sideLanguageNav(current);
     if(desktop)desktop.innerHTML=sideLanguageNav(current);
@@ -247,5 +287,5 @@
   installCreateInterceptor();
   installWorkspaceRoutes();
   installCourseChangeRouting();
-  window.DafatiiCourseModes=Object.freeze({courseType,isLanguage,openTypeChooser,languageRoutes:[...LANGUAGE_ROUTES]});
+  window.DafatiiCourseModes=Object.freeze({courseType,isLanguage,targetLanguage,openTypeChooser,languageRoutes:[...LANGUAGE_ROUTES],languageChoices:LANGUAGE_CHOICES.map(item=>item[0])});
 })();
