@@ -30,6 +30,7 @@ vm.runInContext(source,context);
   assert.equal(api.readJSON('dafatii:subjects',[])[0].name,'Programming');
   assert.equal(api.isCourseKey('dafatii:schedulePlanner:v2'),false,'personal planner records must never be routed through shared Course content');
   assert.equal(api.isCourseKey('dafatii:language-authoring:v1'),false,'retired language authoring must not be a shared Course content key');
+  assert.equal(api.isCourseKey('dafatii:language-content:v1'),true,'simple language page content must persist through shared Course content');
   api.writeJSON('dafatii:subjects',[{id:'databases',name:'Databases'}]);
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.some(([path,options])=>path.endsWith('/content')&&options.method==='PUT'),true);

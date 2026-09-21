@@ -7,7 +7,7 @@ export const COURSE_CONTENT_KEYS = new Set([
   'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
   'dafatii:examDays','dafatii:examPeriods','dafatii:studentSuite:v1','dafatii:studyRoomState:v1',
   'dafatii:studyRoomWorkspace:v1','dafatii:chatState:v1','dafatii:chatProState:v1',
-  'dafatii:materialFiles:v1'
+  'dafatii:materialFiles:v1','dafatii:language-content:v1'
 ]);
 
 export const PERMISSIONS = [

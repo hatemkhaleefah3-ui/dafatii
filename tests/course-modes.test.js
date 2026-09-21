@@ -5,50 +5,41 @@ const js = fs.readFileSync('course-modes.js','utf8');
 const css = fs.readFileSync('course-modes.css','utf8');
 const index = fs.readFileSync('index.html','utf8');
 
-for (const type of ['dafaa','personal','teaching','language']) {
-  assert.ok(js.includes("'"+type+"'"), 'missing course type '+type);
-}
+for (const type of ['dafaa','personal','teaching','language']) assert.ok(js.includes("'"+type+"'"),'missing course type '+type);
+for (const route of ['language-home','language-letters','language-voice','language-grammar','language-video','language-examine']) assert.ok(js.includes("'"+route+"'"),'language route missing '+route);
+for (const route of ['language-start-zero','language-level-test']) assert.ok(js.includes("'"+route+"'"),'intermediate route missing '+route);
+for (const language of ['English','Arabic','Spanish','French','German','Turkish','Persian','Kurdish','Italian','Portuguese','Russian','Chinese','Japanese','Korean','Hindi','Urdu']) assert.ok(js.includes("['"+language+"'"),'language picker missing '+language);
 
-const navSpecStart=js.indexOf('const navSpec=['),navSpecEnd=js.indexOf('function icon(',navSpecStart);
-assert.ok(navSpecStart>=0&&navSpecEnd>navSpecStart,'language navSpec must exist');
-const navSpecText=js.slice(navSpecStart,navSpecEnd);
-const routes=['language-home','language-letters','language-voice','language-grammar','language-video','language-examine'];
-const languages=['English','Arabic','Spanish','French','German','Turkish','Persian','Kurdish','Italian','Portuguese','Russian','Chinese','Japanese','Korean','Hindi','Urdu'];
-for (const language of languages) assert.ok(js.includes("['"+language+"'"),'language picker missing '+language);
-assert.match(js,/function openLanguageCourseForm\(\)/,'language creation needs its dedicated selection flow');
-assert.match(js,/data-language-choice=/,'language creation must render language toggle buttons');
-assert.match(js,/id="language-course-create" type="submit" disabled/,'Create must stay disabled until a language is chosen');
-assert.match(js,/target\.value=selected;name\.value=selected\+' Language Course';submit\.disabled=!selected/,'language selection must unlock creation and derive the course identity');
-assert.match(js,/Select a language before creating the course/,'course creation wrapper must reject missing target language');
-assert.doesNotMatch(js,/targetLanguage:'English'|name="targetLanguage" value="English"/,'target language must never be hard-coded to English');
-assert.match(js,/toolbarKicker\.textContent=targetLanguage\(\)\+' course'/,'language shell must show the selected language');
-for (const route of routes) assert.ok(navSpecText.includes("'"+route+"'"),'language nav missing '+route);
-assert.equal((navSpecText.match(/\['language-/g)||[]).length,6,'language course must expose exactly six navigation destinations');
+assert.match(js,/name="joinPolicy" value="direct"/,'new language courses must use direct enrollment');
+assert.match(js,/function openLanguageEnrollment\(course,prefillAccess=''/,'language enrollment needs its own bottom sheet');
+assert.match(js,/data-native-language="Arabic"[\s\S]*data-native-language="English"/,'native language must be Arabic or English');
+assert.match(js,/data-language-path="zero"[\s\S]*data-language-path="test"/,'enrollment must choose start from zero or level test');
+assert.match(js,/setHash\(entryMode==='zero'\?'language-start-zero':'language-level-test'\)/,'enrollment must enter the selected intermediate process');
+assert.match(js,/form\.id!=='course-enroll-form'/,'join-by-code must also detect language courses');
 
-assert.match(js,/function languageContent\(page\)\{[\s\S]{0,240}language-empty-page/,'language routes must render the empty page shell');
-assert.doesNotMatch(js,/TOTAL_LANGUAGE_BOXES|LEVEL_LEARNING_SYSTEMS|ARABIC_VOCABULARY|ARABIC_GRAMMAR|letterGate|placementExam|defaultAssessmentQuestions|languageAuthoring|MediaRecorder|SpeechRecognition|speechSynthesis|video-understanding|pronunciation/,'retired language learning implementation must stay deleted');
-assert.doesNotMatch(js,/language-letter-learn|language-letter-exam|language-review/,'retired language subroutes must stay deleted');
-assert.match(js,/function purgeLegacyLanguageBrowserState\(\)/,'legacy browser language state should be actively removed');
+assert.match(css,/\.language-intermediate-shell \.quiet-sidebar>nav,[\s\S]*\.bottom-nav\{display:none!important\}/,'intermediate process must hide main nav surfaces');
+assert.match(js,/Start Level 1 · Step 1/,'start-from-zero process must end at Level 1 Step 1');
+assert.match(js,/Determine your starting level/,'level determining exam must exist');
 
-assert.match(js,/querySelector\('\.quiet-workspace>\.sub-nav'\)\?\.remove\(\)/,'language shell must remove the redundant workspace capsule');
-assert.match(js,/querySelector\('\.quiet-return-button'\)\?\.remove\(\)/,'language shell must remove the floating return control');
-assert.match(js,/if\(side\)side\.innerHTML=sideLanguageNav\(current\)/,'language shell must keep sidebar navigation');
-assert.match(js,/if\(desktop\)desktop\.innerHTML=sideLanguageNav\(current\)/,'language shell must keep desktop navigation');
-assert.match(js,/if\(bottom\)bottom\.innerHTML=bottomLanguageNav\(current\)/,'language shell must keep mobile navigation');
+assert.match(js,/function languageHomePage\(\)/,'language home page must exist');
+assert.match(js,/function languageContentPage\(page\)/,'main language pages must have simple content');
+assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'simple content must use a shared course record');
 
-assert.ok(css.includes('.language-empty-page'),'empty language page needs a dedicated designed surface');
-assert.ok(css.includes('.language-course-shell .workspace-main'),'empty language shell needs workspace styling');
-for (const retired of ['.language-onboarding-hero','.language-video-player','.language-exam-form','.letter-gate-page','.language-pronunciation-judge','.language-learning-analytics']) {
-  assert.ok(!css.includes(retired),'retired language content style must stay deleted: '+retired);
-}
+assert.match(js,/function openLanguageControl\(page\)/,'language Content Control wizard must exist');
+for (const action of ['access','add','delete']) assert.ok(js.includes('data-language-control-action="'+action+'"'),'missing Content Control action '+action);
+assert.match(js,/Step 2 of 3/,'Content Control must include location selection');
+assert.match(js,/Add language content[\s\S]*Add level[\s\S]*Add step of a level[\s\S]*Add box of a step/,'Add must expose requested hierarchy');
+assert.match(js,/accept="\.xlsx,\.xls,\.csv,\.zip"/,'Add must accept Excel and ZIP');
+assert.match(js,/window\.XLSX[\s\S]*window\.JSZip/,'imports must use existing Excel and ZIP libraries');
+assert.match(js,/hideLanguageControl\(page\);close\(\);render\(\)/,'delete success must hide Content Control on the current page');
+assert.match(js,/hideLanguageControl\(originPage\);close\(\);render\(\)/,'access/edit success must hide Content Control on the current page');
+assert.match(js,/page==='language-home'/,'home must exclude Content Control');
 
-assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
-assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
-assert.match(js,/personal-focus-room/,'personal focus room must remain intact');
-assert.match(js,/page==='study-rooms'\)return personalRoomPage/,'personal study-room override must remain');
+assert.doesNotMatch(js,/TOTAL_LANGUAGE_BOXES|LEVEL_LEARNING_SYSTEMS|ARABIC_VOCABULARY|ARABIC_GRAMMAR|letterGate|placementExam|defaultAssessmentQuestions|MediaRecorder|SpeechRecognition|speechSynthesis|video-understanding|pronunciation/,'old complex language engine must stay deleted');
+assert.match(js,/personal-focus-room/,'personal course behavior must remain');
 
-assert.ok(index.includes('course-modes.css?v=20260921-8'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-8'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-8') > index.indexOf('content-controls.js'),'course modes must load after content controls');
+assert.ok(css.includes('.language-home-page')&&css.includes('.language-intermediate-page')&&css.includes('.language-content-control-trigger'),'new language surfaces need styling');
+assert.ok(index.includes('course-modes.css?v=20260921-9'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-9'),'course JS must be cache-busted');
 
-console.log('empty language course shell tests passed');
+console.log('language onboarding and simple content tests passed');
