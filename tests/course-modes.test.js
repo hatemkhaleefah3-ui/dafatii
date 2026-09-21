@@ -11,7 +11,7 @@ for (const type of ['dafaa','personal','teaching','language']) {
 for (const level of ['A1','A2','B1','B2','C1']) {
   assert.ok(js.includes("id:'"+level+"'"), 'missing CEFR level '+level);
 }
-for (const route of ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-review','language-examine']) {
+for (const route of ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-review','language-examine']) {
   assert.ok(js.includes(route), 'missing language route '+route);
 }
 
@@ -29,15 +29,15 @@ assert.match(js,/state\.passedSteps=arrayUnique\(\[\.\.\.state\.passedSteps,keyS
 assert.match(js,/state\.passedLevels=arrayUnique\(\[\.\.\.state\.passedLevels,id\]\)/,'passing a natural level exam must explicitly complete the level');
 assert.match(js,/state\.languagePassed=true/,'whole-language pass state must be recorded');
 
-assert.match(js,/function applyLevelChallengePass\(state,li\)/,'independent level challenges must exist');
-assert.match(js,/state\.passedLevels=arrayUnique\(\[\.\.\.state\.passedLevels,CEFR\[li\]\.id\]\)/,'level challenge must mark only the selected level');
-assert.doesNotMatch(js,/function applyLevelChallengePass\(state,li\)[\s\S]{0,250}passedBoxes/,'level challenge must not credit underlying boxes');
-assert.match(js,/mode==='challenge'\?score>80:score>=80/,'level challenge must require greater than 80 while natural exams keep 80');
-assert.match(js,/for\(let level=entry;level<li;level\+\+\) if\(!isLevelPassed\(state,level\)\)return false/,'higher-level study must require every prior level in the enrolled pathway');
-assert.match(js,/if\(li===entry\)return true/,'placement entry must be allowed without falsely completing lower levels');
+assert.match(js,/function levelUnlocked\(state,li\)\{[\s\S]{0,220}if\(li===0\)return true/,'Level 1 must be the only unconditional course entry');
+assert.match(js,/for\(let level=0;level<li;level\+\+\) if\(!isLevelPassed\(state,level\)\)return false/,'every higher level must require every prior level');
+assert.match(js,/function stepUnlocked\(state,li,step\).*isStepPassed\(state,li,step-1\)/,'steps must unlock in order');
+assert.match(js,/function boxUnlocked\(state,li,step,box\).*isBoxPassed\(state,li,step,box-1\)/,'boxes must unlock in order');
+assert.match(js,/value\.entryLevel=0;[\s\S]{0,60}value\.challengeLevel=null/,'v7 migration must remove legacy level skipping and challenge state');
+assert.doesNotMatch(js,/class="language-level-challenge-link"/,'Home must not expose a shortcut that can bypass box-by-box study');
 
 assert.match(js,/data-language-start-zero/,'new learners must be offered Start from zero');
-assert.match(js,/data-language-placement-start/,'new learners must be offered Examine my level');
+assert.match(js,/data-language-placement-start/,'new learners may run a diagnostic benchmark before the driven pathway');
 assert.match(js,/letterGateProgress:\[\],activeGateLetter:'D',letterGatePassed:false/,'letter prerequisite progress must have explicit durable state');
 assert.match(js,/\{letter:'D',arabic:'د',sound:'\/d\/'\}/,'Arabic د must bridge to English D by pronunciation');
 assert.match(js,/\{letter:'P',arabic:'',sound:'\/p\/',special:true/,'English-only sounds must be represented as special letters');
@@ -55,14 +55,15 @@ assert.match(js,/function placementExamPage\(\)/,'placement exam page must exist
 for (const mode of ["type:'tts-mcq'","type:'listen-fill'","type:'image-fill'","type:'translate-fill'"]) {
   assert.ok(js.includes(mode),'placement exam missing multimodal mode '+mode);
 }
-assert.match(js,/placementRecommendedLevel\(score\)/,'placement score must determine the starting level');
-assert.match(js,/state\.entryLevel=li;state\.selectedLevel=li;state\.selectedStep=1;state\.selectedBox=1/,'placement must start at the selected level, Step 1, first box');
-assert.match(js,/Skipped lower levels were not marked complete/,'placement result must not claim lower levels are completed');
+assert.match(js,/placementRecommendedLevel\(score\)/,'diagnostic score must still calculate a benchmark level');
+assert.match(js,/state\.entryLevel=0;state\.selectedLevel=0;state\.selectedStep=1;state\.selectedBox=1/,'diagnostic must never skip the required Level 1 start');
+assert.match(js,/benchmark '\+CEFR\[li\]\.id[\s\S]{0,120}starts at A1/,'diagnostic result must report the benchmark while preserving the A1 start');
 assert.match(js,/!letterGateRequired\(state\)&&state\.placementPending&&page!=='language-examine'/,'placement route must be guarded after the letter prerequisite');
 assert.match(js,/!letterGateRequired\(state\)&&!state\.onboardingComplete&&!state\.placementPending&&page!=='language-home'/,'first enrollment choice must not be bypassable after the letter prerequisite');
 
-assert.match(js,/function videoUnderstandingPage\(state,pos\)/,'post-A1 Video Understanding page must exist');
-assert.match(js,/youtubeUrl:'https:\/\/www\.youtube\.com\/results\?search_query='/,'every generated Video Understanding lesson must be represented by a YouTube link');
+assert.match(js,/function videoUnderstandingPage\(state,pos\)/,'dedicated YouTube Understanding page must exist');
+assert.match(js,/youtubeUrl:''/,'default video lessons must wait for an admin-supplied YouTube URL');
+assert.match(js,/video:'language-video'/,'Video Understanding must have its own course route and authoring lane');
 assert.match(js,/name:'youtubeUrl',label:'YouTube URL'/,'admin video item forms must edit a YouTube URL field');
 assert.match(js,/data-youtube-video/,'learner Video Understanding must render an external YouTube link');
 assert.match(js,/data-video-watched/,'learner must explicitly confirm the YouTube video was watched');
@@ -71,7 +72,7 @@ assert.doesNotMatch(js,/name:'scenes'/,'video items must not contain narrated sc
 assert.match(js,/return out\.slice\(0,15\)/,'step exams must include a 15-question generated bank');
 assert.match(js,/return out\.slice\(0,25\)/,'level exams must include a 25-question generated bank');
 assert.match(js,/return out\.slice\(0,40\)/,'whole-language exam must include a 40-question generated bank');
-for (const type of ['mcq','true-false','multi-select','fill','short-answer','listen-choice','listen-fill','ordering']) {
+for (const type of ['mcq','true-false','multi-select','fill','short-answer','speak','listen-choice','listen-fill','ordering']) {
   assert.ok(js.includes("type:'"+type+"'"),'natural exams missing question type '+type);
 }
 assert.match(js,/function examAnswerCorrect\(question,form,index\)/,'mixed exam types must use a shared scorer');
@@ -81,15 +82,24 @@ assert.match(js,/id:'voice-rubric'/,'normal boxes must include a dedicated voice
 assert.match(js,/id:'grammar-error'/,'normal boxes must include a grammar error-analysis item');
 assert.match(js,/id:'review-memory'/,'normal boxes must include a memory/retrieval item');
 assert.match(js,/id:'exam-scope'/,'Examine pages must include explicit assessment-scope content');
-assert.match(js,/if\(pos\.li>0\)return videoUnderstandingPage\(state,pos\)/,'Letters route must become Video Understanding after A1');
+assert.match(js,/function lettersPage\(\)[\s\S]{0,180}return pronunciationPage\(state,pos\)/,'Vocabulary & Writing must remain its own lane at every level');
+assert.match(js,/function videoPage\(\)[\s\S]{0,180}return videoUnderstandingPage\(state,pos\)/,'YouTube Understanding must remain a separate lane at every level');
 assert.match(js,/responseLanguage:String\(courseMeta\(\)\.targetLanguage\|\|'English'\)/,'video responses must use the target course language');
-assert.match(js,/const required=li===0\?\['pronunciation','voice','grammar','review'\]:\['video','voice','grammar','review'\]/,'post-A1 boxes must require Video Understanding instead of pronunciation page');
+assert.match(js,/const required=\['vocabulary','voice','grammar','video'\]/,'every level must require the same four learning lanes before its exam');
 assert.match(js,/function videoResponseValid\(language,value\)/,'video response language/length validation must exist');
 assert.match(js,/value\.watchedVideos\[id\]=true/,'video must be fully watched before completion can unlock');
-assert.match(js,/const navSpec=\[[\s\S]*\['language-home','nav-home','home'\],[\s\S]*\['language-voice','nav-messages','voice'\]/,'normal language navigation must start with Home then Voice after removing the letters tab');
 const navSpecStart=js.indexOf('const navSpec=['),navSpecEnd=js.indexOf('function icon(',navSpecStart);
 assert.ok(navSpecStart>=0&&navSpecEnd>navSpecStart,'language navSpec must exist');
-assert.ok(!js.slice(navSpecStart,navSpecEnd).includes("'language-letters'"),'letters route must not be a persistent course navigation item');
+const navSpecText=js.slice(navSpecStart,navSpecEnd);
+for (const route of ['language-home','language-letters','language-voice','language-grammar','language-video','language-examine']) {
+  assert.ok(navSpecText.includes("'"+route+"'"),'six-lane language nav missing '+route);
+}
+assert.equal((navSpecText.match(/\['language-/g)||[]).length,6,'language course must expose exactly six main navigation destinations');
+assert.ok(navSpecText.indexOf("'language-home'") < navSpecText.indexOf("'language-letters'"),'Home must precede Vocabulary & Writing');
+assert.ok(navSpecText.indexOf("'language-letters'") < navSpecText.indexOf("'language-voice'"),'Vocabulary & Writing must precede Listening & Talking');
+assert.ok(navSpecText.indexOf("'language-voice'") < navSpecText.indexOf("'language-grammar'"),'Listening & Talking must precede Grammar & Rules');
+assert.ok(navSpecText.indexOf("'language-grammar'") < navSpecText.indexOf("'language-video'"),'Grammar & Rules must precede YouTube Understanding');
+assert.ok(navSpecText.indexOf("'language-video'") < navSpecText.indexOf("'language-examine'"),'YouTube Understanding must precede Examining');
 assert.match(js,/dafatii:language-authoring:v1/,'language authored content must use a course-scoped content store');
 assert.match(js,/function isAdminActor\(\)/,'language controls must resolve the platform admin role');
 assert.match(js,/if\(type==='language'&&!isAdminActor\(\)\)throw new Error/,'client course creation must reject non-admin Language Course creation');
@@ -106,12 +116,13 @@ assert.match(js,/function languageItemSchemas\(page,li\)/,'language items must e
 assert.match(js,/function saveLanguageItem\(selection,item\)/,'language item edits must persist');
 assert.match(js,/function deleteLanguageItem\(selection,id\)/,'language items must support deletion');
 assert.match(js,/function emptyLanguagePage\(selection\)/,'language pages must support removing all items');
-assert.match(js,/pages:\['letters','voice','grammar','review','examine'\]/,'content authoring must include every language page except Home');
+assert.match(js,/pages:\['letters','voice','grammar','video','examine'\]/,'content authoring must cover the four learning lanes plus Examining');
 assert.match(js,/getExamQuestions:selection=>examQuestionsFor/,'exam control must expose the resolved assessment question set');
 assert.match(js,/saveExamQuestion/,'exam questions must support editing and adding');
 assert.match(js,/emptyExamQuestions/,'exam controls must support removing all questions');
 assert.match(js,/if\(!questions\.length\)return '<div class="language-exam-prereqs"/,'an emptied exam must become unavailable rather than auto-scoring');
-assert.match(js,/label:pos\.li>0\?t\('video'\):t\('pronunciation'\)/,'A1 learning flow must expose pronunciation/writing rather than a letters page');
+assert.match(js,/\{route:'language-letters',label:t\('letters'\),key:'vocabulary'\}/,'box flow must begin with Vocabulary & Writing');
+assert.match(js,/\{route:'language-video',label:t\('video'\),key:'video'\}/,'box flow must include YouTube Understanding before Examining');
 
 assert.match(js,/const LETTER_SPEECH = \{A:'ay',B:'bee'/,'letter audio must use spoken names');
 assert.match(js,/function speakLetter\(letter\)/,'dedicated letter speech must remain');
@@ -148,8 +159,54 @@ assert.match(js,/const ARABIC_VOCABULARY =/,'English vocabulary must include Ara
 assert.match(js,/const ARABIC_GRAMMAR =/,'English grammar must include Arabic explanations');
 assert.match(js,/function vocabularyPairs\(state,pos,words\)/,'vocabulary must resolve source-to-target pairs');
 assert.match(js,/function grammarBridge\(state,pos,data\)/,'grammar must resolve through the selected main language');
-assert.match(js,/page==='pronunciation'\|\|page==='video'/,'pronunciation and video must remain target-language-only');
+assert.match(js,/page==='pronunciation'\|\|page==='video'/,'YouTube work must remain target-language-only while vocabulary can use the main-language bridge');
 assert.match(js,/const responseLanguage=learningLanguage\(state,pos\.li\)\.target/,'video completion must validate the target language');
+
+
+// Driven language course v7
+assert.match(js,/const META_VERSION = 7/,'driven course architecture must use language progress metadata v7');
+assert.match(js,/const LEVEL_LEARNING_SYSTEMS = \[/,'five level-specific learning systems must be declared');
+for (const system of ['Word Builder','Sentence Builder','Connected English','Precision & Pressure','C1 / IELTS Readiness']) {
+  assert.ok(js.includes(system),'missing level-specific learning system '+system);
+}
+for (const design of ['guided-cards','sentence-rails','connection-board','precision-grid','c1-studio']) {
+  assert.ok(js.includes("design:'"+design+"'"),'missing unique level design '+design);
+}
+assert.match(js,/examStyle:'tricky'/,'Level 4 must introduce deliberately tricky assessment behavior');
+assert.match(js,/examStyle:'high-discrimination'/,'Level 5 must use high-discrimination C1 assessment behavior');
+assert.match(js,/This is preparation, not a guaranteed IELTS result/,'C1 target must not promise a guaranteed IELTS outcome');
+assert.match(js,/const tricky=li>=3/,'tricky box exams must begin at Level 4');
+assert.match(js,/const hardest=li>=4/,'Level 5 must have an additional C1 difficulty layer');
+assert.match(js,/type:'speak'/,'every generated box exam bank must include spoken production');
+assert.match(js,/data-exam-speak/,'spoken exam questions must expose a microphone action');
+assert.match(js,/if\(type==='speak'\)return answerSimilarity/,'spoken production must be scored from the recognized transcript');
+assert.match(js,/Speech recognition is unavailable/,'spoken exams must disclose the fallback limitation when browser recognition is unavailable');
+assert.match(js,/Exam analysis/,'Home must show exam performance analysis');
+assert.ok(js.includes("average+'% average'"),'Home analysis must calculate an exam-score average');
+assert.match(js,/function migrateDrivenCourseV7/,'older learner progress must migrate into the driven lane model');
+assert.match(js,/const LEARNING_LANE_PREREQUISITES = \{[\s\S]*'language-voice':\['vocabulary'\][\s\S]*'language-grammar':\['vocabulary','voice'\][\s\S]*'language-video':\['vocabulary','voice','grammar'\]/,'learning lanes must unlock strictly in order');
+assert.match(js,/learningLaneUnlocked\(state,pos,page\)/,'course routes must enforce learning-lane prerequisites');
+assert.match(js,/if\(!learningLaneUnlocked\(state,pos,page\)\)\{setHash\(nextBoxRoute\(state,pos\)\);return;\}/,'out-of-order lane navigation must redirect to the next required lane');
+assert.match(js,/let active=0,furthest=0/,'content item process must track the furthest reached item');
+assert.match(js,/if\(index<=furthest\)show\(index\)/,'learners must not jump ahead to unseen content items');
+assert.match(js,/data-language-module="vocabulary"/,'Vocabulary & Writing completion must have its own durable module state');
+assert.match(js,/function learningAnalytics\(state,pos\)/,'Home must include progress/status analytics');
+assert.match(js,/language-learning-analytics/,'Home analytics must render a dedicated status surface');
+assert.match(js,/level-system-banner/,'learning pages must identify the active level-specific system');
+assert.match(js,/state\.entryLevel=0;state\.selectedLevel=0/,'diagnostic benchmark must preserve the Level 1 start');
+assert.match(js,/for\(let li=0;li<4;li\+\+\)if\(!isLevelPassed\(state,li\)\)/,'final language exam must require the complete Level 1–4 pathway');
+
+for (const selector of [
+  '.language-learning-analytics','.level-system-banner','.language-vocabulary-writing-page',
+  '.level-system-1','.level-system-2','.level-system-3','.level-system-4','.level-system-5',
+  '.language-nav-locked'
+]) {
+  assert.ok(css.includes(selector),'missing driven-course style '+selector);
+}
+assert.ok(css.includes('Language course v14 · driven six-lane progression'),'driven progression stylesheet block must be present');
+assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,'mobile course navigation must fit all six main destinations');
+assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,'desktop Home analytics must expose five status/analysis cells');
+assert.ok(css.includes('.language-exam-speak'),'spoken exam controls must be styled');
 
 assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
 assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
@@ -177,8 +234,8 @@ assert.ok(css.includes('English course v11 · native mobile learning app'),'nati
 assert.ok(css.includes('Language course v12 · focused box process'),'focused box-process layout must be present');
 assert.ok(css.includes('Language course v13 · contrastive source-to-target learning'),'contrastive language-learning layout must be present');
 assert.ok(css.includes('.language-process-stage[hidden]'),'inactive learning stages must stay hidden');
-assert.ok(index.includes('course-modes.css?v=20260921-3'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-3'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-3') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260921-4'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-4'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260921-4') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
-console.log('course modes v6 tests passed');
+console.log('course modes v7 driven progression tests passed');

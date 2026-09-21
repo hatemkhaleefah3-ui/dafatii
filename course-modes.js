@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 6;
+  const META_VERSION = 7;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
-  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-review','language-examine'];
+  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-review','language-examine'];
   const LETTER_GATE_ROUTES = ['language-home','language-letter-learn','language-letter-exam'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
@@ -98,6 +98,55 @@
     'Rhetorical conditionals':['الشرط البلاغي','استخدم القلب وprovided that وassuming that وbut for لصياغة شروط متقدمة بإيجاز.'],
     'Punctuation as syntax':['الترقيم بوصفه بناءً نحوياً','استخدم النقطتين والفاصلة المنقوطة والشرطة والأقواس لإظهار البنية المنطقية.']
   };
+  const LEVEL_LEARNING_SYSTEMS = [
+    {
+      number:1,id:'A1',name:'Word Builder',design:'guided-cards',difficulty:'foundation',
+      vocabulary:'Simple high-frequency words with spelling, meaning and controlled writing.',
+      listening:'Simple words and short spoken models with repeat-and-recognize practice.',
+      grammar:'Simple rules used in one clear model at a time.',
+      video:'Admin-supplied YouTube clips with guided main-idea and word recognition.',
+      exam:'Word pronunciation, spelling/writing, translation and simple-rule checks.',
+      method:'See → hear → retrieve → write → say',examStyle:'direct',target:'Build a dependable A1 foundation.'
+    },
+    {
+      number:2,id:'A2',name:'Sentence Builder',design:'sentence-rails',difficulty:'elementary',
+      vocabulary:'Simple sentences built from known vocabulary and everyday functions.',
+      listening:'Simple sentences with dictation, reconstruction and short spoken responses.',
+      grammar:'Simple grammar patterns applied inside complete sentences.',
+      video:'Admin-supplied YouTube clips with sentence-level understanding checks.',
+      exam:'Simple-sentence pronunciation, writing, translation, grammar and rule checks.',
+      method:'Model → rebuild → vary → speak → write',examStyle:'controlled',target:'Produce accurate everyday A2 sentences.'
+    },
+    {
+      number:3,id:'B1',name:'Connected English',design:'connection-board',difficulty:'intermediate',
+      vocabulary:'Moderate words and connected sentences across practical topics.',
+      listening:'Moderate speech with detail retrieval, paraphrase and connected responses.',
+      grammar:'Moderate grammar and rules used across linked clauses and short paragraphs.',
+      video:'Admin-supplied YouTube clips with main idea, detail, inference and language noticing.',
+      exam:'Moderate word/sentence pronunciation, writing, translation and grammar/rule checks.',
+      method:'Connect → explain → paraphrase → retrieve → transfer',examStyle:'mixed',target:'Operate independently at B1 across common situations.'
+    },
+    {
+      number:4,id:'B2',name:'Precision & Pressure',design:'precision-grid',difficulty:'upper-intermediate',
+      vocabulary:'Advanced words and sentences with precision, register and collocation control.',
+      listening:'Advanced speech with inference, distractors, paraphrase and fast retrieval.',
+      grammar:'Moderate-to-advanced rules tested through near-misses and competing forms.',
+      video:'Admin-supplied YouTube clips with inference, argument structure and evidence tracking.',
+      exam:'Advanced pronunciation, writing and translation plus tricky grammar/rule discrimination.',
+      method:'Distinguish → justify → correct → reformulate → perform',examStyle:'tricky',target:'Build robust B2 performance under ambiguity and time pressure.'
+    },
+    {
+      number:5,id:'C1',name:'C1 / IELTS Readiness',design:'c1-studio',difficulty:'advanced',
+      vocabulary:'Advanced words, collocations, academic phrasing and nuanced sentence control.',
+      listening:'Advanced connected speech with inference, stance, implication and synthesis.',
+      grammar:'Advanced grammar, discourse, register and rhetorical control.',
+      video:'Admin-supplied YouTube clips used for synthesis, inference, argument and evidence analysis.',
+      exam:'Advanced pronunciation/writing plus high-discrimination grammar, rule, inference and reformulation tasks.',
+      method:'Synthesize → qualify → defend → reformulate → self-correct',examStyle:'high-discrimination',
+      target:'C1 / IELTS-readiness target across listening, speaking, reading-oriented understanding and writing. This is preparation, not a guaranteed IELTS result.'
+    }
+  ];
+
   const TOTAL_LANGUAGE_BOXES = 5*5*25;
   const LANGUAGE_FUNCTIONS = ['introducing','identifying','describing','asking for information','answering precisely','comparing','sequencing','locating','expressing time','expressing quantity','stating preferences','expressing ability','expressing obligation','giving reasons','explaining results','expressing conditions','contrasting ideas','describing experience','making plans','giving instructions','stating opinions','supporting with evidence','correcting meaning','summarizing','reflecting'];
   const CEFR = [
@@ -195,24 +244,24 @@
 
   const COPY = {
     en:{
-      home:'Home',letters:'Letters & writing',pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
+      home:'Home',letters:'Vocabulary & writing',pronunciation:'Vocabulary & writing',video:'YouTube understanding',voice:'Listening & talking',grammar:'Grammar & rules',review:'Revision',examine:'Examining',
       complete:'Mark section complete',completed:'Completed',locked:'Locked',listen:'Play voice',check:'Check answer',
       speak:'Speak this sentence',start:'Start recognition',notes:'My notes',save:'Save notes',level:'Level',step:'Step',box:'Box',
       pass:'Pass mark: 80%',takeExam:'Take exam',submitExam:'Submit exam',welcome:'Welcome',resume:'Resume learning',
       changeLevel:'Change level',progress:'Course progress',current:'Current',available:'Available',passed:'Passed',
       lettersIntro:'Letter, pronunciation, spelling and writing practice',voiceIntro:'Dictation and reverse speaking practice',
       grammarIntro:'Grammar, naming, spelling and typing rules',reviewIntro:'Retrieval, learning tricks and durable notes',
-      examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
+      examIntro:'Examining follows your exact position: box exam, step exam, level exam, then the final whole-language exam. No stage can bypass the driven pathway.'
     },
     ar:{
-      home:'الرئيسية',letters:'الحروف والكتابة',pronunciation:'النطق والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
+      home:'الرئيسية',letters:'المفردات والكتابة',pronunciation:'المفردات والكتابة',video:'فهم يوتيوب',voice:'الاستماع والتحدث',grammar:'القواعد والأحكام',review:'المراجعة',examine:'الاختبارات',
       complete:'إكمال هذا الجزء',completed:'مكتمل',locked:'مغلق',listen:'تشغيل الصوت',check:'تحقق من الإجابة',
       speak:'انطق هذه الجملة',start:'ابدأ التعرّف على الصوت',notes:'ملاحظاتي',save:'حفظ الملاحظات',level:'المستوى',step:'الخطوة',box:'الصندوق',
       pass:'درجة النجاح: 80٪',takeExam:'ابدأ الاختبار',submitExam:'إرسال الاختبار',welcome:'مرحباً',resume:'متابعة التعلّم',
       changeLevel:'تغيير المستوى',progress:'تقدم الدورة',current:'الحالي',available:'متاح',passed:'مجتاز',
       lettersIntro:'تدريب الحروف والنطق والإملاء والكتابة',voiceIntro:'إملاء صوتي وتدريب عكسي على النطق',
       grammarIntro:'القواعد والتسمية والإملاء والكتابة',reviewIntro:'استرجاع ومهارات تعلّم وملاحظات ثابتة',
-      examIntro:'تتغير صفحة الاختبار حسب موقعك: اختبار صندوق أو خطوة أو مستوى أو اختبار اللغة الكامل. ويمكن تحدي أي مستوى في أي وقت.'
+      examIntro:'يتبع الاختبار موقعك بدقة: صندوق ثم خطوة ثم مستوى ثم اختبار اللغة النهائي، ولا يمكن تجاوز المسار المتدرج.'
     }
   };
 
@@ -300,6 +349,21 @@
     return value;
   }
 
+  function migrateDrivenCourseV7(value,previousVersion){
+    if(previousVersion>=7)return value;
+    const modules=value.modules&&typeof value.modules==='object'?value.modules:{};
+    Object.entries(modules).forEach(([id,module])=>{
+      if(!module||typeof module!=='object')return;
+      if(module.pronunciation||module.review)module.vocabulary=true;
+      if(/^A1:/.test(id)&&module.exam&&module.pronunciation)module.video=true;
+      if(!/^A1:/.test(id)&&module.review)module.vocabulary=true;
+    });
+    value.modules=modules;
+    value.entryLevel=0;
+    value.challengeLevel=null;
+    return value;
+  }
+
   function languageState(){
     let stored=window.DafatiiData.readJSON(progressKey(),null);
     if(!stored){
@@ -312,6 +376,7 @@
     const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
     const previousVersion=Number(value.version)||0;
     migrateEnglishLetterGateV6(value,previousVersion);
+    migrateDrivenCourseV7(value,previousVersion);
     value.version=META_VERSION;
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
     value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
@@ -332,8 +397,8 @@
     value.onboardingComplete=Boolean(value.onboardingComplete);
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
-    value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
-    if(previousVersion<6)window.DafatiiData.writeJSON(progressKey(),value);
+    value.challengeLevel=null;
+    if(previousVersion<7)window.DafatiiData.writeJSON(progressKey(),value);
     return value;
   }
   function updateLanguage(mutator){
@@ -464,7 +529,7 @@
       ? (crypto.randomUUID?crypto.randomUUID().replace(/-/g,'').slice(0,20):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,20))
       : '';
     const templateField=isLang?'<input type="hidden" name="templateName" value="Computer Science">':'<div class="field"><label>Content template</label><select name="templateName">'+templates.map(name=>'<option>'+esc(name)+'</option>').join('')+'</select></div>';
-    const studyField=isLang?'<input type="hidden" name="studyType" value="courses"><div class="field"><label>Target language</label><select name="targetLanguage"><option value="English" selected>English · الإنجليزية</option></select><p class="auth-note">Five levels · 5 steps per level · A1 has 26 boxes per step (Letters + 25 lessons) · A2–C1 have 25 boxes per step · 630 boxes total.</p></div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
+    const studyField=isLang?'<input type="hidden" name="studyType" value="courses"><div class="field"><label>Target language</label><select name="targetLanguage"><option value="English" selected>English · الإنجليزية</option></select><p class="auth-note">Letters prerequisite · 5 driven levels · 5 steps per level · 25 boxes per step · 625 learning boxes · 6 main course pages.</p></div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
     const visibility=isPersonal
       ? '<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Personal · only this account uses the workspace</div></div>'
       : isAdmin
@@ -516,17 +581,15 @@
   function isStepPassed(state,li,step){ return state.passedSteps.includes(keyStep(CEFR[li].id,step)); }
   function isLevelPassed(state,li){ return state.passedLevels.includes(CEFR[li].id); }
   function levelUnlocked(state,li){
-    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
-    if(li<entry)return false;
-    if(li===entry)return true;
-    for(let level=entry;level<li;level++) if(!isLevelPassed(state,level))return false;
+    if(li===0)return true;
+    for(let level=0;level<li;level++) if(!isLevelPassed(state,level))return false;
     return true;
   }
   function stepUnlocked(state,li,step){ return levelUnlocked(state,li) && (step===1 || isStepPassed(state,li,step-1)); }
   function boxUnlocked(state,li,step,box){ return stepUnlocked(state,li,step) && (box===1 || isBoxPassed(state,li,step,box-1)); }
 
   function clampSelection(state){
-    const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
+    const entry=0;
     let li=Math.min(4,Math.max(0,Number(state.selectedLevel)||entry));
     if(!levelUnlocked(state,li))li=entry;
     let step=Math.min(5,Math.max(1,Number(state.selectedStep)||1));
@@ -543,7 +606,7 @@
     return out;
   }
   function boxData(li,step,box){
-    const level=CEFR[li],normalIndex=Math.max(0,box-firstLearningBox(li)),seed=(step-1)*25+normalIndex;
+    const level=CEFR[li],profile=LEVEL_LEARNING_SYSTEMS[li],normalIndex=Math.max(0,box-firstLearningBox(li)),seed=(step-1)*25+normalIndex;
     const topic=level.topics[seed%level.topics.length];
     const grammar=level.grammar[seed%level.grammar.length];
     const languageFunction=LANGUAGE_FUNCTIONS[normalIndex%LANGUAGE_FUNCTIONS.length];
@@ -558,8 +621,8 @@
       ['A nuanced account of '+topic+' should distinguish the central '+words[0]+' from a merely '+words[1]+' consideration.','Articulate a defensible position on '+topic+', qualify its main '+words[2]+', and acknowledge one counterargument.']
     ][li];
     return {
-      level:level.id,step,box,topic,languageFunction,phase,title:'Box '+box+' · '+topic+' · '+languageFunction,
-      goal:'Complete this '+phase+' lesson for '+languageFunction+': pronunciation & writing, voice, grammar, revision and the dedicated exam.',
+      level:level.id,levelNumber:profile.number,learningSystem:profile.name,design:profile.design,difficulty:profile.difficulty,examStyle:profile.examStyle,targetOutcome:profile.target,step,box,topic,languageFunction,phase,title:'Box '+box+' · '+topic+' · '+languageFunction,
+      goal:'Complete this '+phase+' lesson for '+languageFunction+': vocabulary & writing, listening & talking, grammar & rules, admin YouTube understanding, then the dedicated exam.',
       pronunciationFocus:sound+' · '+languageFunction,pronunciationWords:words.slice(0,6),
       writingPrompt:'For '+phase+', practice '+languageFunction+': write two clear sentences about '+topic+' using '+words[0]+' and '+words[1]+'. Apply '+grammar[0]+'.',
       voicePrompt:frames[0]+' The communication focus is '+languageFunction+'.',reversePrompt:frames[1]+' Use it for '+languageFunction+'.',grammarTitle:grammar[0],grammarRule:grammar[1],grammarExample1:grammar[2],grammarExample2:grammar[3],
@@ -576,13 +639,13 @@
     return {
       id:keyBox(CEFR[li].id,step,box),
       title:data.title,
-      youtubeUrl:'https://www.youtube.com/results?search_query='+encodeURIComponent(query),
+      youtubeUrl:'',
       responseLanguage:String(courseMeta().targetLanguage||'English')
     };
   }
 
   const LANGUAGE_CONTENT_PAGE_ROUTES = {
-    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',review:'language-review',examine:'language-examine'
+    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',video:'language-video',review:'language-review',examine:'language-examine'
   };
   const languageContentStoreKey=()=> 'dafatii:language-authoring:v1';
   let languageAuthoringTarget=null;
@@ -616,8 +679,8 @@
   }
   function activeLanguagePosition(state){return adminLanguageAuthoring()?{...languageAuthoringTarget}:clampSelection(state);}
   function languagePageName(page,li){
-    if(page==='letters')return li===0?'Pronunciation & writing':'Video understanding';
-    return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
+    if(page==='letters')return 'Vocabulary & writing';
+    return {voice:'Listening & talking',grammar:'Grammar & rules',video:'YouTube understanding',review:'Revision',examine:'Examining'}[page]||page;
   }
   function defaultLanguageContentItems(li,step,box,page){
     const data=isLetterBox(li,box)?null:boxData(li,step,box);
@@ -632,22 +695,29 @@
       ];
     }
     if(!data&&page!=='examine')return [];
-    if(page==='letters'&&li===0){
+    if(page==='letters'){
+      const profile=LEVEL_LEARNING_SYSTEMS[li];
+      const writingBody=[
+        'Write each target word accurately, connect it to its meaning, then use two of the words in very short correct sentences.',
+        'Build clear simple sentences using the target words and '+data.grammarTitle+'. Change one detail in each sentence without breaking the pattern.',
+        'Write connected moderate sentences about '+data.topic+', using precise vocabulary and at least one linking expression.',
+        'Write advanced sentences about '+data.topic+' that distinguish meaning, register and collocation. Correct one deliberate near-miss before finishing.',
+        'Write a concise C1-style response about '+data.topic+' using precise collocation, controlled stance and one deliberate reformulation.'
+      ][li];
       return [
-        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear the target sound inside meaningful English, repeat slowly, then repeat at natural speed.',audioText:data.voicePrompt},
-        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',body:'Listen to every target word, then say it without looking at the written model.',words:data.pronunciationWords},
-        {id:'micro-dialogue',type:'info',eyebrow:'Micro dialogue',title:'Use pronunciation inside meaning',body:'Speaker A: '+data.grammarExample1+' Speaker B: '+data.grammarExample2},
-        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write 3–5 complete sentences here.'},
-        {id:'pronunciation-recall',type:'info',eyebrow:'Quick recall',title:'Retrieve before moving on',body:'Without looking back, say the target sound, two active words and one complete sentence that performs '+data.languageFunction+'.'}
+        {id:'vocabulary-set',type:'words',eyebrow:profile.name+' · vocabulary',title:profile.vocabulary,body:'Retrieve the target form from meaning before using audio. Then spell and say each item.',words:data.words,wordPairs:pairs},
+        {id:'vocabulary-writing',type:'writing',eyebrow:'Vocabulary → writing',title:['Simple words','Simple sentences','Moderate words & sentences','Advanced words & sentences','Advanced C1 language'][li],body:writingBody,placeholder:['Write the words and two short sentences…','Write 3–4 simple sentences…','Write a connected short paragraph…','Write precise advanced sentences…','Write a concise C1 response…'][li]},
+        {id:'vocabulary-pattern',type:'info',eyebrow:'Useful pattern',title:data.grammarTitle,body:data.grammarExample1+' '+data.grammarExample2},
+        {id:'vocabulary-retrieval',type:'info',eyebrow:'Retrieval method',title:profile.method,body:profile.target}
       ];
     }
-    if(page==='letters'&&li>0){
+    if(page==='video'){
       const video=videoLessonData(li,step,box);
       return [
-        {id:'video-lesson',type:'video',eyebrow:'YouTube video',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
-        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:'Watch for meaning, detail and language',body:'Identify the main idea, two supporting details, one example of '+data.grammarTitle+', and at least two target words: '+data.words.slice(0,4).join(', ')+'.'},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:'Write in '+mode.target+': the main idea, at least two supporting details, and one important expression from the video.',placeholder:'Write only in '+mode.target+'…'},
-        {id:'video-vocabulary',type:'words',eyebrow:'Video vocabulary',title:'Key expressions to notice',body:'Use these expressions to confirm meaning after watching.',words:data.words}
+        {id:'video-lesson',type:'video',eyebrow:'Admin YouTube lesson',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
+        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:['Find words and the main idea','Follow simple sentences','Track idea + details','Track inference + argument','Synthesize stance + evidence'][li],body:'Watch for the main idea, supporting detail, useful language and one example connected to '+data.grammarTitle+'. The video link must be supplied by the course administrator.'},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:['Name the topic and write two words you recognized.','Write the main idea and two simple sentences from what you understood.','Write the main idea, two details and one paraphrase.','Explain the argument, one inference, one distractor or contrast, and supporting evidence.','Synthesize the speaker’s position, evidence, implication and one justified evaluation in precise English.'][li],placeholder:'Respond only in '+mode.target+'…'},
+        {id:'video-vocabulary',type:'words',eyebrow:'Video language',title:'Expressions to notice',body:'Use these expressions to verify and extend what you understood.',words:data.words,wordPairs:pairs}
       ];
     }
     if(page==='voice'){
@@ -707,14 +777,15 @@
       {name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Body',kind:'textarea'}
     ]};
     const schemas={
-      letters: li>0 ? [
-        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
-        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        commonInfo
-      ] : [
-        {type:'sound',label:'Pronunciation focus',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'audioText',label:'Audio text',kind:'textarea'}]},
-        {type:'words',label:'Word set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+      letters:[
+        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
         {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      video:[
+        {type:'video',label:'Admin YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
+        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        {type:'words',label:'Video vocabulary',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
         commonInfo
       ],
       voice:[
@@ -804,7 +875,7 @@
       const practiced=state.letterProgress[letterProgressKey(li,step)]||[];
       return LETTERS.every(letter=>practiced.includes(letter));
     }
-    const required=li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    const required=['vocabulary','voice','grammar','video'];
     return required.every(name=>module[name]===true);
   }
   function boxExamPassed(state,li,step,box){
@@ -829,14 +900,27 @@
     });
     render();
   }
+  const LEARNING_LANE_PREREQUISITES = {
+    'language-letters':[],
+    'language-voice':['vocabulary'],
+    'language-grammar':['vocabulary','voice'],
+    'language-video':['vocabulary','voice','grammar']
+  };
+  function learningLaneUnlocked(state,pos,page){
+    if(adminLanguageAuthoring())return true;
+    const required=LEARNING_LANE_PREREQUISITES[page];
+    if(!required)return true;
+    const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
+    return required.every(name=>module[name]===true);
+  }
+
   function nextBoxRoute(state,pos){
     if(isLetterBox(pos.li,pos.box))return 'language-letters';
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    if(pos.li===0&&!module.pronunciation)return 'language-letters';
-    if(pos.li>0&&!module.video)return 'language-letters';
+    if(!module.vocabulary)return 'language-letters';
     if(!module.voice)return 'language-voice';
     if(!module.grammar)return 'language-grammar';
-    if(!module.review)return 'language-review';
+    if(!module.video)return 'language-video';
     return 'language-examine';
   }
   function missingRequirements(state,pos){
@@ -846,8 +930,8 @@
       return missing.length?['Practice and draw '+missing.length+' remaining letter'+(missing.length===1?'':'s')]:[];
     }
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    const required=pos.li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
-    const labels={pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
+    const required=['vocabulary','voice','grammar','video'];
+    const labels={vocabulary:'Vocabulary & writing',voice:'Listening & talking',grammar:'Grammar & rules',video:'YouTube understanding'};
     return required.filter(name=>!module[name]).map(name=>labels[name]);
   }
   function boundaryReady(state,li,step){
@@ -874,8 +958,7 @@
       return [];
     }
     if(ctx.scope==='language'){
-      const entry=Math.min(4,Math.max(0,Number(state.entryLevel)||0));
-      for(let li=entry;li<4;li++)if(!isLevelPassed(state,li))return ['Finish each level in your enrolled pathway before the whole-language examination'];
+      for(let li=0;li<4;li++)if(!isLevelPassed(state,li))return ['Finish Levels 1–4 in order before the whole-language examination'];
       for(let step=1;step<5;step++)if(!isStepPassed(state,4,step))return ['Pass C1 Steps 1–4 before the whole-language examination'];
       if(!boundaryReady(state,4,5))return ['Finish every box in the final C1 step before the whole-language examination'];
       return [];
@@ -986,29 +1069,44 @@
   function onboardingPage(state){
     const mode=learningLanguage(state,0);
     return '<section class="language-course-page language-onboarding">'+
-      '<header class="language-onboarding-hero"><small>'+esc(mode.base)+' → '+esc(mode.target)+'</small><h1>Choose where to begin</h1><p>Start from Level 1 or use placement to find the right entry point.</p></header>'+
+      '<header class="language-onboarding-hero"><small>'+esc(mode.base)+' → '+esc(mode.target)+'</small><h1>Begin the driven pathway</h1><p>Every learner starts at Level 1 after the letters prerequisite. The diagnostic can estimate your current level, but it does not skip levels, steps or boxes.</p></header>'+
       '<div class="language-entry-grid">'+
         '<button type="button" data-language-start-zero><span>01</span><small>Full pathway</small><h2>Start from zero</h2><p>Begin at A1 · Step 1 · Box 1 and build every course prerequisite in order.</p><b>Start A1 →</b></button>'+
-        '<button type="button" data-language-placement-start><span>02</span><small>Placement</small><h2>Examine my level</h2><p>Take a hard multimodal exam with listening, dictation, image description, advanced grammar and complex translation.</p><b>Start placement exam →</b></button>'+
-      '</div><p class="language-entry-note">Placement chooses your starting level only. It does not mark skipped lower levels as completed.</p></section>';
+        '<button type="button" data-language-placement-start><span>02</span><small>Diagnostic</small><h2>Check my current level</h2><p>Take a hard multimodal diagnostic, then begin the same required pathway at Level 1 with a benchmark saved to your analysis.</p><b>Start diagnostic →</b></button>'+
+      '</div><p class="language-entry-note">No placement result can bypass the driven sequence: level by level, step by step, box by box, content item by content item.</p></section>';
   }
 
   function learningFlow(state,pos){
     const route=nextBoxRoute(state,pos);
     const stages=[
-      {route:'language-letters',label:pos.li>0?t('video'):t('pronunciation'),key:pos.li>0?'video':'pronunciation'},
+      {route:'language-letters',label:t('letters'),key:'vocabulary'},
       {route:'language-voice',label:t('voice'),key:'voice'},
       {route:'language-grammar',label:t('grammar'),key:'grammar'},
-      {route:'language-review',label:t('review'),key:'review'},
+      {route:'language-video',label:t('video'),key:'video'},
       {route:'language-examine',label:t('examine'),key:'exam'}
     ];
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
+    const learned={vocabulary:Boolean(module.vocabulary),voice:Boolean(module.voice),grammar:Boolean(module.grammar),video:Boolean(module.video)};
     return stages.map((stage,index)=>{
-      const letterDone=isLetterBox(pos.li,pos.box)&&(state.letterProgress[letterProgressKey(pos.li,pos.step)]||[]).length===26;
-      const done=stage.key==='exam'?boxExamPassed(state,pos.li,pos.step,pos.box):(stage.key==='pronunciation'?letterDone:Boolean(module[stage.key]));
+      const done=stage.key==='exam'?boxExamPassed(state,pos.li,pos.step,pos.box):Boolean(module[stage.key]);
       const current=stage.route===route;
-      return '<a href="#'+stage.route+'" class="language-flow-stage '+(done?'done ':'')+(current?'current':'')+'"><span>'+(done?'✓':String(index+1).padStart(2,'0'))+'</span><div><small>'+(done?'Complete':current?'Up next':'Course stage')+'</small><strong>'+esc(stage.label)+'</strong></div><b>→</b></a>';
+      const unlocked=index===0||(index===1&&learned.vocabulary)||(index===2&&learned.vocabulary&&learned.voice)||(index===3&&learned.vocabulary&&learned.voice&&learned.grammar)||(index===4&&learned.vocabulary&&learned.voice&&learned.grammar&&learned.video);
+      return '<a href="#'+stage.route+'" class="language-flow-stage '+(done?'done ':'')+(current?'current ':'')+(!unlocked?'locked':'')+'" '+(!unlocked?'aria-disabled="true" tabindex="-1"':'')+'><span>'+(done?'✓':String(index+1).padStart(2,'0'))+'</span><div><small>'+(done?'Complete':current?'Up next':unlocked?'Available':'Locked')+'</small><strong>'+esc(stage.label)+'</strong></div><b>→</b></a>';
     }).join('');
+  }
+
+  function learningAnalytics(state,pos){
+    const profile=LEVEL_LEARNING_SYSTEMS[pos.li],passed=state.passedBoxes.length,steps=state.passedSteps.length,levels=state.passedLevels.length;
+    const scored=(state.examHistory||[]).filter(item=>['box','step','level','language'].includes(item.scope)&&Number.isFinite(Number(item.score)));
+    const last=scored.length?Number(scored[scored.length-1].score):null;
+    const average=scored.length?Math.round(scored.reduce((sum,item)=>sum+Number(item.score),0)/scored.length):null;
+    return '<section class="language-learning-analytics level-system-'+profile.number+'">'+
+      '<div><small>Driven pathway</small><strong>Level '+profile.number+' · '+profile.id+'</strong><span>'+esc(profile.name)+'</span></div>'+
+      '<div><small>Course status</small><strong>'+passed+' / '+TOTAL_LANGUAGE_BOXES+' boxes</strong><span>'+progressPercent(state)+'% complete</span></div>'+
+      '<div><small>Hierarchy</small><strong>'+steps+' / 25 steps</strong><span>'+levels+' / 5 levels complete</span></div>'+
+      '<div><small>Exam analysis</small><strong>'+(average===null?'No score yet':average+'% average')+'</strong><span>'+(last===null?'Pass the first box exam to begin analysis.':'Last '+last+'% · '+scored.length+' scored exam'+(scored.length===1?'':'s'))+'</span></div>'+
+      '<div><small>Readiness target</small><strong>'+(profile.id==='C1'?'C1 / IELTS':'Next outcome')+'</strong><span>'+(profile.id==='C1'?'Preparation target; no score guarantee.':esc(profile.target))+'</span></div>'+
+      '</section>';
   }
 
   function homePage(){
@@ -1026,10 +1124,11 @@
       return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-map-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><span>'+step+'</span><b>'+(passed?'✓':'')+'</b></button>';
     }).join('');
     const nextRoute=nextBoxRoute(state,pos);
-    return '<section class="language-course-page language-home language-home-simple">'+
+    return '<section class="language-course-page language-home language-home-simple level-system-'+LEVEL_LEARNING_SYSTEMS[pos.li].number+'">'+
       '<header class="language-home-simple-head"><div><small>'+esc(mode.immersion?mode.target+' immersion':mode.base+' → '+mode.target)+'</small><strong>'+esc(mode.target)+'</strong></div><div class="language-home-percent"><b>'+progressPercent(state)+'%</b><span>'+level.id+'</span></div></header>'+
+      learningAnalytics(state,pos)+
       '<section class="language-home-current"><div class="language-home-box"><span>'+t('box')+'</span><strong>'+pos.box+'</strong><small>'+level.id+' · '+pos.step+'</small></div><div class="language-home-stage-list">'+learningFlow(state,pos)+'</div><a class="language-home-continue" href="#'+nextRoute+'"><span>'+t('resume')+'</span><b>→</b></a></section>'+
-      '<nav class="language-course-map" aria-label="Course map"><div class="language-map-levels">'+levels+'</div><div class="language-map-steps">'+steps+'</div>'+boxSelector(state,pos)+'<button type="button" class="language-level-challenge-link" data-challenge-level="'+pos.li+'">'+level.id+' challenge →</button></nav></section>';
+      '<nav class="language-course-map" aria-label="Course map"><div class="language-map-levels">'+levels+'</div><div class="language-map-steps">'+steps+'</div>'+boxSelector(state,pos)+'</nav></section>';
   }
 
   function boxSelector(state,pos){
@@ -1053,7 +1152,9 @@
     if(!entries.length)entries=[{item:{type:'info'},markup:'<div class="language-process-empty">No learning activity has been added to this page.</div>'}];
     const labels=processLabels(state,pos.li),stages=entries.map((entry,index)=>processStage(state,pos,page,entry.item,entry.markup,index)).join('');
     const dots=entries.map((entry,index)=>'<button type="button" data-process-go="'+index+'" class="'+(index===0?'active':'')+'" aria-label="'+esc(labels.item)+' '+(index+1)+'"></button>').join('');
-    return '<section class="language-course-page language-process-page '+extraClass+'" data-language-process="'+esc(page)+'" data-process-count="'+entries.length+'">'+processTop(state,pos,entries.length)+'<div class="language-process-stage-list">'+stages+'</div><nav class="language-process-nav"><button type="button" data-process-previous disabled><span>←</span>'+esc(labels.back)+'</button><div class="language-process-dots">'+dots+'</div><button type="button" data-process-next>'+esc(labels.next)+'<span>→</span></button></nav><div class="language-process-completion">'+completion+'</div></section>';
+    const profile=LEVEL_LEARNING_SYSTEMS[pos.li];
+    const banner='<div class="level-system-banner"><div><small>Level '+profile.number+' · '+profile.id+'</small><strong>'+esc(profile.name)+'</strong></div><span>'+esc(profile.method)+'</span><b>'+esc(profile.difficulty)+'</b></div>';
+    return '<section class="language-course-page language-process-page level-system-'+profile.number+' '+extraClass+'" data-language-process="'+esc(page)+'" data-process-count="'+entries.length+'">'+processTop(state,pos,entries.length)+banner+'<div class="language-process-stage-list">'+stages+'</div><nav class="language-process-nav"><button type="button" data-process-previous disabled><span>←</span>'+esc(labels.back)+'</button><div class="language-process-dots">'+dots+'</div><button type="button" data-process-next>'+esc(labels.next)+'<span>→</span></button></nav><div class="language-process-completion">'+completion+'</div></section>';
   }
 
   function contentItemAttrs(item){return ' data-language-content-item="'+esc(item.id)+'" data-language-content-type="'+esc(item.type||'info')+'"';}
@@ -1093,19 +1194,19 @@
     const entries=items.map(item=>{
       let markup='';
       if(item.type==='sound')markup='<article class="language-sound-hero language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'Pronunciation focus')+'</small><h2>'+esc(item.title||'Sound focus')+'</h2><p>'+esc(item.body||'')+'</p></div>'+(item.audioText?'<button class="btn btn-primary" type="button" data-speak="'+esc(item.audioText)+'">'+t('listen')+'</button>':'')+'</article>';
-      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div></article>';
+      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWordPairs(item,state,pos).map(pair=>'<button type="button" data-speak="'+esc(pair.target)+'"><strong>'+esc(pair.target)+'</strong>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'<span>▶</span></button>').join('')+'</div></article>';
       else if(item.type==='writing')markup='<article class="language-writing-task language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Writing task')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
       else markup=infoItemCard(item);
       return {item,markup};
     });
     const hasWriting=items.some(item=>item.type==='writing');
-    const completion='<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation||hasWriting?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):(hasWriting?'Complete the writing task first':'Add a writing item before completion'))+'</button>';
-    return languageProcessPage(state,pos,'pronunciation',entries,completion,'language-pronunciation-lesson');
+    const completion='<button class="language-complete-bar '+(module.vocabulary?'done':'')+'" type="button" data-language-module="vocabulary" '+(module.vocabulary||hasWriting?'':'disabled')+'>'+(module.vocabulary?'✓ '+t('completed'):(hasWriting?'Complete vocabulary and writing items':'Add a writing item before completion'))+'</button>';
+    return languageProcessPage(state,pos,'vocabulary',entries,completion,'language-pronunciation-lesson language-vocabulary-writing-page');
   }
 
   function videoUnderstandingPage(state,pos){
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
-    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    const items=languagePageItems(pos.li,pos.step,pos.box,'video'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=learningLanguage(state,pos.li).target,arabic=responseLanguage==='Arabic';
     const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
     const entries=items.map(item=>{
@@ -1122,8 +1223,11 @@
 
   function lettersPage(){
     const state=languageState(),pos=activeLanguagePosition(state);
-    if(pos.li>0)return videoUnderstandingPage(state,pos);
-    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
+    return pronunciationPage(state,pos);
+  }
+  function videoPage(){
+    const state=languageState(),pos=activeLanguagePosition(state);
+    return videoUnderstandingPage(state,pos);
   }
 
   function currentLearningBox(state,pos){
@@ -1207,43 +1311,35 @@
     ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function boxQuestionSet(li,step,box){
-    if(isLetterBox(li,box))return letterExamQuestions(step);
-    const level=CEFR[li],data=boxData(li,step,box);
-    const grammarIndex=Math.max(0,level.grammar.findIndex(rule=>rule[0]===data.grammarTitle));
-    const otherRule=level.grammar[(grammarIndex+3)%level.grammar.length];
-    const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1;
-    const adjacent=boxData(li,step,nextBox);
-    const unpunctuated=data.grammarExample1.charAt(0).toLowerCase()+data.grammarExample1.slice(1).replace(/[.!?]$/,'');
+    const level=CEFR[li],profile=LEVEL_LEARNING_SYSTEMS[li],data=boxData(li,step,box),state=languageState();
+    const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1,adjacent=boxData(li,step,nextBox);
+    const meaning=usesArabicBridge(state,li)?vocabularyMeaning(data.words[0],'Arabic'):data.words[0];
+    const meaning2=usesArabicBridge(state,li)?vocabularyMeaning(data.words[1],'Arabic'):data.words[1];
+    const simpleDistractors=arrayUnique([adjacent.words[0],data.words[1],data.words[2],data.words[3]]).filter(Boolean);
+    const tricky=li>=3;
+    const hardest=li>=4;
+    const sentence=data.grammarExample1,second=data.grammarExample2;
+    const nearMiss=sentence.replace(/\b(is|are|has|have|was|were)\b/i,match=>match.toLowerCase()==='is'?'are':match.toLowerCase()==='are'?'is':match.toLowerCase()==='has'?'have':match.toLowerCase()==='have'?'has':match.toLowerCase()==='was'?'were':'was');
     const questions=[
-      {prompt:'Which sentence best demonstrates this box’s target grammar?',correct:data.grammarExample1,options:[data.grammarExample1,unpunctuated+' '+data.words[0],data.words.slice(0,4).join(' '),adjacent.reversePrompt]},
-      {prompt:'Which statement correctly describes this box’s grammar focus?',correct:data.grammarRule,options:[data.grammarRule,otherRule[1],'Word order never affects meaning.','Punctuation replaces grammar.']},
-      {prompt:'Which sentence is the listening model for this box?',correct:data.voicePrompt,options:[data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,data.words.slice(0,5).join(' ')]},
-      {prompt:'Which word belongs to this box’s active vocabulary?',correct:data.words[0],options:[data.words[0],adjacent.words[0],otherRule[0],adjacent.topic]},
-      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]},
-      {prompt:'What is the communicative function of this box?',correct:data.languageFunction,options:[data.languageFunction,adjacent.languageFunction,'spelling isolated letters','avoiding communication']},
-      {prompt:'Which pronunciation focus belongs to this box?',correct:data.pronunciationFocus,options:[data.pronunciationFocus,adjacent.pronunciationFocus,otherRule[0],adjacent.topic]},
-      {prompt:'Which instruction best matches the writing task?',correct:data.writingPrompt,options:[data.writingPrompt,adjacent.writingPrompt,'Copy the vocabulary list without sentences.','Do not use the target grammar.']},
-      {prompt:'Which statement best matches the writing/typing rule for this level?',correct:data.typing,options:[data.typing,adjacent.naming,'Punctuation is never needed.','Use random capitalization to show emphasis.']},
-      {prompt:'Which prompt best tests free recall for this box?',correct:data.recall,options:[data.recall,adjacent.recall,'Repeat one word ten times without context.','Skip the grammar and guess the topic.']}
+      {type:'mcq',prompt:'Translate this meaning into the target word: '+meaning,correct:data.words[0],options:arrayUnique([data.words[0],...simpleDistractors])},
+      {type:'listen-choice',prompt:li===0?'Listen to the word and choose what you heard.':'Listen and choose the exact sentence.',audio:li===0?data.words[1]:data.voicePrompt,correct:li===0?data.words[1]:data.voicePrompt,options:li===0?arrayUnique([data.words[1],...simpleDistractors]):arrayUnique([data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,second])},
+      {type:'fill',prompt:li===0?'Write the English word for: '+meaning2:'Complete the key word needed in this '+(li===1?'simple':'level-appropriate')+' sentence task.',correct:data.words[1],options:[]},
+      {type:'speak',prompt:li===0?'Pronounce this word clearly: '+data.words[0]:li===1?'Pronounce the complete simple sentence clearly.':tricky?'Pronounce the sentence accurately despite the more complex wording.':'Pronounce the complete model sentence clearly.',correct:li===0?data.words[0]:second,options:[]},
+      {type:'mcq',prompt:tricky?'Choose the grammatically precise sentence. Near-miss distractors are intentional.':'Choose the sentence that correctly applies '+data.grammarTitle+'.',correct:sentence,options:arrayUnique([sentence,nearMiss,adjacent.grammarExample1,data.words.slice(0,4).join(' ')])},
+      {type:'true-false',prompt:'True or false: '+data.grammarRule,correct:'True',options:['True','False']},
+      {type:'listen-fill',prompt:li===0?'Listen and type the word exactly.':hardest?'Listen once and transcribe the advanced sentence exactly.':'Listen and transcribe the sentence exactly.',audio:li===0?data.words[2]:data.voicePrompt,correct:li===0?data.words[2]:data.voicePrompt,options:[]},
+      {type:'short-answer',prompt:li<2?'Translate/rebuild the target-language model using these main-language cues: '+meaning+' · '+meaning2:tricky?'Reformulate the model without changing its core meaning; use this canonical answer for scoring.':'Translate/rebuild the model meaning into the target language.',correct:sentence,options:[]},
+      {type:'ordering',prompt:'Build the model sentence in the correct order.',correct:sentence.replace(/[.!?]$/,''),tokens:sentence.replace(/[.!?]$/,'').split(/\s+/).sort((a,b)=>a.localeCompare(b)),options:[]},
+      {type:'multi-select',prompt:tricky?'Select both statements that remain valid under the rule; distractors may differ by one detail.':'Select both valid learning statements.',correct:[data.grammarRule,data.recall],options:arrayUnique([data.grammarRule,data.recall,adjacent.grammarRule,'Vocabulary alone is enough; grammar never changes meaning.'])}
     ];
-    return questions.map((q,index)=>{
-      const base={...q,options:arrayUnique(q.options)};
-      if(index===1){const trueStatement=box%2===0;return {...base,type:'true-false',prompt:'True or false: '+(trueStatement?q.correct:otherRule[1]),correct:trueStatement?'True':'False',options:['True','False']};}
-      if(index===2)return {...base,type:'listen-choice',prompt:'Listen once, then choose the sentence you heard.',audio:data.voicePrompt};
-      if(index===3)return {...base,type:'fill',prompt:'Complete the active-vocabulary word for this box.',options:[]};
-      if(index===4)return {...base,type:'short-answer',prompt:'Write the complete reader-ready model from this box.',options:[]};
-      if(index===6)return {...base,type:'listen-fill',prompt:'Listen and transcribe the pronunciation focus exactly.',audio:data.pronunciationFocus,options:[]};
-      if(index===8){
-        const tokens=data.grammarExample1.replace(/[.!?]$/,'').split(/\s+/);
-        return {...base,type:'ordering',prompt:'Build the model sentence in the correct order.',correct:tokens.join(' '),tokens:[...tokens].sort((a,b)=>a.localeCompare(b)),options:[]};
-      }
-      if(index===9){
-        const correct=[q.correct,q.options.find(option=>option!==q.correct)].filter(Boolean);
-        return {...base,type:'multi-select',prompt:'Select both valid review prompts.',correct,options:arrayUnique([...q.options,...correct])};
-      }
-      return {...base,type:'mcq'};
-    });
+    if(hardest){
+      questions[3].prompt='Pronounce the precise C1 model clearly, preserving word boundaries and the intended phrasing.';
+      questions[4].prompt='Choose the most defensible C1 form; the distractors are deliberately plausible.';
+      questions[7].prompt='Reformulate at C1 level while preserving meaning, stance and logical relation; score against the canonical model.';
+    }
+    return questions.map(question=>({...question,levelSystem:profile.name,examStyle:profile.examStyle}));
   }
+
   function representativeBoxes(li){
     const last=boxCount(li),first=firstLearningBox(li);
     return arrayUnique([1,first,Math.max(first,Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
@@ -1336,8 +1432,8 @@
   }
   function placementExamPage(){
     const questions=placementQuestions();
-    return '<section class="language-course-page language-placement-page"><header class="language-page-head placement"><div><small>Placement examination</small><h1>Find my English level</h1><p>This is intentionally difficult. It combines text-to-voice, voice-to-text, image-to-text, advanced grammar and complex translation. It chooses a starting level; it does not complete skipped levels.</p></div><div class="language-context"><span>15 tasks</span><span>Multimodal</span><span>A1–C1</span></div></header>'+
-      '<div class="placement-warning"><strong>Do not use translation tools.</strong><span>Your result starts you at Level · Step 1 · first box.</span></div>'+
+    return '<section class="language-course-page language-placement-page"><header class="language-page-head placement"><div><small>Diagnostic examination</small><h1>Benchmark my English</h1><p>This difficult multimodal diagnostic estimates your current level for analysis. The course still begins at Level 1 and never skips the driven sequence.</p></div><div class="language-context"><span>15 tasks</span><span>Multimodal</span><span>A1–C1 benchmark</span></div></header>'+
+      '<div class="placement-warning"><strong>Do not use translation tools.</strong><span>Your result is a benchmark only; learning starts at Level 1 · Step 1 · Box 1.</span></div>'+
       '<form id="language-placement-form" class="language-exam-form placement-form">'+questions.map(renderPlacementQuestion).join('')+'<button class="btn btn-primary" type="submit">Evaluate my level</button><div class="language-exam-result" id="language-placement-result"></div></form></section>';
   }
   function levelChallengePanel(state){
@@ -1356,7 +1452,7 @@
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
   function examTypeLabel(type,arabic=false){
-    const labels=arabic?{mcq:'اختيار واحد','true-false':'صح أو خطأ','multi-select':'إجابات متعددة',fill:'إكمال الكلمة','short-answer':'إجابة مكتوبة','listen-choice':'اختيار سمعي','listen-fill':'إملاء سمعي',ordering:'بناء الجملة'}:{mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'};
+    const labels=arabic?{mcq:'اختيار واحد','true-false':'صح أو خطأ','multi-select':'إجابات متعددة',fill:'إكمال الكلمة','short-answer':'إجابة مكتوبة',speak:'نطق صوتي','listen-choice':'اختيار سمعي','listen-fill':'إملاء سمعي',ordering:'بناء الجملة'}:{mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response',speak:'Spoken production','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'};
     return labels[type]||labels.mcq;
   }
   function examPrompt(prompt,arabic){
@@ -1382,7 +1478,8 @@
     const arabic=usesArabicBridge(state,pos.li),head='<div class="language-question-head" dir="'+(arabic?'rtl':'ltr')+'"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type,arabic))+'</small><legend>'+esc(examPrompt(q.prompt,arabic))+'</legend></div></div>';
     const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> '+(arabic?'تشغيل الصوت':'Play audio')+'</button>':'';
     let answer='';
-    if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
+    if(type==='speak')answer='<div class="language-exam-speak"><button type="button" data-exam-speak data-speak-target="'+esc(q.correct||'')+'">🎙 '+(arabic?'ابدأ النطق':'Start speaking')+'</button><label class="language-exam-text"><span>'+(arabic?'النص الذي التقطه المتصفح':'Recognized speech')+'</span><input type="text" name="'+name+'" autocomplete="off" readonly required placeholder="'+(arabic?'استخدم زر الميكروفون…':'Use the microphone button…')+'"></label><small data-exam-speak-status>'+(arabic?'يُقاس النطق عبر نص التعرّف على الكلام في المتصفح.':'Pronunciation is checked through the browser speech-recognition transcript.')+'</small></div>';
+    else if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
     else if(type==='ordering')answer='<div class="language-ordering" data-ordering="'+name+'"><div class="language-order-answer" data-order-answer aria-label="Your sentence"></div><div class="language-order-bank">'+(q.tokens||String(q.correct||'').split(/\s+/)).map(token=>'<button type="button" data-order-token="'+esc(token)+'">'+esc(token)+'</button>').join('')+'</div><input type="hidden" name="'+name+'"></div>';
     else if(type==='multi-select')answer='<div class="language-answer-options multiple">'+(q.options||[]).map(option=>'<label><input type="checkbox" name="'+name+'" value="'+esc(option)+'"><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
     else answer='<div class="language-answer-options">'+(q.options||[]).map(option=>'<label><input type="radio" name="'+name+'" value="'+esc(option)+'" required><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
@@ -1396,6 +1493,7 @@
     }
     const answer=String(form.get(name)||'').trim(),correct=String(question.correct||'').trim();
     if(type==='fill')return normalizeText(answer)===normalizeText(correct);
+    if(type==='speak')return answerSimilarity(answer,correct)>=(String(question.correct||'').trim().split(/\s+/).length===1?.88:.78);
     if(type==='short-answer'||type==='listen-fill')return answerSimilarity(answer,correct)>=.82;
     if(type==='ordering')return normalizeText(answer)===normalizeText(correct);
     return answer===correct;
@@ -1409,7 +1507,7 @@
     const state=languageState();
     if(state.placementPending)return placementExamPage();
     const pos=activeLanguagePosition(state);
-    if(Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
+    if(false&&Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
       const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
       const challengePos={li,step:5,box:boxCount(li)};
       return '<section class="language-course-page language-exam-process-page">'+processTop(state,challengePos,questions.length)+'<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>←</button>'+examFormMarkup(questions,'challenge',passed,state,challengePos)+'</section>';
@@ -1439,6 +1537,7 @@
     if(page==='language-letters')return lettersPage();
     if(page==='language-voice')return voicePage();
     if(page==='language-grammar')return grammarPage();
+    if(page==='language-video')return videoPage();
     if(page==='language-review')return reviewPage();
     if(page==='language-examine')return examinePage();
     return homePage();
@@ -1461,6 +1560,7 @@
         if(!languageAuthoringTarget&&!letterGateRequired(state)&&['language-letter-learn','language-letter-exam'].includes(page)){setHash('language-home');return;}
         if(!languageAuthoringTarget&&!letterGateRequired(state)&&state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
         if(!languageAuthoringTarget&&!letterGateRequired(state)&&!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&Object.prototype.hasOwnProperty.call(LEARNING_LANE_PREREQUISITES,page)){const pos=clampSelection(state);if(!learningLaneUnlocked(state,pos,page)){setHash(nextBoxRoute(state,pos));return;}}
         if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
@@ -1472,20 +1572,17 @@
   }
 
   const navSpec=[
-    ['language-home','nav-home','home'],['language-voice','nav-messages','voice'],
-    ['language-grammar','file','grammar'],['language-review','star','review'],['language-examine','check','examine']
+    ['language-home','nav-home','home'],['language-letters','file','letters'],['language-voice','nav-messages','voice'],
+    ['language-grammar','star','grammar'],['language-video','play','video'],['language-examine','check','examine']
   ];
   function icon(name){return window.DafatiiIcons && window.DafatiiIcons.icon ? window.DafatiiIcons.icon(name) : '<span>•</span>';}
-  function languageNavLabel(item){
-    if(item[0]!=='language-letters')return t(item[2]);
-    const state=languageState(),li=Math.min(4,Math.max(0,Number(state.selectedLevel)||Number(state.entryLevel)||0));
-    return li>0?t('video'):t('letters');
-  }
+  function languageNavLabel(item){return t(item[2]);}
+  function navLaneState(route){const state=languageState(),pos=clampSelection(state);return learningLaneUnlocked(state,pos,route);}
   function sideLanguageNav(current){
-    return navSpec.map(item=>'<a href="#'+item[0]+'" class="quiet-link '+(current===item[0]?'selected':'')+'" '+(current===item[0]?'aria-current="page"':'')+'>'+icon(item[1])+'<span>'+esc(languageNavLabel(item))+'</span></a>').join('');
+    return navSpec.map(item=>{const unlocked=navLaneState(item[0]);return '<a href="#'+item[0]+'" class="quiet-link '+(current===item[0]?'selected ':'')+(!unlocked?'language-nav-locked':'')+'" '+(current===item[0]?'aria-current="page" ':'')+(!unlocked?'aria-disabled="true" tabindex="-1"':'')+'>'+icon(item[1])+'<span>'+esc(languageNavLabel(item))+'</span></a>';}).join('');
   }
   function bottomLanguageNav(current){
-    return navSpec.map(item=>'<a href="#'+item[0]+'" class="bottom-nav-item language-bottom-item '+(current===item[0]?'is-active':'')+'" '+(current===item[0]?'aria-current="page"':'')+'><span class="bottom-nav-icon">'+icon(item[1])+'</span><span class="bottom-nav-label">'+esc(languageNavLabel(item))+'</span></a>').join('');
+    return navSpec.map(item=>{const unlocked=navLaneState(item[0]);return '<a href="#'+item[0]+'" class="bottom-nav-item language-bottom-item '+(current===item[0]?'is-active ':'')+(!unlocked?'language-nav-locked':'')+'" '+(current===item[0]?'aria-current="page" ':'')+(!unlocked?'aria-disabled="true" tabindex="-1"':'')+'><span class="bottom-nav-icon">'+icon(item[1])+'</span><span class="bottom-nav-label">'+esc(languageNavLabel(item))+'</span></a>';}).join('');
   }
   function adaptNavigation(){
     const type=courseType(),current=(location.hash||'#language-home').replace(/^#\/?/,'').split('/')[0];
@@ -1757,11 +1854,11 @@
       const score=Math.round(correct/questions.length*100),li=placementRecommendedLevel(score),result=document.getElementById('language-placement-result');
       updateLanguage(state=>{
         state.onboardingComplete=true;state.placementPending=false;state.placementResult={score,level:CEFR[li].id,at:Date.now()};
-        state.entryLevel=li;state.selectedLevel=li;state.selectedStep=1;state.selectedBox=1;state.challengeLevel=null;
+        state.entryLevel=0;state.selectedLevel=0;state.selectedStep=1;state.selectedBox=1;state.challengeLevel=null;
         state.examHistory.push({scope:'placement',score,level:CEFR[li].id,at:Date.now()});
       });
       result.className='language-exam-result passed';
-      result.textContent='Placement result · '+score+'% · Start at '+CEFR[li].id+' · Step 1 · first box. Skipped lower levels were not marked complete.';
+      result.textContent='Diagnostic result · '+score+'% · benchmark '+CEFR[li].id+'. Your driven pathway starts at A1 · Step 1 · Box 1.';
       setTimeout(()=>setHash('language-home'),1200);
     };
   }
@@ -1770,11 +1867,12 @@
       const stages=[...root.querySelectorAll('[data-language-process-stage]')],dots=[...root.querySelectorAll('[data-process-go]')];
       const previous=root.querySelector('[data-process-previous]'),next=root.querySelector('[data-process-next]'),position=root.querySelector('[data-process-position]'),meter=root.querySelector('[data-process-meter]');
       if(!stages.length)return;
-      let active=0;
+      let active=0,furthest=0;
       const show=index=>{
         active=Math.min(stages.length-1,Math.max(0,index));
+        furthest=Math.max(furthest,active);
         stages.forEach((stage,i)=>{stage.hidden=i!==active;stage.classList.toggle('active',i===active);});
-        dots.forEach((dot,i)=>dot.classList.toggle('active',i===active));
+        dots.forEach((dot,i)=>{dot.classList.toggle('active',i===active);dot.disabled=i>furthest;dot.classList.toggle('locked',i>furthest);});
         if(previous)previous.disabled=active===0;
         if(next)next.hidden=active===stages.length-1;
         if(position)position.textContent=String(active+1).padStart(2,'0');
@@ -1783,7 +1881,7 @@
       };
       previous?.addEventListener('click',()=>show(active-1));
       next?.addEventListener('click',()=>show(active+1));
-      dots.forEach((dot,index)=>dot.addEventListener('click',()=>show(index)));
+      dots.forEach((dot,index)=>dot.addEventListener('click',()=>{if(index<=furthest)show(index);}));
       show(0);
     });
   }
@@ -1797,7 +1895,7 @@
       const type=question.dataset.questionType||'mcq';
       if(type==='multi-select')return Boolean(question.querySelector('input[type="checkbox"]:checked'));
       if(type==='ordering')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
-      if(['fill','short-answer','listen-fill'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
+      if(['fill','short-answer','listen-fill','speak'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
       return Boolean(question.querySelector('input[type="radio"]:checked'));
     };
     const show=index=>{
@@ -1825,6 +1923,17 @@
     bindLearningProcess();
     bindExamStepper();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
+    document.querySelectorAll('[data-exam-speak]').forEach(button=>button.onclick=()=>{
+      const question=button.closest('.language-exam-question-item'),field=question?.querySelector('input[type="text"]'),status=question?.querySelector('[data-exam-speak-status]');
+      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!field)return;
+      if(!Recognition){field.readOnly=false;field.placeholder='Speech recognition is unavailable. Type what you said for fallback scoring.';if(status)status.textContent='Browser speech recognition is unavailable; typed fallback cannot directly assess pronunciation.';field.focus();return;}
+      const recognition=new Recognition();recognition.lang=speechLocale(courseTargetLanguage(languageState()));recognition.interimResults=false;recognition.maxAlternatives=1;
+      if(status)status.textContent='Listening…';
+      recognition.onresult=event=>{field.value=event.results[0][0].transcript;if(status)status.textContent='Captured. Continue when the recognized words match what you intended to say.';};
+      recognition.onerror=()=>{if(status)status.textContent='Recognition failed. Try speaking again.';};
+      recognition.start();
+    });
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
 
@@ -1879,10 +1988,11 @@
       render();
     });
 
-    const pronunciationWriting=document.getElementById('language-pronunciation-writing'),pronunciationComplete=document.querySelector('[data-language-module="pronunciation"]');
-    if(pronunciationWriting&&pronunciationComplete&&!pronunciationComplete.classList.contains('done')){
-      const update=()=>{pronunciationComplete.disabled=normalizeText(pronunciationWriting.value).length<20;pronunciationComplete.textContent=pronunciationComplete.disabled?'Complete the writing task first':t('complete');};
-      pronunciationWriting.addEventListener('input',update);update();
+    const vocabularyWriting=document.getElementById('language-pronunciation-writing'),vocabularyComplete=document.querySelector('[data-language-module="vocabulary"]');
+    if(vocabularyWriting&&vocabularyComplete&&!vocabularyComplete.classList.contains('done')){
+      const minimum=activeLanguagePosition(languageState()).li===0?8:20;
+      const update=()=>{vocabularyComplete.disabled=normalizeText(vocabularyWriting.value).length<minimum;vocabularyComplete.textContent=vocabularyComplete.disabled?'Complete the writing task first':t('complete');};
+      vocabularyWriting.addEventListener('input',update);update();
     }
     const grammarWriting=document.getElementById('language-grammar-writing'),grammarComplete=document.querySelector('[data-language-module="grammar"]');
     if(grammarWriting&&grammarComplete&&!grammarComplete.classList.contains('done')){
@@ -1982,9 +2092,9 @@
   installWorkspaceRoutes();
   installCourseChangeRouting();
   window.DafatiiCourseModes=Object.freeze({
-    courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
+    courseType,isLanguage,levels:CEFR,levelSystems:LEVEL_LEARNING_SYSTEMS,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
     languageAuthoring:Object.freeze({
-      pages:['letters','voice','grammar','review','examine'],
+      pages:['letters','voice','grammar','video','examine'],
       pageName:languagePageName,
       getItems:selection=>languagePageItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item})),
       getSchemas:(page,li)=>languageItemSchemas(page,li),
