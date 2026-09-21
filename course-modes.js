@@ -37,6 +37,7 @@
     {letter:'Y',arabic:'ي',sound:'/j/',approximate:true,note:'This bridge applies when Y is the consonant /j/ as in yes.'},
     {letter:'Z',arabic:'ز',sound:'/z/'}
   ];
+  const LETTER_LEARNING_ORDER = ['D','B','F','H','J','K','L','M','N','S','T','W','Z','R','Y','A','E','I','O','U','P','V','C','G','Q','X'];
   const LETTER_EXAM_ORDER = ['D','B','F','J','K','M','S','T','V','P','H','N','R','W','Y','Z','A','E','I','O','U','C','G','Q','X','L'];
   const ARABIC_VOCABULARY = {
     hello:'مرحباً',name:'اسم',friend:'صديق',family:'عائلة',morning:'صباح',evening:'مساء',school:'مدرسة',teacher:'معلّم',student:'طالب',book:'كتاب',house:'بيت',room:'غرفة',water:'ماء',bread:'خبز',market:'سوق',street:'شارع',bus:'حافلة',today:'اليوم',tomorrow:'غداً',happy:'سعيد',tired:'متعب',small:'صغير',large:'كبير',near:'قريب',far:'بعيد',help:'مساعدة',learn:'يتعلّم',write:'يكتب',listen:'يستمع',speak:'يتحدث',
@@ -194,7 +195,7 @@
 
   const COPY = {
     en:{
-      home:'Home',letters:'Letters & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
+      home:'Home',letters:'Letters & writing',pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
       complete:'Mark section complete',completed:'Completed',locked:'Locked',listen:'Play voice',check:'Check answer',
       speak:'Speak this sentence',start:'Start recognition',notes:'My notes',save:'Save notes',level:'Level',step:'Step',box:'Box',
       pass:'Pass mark: 80%',takeExam:'Take exam',submitExam:'Submit exam',welcome:'Welcome',resume:'Resume learning',
@@ -204,7 +205,7 @@
       examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
     },
     ar:{
-      home:'الرئيسية',letters:'الحروف والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
+      home:'الرئيسية',letters:'الحروف والكتابة',pronunciation:'النطق والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
       complete:'إكمال هذا الجزء',completed:'مكتمل',locked:'مغلق',listen:'تشغيل الصوت',check:'تحقق من الإجابة',
       speak:'انطق هذه الجملة',start:'ابدأ التعرّف على الصوت',notes:'ملاحظاتي',save:'حفظ الملاحظات',level:'المستوى',step:'الخطوة',box:'الصندوق',
       pass:'درجة النجاح: 80٪',takeExam:'ابدأ الاختبار',submitExam:'إرسال الاختبار',welcome:'مرحباً',resume:'متابعة التعلّم',
@@ -941,10 +942,10 @@
     return '<section class="language-course-page letter-gate-page"><header class="letter-gate-hero"><small>Arabic → English · prerequisite</small><h1>English letters before the course</h1><p>Match English letters to familiar Arabic sounds, then prove you can draw them. You can learn first or go directly to the 10-question drawing exam.</p></header><div class="letter-gate-actions"><button type="button" data-letter-gate-learn><span>Aa</span><small>Learn first</small><h2>Learn the letters</h2><p>'+learned+' / 26 practiced · matched sounds such as د ↔ D are taught first-class; English-only sounds are marked special.</p><b>Open learning →</b></button><button type="button" data-letter-gate-exam><span>10</span><small>Direct path</small><h2>Examine the letters</h2><p>Ten different drawing questions. Passing the exam unlocks the normal English course navigation and pages.</p><b>Start exam →</b></button></div></section>';
   }
   function letterGateLearnPage(state){
-    const practiced=state.letterGateProgress||[],firstMissing=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!practiced.includes(item.letter))?.letter||'A';
+    const practiced=state.letterGateProgress||[],ordered=LETTER_LEARNING_ORDER.map(letter=>letterBridge(letter)),firstMissing=ordered.find(item=>!practiced.includes(item.letter))?.letter||'D';
     const stored=state.activeGateLetter,allowedStored=practiced.includes(stored)||stored===firstMissing;
     const letter=allowedStored?stored:firstMissing,bridge=letterBridge(letter),lower=letter.toLowerCase(),word=LETTER_WORDS[letter],done=practiced.includes(letter),allDone=practiced.length===26;
-    const selectors=ENGLISH_ARABIC_LETTER_BRIDGE.map(item=>{
+    const selectors=ordered.map(item=>{
       const itemDone=practiced.includes(item.letter),allowed=itemDone||item.letter===firstMissing;
       return '<button type="button" data-gate-letter-select="'+item.letter+'" '+(allowed?'':'disabled')+' class="'+(item.letter===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item.letter+'</strong><span>'+(item.arabic||'•')+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
     }).join('');
@@ -995,7 +996,7 @@
   function learningFlow(state,pos){
     const route=nextBoxRoute(state,pos);
     const stages=[
-      {route:'language-letters',label:pos.li>0?t('video'):t('letters'),key:pos.li>0?'video':'pronunciation'},
+      {route:'language-letters',label:pos.li>0?t('video'):t('pronunciation'),key:pos.li>0?'video':'pronunciation'},
       {route:'language-voice',label:t('voice'),key:'voice'},
       {route:'language-grammar',label:t('grammar'),key:'grammar'},
       {route:'language-review',label:t('review'),key:'review'},
@@ -1839,18 +1840,18 @@
     document.querySelectorAll('[data-letter-gate-home]').forEach(button=>button.onclick=()=>setHash('language-home'));
     document.querySelectorAll('[data-gate-letter-select]').forEach(button=>button.onclick=()=>{
       const letter=button.dataset.gateLetterSelect;
-      updateLanguage(state=>{const first=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!state.letterGateProgress.includes(item.letter))?.letter;if(state.letterGateProgress.includes(letter)||letter===first)state.activeGateLetter=letter;});
+      updateLanguage(state=>{const first=LETTER_LEARNING_ORDER.find(item=>!state.letterGateProgress.includes(item));if(state.letterGateProgress.includes(letter)||letter===first)state.activeGateLetter=letter;});
       render();
     });
     document.querySelector('[data-gate-letter-next]')?.addEventListener('click',event=>{
       if(event.currentTarget.disabled)return;
-      updateLanguage(state=>{const current=state.activeGateLetter||'A',index=ENGLISH_ARABIC_LETTER_BRIDGE.findIndex(item=>item.letter===current);state.activeGateLetter=ENGLISH_ARABIC_LETTER_BRIDGE[(index+1)%ENGLISH_ARABIC_LETTER_BRIDGE.length].letter;});
+      updateLanguage(state=>{const current=state.activeGateLetter||'D',index=LETTER_LEARNING_ORDER.indexOf(current);state.activeGateLetter=LETTER_LEARNING_ORDER[(index+1)%LETTER_LEARNING_ORDER.length];});
       render();
     });
     document.querySelector('[data-gate-letter-complete]')?.addEventListener('click',event=>{
       if(event.currentTarget.disabled)return;
       const letter=event.currentTarget.dataset.gateLetterComplete;
-      updateLanguage(state=>{state.letterGateProgress=arrayUnique([...state.letterGateProgress,letter]);state.activeGateLetter=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!state.letterGateProgress.includes(item.letter))?.letter||letter;});
+      updateLanguage(state=>{state.letterGateProgress=arrayUnique([...state.letterGateProgress,letter]);state.activeGateLetter=LETTER_LEARNING_ORDER.find(item=>!state.letterGateProgress.includes(item))||letter;});
       render();
     });
 
