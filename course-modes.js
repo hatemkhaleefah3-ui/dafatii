@@ -289,7 +289,7 @@
     return {
       version:META_VERSION,targetLanguage:'English',baseLanguage:'',selectedLevel:0,selectedStep:1,selectedBox:1,
       passedBoxes:[],passedSteps:[],passedLevels:[],languagePassed:false,
-      modules:{},letterProgress:{},activeLetterByStep:{},letterGateProgress:[],activeGateLetter:'D',letterGatePassed:false,videoResponses:{},videoRatings:{},watchedVideos:{},notes:{},examHistory:[],
+      modules:{},letterProgress:{},activeLetterByStep:{},letterGateProgress:[],activeGateLetter:'D',letterGatePassed:false,videoResponses:{},videoRatings:{},pronunciationRatings:{},watchedVideos:{},notes:{},examHistory:[],
       onboardingComplete:false,placementPending:false,placementResult:null,entryLevel:0,challengeLevel:null
     };
   }
@@ -390,6 +390,7 @@
     value.letterGatePassed=Boolean(value.letterGatePassed);
     value.videoResponses=value.videoResponses&&typeof value.videoResponses==='object'?value.videoResponses:{};
     value.videoRatings=value.videoRatings&&typeof value.videoRatings==='object'?value.videoRatings:{};
+    value.pronunciationRatings=value.pronunciationRatings&&typeof value.pronunciationRatings==='object'?value.pronunciationRatings:{};
     value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
     value.examHistory=Array.isArray(value.examHistory)?value.examHistory:[];
@@ -1805,6 +1806,83 @@
   function videoResponseValid(language,value){
     return String(value||'').trim().length>=3;
   }
+  const GEMINI_ACCEPTED_RATINGS = Object.freeze(['moderate','good','very good']);
+  function geminiRatingAccepted(rating){return GEMINI_ACCEPTED_RATINGS.includes(String(rating||'').toLowerCase());}
+  function pronunciationJudgeMarkup(targetText,stateKey,kind,rating,inputName=''){
+    const value=String(rating||'').toLowerCase(),accepted=geminiRatingAccepted(value);
+    return '<div class="language-pronunciation-judge '+(value==='bad'?'failed ':accepted?'accepted ':'')+'" data-pronunciation-judge data-pronunciation-target="'+esc(targetText)+'" data-pronunciation-key="'+esc(stateKey||'')+'" data-pronunciation-kind="'+esc(kind||'word')+'" data-pronunciation-accepted="'+(accepted?'true':'false')+'">'+
+      '<div class="language-pronunciation-command"><strong>'+esc(targetText)+'</strong><button type="button" data-gemini-pronunciation>🎙 '+(accepted?'Record again':'Open microphone')+'</button></div>'+
+      '<div class="language-pronunciation-grade" data-pronunciation-grade '+(value?'':'hidden')+'><small>Gemini pronunciation</small><strong data-pronunciation-rating-value>'+esc(value)+'</strong><span data-pronunciation-rating-message>'+(value==='bad'?'Not accepted · pronounce it again.':accepted?'Accepted · pronunciation passed.':'')+'</span></div>'+
+      '<p class="language-feedback" data-pronunciation-feedback>'+(accepted?'Accepted. You may continue.':'')+'</p>'+
+      (inputName?'<input type="hidden" name="'+esc(inputName)+'" value="'+esc(value)+'">':'')+
+    '</div>';
+  }
+  function blobAsBase64(blob){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||'').split(',')[1]||'');
+      reader.onerror=()=>reject(reader.error||new Error('Could not read microphone recording.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+  function bindGeminiPronunciation(){
+    document.querySelectorAll('[data-pronunciation-judge]').forEach(root=>{
+      const button=root.querySelector('[data-gemini-pronunciation]'),feedback=root.querySelector('[data-pronunciation-feedback]'),grade=root.querySelector('[data-pronunciation-grade]'),ratingValue=root.querySelector('[data-pronunciation-rating-value]'),ratingMessage=root.querySelector('[data-pronunciation-rating-message]'),hidden=root.querySelector('input[type="hidden"]');
+      if(!button)return;
+      let recorder=null,stream=null,chunks=[],timer=null,busy=false;
+      const targetText=String(root.dataset.pronunciationTarget||'').trim(),kind=String(root.dataset.pronunciationKind||'word'),stateKey=String(root.dataset.pronunciationKey||'');
+      const stopTracks=()=>{if(stream){stream.getTracks().forEach(track=>track.stop());stream=null;}};
+      const showRating=rating=>{
+        const accepted=geminiRatingAccepted(rating);
+        root.dataset.pronunciationAccepted=accepted?'true':'false';
+        root.classList.toggle('accepted',accepted);root.classList.toggle('failed',rating==='bad');
+        if(hidden){hidden.value=rating;hidden.dispatchEvent(new Event('change',{bubbles:true}));}
+        if(grade)grade.hidden=!rating;
+        if(ratingValue)ratingValue.textContent=rating||'';
+        if(ratingMessage)ratingMessage.textContent=rating==='bad'?'Not accepted · pronounce it again.':accepted?'Accepted · pronunciation passed.':'';
+        root.dispatchEvent(new CustomEvent('dafatii:pronunciationgraded',{bubbles:true,detail:{rating,accepted,stateKey}}));
+      };
+      const evaluate=async blob=>{
+        busy=true;button.disabled=true;button.textContent='Gemini is judging…';
+        if(feedback)feedback.textContent='Uploading this short recording securely for pronunciation evaluation…';
+        try{
+          if(!window.DafatiiApi?.request)throw new Error('The grading API client is unavailable.');
+          const audioData=await blobAsBase64(blob);
+          const state=languageState(),pos=activeLanguagePosition(state);
+          const result=await window.DafatiiApi.request('/language/pronunciation',{method:'POST',body:{
+            targetText,kind,audioData,mimeType:(blob.type||'audio/webm'),targetLanguage:courseTargetLanguage(state),level:CEFR[pos.li].id
+          }});
+          const rating=String(result?.rating||'').toLowerCase();
+          if(!['bad','moderate','good','very good'].includes(rating))throw new Error('Gemini returned an unsupported pronunciation rating.');
+          if(stateKey)updateLanguage(value=>{value.pronunciationRatings[stateKey]=rating;});
+          showRating(rating);
+          if(feedback)feedback.textContent=rating==='bad'?'Not accepted. Listen to the target and pronounce it again.':rating==='moderate'?'Accepted · recognizable pronunciation.':rating==='good'?'Accepted · good pronunciation.':'Accepted · very good pronunciation.';
+        }catch(error){
+          if(feedback)feedback.textContent=error?.message||'Pronunciation grading failed. Try again.';
+        }finally{
+          busy=false;button.disabled=false;button.textContent='🎙 Record again';stopTracks();
+        }
+      };
+      button.onclick=async()=>{
+        if(busy)return;
+        if(recorder&&recorder.state==='recording'){clearTimeout(timer);recorder.stop();button.disabled=true;return;}
+        if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){if(feedback)feedback.textContent='Microphone recording is not supported in this browser.';return;}
+        try{
+          stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+          const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
+          const mime=candidates.find(type=>typeof MediaRecorder.isTypeSupported!=='function'||MediaRecorder.isTypeSupported(type))||'';
+          recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);chunks=[];
+          recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
+          recorder.onstop=()=>{clearTimeout(timer);const blob=new Blob(chunks,{type:recorder.mimeType||chunks[0]?.type||'audio/webm'});recorder=null;if(!blob.size){stopTracks();if(feedback)feedback.textContent='No microphone audio was captured. Try again.';button.disabled=false;return;}evaluate(blob);};
+          recorder.onerror=()=>{clearTimeout(timer);recorder=null;stopTracks();button.disabled=false;button.textContent='🎙 Open microphone';if(feedback)feedback.textContent='Microphone recording failed. Try again.';};
+          recorder.start();
+          button.textContent='■ Stop & judge';if(feedback)feedback.textContent='Recording… pronounce '+targetText+' clearly, then stop.';
+          timer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},6000);
+        }catch(error){stopTracks();if(feedback)feedback.textContent='Microphone permission is required for pronunciation.';}
+      };
+    });
+  }
+
   function bindVideoUnderstanding(){
     const watchedButton=document.querySelector('[data-video-watched]'),field=document.getElementById('language-video-response');
     const complete=document.querySelector('[data-video-evaluate]'),feedback=document.querySelector('[data-video-response-feedback]'),ratingBox=document.querySelector('[data-video-rating]');
