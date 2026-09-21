@@ -1,12 +1,72 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 4;
+  const META_VERSION = 5;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
   const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
   const LETTER_SPEECH = {A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'ef',G:'jee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'ar',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
+  const LETTER_WORD_AR = {apple:'تفاحة',book:'كتاب',cat:'قطة',door:'باب',egg:'بيضة',fish:'سمكة',green:'أخضر',home:'منزل',ice:'ثلج',juice:'عصير',key:'مفتاح',lamp:'مصباح',moon:'قمر',name:'اسم',orange:'برتقالة',pen:'قلم',queen:'ملكة',room:'غرفة',sun:'شمس',table:'طاولة',umbrella:'مظلة',voice:'صوت',water:'ماء','x-ray':'أشعة سينية',yellow:'أصفر',zebra:'حمار وحشي'};
+  const ARABIC_VOCABULARY = {
+    hello:'مرحباً',name:'اسم',friend:'صديق',family:'عائلة',morning:'صباح',evening:'مساء',school:'مدرسة',teacher:'معلّم',student:'طالب',book:'كتاب',house:'بيت',room:'غرفة',water:'ماء',bread:'خبز',market:'سوق',street:'شارع',bus:'حافلة',today:'اليوم',tomorrow:'غداً',happy:'سعيد',tired:'متعب',small:'صغير',large:'كبير',near:'قريب',far:'بعيد',help:'مساعدة',learn:'يتعلّم',write:'يكتب',listen:'يستمع',speak:'يتحدث',
+    receipt:'إيصال',reservation:'حجز',journey:'رحلة',platform:'رصيف',schedule:'جدول',appointment:'موعد',borrow:'يستعير',return:'يعيد',recommend:'يوصي',prefer:'يفضّل',enough:'كافٍ',several:'عدّة',usually:'عادةً',recently:'مؤخراً',already:'بالفعل',yet:'بعد',healthy:'صحي',exercise:'تمرين',service:'خدمة',repair:'إصلاح',message:'رسالة',website:'موقع إلكتروني',plan:'خطة',decide:'يقرر',compare:'يقارن',expensive:'غالي',comfortable:'مريح',available:'متاح',probably:'على الأرجح',experience:'تجربة',
+    evidence:'دليل',opinion:'رأي',advantage:'ميزة',disadvantage:'عيب',solution:'حل',responsibility:'مسؤولية',community:'مجتمع',environment:'بيئة',resource:'مورد',budget:'ميزانية',deadline:'موعد نهائي',feedback:'ملاحظات',improve:'يحسّن',manage:'يدير',avoid:'يتجنب',achieve:'يحقق',although:'على الرغم من',however:'مع ذلك',therefore:'لذلك',likely:'مرجّح',issue:'مسألة',benefit:'فائدة',challenge:'تحدٍ',decision:'قرار',behavior:'سلوك',culture:'ثقافة',policy:'سياسة',relationship:'علاقة',career:'مسار مهني',confidence:'ثقة',
+    evaluate:'يقيّم',assumption:'افتراض',implication:'دلالة',constraint:'قيد',framework:'إطار',sustainable:'مستدام',controversial:'مثير للجدل',perspective:'منظور',justify:'يبرر',interpret:'يفسّر',reliable:'موثوق',significant:'مهم',approximate:'تقريبي',nevertheless:'مع ذلك',consequently:'وبالتالي',whereas:'بينما',criterion:'معيار',strategy:'استراتيجية',implementation:'تنفيذ',stakeholder:'صاحب مصلحة',privacy:'خصوصية',regulation:'تنظيم',innovation:'ابتكار',bias:'تحيز',methodology:'منهجية',outcome:'نتيجة',priority:'أولوية',complexity:'تعقيد',efficient:'فعّال',credible:'موثوق',
+    nuance:'فارق دقيق',premise:'مقدمة منطقية',inference:'استدلال',counterargument:'حجة مضادة',corroborate:'يؤيد بالأدلة',qualify:'يقيّد الادعاء',ambiguous:'ملتبس',coherent:'مترابط',salient:'بارز',robust:'متين',tentative:'مبدئي',discourse:'خطاب',rhetoric:'بلاغة',paradigm:'نموذج فكري','trade-off':'مفاضلة',mechanism:'آلية',causality:'سببية',marginal:'هامشي',institutional:'مؤسسي',normative:'معياري',empirical:'تجريبي',substantiate:'يدعم بالدليل',synthesize:'يركّب',reconcile:'يوفّق',articulate:'يصوغ بوضوح',concede:'يقرّ',contingent:'مشروط',plausible:'معقول',distinction:'تمييز',precision:'دقة'
+  };
+  const ARABIC_GRAMMAR = {
+    'Be: am / is / are':['فعل الكينونة: am / is / are','استخدم فعل الكينونة للتعريف بالأشخاص أو الأشياء ووصفها وتحديد مكانها.'],
+    'Subject pronouns':['ضمائر الفاعل','استخدم I وyou وhe وshe وit وwe وthey قبل الفعل المصرف.'],
+    'Articles: a / an / the':['أدوات التعريف والتنكير','استخدم a أو an مع اسم مفرد غير محدد، وthe مع اسم محدد معروف.'],
+    'Present simple':['المضارع البسيط','استخدم أصل الفعل للعادات، وأضف s أو es مع he وshe وit.'],
+    'Have / has':['Have / has للملكية','استخدم have وhas للتعبير عن الملكية والعائلة والصفات.'],
+    'There is / there are':['There is / there are','استخدم there is مع المفرد وthere are مع الجمع.'],
+    'Can / cannot':['Can / cannot','استخدم can مع أصل الفعل للتعبير عن القدرة أو الإذن أو الإمكان.'],
+    'This / that / these / those':['أسماء الإشارة','طابق اسم الإشارة مع القرب أو البعد ومع المفرد أو الجمع.'],
+    'Basic prepositions':['حروف الجر الأساسية','استخدم in وon وat وunder وnext to وbetween للمكان أو الزمن.'],
+    'Question words':['أدوات الاستفهام','استخدم who وwhat وwhere وwhen وwhy وhow لطلب معلومة محددة.'],
+    'Past simple':['الماضي البسيط','استخدم صيغة الماضي لحدث مكتمل في زمن منتهٍ.'],
+    'Present continuous':['المضارع المستمر','استخدم be مع الفعل المنتهي بـ ing لحدث يقع الآن أو لحالة مؤقتة.'],
+    'Going to':['Going to للمستقبل','استخدم be going to للخطط والتوقعات المبنية على دليل.'],
+    'Comparatives':['صيغة المقارنة','استخدم er أو more للمقارنة بين شيئين.'],
+    'Superlatives':['صيغة التفضيل','استخدم est أو most لتمييز أعلى درجة داخل مجموعة.'],
+    'Countable and uncountable nouns':['الأسماء المعدودة وغير المعدودة','استخدم many وfew مع المعدود، وmuch وlittle مع غير المعدود.'],
+    'Present perfect basics':['أساسيات المضارع التام','استخدم have أو has مع التصريف الثالث لتجربة حياتية أو نتيجة حديثة.'],
+    'Should / must / have to':['النصيحة والالتزام','استخدم should وmust وhave to للنصيحة والالتزام والقواعد.'],
+    'First conditional':['الشرط الأول','استخدم if مع المضارع ثم will مع أصل الفعل لشرط مستقبلي واقعي.'],
+    'Adverbs of frequency':['ظروف التكرار','ضع usually وoften وsometimes وnever في موضعها الصحيح حول الفعل الرئيسي.'],
+    'Present perfect vs past simple':['المضارع التام مقابل الماضي البسيط','استخدم المضارع التام لارتباط مستمر بالحاضر، والماضي البسيط لزمن ماضٍ منتهٍ.'],
+    'Past continuous':['الماضي المستمر','استخدم was أو were مع ing للخلفية الزمنية أو الحدث الذي قاطعه حدث آخر.'],
+    'Relative clauses':['الجمل الموصولة','استخدم who وwhich وthat وwhere وwhose للتعريف أو إضافة معلومات.'],
+    'Second conditional':['الشرط الثاني','استخدم if مع الماضي وwould مع أصل الفعل لافتراض غير واقعي في الحاضر أو المستقبل.'],
+    'Passive voice basics':['أساسيات المبني للمجهول','استخدم be مع التصريف الثالث عندما يكون الفعل أو النتيجة أهم من الفاعل.'],
+    'Gerunds and infinitives':['المصدر بصيغة ing والمصدر مع to','تعلّم النمط الذي يطلبه كل فعل مثل enjoy doing وdecide to do.'],
+    'Reported speech basics':['أساسيات الكلام المنقول','غيّر الزمن والإشارات المناسبة عند نقل كلام شخص آخر.'],
+    'Modal deduction':['الاستنتاج بالأفعال الناقصة','استخدم must وmight وmay وcannot للتعبير عن درجات اليقين.'],
+    'Linking clauses':['ربط الجمل','استخدم although وhowever وbecause وso وwhile وtherefore لإظهار العلاقة المنطقية.'],
+    'Future forms':['صيغ المستقبل','اختر will أو going to أو المضارع المستمر بحسب التوقع أو الخطة أو الترتيب.'],
+    'Third and mixed conditionals':['الشرط الثالث والمختلط','استخدم الشرط الثالث لنتيجة ماضية غير واقعية والمختلط لربط زمنين مختلفين.'],
+    'Advanced passive structures':['تراكيب المبني للمجهول المتقدمة','استخدم المبني للمجهول في التقرير ومع الأفعال الناقصة للتحكم في مركز المعلومة.'],
+    'Participle clauses':['جمل اسم الفاعل والمفعول','اختصر الجمل باستخدام اسم الفاعل أو المفعول عندما يكون الفاعل واضحاً.'],
+    'Cleft sentences':['الجمل الانشقاقية','استخدم تراكيب it-cleft وwh-cleft لتركيز معلومة بعينها.'],
+    'Modal perfects':['الأفعال الناقصة التامة','استخدم must أو might أو could أو should مع have والتصريف الثالث للاستنتاج والتقييم الماضي.'],
+    'Inversion after negative adverbials':['القلب بعد الظروف السلبية','اقلب ترتيب الفعل المساعد والفاعل بعد العبارات السلبية المقيدة للتوكيد الرسمي.'],
+    'Complex noun phrases':['العبارات الاسمية المعقدة','ادمج المعلومات بالمعدلات قبل الاسم وبعده وبالجمل المضمنة مع الحفاظ على الوضوح.'],
+    'Discourse markers':['روابط الخطاب','استخدم nevertheless وmoreover وwhereas وconsequently لتنظيم الحجة.'],
+    'Future in the past':['المستقبل من منظور الماضي','استخدم would وwas going to وwas about to لحدث مستقبلي منظوراً إليه من نقطة ماضية.'],
+    'Subjunctive and formal recommendation':['صيغة الطلب والتوصية الرسمية','استخدم أصل الفعل بعد التوصيات والمطالب الرسمية.'],
+    'Information structure and fronting':['بنية المعلومات والتقديم','أعد ترتيب الجملة للتحكم في الموضوع والتركيز والتدرج البلاغي دون فقدان الوضوح النحوي.'],
+    'Hedging and epistemic stance':['التحوط والموقف المعرفي','اضبط قوة الادعاء بألفاظ مثل seem وappear وmay وبقيود تتناسب مع قوة الدليل.'],
+    'Nominalization and academic density':['الاسمية والكثافة الأكاديمية','حوّل العمليات إلى أسماء بانتقائية لبناء ترابط رسمي دون إخفاء الفاعل أو المعنى.'],
+    'Advanced complementation':['التكملة المتقدمة','اضبط أفعال التقرير مع that والمصدر وing والمتممات بحروف الجر.'],
+    'Concessive and adversative architecture':['بناء التنازل والتعارض','ابنِ مقابلة دقيقة باستخدام albeit وnotwithstanding وmuch as وwhile وfor all.'],
+    'Ellipsis and substitution':['الحذف والاستبدال','تجنب التكرار بالحذف المنضبط وبدائل مثل so وdo so وone وones.'],
+    'Advanced relative and supplementary clauses':['الجمل الموصولة والإضافية المتقدمة','استخدم الموصولات التي تحيل إلى جملة كاملة وحرف الجر مع which أو whom والجمل المختزلة بدقة.'],
+    'Register and modality':['السجل اللغوي والكيفية','اختر درجة الاحتمال والتهذيب والإلزام بما يناسب السلطة والمخاطر والعلاقة.'],
+    'Rhetorical conditionals':['الشرط البلاغي','استخدم القلب وprovided that وassuming that وbut for لصياغة شروط متقدمة بإيجاز.'],
+    'Punctuation as syntax':['الترقيم بوصفه بناءً نحوياً','استخدم النقطتين والفاصلة المنقوطة والشرطة والأقواس لإظهار البنية المنطقية.']
+  };
   const TOTAL_LANGUAGE_BOXES = 5*26 + 4*5*25;
   const LANGUAGE_FUNCTIONS = ['introducing','identifying','describing','asking for information','answering precisely','comparing','sequencing','locating','expressing time','expressing quantity','stating preferences','expressing ability','expressing obligation','giving reasons','explaining results','expressing conditions','contrasting ideas','describing experience','making plans','giving instructions','stating opinions','supporting with evidence','correcting meaning','summarizing','reflecting'];
   const CEFR = [
@@ -195,8 +255,8 @@
     value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
     value.examHistory=Array.isArray(value.examHistory)?value.examHistory:[];
-    value.baseLanguage=['Arabic','English'].includes(value.baseLanguage)?value.baseLanguage:'';
     value.targetLanguage=String(courseMeta().targetLanguage||value.targetLanguage||'English');
+    value.baseLanguage=allowedBaseLanguages(value.targetLanguage).includes(value.baseLanguage)?value.baseLanguage:'';
     value.onboardingComplete=Boolean(value.onboardingComplete);
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
@@ -210,10 +270,30 @@
     return state;
   }
 
+  function languageIdentity(language){
+    const value=String(language||'').trim().toLowerCase();
+    if(['english','الإنجليزية','انجليزي','إنجليزي'].includes(value))return 'English';
+    if(['arabic','العربية','عربي'].includes(value))return 'Arabic';
+    return value;
+  }
+  function allowedBaseLanguages(target){
+    const targetId=languageIdentity(target);
+    return ['Arabic','English'].filter(language=>languageIdentity(language)!==targetId);
+  }
   function courseTargetLanguage(state){return String(courseMeta().targetLanguage||state?.targetLanguage||'English').trim()||'English';}
   function learningLanguage(state,li){
-    const target=courseTargetLanguage(state),base=['Arabic','English'].includes(state?.baseLanguage)?state.baseLanguage:'English';
+    const target=courseTargetLanguage(state),allowed=allowedBaseLanguages(target),base=allowed.includes(state?.baseLanguage)?state.baseLanguage:(allowed[0]||'English');
     return {base,target,instruction:li>=4?target:base,immersion:li>=4};
+  }
+  function usesArabicBridge(state,li){return li<4&&learningLanguage(state,li).base==='Arabic';}
+  function vocabularyMeaning(word,base){return base==='Arabic'?(ARABIC_VOCABULARY[String(word).toLowerCase()]||'—'):String(word);}
+  function vocabularyPairs(state,pos,words){
+    const mode=learningLanguage(state,pos.li);
+    return words.map(word=>({target:String(word),meaning:mode.immersion?'':vocabularyMeaning(word,mode.base)}));
+  }
+  function grammarBridge(state,pos,data){
+    const mode=learningLanguage(state,pos.li),arabic=usesArabicBridge(state,pos.li),translated=ARABIC_GRAMMAR[data.grammarTitle];
+    return {title:arabic?(translated?.[0]||data.grammarTitle)+' · '+data.grammarTitle:data.grammarTitle,rule:arabic?(translated?.[1]||data.grammarRule):data.grammarRule,direction:arabic?'rtl':'ltr',base:mode.base,target:mode.target};
   }
   function speechLocale(language){
     return ({Arabic:'ar-SA',English:'en-US',Japanese:'ja-JP',French:'fr-FR',German:'de-DE',Spanish:'es-ES',Italian:'it-IT',Korean:'ko-KR',Chinese:'zh-CN'})[language]||'en-US';
@@ -224,14 +304,14 @@
     if(mode.instruction==='English')return {back:'Back',next:'Continue',finish:'Finish',item:'Activity',of:'of',immersion:'Full immersion'};
     return {back:'←',next:'→',finish:'✓',item:'',of:'/',immersion:mode.target};
   }
-  function bridgeInstruction(state,pos,type){
+  function bridgeInstruction(state,pos,type,page){
     const mode=learningLanguage(state,pos.li);
-    if(mode.immersion)return mode.target+' only · understand, respond and think in '+mode.target+'.';
+    if(mode.immersion||page==='pronunciation'||page==='video')return mode.target+' only · listen, understand and respond directly in '+mode.target+'.';
     const arabic={
-      sound:'استمع إلى النموذج باللغة الهدف، ثم كرره قبل النظر إلى النص.',words:'اربط كلمات اللغة الهدف بمعناها في لغتك الأساسية، ثم استخدمها من الذاكرة.',writing:'افهم المطلوب بلغتك الأساسية، ثم اكتب إجابتك باللغة الهدف.',video:'شاهد باللغة الهدف، ثم ثبّت المعنى بلغتك الأساسية قبل إعادة صياغته.',response:'اشرح ما فهمته بلغتك الأساسية، مع الاحتفاظ بالكلمات المهمة باللغة الهدف.',dictation:'استمع باللغة الهدف واكتب ما تسمعه بدقة.',speaking:'حوّل المعنى من لغتك الأساسية إلى اللغة الهدف بصوت واضح.',rule:'افهم القاعدة بلغتك الأساسية، ثم طبّقها في جملة باللغة الهدف.',steps:'نفّذ خطوات الاسترجاع بلغتك الأساسية ثم أعد إنتاج المعنى باللغة الهدف.',notes:'سجّل المعنى أو التصحيح بلغتك الأساسية، واحتفظ بالأمثلة باللغة الهدف.',info:'افهم الفكرة بلغتك الأساسية، ثم أعد شرحها باللغة الهدف.'
+      sound:'استمع إلى النموذج باللغة الهدف، ثم كرره قبل النظر إلى النص.',words:'اربط كل كلمة في اللغة الهدف بمعناها العربي، ثم استرجع الكلمة من المعنى.',writing:'افهم المطلوب بالعربية، ثم اكتب إجابتك باللغة الهدف.',video:'شاهد وافهم وأجب باللغة الهدف مباشرة.',response:'أجب باللغة الهدف فقط.',dictation:'استمع باللغة الهدف واكتب ما تسمعه بدقة.',speaking:'حوّل المعنى العربي إلى جملة صحيحة باللغة الهدف وانطقها بوضوح.',rule:'افهم القاعدة بالعربية، ثم طبّقها في جملة باللغة الهدف.',steps:'استرجع المعنى بالعربية ثم أعد إنتاجه باللغة الهدف.',notes:'سجّل المعنى أو التصحيح بالعربية، واحتفظ بالأمثلة باللغة الهدف.',info:'افهم الفكرة بالعربية، ثم أعد إنتاجها باللغة الهدف.'
     };
     const english={
-      sound:'Listen in the target language, then repeat before reading the model.',words:'Connect each target-language word to meaning in your main language, then retrieve it.',writing:'Understand the task in your main language, then write in the target language.',video:'Watch in the target language, secure the meaning in your main language, then reconstruct it.',response:'Explain what you understood in your main language while retaining key target-language expressions.',dictation:'Listen in the target language and write exactly what you hear.',speaking:'Move from meaning in your main language to a clear target-language response.',rule:'Understand the rule through your main language, then apply it in the target language.',steps:'Use your main language to retrieve the idea, then reproduce it in the target language.',notes:'Keep meanings or corrections in your main language and examples in the target language.',info:'Understand the idea through your main language, then explain it in the target language.'
+      sound:'Listen in the target language, then repeat before reading the model.',words:'Connect each target-language word to its English meaning, then retrieve it from meaning.',writing:'Understand the task in English, then write in the target language.',video:'Watch, understand and answer directly in the target language.',response:'Answer only in the target language.',dictation:'Listen in the target language and write exactly what you hear.',speaking:'Convert the English meaning into a clear target-language response.',rule:'Understand the rule through English, then apply it in the target language.',steps:'Retrieve the meaning in English, then reproduce it in the target language.',notes:'Keep meanings or corrections in English and examples in the target language.',info:'Understand the idea through English, then reproduce it in the target language.'
     };
     return (mode.base==='Arabic'?arabic:english)[type]||(mode.base==='Arabic'?arabic.info:english.info);
   }
@@ -424,7 +504,7 @@
       id:keyBox(CEFR[li].id,step,box),
       title:data.title,
       youtubeUrl:'https://www.youtube.com/results?search_query='+encodeURIComponent(query),
-      responseLanguage:li<=2?'Arabic':'English'
+      responseLanguage:String(courseMeta().targetLanguage||'English')
     };
   }
 
@@ -468,6 +548,9 @@
   }
   function defaultLanguageContentItems(li,step,box,page){
     const data=isLetterBox(li,box)?null:boxData(li,step,box);
+    const state=languageState(),pos={li,step,box},mode=learningLanguage(state,li),arabic=usesArabicBridge(state,li);
+    const rule=data?grammarBridge(state,pos,data):null;
+    const pairs=data?vocabularyPairs(state,pos,data.words):[];
     if(page==='letters'&&li===0&&isLetterBox(li,box)){
       return [
         {id:'letter-purpose',type:'info',eyebrow:'Letters box',title:'Learn each English letter separately',body:'Hear the letter name, study uppercase and lowercase forms, then trace both accurately before moving forward.'},
@@ -486,38 +569,38 @@
       ];
     }
     if(page==='letters'&&li>0){
-      const video=videoLessonData(li,step,box),arabic=video.responseLanguage==='Arabic';
+      const video=videoLessonData(li,step,box);
       return [
         {id:'video-lesson',type:'video',eyebrow:'YouTube video',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
         {id:'video-guide',type:'info',eyebrow:'Before you watch',title:'Watch for meaning, detail and language',body:'Identify the main idea, two supporting details, one example of '+data.grammarTitle+', and at least two target words: '+data.words.slice(0,4).join(', ')+'.'},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:arabic?'اشرح ما فهمته':'Explain what you understood',body:arabic?'اكتب بالعربية الفكرة الرئيسية وتفصيلين على الأقل، ثم اذكر كلمة أو تركيباً إنجليزياً مهماً.':'Write the main idea, at least two supporting details, and one important English expression from the video.',placeholder:arabic?'اكتب فهمك هنا…':'Write your understanding here…'},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:'Write in '+mode.target+': the main idea, at least two supporting details, and one important expression from the video.',placeholder:'Write only in '+mode.target+'…'},
         {id:'video-vocabulary',type:'words',eyebrow:'Video vocabulary',title:'Key expressions to notice',body:'Use these expressions to confirm meaning after watching.',words:data.words}
       ];
     }
     if(page==='voice'){
       return [
-        {id:'listen-repeat',type:'info',eyebrow:'Listen & repeat',title:'Build a clean spoken model',body:'Topic: '+data.topic+'. Pronunciation focus: '+data.pronunciationFocus+'. Repeat the model slowly, then at natural speed.'},
+        {id:'listen-repeat',type:'info',eyebrow:arabic?'استماع وتكرار':'Listen & repeat',title:arabic?'ابنِ نموذجاً صوتياً واضحاً':'Build a clean spoken model',body:arabic?'استمع إلى النموذج الإنجليزي كاملاً. كرره ببطء، ثم بالسرعة الطبيعية. لا تترجم أثناء النطق.':'Topic: '+data.topic+'. Pronunciation focus: '+data.pronunciationFocus+'. Repeat the model slowly, then at natural speed.'},
         {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
-        {id:'speaking',type:'speaking',eyebrow:'Text → voice',title:'Speak the target meaning',body:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'},
-        {id:'voice-rubric',type:'info',eyebrow:'Self-check',title:'Meaning · grammar · stress · rhythm',body:'Your response should be understandable, use '+data.grammarTitle+', include at least two target words, and keep pauses aligned with meaning.'}
+        {id:'speaking',type:'speaking',eyebrow:arabic?'العربية ← الإنجليزية':'Main language → target',title:arabic?'حوّل المعنى إلى الإنجليزية ثم انطقه':'Speak the target meaning',body:arabic?'عبّر بالإنجليزية عن المعنى مستخدماً هذه الكلمات: '+pairs.slice(0,3).map(pair=>pair.meaning+' ← '+pair.target).join('، ')+'.':data.reversePrompt,targetText:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'},
+        {id:'voice-rubric',type:'info',eyebrow:arabic?'تقييم ذاتي':'Self-check',title:arabic?'المعنى · القاعدة · النبر · الإيقاع':'Meaning · grammar · stress · rhythm',body:arabic?'يجب أن تكون إجابتك الإنجليزية مفهومة، وتستخدم '+rule.title+'، وتتضمن كلمتين مستهدفتين على الأقل، وتضع الوقفات مع المعنى.':'Your response should be understandable, use '+data.grammarTitle+', include at least two target words, and keep pauses aligned with meaning.'}
       ];
     }
     if(page==='grammar'){
       return [
-        {id:'grammar-rule',type:'rule',eyebrow:'Grammar rule',title:data.grammarTitle,body:data.grammarRule,example1:data.grammarExample1,example2:data.grammarExample2},
-        {id:'grammar-examples',type:'info',eyebrow:'Examples',title:'See the form inside meaning',body:'Model 1: '+data.grammarExample1+' Model 2: '+data.grammarExample2},
-        {id:'grammar-error',type:'info',eyebrow:'Common error',title:'Correct the smallest specific mistake',body:'A common failure is using the right vocabulary with the wrong form. Rewrite one sentence so it accurately demonstrates '+data.grammarTitle+'.'},
-        {id:'naming',type:'info',eyebrow:'Naming & register',title:'Choose precise words',body:data.naming,words:data.words.slice(0,5)},
-        {id:'typing',type:'writing',eyebrow:'Production',title:'Write for the reader',body:data.typing+' '+data.writingPrompt,placeholder:'Write two examples that follow the rule.'}
+        {id:'grammar-rule',type:'rule',eyebrow:arabic?'شرح القاعدة بالعربية':'Grammar rule',title:rule.title,body:rule.rule,example1:data.grammarExample1,example2:data.grammarExample2,direction:rule.direction},
+        {id:'grammar-examples',type:'info',eyebrow:arabic?'أمثلة باللغة الهدف':'Examples',title:arabic?'لاحظ الشكل داخل المعنى':'See the form inside meaning',body:arabic?'النموذج 1: '+data.grammarExample1+' النموذج 2: '+data.grammarExample2:'Model 1: '+data.grammarExample1+' Model 2: '+data.grammarExample2},
+        {id:'grammar-error',type:'info',eyebrow:arabic?'خطأ شائع':'Common error',title:arabic?'صحّح أصغر خطأ محدد':'Correct the smallest specific mistake',body:arabic?'الخطأ الشائع هو اختيار مفردات صحيحة داخل صيغة نحوية خاطئة. أعد كتابة جملة إنجليزية واحدة لتطبّق '+rule.title+' بدقة.':'A common failure is using the right vocabulary with the wrong form. Rewrite one sentence so it accurately demonstrates '+data.grammarTitle+'.'},
+        {id:'naming',type:'info',eyebrow:arabic?'المفردات والسجل':'Naming & register',title:arabic?'اختر كلمات دقيقة':'Choose precise words',body:arabic?'ابدأ بالمعنى العربي، استرجع المقابل الإنجليزي، ثم استخدمه داخل جملة لا منفرداً.':data.naming,words:data.words.slice(0,5),wordPairs:pairs.slice(0,5)},
+        {id:'typing',type:'writing',eyebrow:arabic?'إنتاج من العربية إلى الإنجليزية':'Production',title:arabic?'اكتب باللغة الإنجليزية':'Write for the reader',body:arabic?'اكتب جملتين بالإنجليزية تطبّقان '+rule.title+' وتستخدمان '+pairs.slice(0,2).map(pair=>pair.meaning+' ('+pair.target+')').join(' و ')+'.':data.typing+' '+data.writingPrompt,placeholder:arabic?'اكتب مثالين باللغة الإنجليزية…':'Write two examples that follow the rule.'}
       ];
     }
     if(page==='review'){
       return [
-        {id:'review-vocab',type:'words',eyebrow:'Active vocabulary',title:'Retrieve before you reveal',body:'Try to define or use each word before listening or looking back.',words:data.words},
-        {id:'review-trick',type:'steps',eyebrow:'Learning method',title:'Four-pass retrieval cycle',body:data.recall,steps:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
-        {id:'review-memory',type:'info',eyebrow:'Memory trick',title:'Compress · contrast · reconstruct',body:'Compress '+data.grammarTitle+' into one sentence, contrast a correct example with a near-miss, then reconstruct the rule from memory.'},
-        {id:'review-recall',type:'info',eyebrow:'Free recall',title:'Explain without looking',body:data.recall},
-        {id:'review-notes',type:'notes',eyebrow:'Notes',title:'Keep only what will help future recall',body:'Save difficult examples, corrections, mnemonics or a short Arabic explanation if useful.',placeholder:'Examples, mistakes, mnemonics, Arabic explanation…'}
+        {id:'review-vocab',type:'words',eyebrow:arabic?'مفردات نشطة':'Active vocabulary',title:arabic?'انظر إلى المعنى العربي واسترجع الإنجليزية':'Retrieve before you reveal',body:arabic?'غطِّ الكلمة الإنجليزية، استرجعها من المعنى العربي، ثم انطقها واستخدمها في جملة.':'Try to define or use each word before listening or looking back.',words:data.words,wordPairs:pairs},
+        {id:'review-trick',type:'steps',eyebrow:arabic?'طريقة التعلّم':'Learning method',title:arabic?'دورة استرجاع من أربع مراحل':'Four-pass retrieval cycle',body:arabic?'استرجع القاعدة والمفردات من العربية إلى الإنجليزية دون فتح الدرس.':data.recall,steps:arabic?['حاول من الذاكرة بالعربية إلى الإنجليزية.','تحقق من النموذج بعد المحاولة فقط.','صحّح أصغر خطأ محدد.','كرر الإنتاج بعد فترة قصيرة.']:['Attempt from memory.','Check only after the attempt.','Correct the smallest specific error.','Repeat after a short delay.']},
+        {id:'review-memory',type:'info',eyebrow:arabic?'ترسيخ القاعدة':'Memory trick',title:arabic?'لخّص · قارن · أعد البناء':'Compress · contrast · reconstruct',body:arabic?'لخّص '+rule.title+' بالعربية في سطر، قارن مثالاً إنجليزياً صحيحاً بآخر قريب خاطئ، ثم أعد بناء القاعدة من الذاكرة.':'Compress '+data.grammarTitle+' into one sentence, contrast a correct example with a near-miss, then reconstruct the rule from memory.'},
+        {id:'review-recall',type:'info',eyebrow:arabic?'استرجاع حر':'Free recall',title:arabic?'أنتج دون النظر':'Explain without looking',body:arabic?'اشرح القاعدة بالعربية، ثم أنشئ جملة إنجليزية تستخدم '+pairs.slice(0,3).map(pair=>pair.target).join(' و ')+'.':data.recall},
+        {id:'review-notes',type:'notes',eyebrow:arabic?'ملاحظات':'Notes',title:arabic?'احتفظ فقط بما يساعد الاسترجاع':'Keep only what will help future recall',body:arabic?'احفظ المعنى العربي أو التصحيح بالعربية، واترك الأمثلة دائماً باللغة الإنجليزية.':'Save difficult examples, corrections or mnemonics.',placeholder:arabic?'المعنى، الخطأ، التصحيح، مثال إنجليزي…':'Examples, mistakes and mnemonics…'}
       ];
     }
     if(page==='examine'){
@@ -552,7 +635,7 @@
     ]};
     const schemas={
       letters: li>0 ? [
-        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'},{name:'responseLanguage',label:'Response language',kind:'select',options:['Arabic','English']}]},
+        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
         {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
         commonInfo
       ] : [
@@ -781,11 +864,12 @@
     return Math.min(100,Math.round((completed/TOTAL_LANGUAGE_BOXES)*100));
   }
   function languageChoicePage(state){
-    const target=courseTargetLanguage(state);
-    return '<section class="language-course-page language-learning-language"><div class="language-choice-intro"><small>'+esc(target)+' course</small><h1>Choose your learning language</h1><p>اختر اللغة التي ستستخدمها لفهم وشرح '+esc(target)+'. Choose the language you will use to understand and explain '+esc(target)+'.</p></div><div class="language-choice-options">'+
-      '<button type="button" data-language-base="Arabic" lang="ar" dir="rtl"><span>ع</span><div><strong>العربية</strong><small>تعلّم '+esc(target)+' من خلال العربية</small></div><b>←</b></button>'+
-      '<button type="button" data-language-base="English" lang="en"><span>EN</span><div><strong>English</strong><small>Learn '+esc(target)+' through English</small></div><b>→</b></button>'+
-      '</div><p class="language-choice-note">Levels 1–4 use your selected learning language. Level 5 switches to '+esc(target)+' for full immersion.</p></section>';
+    const target=courseTargetLanguage(state),allowed=allowedBaseLanguages(target);
+    const options=allowed.map(base=>base==='Arabic'
+      ? '<button type="button" data-language-base="Arabic" lang="ar" dir="rtl"><span>ع</span><div><strong>العربية</strong><small>تعلّم '+esc(target)+' من خلال العربية</small></div><b>←</b></button>'
+      : '<button type="button" data-language-base="English" lang="en"><span>EN</span><div><strong>English</strong><small>Learn '+esc(target)+' through English</small></div><b>→</b></button>').join('');
+    return '<section class="language-course-page language-learning-language"><div class="language-choice-intro"><small>'+esc(target)+' course</small><h1>Choose your main language</h1><p>Your main language must be different from '+esc(target)+'. It explains grammar and meaning; speaking, pronunciation and video remain in '+esc(target)+'.</p></div><div class="language-choice-options">'+options+
+      '</div><p class="language-choice-note">Levels 1–4 use '+(allowed.length===1?esc(allowed[0]):'your selected main language')+' as a bridge. Level 5 switches to '+esc(target)+' only.</p></section>';
   }
   function onboardingPage(state){
     const mode=learningLanguage(state,0);
@@ -848,12 +932,13 @@
     const mode=learningLanguage(state,pos.li),labels=processLabels(state,pos.li);
     return '<header class="language-box-process-bar"><div class="language-process-box"><span>'+t('box')+'</span><strong>'+pos.box+'</strong></div><div class="language-process-language"><small>'+(mode.immersion?esc(labels.immersion):esc(mode.base)+' → '+esc(mode.target))+'</small><strong>'+esc(mode.instruction)+'</strong></div><div class="language-process-count" aria-live="polite"><span data-process-position>01</span><i>/</i><b>'+count+'</b></div></header><div class="language-process-meter" aria-hidden="true"><i data-process-meter style="width:'+(count?100/count:100)+'%"></i></div>';
   }
-  function processStage(state,pos,item,markup,index){
-    return '<section class="language-process-stage" data-language-process-stage="'+index+'" '+(index?'hidden':'')+'><p class="language-bridge-instruction" dir="'+(learningLanguage(state,pos.li).instruction==='Arabic'?'rtl':'ltr')+'">'+esc(bridgeInstruction(state,pos,item?.type||'info'))+'</p>'+markup+'</section>';
+  function processStage(state,pos,page,item,markup,index){
+    const targetOnly=page==='pronunciation'||page==='video',instructionLanguage=targetOnly?learningLanguage(state,pos.li).target:learningLanguage(state,pos.li).instruction;
+    return '<section class="language-process-stage" data-language-process-stage="'+index+'" '+(index?'hidden':'')+'><p class="language-bridge-instruction" dir="'+(instructionLanguage==='Arabic'?'rtl':'ltr')+'">'+esc(bridgeInstruction(state,pos,item?.type||'info',page))+'</p>'+markup+'</section>';
   }
   function languageProcessPage(state,pos,page,entries,completion='',extraClass=''){
     if(!entries.length)entries=[{item:{type:'info'},markup:'<div class="language-process-empty">No learning activity has been added to this page.</div>'}];
-    const labels=processLabels(state,pos.li),stages=entries.map((entry,index)=>processStage(state,pos,entry.item,entry.markup,index)).join('');
+    const labels=processLabels(state,pos.li),stages=entries.map((entry,index)=>processStage(state,pos,page,entry.item,entry.markup,index)).join('');
     const dots=entries.map((entry,index)=>'<button type="button" data-process-go="'+index+'" class="'+(index===0?'active':'')+'" aria-label="'+esc(labels.item)+' '+(index+1)+'"></button>').join('');
     return '<section class="language-course-page language-process-page '+extraClass+'" data-language-process="'+esc(page)+'" data-process-count="'+entries.length+'">'+processTop(state,pos,entries.length)+'<div class="language-process-stage-list">'+stages+'</div><nav class="language-process-nav"><button type="button" data-process-previous disabled><span>←</span>'+esc(labels.back)+'</button><div class="language-process-dots">'+dots+'</div><button type="button" data-process-next>'+esc(labels.next)+'<span>→</span></button></nav><div class="language-process-completion">'+completion+'</div></section>';
   }
@@ -864,6 +949,10 @@
     return '<article class="language-content-item language-premium-item '+extraClass+'"'+contentItemAttrs(item)+'><div class="language-item-top"><span class="language-item-icon">'+icon+'</span><small>'+esc(item.eyebrow||'Information')+'</small><b>'+esc(item.type||'guide')+'</b></div><h2>'+esc(item.title||'Untitled item')+'</h2>'+(item.body?'<p>'+esc(item.body)+'</p>':'')+'</article>';
   }
   function itemWords(item){return Array.isArray(item.words)?item.words:String(item.words||'').split(/\n|,/).map(value=>value.trim()).filter(Boolean);}
+  function itemWordPairs(item,state,pos){
+    if(Array.isArray(item.wordPairs)&&item.wordPairs.length)return item.wordPairs;
+    return vocabularyPairs(state,pos,itemWords(item));
+  }
   function itemLines(item,name){const value=item[name];return Array.isArray(value)?value:String(value||'').split(/\n/).map(line=>line.trim()).filter(Boolean);}
 
   function letterBoxPage(state,pos){
@@ -872,15 +961,15 @@
     const firstMissing=LETTERS.find(letter=>!practiced.includes(letter))||'A';
     const stored=state.activeLetterByStep[pkey];
     const storedAllowed=practiced.includes(stored)||stored===firstMissing;
-    const letter=storedAllowed?stored:firstMissing,lower=letter.toLowerCase(),word=LETTER_WORDS[letter],done=practiced.includes(letter),allDone=LETTERS.every(item=>practiced.includes(item));
+    const letter=storedAllowed?stored:firstMissing,lower=letter.toLowerCase(),word=LETTER_WORDS[letter],arabic=usesArabicBridge(state,pos.li),done=practiced.includes(letter),allDone=LETTERS.every(item=>practiced.includes(item));
     const selectors=LETTERS.map(item=>{
       const itemDone=practiced.includes(item),allowed=itemDone||item===firstMissing;
       return '<button type="button" data-letter-select="'+item+'" '+(allowed?'':'disabled')+' class="'+(item===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item+'</strong><span>'+item.toLowerCase()+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
     }).join('');
-    const letterWorkflow='<div class="letter-sequence-head"><div><small>Letters completed</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
-      '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>Current letter</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'" aria-label="Hear letter '+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example word</span><strong>'+esc(word)+'</strong><button type="button" data-speak="'+esc(word)+'">Hear word</button></div><p>Audio says the letter name only. Follow the guide with your finger and complete both shapes before moving forward.</p></article></div>'+
+    const letterWorkflow='<div class="letter-sequence-head"><div><small>'+(arabic?'الحروف المكتملة':'Letters completed')+'</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div>'+
+      '<div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>'+(arabic?'الحرف الحالي':'Current letter')+'</small><div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'" aria-label="Hear letter '+letter+'">▶ '+(arabic?'استمع':'Hear')+' '+letter+'</button><div class="letter-example-word"><span>'+(arabic?'كلمة مثال':'Example word')+'</span><strong>'+esc(word)+'</strong>'+(arabic?'<em dir="rtl">'+esc(LETTER_WORD_AR[word]||'')+'</em>':'')+'<button type="button" data-speak="'+esc(word)+'">'+(arabic?'استمع للكلمة':'Hear word')+'</button></div><p>'+(arabic?'استمع إلى اسم الحرف بالإنجليزية، اربط شكله بصوته وكلمة المثال، ثم ارسم الشكلين قبل الانتقال.':'Audio says the letter name only. Follow the guide with your finger and complete both shapes before moving forward.')+'</p></article></div>'+
       '<div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div>'+
-      '<div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?'This letter is already completed. You can review it or continue.':'Trace both forms. The app checks shape coverage and off-guide strokes before allowing completion.')+'</div>'+
+      '<div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?(arabic?'هذا الحرف مكتمل. يمكنك مراجعته أو المتابعة.':'This letter is already completed. You can review it or continue.'):(arabic?'تتبّع الشكلين. يتحقق التطبيق من تغطية الشكل والخروج عن المسار.':'Trace both forms. The app checks shape coverage and off-guide strokes before allowing completion.'))+'</div>'+
       '<div class="letter-complete-row"><button type="button" data-letter-complete="'+letter+'" data-letter-done="'+(done?'true':'false')+'" disabled>'+(done?'✓ '+letter+' completed':'Complete '+letter)+'</button><button type="button" data-letter-next '+(done?'':'disabled')+'>Next letter →</button></div>'+
       (allDone?'<a class="language-exam-cta" href="#language-examine"><span>✓</span><div><strong>Letters examination</strong><p>Continue when all letters are ready.</p></div><b>→</b></a>':'');
     return languageProcessPage(state,pos,'letters',[{item:{type:'sound'},markup:letterWorkflow}],'','language-letters-mobile');
@@ -904,7 +993,7 @@
   function videoUnderstandingPage(state,pos){
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
     const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
-    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=learningLanguage(state,pos.li).instruction,arabic=responseLanguage==='Arabic';
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=learningLanguage(state,pos.li).target,arabic=responseLanguage==='Arabic';
     const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
     const entries=items.map(item=>{
       let markup='';
@@ -942,7 +1031,7 @@
     const entries=items.map(item=>{
       let markup='';
       if(item.type==='dictation')markup='<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
-      else if(item.type==='speaking')markup='<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote>'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(item.body||'')+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(item.body||'')+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';
+      else if(item.type==='speaking'){const targetText=item.targetText||item.body||'';markup='<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote dir="'+(usesArabicBridge(state,pos.li)?'rtl':'ltr')+'">'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(targetText)+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(targetText)+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';}
       else markup=infoItemCard(item);
       return {item,markup};
     });
@@ -954,13 +1043,14 @@
   function grammarPage(){
     const state=languageState(),pos=activeLanguagePosition(state),data=currentLearningBox(state,pos);if(!data)return boxOneGate(state,pos,t('grammar'),t('grammarIntro'));
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'grammar');
+    const contentDirection=usesArabicBridge(state,pos.li)?'rtl':'ltr';
     const entries=items.map((item,index)=>{
       let markup='';
-      if(item.type==='rule')markup='<article class="language-rule-card primary language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Grammar rule')+'</small><h2>'+esc(item.title||'Grammar rule')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-examples">'+(item.example1?'<code>'+esc(item.example1)+'</code>':'')+(item.example2?'<code>'+esc(item.example2)+'</code>':'')+'</div></article>';
-      else if(item.type==='writing')markup='<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Write for the reader')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" rows="5" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
+      if(item.type==='rule')markup='<article class="language-rule-card primary language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Grammar rule')+'</small><h2>'+esc(item.title||'Grammar rule')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-examples" dir="ltr">'+(item.example1?'<code>'+esc(item.example1)+'</code>':'')+(item.example2?'<code>'+esc(item.example2)+'</code>':'')+'</div></article>';
+      else if(item.type==='writing')markup='<article class="language-rule-card language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Write for the reader')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" dir="ltr" rows="5" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
       else if(item.type==='info'){
-        const words=itemWords(item);
-        markup='<article class="language-rule-card language-content-item"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Information')+'</h2><p>'+esc(item.body||'')+'</p>'+(words.length?'<div class="language-word-row">'+words.map(word=>'<b>'+esc(word)+'</b>').join('')+'</div>':'')+'</article>';
+        const words=itemWords(item),pairs=itemWordPairs(item,state,pos);
+        markup='<article class="language-rule-card language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Information')+'</h2><p>'+esc(item.body||'')+'</p>'+(words.length?'<div class="language-word-row" dir="ltr">'+pairs.map(pair=>'<b><span>'+esc(pair.target)+'</span>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'</b>').join('')+'</div>':'')+'</article>';
       }
       else markup=infoItemCard(item);
       return {item,markup};
@@ -975,7 +1065,7 @@
     const id=keyBox(CEFR[pos.li].id,pos.step,data.box),module=state.modules[id]||{},notes=state.notes[id]||'',items=languagePageItems(pos.li,pos.step,pos.box,'review');
     const entries=items.map(item=>{
       let markup='';
-      if(item.type==='words')markup='<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Active vocabulary')+'</small><h2>'+esc(item.title||'Vocabulary')+'</h2><div class="language-vocab-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>';
+      if(item.type==='words')markup='<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Active vocabulary')+'</small><h2>'+esc(item.title||'Vocabulary')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-vocab-grid language-vocabulary-pairs">'+itemWordPairs(item,state,pos).map(pair=>'<button type="button" data-speak="'+esc(pair.target)+'"><span><strong>'+esc(pair.target)+'</strong>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'</span><b>▶</b></button>').join('')+'</div></article>';
       else if(item.type==='steps')markup='<article class="language-memory-card language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Learning trick')+'</small><h2>'+esc(item.title||'Learning method')+'</h2><p>'+esc(item.body||'')+'</p><ol>'+itemLines(item,'steps').map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></article>';
       else if(item.type==='notes')markup='<article class="language-memory-card notes language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||t('notes'))+'</small><h2>'+esc(item.title||'Notes')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-box-notes" rows="8" placeholder="'+esc(item.placeholder||'Notes…')+'">'+esc(notes)+'</textarea><button type="button" data-save-language-notes="'+esc(id)+'">'+t('save')+'</button></article>';
       else markup=infoItemCard(item);
@@ -1152,13 +1242,34 @@
     if(ctx.scope==='level')return 'The final step ends with one whole-level examination instead of a separate Step 5 final-box exam.';
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
-  function examTypeLabel(type){return ({mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'}[type]||'Single choice');}
-  function renderExamQuestion(q,index){
+  function examTypeLabel(type,arabic=false){
+    const labels=arabic?{mcq:'اختيار واحد','true-false':'صح أو خطأ','multi-select':'إجابات متعددة',fill:'إكمال الكلمة','short-answer':'إجابة مكتوبة','listen-choice':'اختيار سمعي','listen-fill':'إملاء سمعي',ordering:'بناء الجملة'}:{mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'};
+    return labels[type]||labels.mcq;
+  }
+  function examPrompt(prompt,arabic){
+    if(!arabic)return prompt;
+    const exact={
+      'Which sentence best demonstrates this box’s target grammar?':'أي جملة تطبق قاعدة هذا الصندوق بأفضل صورة؟',
+      'Which statement correctly describes this box’s grammar focus?':'أي عبارة تصف قاعدة هذا الصندوق بدقة؟',
+      'Listen once, then choose the sentence you heard.':'استمع مرة واحدة، ثم اختر الجملة التي سمعتها.',
+      'Complete the active-vocabulary word for this box.':'اكتب كلمة المفردات النشطة المطلوبة في هذا الصندوق.',
+      'Write the complete reader-ready model from this box.':'اكتب النموذج الإنجليزي الكامل الصحيح من هذا الصندوق.',
+      'What is the communicative function of this box?':'ما الوظيفة التواصلية لهذا الصندوق؟',
+      'Listen and transcribe the pronunciation focus exactly.':'استمع واكتب نموذج النطق كما تسمعه تماماً.',
+      'Which instruction best matches the writing task?':'أي تعليمات تطابق مهمة الكتابة؟',
+      'Build the model sentence in the correct order.':'رتّب كلمات الجملة الإنجليزية ترتيباً صحيحاً.',
+      'Select both valid review prompts.':'اختر طريقتي المراجعة الصحيحتين.'
+    };
+    if(exact[prompt])return exact[prompt];
+    if(prompt.startsWith('True or false:'))return 'صح أم خطأ: '+prompt.slice(14);
+    return prompt;
+  }
+  function renderExamQuestion(q,index,state,pos){
     const type=q.type||'mcq',qid=q.id||('question-'+index),name='q'+index;
-    const head='<div class="language-question-head"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type))+'</small><legend>'+esc(q.prompt)+'</legend></div></div>';
-    const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> Play audio</button>':'';
+    const arabic=usesArabicBridge(state,pos.li),head='<div class="language-question-head" dir="'+(arabic?'rtl':'ltr')+'"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type,arabic))+'</small><legend>'+esc(examPrompt(q.prompt,arabic))+'</legend></div></div>';
+    const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> '+(arabic?'تشغيل الصوت':'Play audio')+'</button>':'';
     let answer='';
-    if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>Your answer</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="Type your answer…"></label>';
+    if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
     else if(type==='ordering')answer='<div class="language-ordering" data-ordering="'+name+'"><div class="language-order-answer" data-order-answer aria-label="Your sentence"></div><div class="language-order-bank">'+(q.tokens||String(q.correct||'').split(/\s+/)).map(token=>'<button type="button" data-order-token="'+esc(token)+'">'+esc(token)+'</button>').join('')+'</div><input type="hidden" name="'+name+'"></div>';
     else if(type==='multi-select')answer='<div class="language-answer-options multiple">'+(q.options||[]).map(option=>'<label><input type="checkbox" name="'+name+'" value="'+esc(option)+'"><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
     else answer='<div class="language-answer-options">'+(q.options||[]).map(option=>'<label><input type="radio" name="'+name+'" value="'+esc(option)+'" required><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
@@ -1176,9 +1287,9 @@
     if(type==='ordering')return normalizeText(answer)===normalizeText(correct);
     return answer===correct;
   }
-  function examFormMarkup(questions,mode,passed){
+  function examFormMarkup(questions,mode,passed,state,pos){
     if(!questions.length)return '<div class="language-exam-prereqs"><strong>Exam unavailable</strong><span>Add at least one exam question from Content Control → Control the exam.</span></div>';
-    return '<form id="language-exam-form" data-exam-mode="'+mode+'" data-exam-stepper class="language-exam-form"><div class="language-exam-progress"><span data-exam-position>01 / '+questions.length+'</span><i><b data-exam-meter style="width:'+(100/questions.length)+'%"></b></i></div><div class="language-exam-question-list">'+questions.map(renderExamQuestion).join('')+'</div><p class="language-exam-step-message" data-exam-step-message aria-live="polite"></p><nav class="language-exam-step-nav"><button type="button" data-exam-previous disabled>←</button><button type="button" data-exam-next>→</button></nav><div class="language-exam-submit"><div><small>Complete</small><strong>'+questions.length+' answers</strong></div><button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button></div><div class="language-exam-result" id="language-exam-result" aria-live="polite"></div></form>';
+    return '<form id="language-exam-form" data-exam-mode="'+mode+'" data-exam-stepper class="language-exam-form"><div class="language-exam-progress"><span data-exam-position>01 / '+questions.length+'</span><i><b data-exam-meter style="width:'+(100/questions.length)+'%"></b></i></div><div class="language-exam-question-list">'+questions.map((q,index)=>renderExamQuestion(q,index,state,pos)).join('')+'</div><p class="language-exam-step-message" data-exam-step-message aria-live="polite"></p><nav class="language-exam-step-nav"><button type="button" data-exam-previous disabled>←</button><button type="button" data-exam-next>→</button></nav><div class="language-exam-submit"><div><small>Complete</small><strong>'+questions.length+' answers</strong></div><button class="btn btn-primary" type="submit" '+(passed?'disabled':'')+'>'+(passed?'✓ Exam passed':t('submitExam'))+'</button></div><div class="language-exam-result" id="language-exam-result" aria-live="polite"></div></form>';
   }
 
   function examinePage(){
@@ -1188,11 +1299,11 @@
     if(Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
       const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
       const challengePos={li,step:5,box:boxCount(li)};
-      return '<section class="language-course-page language-exam-process-page">'+processTop(state,challengePos,questions.length)+'<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>←</button>'+examFormMarkup(questions,'challenge',passed)+'</section>';
+      return '<section class="language-course-page language-exam-process-page">'+processTop(state,challengePos,questions.length)+'<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>←</button>'+examFormMarkup(questions,'challenge',passed,state,challengePos)+'</section>';
     }
     const ctx=naturalExamContext(pos.li,pos.step,pos.box),missing=languageAuthoringTarget?[]:assessmentMissing(state,ctx),ready=languageAuthoringTarget||missing.length===0,passed=assessmentPassed(state,ctx);
     const questions=ready?assessmentQuestions(ctx):[];
-    return '<section class="language-course-page language-exam-process-page">'+processTop(state,pos,questions.length||1)+(!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed))+'</section>';
+    return '<section class="language-course-page language-exam-process-page">'+processTop(state,pos,questions.length||1)+(!ready?'<div class="language-exam-prereqs"><strong>Still required</strong>'+missing.map(item=>'<span>'+esc(item)+'</span>').join('')+'</div>':examFormMarkup(questions,'natural',passed,state,pos))+'</section>';
   }
 
   let personalTimer=null;
@@ -1438,13 +1549,13 @@
     const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     if(!videoItem||!responseItem)return;
     const youtubeUrl=String(videoItem.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
-    const responseLanguage=learningLanguage(state,pos.li).instruction;
+    const responseLanguage=learningLanguage(state,pos.li).target;
     let watched=Boolean(state.watchedVideos[id]);
     const updateGate=()=>{
       const valid=videoResponseValid(responseLanguage,field.value);
       complete.disabled=complete.classList.contains('done')?false:!(validYouTube&&watched&&valid);
       if(!complete.classList.contains('done'))complete.textContent=!validYouTube?'Add a valid YouTube video link first':!watched?'Watch the YouTube video first':(valid?t('complete'):'Write a fuller response in '+responseLanguage);
-      if(feedback)feedback.textContent=valid?'Response length and language are ready.':(responseLanguage==='Arabic'?'اكتب شرحاً عربياً أطول يتضمن الفكرة الرئيسية وتفصيلين.':'Write a fuller English explanation with the main idea and supporting details.');
+      if(feedback)feedback.textContent=valid?'Response length and target language are ready.':'Write a fuller response in '+responseLanguage+' with the main idea and supporting details.';
     };
     watchedButton?.addEventListener('click',()=>{
       if(!validYouTube)return;
@@ -1548,7 +1659,7 @@
 
     document.querySelectorAll('[data-language-base]').forEach(button=>button.addEventListener('click',()=>{
       const base=button.dataset.languageBase;
-      if(!['Arabic','English'].includes(base))return;
+      if(!allowedBaseLanguages(courseTargetLanguage(languageState())).includes(base))return;
       updateLanguage(state=>{state.baseLanguage=base;});
       render();
     }));
