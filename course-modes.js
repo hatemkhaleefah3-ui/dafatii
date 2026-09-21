@@ -721,7 +721,7 @@
     if(page==='voice'){
       const pronunciationTarget=data.words[0];
       return [
-        {id:'pronunciation',type:'pronunciation',eyebrow:'Microphone pronunciation',title:'Pronounce: '+pronunciationTarget,targetText:pronunciationTarget,body:'Open the microphone and pronounce the requested word clearly. The browser must recognize the requested word before this activity passes.'},
+        {id:'pronunciation',type:'pronunciation',eyebrow:'Microphone pronunciation',title:'Pronounce: '+pronunciationTarget,targetText:pronunciationTarget,body:'Open the microphone and pronounce the requested word clearly. Gemini judges the actual recording; bad must be repeated, while moderate, good and very good are accepted.'},
         {id:'dictation',type:'dictation',eyebrow:'Listening → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
         {id:'speaking',type:'speaking',eyebrow:arabic?'التحدث بالإنجليزية':'Speaking',title:arabic?'عبّر عن المعنى بصوتك':'Speak the requested sentence',body:arabic?'قل بالإنجليزية: '+data.reversePrompt:data.reversePrompt,targetText:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'}
       ];
@@ -1240,7 +1240,7 @@
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'voice');
     const entries=items.map(item=>{
       let markup='';
-      if(item.type==='pronunciation')markup='<article class="language-practice-card pronunciation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Pronunciation')+'</small><h2>'+esc(item.title||'Pronounce the requested word')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-pronunciation-target"><strong>'+esc(item.targetText||'')+'</strong><button type="button" data-pronunciation-record data-pronunciation-target="'+esc(item.targetText||'')+'">🎙 Open microphone</button></div><input id="language-pronunciation-transcript" type="text" readonly aria-label="Recognized pronunciation"><p class="language-feedback" data-pronunciation-feedback></p></article>';
+      if(item.type==='pronunciation'){const pkey='box:'+id+':'+item.id,prating=String(state.pronunciationRatings[pkey]||'');markup='<article class="language-practice-card pronunciation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Pronunciation')+'</small><h2>'+esc(item.title||'Pronounce the requested word')+'</h2><p>'+esc(item.body||'')+'</p>'+pronunciationJudgeMarkup(item.targetText||'',pkey,'word',prating)+'</article>';}
       else if(item.type==='dictation')markup='<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
       else if(item.type==='speaking'){const targetText=item.targetText||item.body||'';markup='<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote dir="'+(usesArabicBridge(state,pos.li)?'rtl':'ltr')+'">'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(targetText)+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(targetText)+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';}
       else markup=infoItemCard(item);
@@ -1467,7 +1467,7 @@
     const arabic=usesArabicBridge(state,pos.li),head='<div class="language-question-head" dir="'+(arabic?'rtl':'ltr')+'"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type,arabic))+'</small><legend>'+esc(examPrompt(q.prompt,arabic))+'</legend></div></div>';
     const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> '+(arabic?'تشغيل الصوت':'Play audio')+'</button>':'';
     let answer='';
-    if(type==='speak')answer='<div class="language-exam-speak"><button type="button" data-exam-speak data-speak-target="'+esc(q.correct||'')+'">🎙 '+(arabic?'ابدأ النطق':'Start speaking')+'</button><label class="language-exam-text"><span>'+(arabic?'النص الذي التقطه المتصفح':'Recognized speech')+'</span><input type="text" name="'+name+'" autocomplete="off" readonly required placeholder="'+(arabic?'استخدم زر الميكروفون…':'Use the microphone button…')+'"></label><small data-exam-speak-status>'+(arabic?'يُقاس النطق عبر نص التعرّف على الكلام في المتصفح.':'Pronunciation is checked through the browser speech-recognition transcript.')+'</small></div>';
+    if(type==='speak')answer='<div class="language-exam-speak">'+pronunciationJudgeMarkup(q.correct||'','',String(q.correct||'').trim().split(/\s+/).length>1?'sentence':'word','',name)+'</div>';
     else if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
     else if(type==='ordering')answer='<div class="language-ordering" data-ordering="'+name+'"><div class="language-order-answer" data-order-answer aria-label="Your sentence"></div><div class="language-order-bank">'+(q.tokens||String(q.correct||'').split(/\s+/)).map(token=>'<button type="button" data-order-token="'+esc(token)+'">'+esc(token)+'</button>').join('')+'</div><input type="hidden" name="'+name+'"></div>';
     else if(type==='multi-select')answer='<div class="language-answer-options multiple">'+(q.options||[]).map(option=>'<label><input type="checkbox" name="'+name+'" value="'+esc(option)+'"><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
@@ -1482,7 +1482,7 @@
     }
     const answer=String(form.get(name)||'').trim(),correct=String(question.correct||'').trim();
     if(type==='fill')return normalizeText(answer)===normalizeText(correct);
-    if(type==='speak')return answerSimilarity(answer,correct)>=(String(question.correct||'').trim().split(/\s+/).length===1?.88:.78);
+    if(type==='speak')return geminiRatingAccepted(answer);
     if(type==='short-answer'||type==='listen-fill')return answerSimilarity(answer,correct)>=.82;
     if(type==='ordering')return normalizeText(answer)===normalizeText(correct);
     return answer===correct;
@@ -2017,7 +2017,8 @@
       const type=question.dataset.questionType||'mcq';
       if(type==='multi-select')return Boolean(question.querySelector('input[type="checkbox"]:checked'));
       if(type==='ordering')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
-      if(['fill','short-answer','listen-fill','speak'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
+      if(type==='speak')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
+      if(['fill','short-answer','listen-fill'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
       return Boolean(question.querySelector('input[type="radio"]:checked'));
     };
     const show=index=>{
@@ -2045,17 +2046,7 @@
     bindLearningProcess();
     bindExamStepper();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
-    document.querySelectorAll('[data-exam-speak]').forEach(button=>button.onclick=()=>{
-      const question=button.closest('.language-exam-question-item'),field=question?.querySelector('input[type="text"]'),status=question?.querySelector('[data-exam-speak-status]');
-      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!field)return;
-      if(!Recognition){field.readOnly=false;field.placeholder='Speech recognition is unavailable. Type what you said for fallback scoring.';if(status)status.textContent='Browser speech recognition is unavailable; typed fallback cannot directly assess pronunciation.';field.focus();return;}
-      const recognition=new Recognition();recognition.lang=speechLocale(courseTargetLanguage(languageState()));recognition.interimResults=false;recognition.maxAlternatives=1;
-      if(status)status.textContent='Listening…';
-      recognition.onresult=event=>{field.value=event.results[0][0].transcript;if(status)status.textContent='Captured. Continue when the recognized words match what you intended to say.';};
-      recognition.onerror=()=>{if(status)status.textContent='Recognition failed. Try speaking again.';};
-      recognition.start();
-    });
+    bindGeminiPronunciation();
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
 
@@ -2128,24 +2119,10 @@
     });
 
     const voiceComplete=document.querySelector('[data-language-module="voice"]');
-    let pronunciationPassed=false,dictationPassed=false,reversePassed=false;
+    const pronunciationJudge=document.querySelector('.language-practice-card.pronunciation [data-pronunciation-judge]');
+    let pronunciationPassed=pronunciationJudge?.dataset.pronunciationAccepted==='true',dictationPassed=false,reversePassed=false;
     const updateVoice=()=>{if(voiceComplete&&!voiceComplete.classList.contains('done')){voiceComplete.disabled=!(pronunciationPassed&&dictationPassed&&reversePassed);voiceComplete.textContent=voiceComplete.disabled?'Complete pronunciation, listening and speaking first':t('complete');}};
-    document.querySelector('[data-pronunciation-record]')?.addEventListener('click',event=>{
-      const target=String(event.currentTarget.dataset.pronunciationTarget||'').trim(),field=document.getElementById('language-pronunciation-transcript'),feedback=document.querySelector('[data-pronunciation-feedback]');
-      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!Recognition){if(feedback)feedback.textContent='Microphone speech recognition is not available in this browser. Pronunciation requires a supported browser.';return;}
-      const recognition=new Recognition();recognition.lang=speechLocale(courseTargetLanguage(languageState()));recognition.interimResults=false;recognition.maxAlternatives=1;
-      if(feedback)feedback.textContent='Listening… pronounce '+target+'.';
-      recognition.onresult=e=>{
-        const transcript=String(e.results[0][0].transcript||'').trim();if(field)field.value=transcript;
-        const single=normalizeText(target).split(' ').length===1,score=similarity(transcript,target);
-        pronunciationPassed=single?normalizeText(transcript)===normalizeText(target)||score>=.8:score>=.82;
-        if(feedback)feedback.textContent=pronunciationPassed?'✓ Pronunciation recognized: '+transcript:'Not recognized as '+target+'. Try the microphone again.';
-        updateVoice();
-      };
-      recognition.onerror=()=>{pronunciationPassed=false;if(feedback)feedback.textContent='Microphone recognition failed. Try again.';updateVoice();};
-      recognition.start();
-    });
+    pronunciationJudge?.addEventListener('dafatii:pronunciationgraded',event=>{pronunciationPassed=Boolean(event.detail?.accepted);updateVoice();});
     document.querySelector('[data-check-dictation]')?.addEventListener('click',event=>{
       const score=similarity(document.getElementById('language-dictation').value,event.currentTarget.dataset.checkDictation);
       dictationPassed=score>=.92;document.querySelector('[data-dictation-feedback]').textContent=dictationPassed?'Excellent match.':'Try again. Focus on every content word and ending.';updateVoice();
