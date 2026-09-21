@@ -24,7 +24,7 @@ assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
-assert.match(index, /quiet-design\.css\?v=26/, 'the consolidated presentation layer must be loaded');
+assert.match(index, /quiet-design\.css\?v=27/, 'the consolidated presentation layer must be loaded');
 assert.match(index, /device-layout\.js\?v=2/, 'device-aware navigation classification must load before rendering');
 assert.match(index, /icon-system\.js\?v=3/, 'the unified icon system must load before the interface');
 assert.match(index, /card-swipe\.js\?v=1/, 'the safe card gesture controller must be loaded');
@@ -33,7 +33,7 @@ assert.match(index, /content-controls\.js\?v=20260921-2/, 'the unified content c
 assert.match(index, /delete-manager\.css\?v=20260919-1/, 'the replacement delete manager presentation must be loaded');
 assert.match(index, /delete-manager\.js\?v=20260919-1/, 'the replacement delete manager controller must be loaded');
 assert.match(index, /student-suite\.js\?v=20260919-3/, 'student suite CRUD endpoints must use the unified content control build');
-assert.match(index, /quiet-shell\.js\?v=15/, 'the consolidated responsive shell must be loaded');
+assert.match(index, /quiet-shell\.js\?v=16/, 'the consolidated responsive shell must be loaded');
 assert.match(index, /translation-client\.js\?v=1/, 'the authenticated interface translator must be loaded');
 assert.match(index, /app\.js\?v=20260920-6/, 'the password recovery build must be loaded');
 assert.match(index, /onboarding-flow\.css\?v=20260918-1/, 'the sequential onboarding presentation must be loaded');
@@ -62,18 +62,17 @@ assert.match(quietDesign, /\.quiet-workspace\.chat-app-host>\.quiet-toolbar[\s\S
 assert.match(studentSocialCss, /\.chat-app-topbar/);assert.match(studentSocialCss, /\.chat-app-subnav/);assert.match(studentSocialCss, /\.chat-app-drawer/);assert.match(studentSocialCss, /\.chat-app-bottom/);
 
 assert.doesNotMatch(quietDesign, /Unified interaction system v8/, 'late override layers must not be appended to the canonical stylesheet');
-assert.match(quietDesign, /@media\(max-width:767px\).*\.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*width:min\(calc\(100% - 24px\),440px\);height:64px/s, 'mobile landing navigation must match the authenticated floating icon dock');
-assert.match(quietDesign, /@media\(min-width:768px\) and \(max-width:1199px\).*\.landing-nav\{position:fixed;inset-block:0;inset-inline-start:0/s, 'tablet landing navigation must use a side rail');
-assert.match(quietDesign, /\.landing-nav\{position:sticky;top:0/s, 'desktop landing navigation must remain above the page');
-assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*height:64px/s, 'phone user agents must force the shared bottom icon navigation');
-assert.match(quietDesign, /html\[data-device=tablet\] \.landing-nav\{position:fixed;inset-block:0/s, 'tablet user agents must force the side landing navigation');
-assert.match(quietDesign, /@media\(max-width:1100px\) and \(max-aspect-ratio:5\/8\).*\.landing-nav-tabs\{position:fixed;left:50%;right:auto;bottom:max\(10px,env\(safe-area-inset-bottom\)\);[^}]*height:64px/s, 'tall privacy-restricted phone containers need the shared bottom icon navigation');
-assert.ok(
-  quietDesign.lastIndexOf('@media(max-width:1100px) and (max-aspect-ratio:5/8)') > quietDesign.indexOf('.landing-nav{position:sticky;top:0'),
-  'the phone-shaped viewport fallback must come after the desktop navigation rule'
-);
-assert.match(quietDesign, /html\[data-device=mobile\] \.landing-nav\{[^}]*backdrop-filter:none;[^}]*contain:none\}/, 'mobile landing header must not create a fixed-position containing block');
-assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button');
+assert.match(quietDesign, /Desktop sidebar-only workspace \+ universal landing bottom navigation v27/, 'the canonical stylesheet must include the sidebar-only desktop shell');
+assert.match(quietDesign, /@media\(min-width:1200px\)\{[\s\S]*\.quiet-workspace>\.quiet-toolbar,[\s\S]*\.quiet-workspace>\.sub-nav,[\s\S]*display:none!important/s, 'desktop workspace must remove top and secondary navigation bars');
+assert.match(quietDesign, /\.quiet-workspace>\.quiet-sidebar\{[\s\S]*display:flex!important;[\s\S]*width:var\(--desktop-sidebar-w\)!important;[\s\S]*transform:none!important/s, 'desktop sidebar must remain permanently visible');
+assert.match(quietDesign, /body \.quiet-workspace>\.workspace-main,[\s\S]*margin-inline-start:var\(--desktop-sidebar-w\)!important;[\s\S]*width:calc\(100% - var\(--desktop-sidebar-w\)\)!important/s, 'desktop content must reserve layout space for the sidebar instead of sitting underneath it');
+assert.match(quietDesign, /html body \.landing-page \.landing-nav\{[\s\S]*position:fixed!important;[\s\S]*bottom:max\(12px,env\(safe-area-inset-bottom\)\)!important/s, 'landing navigation must be fixed at the bottom on desktop and tablet');
+assert.match(quietDesign, /html body \.landing-page \.landing-nav-tabs\{[\s\S]*position:relative!important;[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/s, 'landing navigation tabs must live inside the bottom bar on every device');
+assert.match(quietDesign, /@media\(max-width:767px\)[\s\S]*html body \.landing-page \.landing-nav\{[\s\S]*bottom:max\(8px,env\(safe-area-inset-bottom\)\)!important/s, 'phone landing navigation must stay at the bottom safe area');
+assert.match(quietShell, /data-quiet-menu/, 'the responsive sidebar needs an access button on tablet and mobile');
+assert.match(quietShell, /function sidebarContextNav\(currentRoute\)/, 'desktop sidebar must absorb page-specific secondary navigation');
+assert.match(quietShell, /quiet-sidebar-context/, 'desktop sidebar must render contextual section links');
+assert.match(quietShell, /if\(window\.matchMedia\('\(min-width:1200px\)'\)\.matches\)\{shell\.classList\.remove\('quiet-sidebar-collapsed'\);return;\}/, 'desktop sidebar control must not collapse the persistent sidebar');
 assert.match(quietShell, /currentRoute=route\(\),current=activePage\(\)/, 'return visibility must use the complete route while main navigation highlighting uses the section');
 assert.match(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(currentRoute\)\)/, 'the floating return control must be hidden only on exact primary navigation destinations');
 assert.doesNotMatch(quietShell, /showReturnButton=!primaryDestinations\.has\(normalizedRoute\(current\)\)/, 'secondary routes must not be mistaken for their primary section');

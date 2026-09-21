@@ -26,7 +26,7 @@ assert.strictEqual(classifyDevice({
   screenHeight: 1080,
   maxTouchPoints: 0,
   coarsePointer: false,
-}), "desktop", "desktop browsers must use the top navigation");
+}), "desktop", "desktop browsers must use the sidebar-only workspace layout");
 
 assert.strictEqual(classifyDevice({ viewportWidth: 640 }), "mobile");
 assert.strictEqual(classifyDevice({ viewportWidth: 900 }), "tablet");
