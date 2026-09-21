@@ -17,18 +17,22 @@ assert.match(js,/data-language-path="zero"[\s\S]*data-language-path="test"/,'enr
 
 assert.match(js,/const LANGUAGE_PAGE_ITEM_TYPES=Object\.freeze/,'focused page item types must exist');
 for(const type of ['vocabulary','sentence-vocabulary','image-vocabulary']) assert.ok(js.includes("id:'"+type+"'"),'vocabulary type missing '+type);
-for(const type of ['hearing-word','speaking-word','hearing-sentence','speaking-sentence']) assert.ok(js.includes("id:'"+type+"'"),'voice type missing '+type);
+for(const type of ['hearing-word','hearing-sentence']) assert.ok(js.includes("id:'"+type+"'"),'voice type missing '+type);
+for(const removed of ['speaking-word','speaking-sentence']) assert.ok(!js.includes("id:'"+removed+"'"),'removed speaking type must not be selectable '+removed);
 for(const type of ['grammar-law','grammar-note','grammar-example','grammar-training']) assert.ok(js.includes("id:'"+type+"'"),'grammar type missing '+type);
 for(const type of ['exam-single-choice','exam-multiple-choice','exam-true-false','exam-fill-blank','exam-short-answer']) assert.ok(js.includes("id:'"+type+"'"),'exam type missing '+type);
 
 assert.match(js,/function nativeMeaning\(item\)/,'vocabulary must choose a meaning from learner native language');
+assert.match(js,/class="language-auto-text" dir="auto"/,'language content must let English and Arabic text choose LTR or RTL direction automatically');
+assert.match(css,/\.language-content-page \.language-auto-text[\s\S]*unicode-bidi:plaintext[\s\S]*text-align:start/,'language item layouts must be bidi-safe for English and Arabic');
+assert.match(js,/content\.version=4/,'language content schema must migrate to version 4 after removing speaking item types');
 assert.match(js,/meaningEnglish[\s\S]*meaningArabic/,'vocabulary items must store both English and Arabic meanings');
 assert.match(js,/function renderVocabularyItem\(/,'vocabulary needs a dedicated renderer');
 
-assert.match(js,/function renderVoiceItem\(/,'listening and speaking need a dedicated renderer');
-assert.match(js,/voice-practice-actions/,'every voice card needs a shared practice action area');
-assert.match(js,/Open microphone/,'voice cards must visibly expose an open microphone action');
-assert.match(js,/const hear=[\s\S]*const mic=[\s\S]*speaking\?mic\+hear:hear\+mic/,'hearing and speaking items must both contain hearing and microphone actions');
+assert.match(js,/function renderVoiceItem\(/,'hearing content needs a dedicated renderer');
+assert.match(js,/voice-practice-actions/,'every hearing card needs a shared practice action area');
+assert.match(js,/Open microphone/,'hearing cards must retain microphone self-practice without a speaking item type');
+assert.match(js,/voice-practice-actions[^;]+hear\+mic/,'hearing items must contain pronunciation and microphone practice actions');
 assert.match(js,/SpeechSynthesisUtterance/,'hearing must use browser speech playback');
 assert.match(js,/navigator\.mediaDevices\?\.getUserMedia/,'microphone must open only after explicit action');
 assert.match(js,/new MediaRecorder\(stream\)/,'microphone practice must record audio');
@@ -70,7 +74,11 @@ assert.match(js,/duplicate turning number/,'Excel import must reject duplicate t
 assert.match(js,/index=entry\.turn-1/,'item turning number must map to the exact page position');
 assert.match(js,/existing&&existing\.type===incoming\.type/,'matching rows must preserve existing values when Excel feature cells are blank');
 assert.match(js,/voiceFileName/,'hearing items must preserve voice file names');
-assert.match(js,/imageFileName/,'image vocabulary must preserve image file names');
+assert.doesNotMatch(js,/imageFileName/,'image vocabulary must use direct image URLs only');
+assert.match(js,/function directImageUrl\(value\)/,'image vocabulary must sanitize direct HTTP(S) image links');
+assert.match(js,/data-language-direct-image/,'image vocabulary must render the direct remote image in the website');
+assert.match(js,/data-language-image-fallback/,'failed direct images need an in-card fallback');
+assert.match(js,/Direct image URL/,'Content Control must expose only a direct image URL for image vocabulary');
 assert.match(js,/content\.video\[key\]=\{\.\.\.current,\.\.\.entry\.config\}/,'YouTube Excel rows must update the box video configuration');
 assert.match(js,/Correct answers — one per line/,'multiple choice editor needs correct-answer fields');
 assert.match(js,/Answer \/ model answer/,'exam editor needs answer/model-answer field');
@@ -88,13 +96,13 @@ assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'language
 assert.match(js,/personal-focus-room/,'personal course behavior must remain');
 
 for(const selector of [
-  '.vocab-card','.voice-card','.voice-practice-actions','.mic-action.is-recording',
-  '.grammar-law-card','.grammar-thread',
+  '.vocab-card','.image-vocab-card','.voice-card','.voice-listen-stage','.voice-practice-actions','.mic-action.is-recording',
+  '.grammar-law-card','.grammar-thread-card',
   '.video-note-editor','.video-note-editor:focus-within',
-  '.exam-single-card','.exam-multiple-card','.exam-truefalse-card','.exam-fill-card','.exam-short-card'
+  '.exam-single-card','.exam-multiple-card','.exam-truefalse-card','.exam-fill-card','.exam-short-card','.premium-language-item'
 ]) assert.ok(css.includes(selector),'missing premium styling '+selector);
 
-assert.ok(index.includes('course-modes.css?v=20260921-15'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-15'),'course JS must be cache-busted');
+assert.ok(index.includes('course-modes.css?v=20260921-16'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-16'),'course JS must be cache-busted');
 
 console.log('language mic video editor and exam tests passed');
