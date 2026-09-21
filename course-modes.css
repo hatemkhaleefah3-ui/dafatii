@@ -396,3 +396,10 @@
   .mixer-console{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dual-waveforms{grid-template-columns:1fr}.studio-chat-bubble,.dialogue-turn{max-width:94%}
 }
+
+
+/* Reliable microphone interaction states v19 */
+.studio-mic-button.is-requesting{cursor:wait;border-color:rgba(255,255,255,.42);box-shadow:0 0 0 8px rgba(255,255,255,.035),0 0 42px rgba(124,92,255,.24),inset 0 0 20px rgba(124,92,255,.12)}
+.studio-mic-button.is-requesting .studio-mic-ring{border-top-color:var(--violet);animation:micSpin 1s linear infinite}
+.studio-mic-button[aria-busy="true"]{pointer-events:auto}
+.midnight-studio-card .voice-record-status{min-height:28px;max-width:620px;padding:7px 11px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.035);color:#b9c7e8;font-size:11px;line-height:1.4}

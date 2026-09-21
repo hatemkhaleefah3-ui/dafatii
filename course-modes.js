@@ -412,7 +412,7 @@
     return '<div class="studio-listen-control"><button type="button" class="studio-listen-button" data-studio-listen data-language-voice-file-id="'+esc(item?.voiceFileId||'')+'" data-studio-text="'+esc(text||'')+'"><span class="studio-listen-ring"></span><b>▶</b><strong>'+esc(label)+'</strong></button><div class="studio-listen-meta">'+studioWave()+'<button type="button" data-studio-speed="0.75">0.75×</button><button type="button" class="is-active" data-studio-speed="1">1×</button><small>Played <b data-studio-play-count>0</b> times</small></div></div>';
   }
   function studioMicControl(targetText=''){
-    return '<div class="studio-mic-zone"><button type="button" class="studio-mic-button mic-action" data-language-record><span class="studio-mic-ring" data-mic-countdown></span><b>●</b><strong>Open mic</strong></button><div class="studio-mic-level"><i data-mic-level></i></div><div class="voice-record-status" data-language-record-status>Microphone opens only after you press Open mic.</div><div class="studio-live-transcript" data-speech-live data-speech-target="'+esc(targetText)+'"></div><audio class="voice-playback" data-language-record-playback controls hidden></audio></div>';
+    return '<div class="studio-mic-zone"><button type="button" class="studio-mic-button mic-action" data-language-record><span class="studio-mic-ring" data-mic-countdown></span><b>●</b><strong>Open mic</strong></button><div class="studio-mic-level"><i data-mic-level></i></div><div class="voice-record-status" data-language-record-status>Press Open mic, then allow microphone access when your browser asks.</div><div class="studio-live-transcript" data-speech-live data-speech-target="'+esc(targetText)+'"></div><audio class="voice-playback" data-language-record-playback controls hidden></audio></div>';
   }
   function remoteImage(url,alt,klass=''){
     const src=directImageUrl(url);return src?'<img class="'+klass+'" data-language-direct-image src="'+esc(src)+'" alt="'+esc(alt||'')+'" loading="lazy" decoding="async" referrerpolicy="no-referrer"><div class="vocab-image-error" data-language-image-fallback hidden><strong>Image unavailable</strong><small>Check the direct image URL.</small></div>':'<div class="vocab-image-empty"><strong>No image link yet</strong><small>Add a direct image URL from Content Control.</small></div>';
@@ -525,8 +525,34 @@
     return '<section class="language-content-page language-item-process" data-language-content-page="'+esc(page)+'"><header class="language-page-head"><div><small>Level '+Math.max(1,Number(learner.currentLevel)||1)+' · Step '+Math.max(1,Number(learner.currentStep)||1)+' · Box '+Math.max(1,Number(learner.currentBox)||1)+'</small><h1>'+esc(routeTitle(page))+'</h1><p>'+esc(targetLanguage())+' · item '+(items.length?index+1:0)+' of '+items.length+'</p></div></header><div class="language-step-progress"><span style="width:'+Math.round(((index+1)/Math.max(items.length,1))*100)+'%"></span></div>'+markup+'<footer class="language-item-navigation"><button type="button" class="btn btn-ghost" data-language-item-prev '+(index===0?'disabled':'')+'>Previous</button><span>'+(items.length?index+1:0)+' / '+items.length+'</span><button type="button" class="btn btn-primary" data-language-item-next '+(!items.length||index>=items.length-1?'disabled':'')+'>Next</button></footer></section>';
   }
   function intermediatePage(page){const content=readLanguageContent(),items=itemsFor(content,page),learner=readLearnerState(),index=Math.max(0,Math.min(Math.max(items.length-1,0),Number(learner.intermediateIndex)||0)),item=items[index]||{id:'empty',title:'No content yet',body:'Use Content Control to add this process.'},zero=page==='language-start-zero',choices=Array.isArray(item.choices)?item.choices:[];return '<section class="language-intermediate-page" data-language-intermediate="'+esc(page)+'"><div class="language-step-progress"><span style="width:'+Math.round(((index+1)/Math.max(items.length,1))*100)+'%"></span></div><header><small>'+(zero?'Start from zero':'Level check')+' · '+(index+1)+' / '+Math.max(items.length,1)+'</small><h1>'+(zero?'Learn the letters':'Determine your starting level')+'</h1><p>'+(zero?'One letter at a time before Level 1 · Step 1.':'A simple step-by-step English check. No advanced grading rules are connected yet.')+'</p></header><article class="language-process-card"><small>'+esc(item.title||'Step')+'</small><h2>'+esc(item.title||'Step')+'</h2><p>'+esc(item.body||'')+'</p>'+(choices.length?'<div class="language-test-choices">'+choices.map((choice,i)=>'<button type="button" data-language-answer="'+i+'">'+esc(choice)+'</button>').join('')+'</div>':'')+'</article><footer><button type="button" class="btn btn-ghost" data-language-step-prev '+(index===0?'disabled':'')+'>Previous</button>'+(index<items.length-1?'<button type="button" class="btn btn-primary" data-language-step-next>Next</button>':'<button type="button" class="btn btn-primary" data-language-step-finish>'+(zero?'Start Level 1 · Step 1':'Finish level check')+'</button>')+'</footer></section>';}
-  let activeLanguageRecorder=null,activeLanguageStream=null,activeLanguageRecordingUrl='',activeLanguageHearingAudio=null,activeLanguageRecognition=null,activeLanguageAudioContext=null,activeLanguageMeterFrame=0;
-  function stopLanguageRecorder(){try{if(activeLanguageRecorder&&activeLanguageRecorder.state!=='inactive')activeLanguageRecorder.stop();}catch{}try{activeLanguageRecognition?.stop?.();}catch{}try{activeLanguageStream?.getTracks?.().forEach(track=>track.stop());}catch{}try{cancelAnimationFrame(activeLanguageMeterFrame);}catch{}try{activeLanguageAudioContext?.close?.();}catch{}activeLanguageRecorder=null;activeLanguageStream=null;activeLanguageRecognition=null;activeLanguageAudioContext=null;}
+  let activeLanguageRecorder=null,activeLanguageStream=null,activeLanguageRecordingUrl='',activeLanguageHearingAudio=null,activeLanguageRecognition=null,activeLanguageAudioContext=null,activeLanguageMeterFrame=0,activeLanguageMicButton=null;
+  function setMicButtonState(button,state,label){
+    if(!button)return;button.dataset.micState=state;button.dataset.recording=state==='recording'?'1':'0';button.classList.toggle('is-recording',state==='recording');button.classList.toggle('is-requesting',state==='requesting'||state==='countdown'||state==='stopping');button.setAttribute('aria-busy',String(state==='requesting'||state==='countdown'||state==='stopping'));const strong=button.querySelector('strong');if(strong)strong.textContent=label;
+  }
+  function stopLanguageRecorder(){
+    const recorder=activeLanguageRecorder,stream=activeLanguageStream,button=activeLanguageMicButton;
+    try{if(recorder&&recorder.state!=='inactive')recorder.stop();}catch{}
+    try{activeLanguageRecognition?.stop?.();}catch{}
+    try{stream?.getTracks?.().forEach(track=>track.stop());}catch{}
+    try{cancelAnimationFrame(activeLanguageMeterFrame);}catch{}
+    try{activeLanguageAudioContext?.close?.();}catch{}
+    if(button&&button.dataset.micState!=='stopping')setMicButtonState(button,'idle','Open mic');
+    activeLanguageRecorder=null;activeLanguageStream=null;activeLanguageRecognition=null;activeLanguageAudioContext=null;activeLanguageMicButton=null;
+  }
+  async function microphonePermissionState(){
+    try{if(!navigator.permissions?.query)return'unknown';const result=await navigator.permissions.query({name:'microphone'});return String(result?.state||'unknown');}catch{return'unknown';}
+  }
+  function legacyGetUserMedia(constraints){
+    const legacy=navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia;
+    if(!legacy)return Promise.reject(Object.assign(new Error('Microphone API unavailable'),{name:'NotSupportedError'}));
+    return new Promise((resolve,reject)=>legacy.call(navigator,constraints,resolve,reject));
+  }
+  async function requestLanguageMicrophone(){
+    if(window.isSecureContext===false)throw Object.assign(new Error('Microphone requires a secure HTTPS page.'),{name:'SecurityError'});
+    const constraints={audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false};
+    if(navigator.mediaDevices?.getUserMedia)return navigator.mediaDevices.getUserMedia(constraints);
+    return legacyGetUserMedia(constraints);
+  }
   function stopLanguageHearingAudio(){try{activeLanguageHearingAudio?.pause?.();if(activeLanguageHearingAudio)activeLanguageHearingAudio.src='';}catch{}activeLanguageHearingAudio=null;}
   function playLanguageSpeech(text,status,rate=.86,locale=''){
     if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){if(status)status.textContent='Speech playback is not supported by this browser.';return;}
@@ -551,18 +577,49 @@
   }
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   async function toggleLanguageRecording(button){
-    const card=button.closest('.voice-card, .dialogue-turn'),root=button.closest('.voice-card'),status=card?.querySelector('[data-language-record-status]'),playback=card?.querySelector('[data-language-record-playback]'),countdown=card?.querySelector('[data-mic-countdown]');
-    if(button.dataset.recording==='1'){try{activeLanguageRecorder?.stop();}catch{}button.dataset.recording='0';button.classList.remove('is-recording');button.querySelector('strong').textContent='Stop';if(status)status.textContent='Processing your recording…';return;}
-    if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){if(status)status.textContent='Microphone recording is not supported by this browser.';return;}
+    if(!button||!button.isConnected)return;
+    const card=button.closest('.dialogue-turn')||button.closest('.voice-card'),root=button.closest('.voice-card'),status=card?.querySelector('[data-language-record-status]'),playback=card?.querySelector('[data-language-record-playback]'),countdown=card?.querySelector('[data-mic-countdown]'),state=String(button.dataset.micState||'idle');
+    if(state==='requesting'||state==='countdown'||state==='stopping')return;
+    if(state==='recording'){
+      if(activeLanguageMicButton!==button||!activeLanguageRecorder){setMicButtonState(button,'idle','Open mic');if(status)status.textContent='Recording state was reset. Press Open mic to try again.';return;}
+      setMicButtonState(button,'stopping','Processing…');if(status)status.textContent='Finishing your recording…';try{activeLanguageRecorder.stop();}catch{stopLanguageRecorder();if(status)status.textContent='Recording stopped. Press Open mic to retry.';}return;
+    }
+    if(typeof MediaRecorder==='undefined'){if(status)status.textContent='Audio recording is not supported by this browser. Try a current version of Chrome, Edge, Firefox, or Safari.';return;}
+    if(window.isSecureContext===false){if(status)status.textContent='Microphone access requires HTTPS. Open the secure version of this site and retry.';return;}
     stopLanguageRecorder();stopLanguageHearingAudio();if(activeLanguageRecordingUrl){URL.revokeObjectURL(activeLanguageRecordingUrl);activeLanguageRecordingUrl='';}
+    setMicButtonState(button,'requesting','Allow microphone');if(status)status.textContent='Waiting for microphone permission…';
+    const permission=await microphonePermissionState();
+    if(permission==='denied'){setMicButtonState(button,'idle','Open mic');if(status)status.textContent='Microphone access is blocked for this site. Allow microphone permission in your browser site settings, then press Open mic again.';return;}
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true}),chunks=[],recorder=new MediaRecorder(stream);activeLanguageStream=stream;activeLanguageRecorder=recorder;startMicMeter(stream,card);
-      for(let n=3;n>=1;n--){if(countdown)countdown.textContent=String(n);if(status)status.textContent='Get ready… '+n;await wait(450);}if(countdown)countdown.textContent='';
-      activeLanguageRecognition=startLanguageRecognition(root||card);
+      const stream=await requestLanguageMicrophone();
+      if(!button.isConnected){stream.getTracks().forEach(track=>track.stop());return;}
+      const chunks=[],recorder=new MediaRecorder(stream);activeLanguageStream=stream;activeLanguageRecorder=recorder;activeLanguageMicButton=button;startMicMeter(stream,card);
+      setMicButtonState(button,'countdown','Get ready');
+      for(let n=3;n>=1;n--){if(!button.isConnected){stream.getTracks().forEach(track=>track.stop());return;}if(countdown)countdown.textContent=String(n);if(status)status.textContent='Get ready… '+n;await wait(450);}
+      if(countdown)countdown.textContent='';
       recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
-      recorder.onstop=()=>{try{activeLanguageRecognition?.stop?.();}catch{}const blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});activeLanguageRecordingUrl=URL.createObjectURL(blob);if(playback){playback.src=activeLanguageRecordingUrl;playback.hidden=false;}stream.getTracks().forEach(track=>track.stop());try{cancelAnimationFrame(activeLanguageMeterFrame);}catch{}try{activeLanguageAudioContext?.close?.();}catch{}activeLanguageStream=null;activeLanguageRecorder=null;activeLanguageRecognition=null;activeLanguageAudioContext=null;button.dataset.recording='0';button.classList.remove('is-recording');button.querySelector('strong').textContent='Retry';if(status)status.textContent='Recording ready. Play it back and compare.';};
-      recorder.start();button.dataset.recording='1';button.classList.add('is-recording');button.querySelector('strong').textContent='Stop';if(status)status.textContent='Recording…';}
-    catch(error){button.dataset.recording='0';button.classList.remove('is-recording');if(status)status.textContent=error?.name==='NotAllowedError'?'Microphone permission was not granted.':'The microphone could not be opened.';}
+      recorder.onerror=()=>{if(status)status.textContent='The browser stopped the recording unexpectedly. Press Open mic to retry.';setMicButtonState(button,'idle','Retry');};
+      recorder.onstop=()=>{
+        try{activeLanguageRecognition?.stop?.();}catch{}
+        const blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});
+        if(blob.size>0){activeLanguageRecordingUrl=URL.createObjectURL(blob);if(playback){playback.src=activeLanguageRecordingUrl;playback.hidden=false;}}
+        stream.getTracks().forEach(track=>track.stop());try{cancelAnimationFrame(activeLanguageMeterFrame);}catch{}try{activeLanguageAudioContext?.close?.();}catch{}
+        activeLanguageStream=null;activeLanguageRecorder=null;activeLanguageRecognition=null;activeLanguageAudioContext=null;activeLanguageMicButton=null;
+        setMicButtonState(button,'idle','Retry');if(status)status.textContent=blob.size>0?'Recording ready. Play it back, then retry if needed.':'No audio was captured. Check your microphone and press Retry.';
+      };
+      recorder.start(250);
+      activeLanguageRecognition=startLanguageRecognition(root||card);
+      setMicButtonState(button,'recording','Stop recording');if(status)status.textContent='Recording… press Stop recording when you finish.';
+    }catch(error){
+      stopLanguageRecorder();setMicButtonState(button,'idle','Open mic');
+      const name=String(error?.name||'');
+      if(status)status.textContent=
+        name==='NotAllowedError'||name==='PermissionDeniedError'?'Microphone permission was not granted. Allow microphone for this site in browser settings and retry.':
+        name==='NotFoundError'||name==='DevicesNotFoundError'?'No microphone was found. Connect or enable a microphone and retry.':
+        name==='NotReadableError'||name==='TrackStartError'?'The microphone is busy or unavailable. Close other apps using it and retry.':
+        name==='SecurityError'?'Microphone access requires the secure HTTPS version of this site.':
+        'The microphone could not be opened. Check browser microphone permission and retry.';
+    }
   }
   const normalizedAnswer=value=>String(value||'').toLocaleLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu,'').replace(/\s+/g,' ').trim();
   function similarity(a,b){a=normalizedAnswer(a);b=normalizedAnswer(b);if(!a&&!b)return 1;if(!a||!b)return 0;const rows=b.length+1,cols=a.length+1,prev=Array.from({length:cols},(_,i)=>i),curr=new Array(cols);for(let r=1;r<rows;r++){curr[0]=r;for(let c=1;c<cols;c++)curr[c]=Math.min(curr[c-1]+1,prev[c]+1,prev[c-1]+(a[c-1]===b[r-1]?0:1));for(let c=0;c<cols;c++)prev[c]=curr[c];}return 1-prev[a.length]/Math.max(a.length,b.length);}
@@ -594,7 +651,8 @@
   function setupStudioExercises(){
     document.querySelectorAll('[data-studio-speed]').forEach(button=>button.addEventListener('click',()=>{button.parentElement.querySelectorAll('[data-studio-speed]').forEach(b=>b.classList.remove('is-active'));button.classList.add('is-active');}));
     document.querySelectorAll('[data-studio-listen]').forEach(button=>button.addEventListener('click',()=>playStudioAudio(button)));
-    document.querySelectorAll('[data-language-record]').forEach(button=>button.addEventListener('click',()=>toggleLanguageRecording(button)));
+    const studioRoot=document.querySelector('[data-language-content-page="language-voice"]');
+    studioRoot?.addEventListener('click',event=>{const button=event.target.closest?.('[data-language-record]');if(!button||!studioRoot.contains(button))return;event.preventDefault();event.stopPropagation();toggleLanguageRecording(button);});
     document.querySelectorAll('[data-studio-choice]').forEach(button=>button.addEventListener('click',()=>{const correct=normalizedAnswer(button.dataset.studioChoice)===normalizedAnswer(button.dataset.studioAnswer);button.classList.add(correct?'is-correct':'is-wrong');setExerciseFeedback(button.closest('.voice-card'),correct?'Correct text selected.':'Listen again and compare.',correct);}));
     document.querySelectorAll('[data-studio-image-choice]').forEach(button=>button.addEventListener('click',()=>{const correct=String(Number(button.dataset.studioImageChoice)+1)===String(button.dataset.studioAnswer)||String(button.dataset.studioImageChoice)===String(button.dataset.studioAnswer);button.classList.add(correct?'is-correct':'is-wrong');setExerciseFeedback(button.closest('.voice-card'),correct?'Correct image — cyan lock.':'That image does not match the audio.',correct);}));
     document.querySelectorAll('[data-native-audio-choice]').forEach(button=>button.addEventListener('click',()=>{const correct=normalizedAnswer(button.dataset.nativeAudioChoice)===normalizedAnswer(button.dataset.studioAnswer);button.closest('.mixer-channel')?.classList.add(correct?'is-correct':'is-wrong');setExerciseFeedback(button.closest('.voice-card'),correct?'Correct channel selected.':'Compare the native clips again.',correct);}));
