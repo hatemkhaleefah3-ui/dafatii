@@ -1,13 +1,43 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 5;
+  const META_VERSION = 6;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
-  const LANGUAGE_ROUTES = ['language-home','language-letters','language-voice','language-grammar','language-review','language-examine'];
+  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-review','language-examine'];
+  const LETTER_GATE_ROUTES = ['language-home','language-letter-learn','language-letter-exam'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
   const LETTER_SPEECH = {A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'ef',G:'jee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'ar',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
   const LETTER_WORD_AR = {apple:'تفاحة',book:'كتاب',cat:'قطة',door:'باب',egg:'بيضة',fish:'سمكة',green:'أخضر',home:'منزل',ice:'ثلج',juice:'عصير',key:'مفتاح',lamp:'مصباح',moon:'قمر',name:'اسم',orange:'برتقالة',pen:'قلم',queen:'ملكة',room:'غرفة',sun:'شمس',table:'طاولة',umbrella:'مظلة',voice:'صوت',water:'ماء','x-ray':'أشعة سينية',yellow:'أصفر',zebra:'حمار وحشي'};
+  const ENGLISH_ARABIC_LETTER_BRIDGE = [
+    {letter:'A',arabic:'',sound:'/æ/, /eɪ/',special:true,note:'English vowel sounds do not map to one Arabic letter.'},
+    {letter:'B',arabic:'ب',sound:'/b/'},
+    {letter:'C',arabic:'',sound:'/k/ or /s/',special:true,note:'C changes sound by word; learn it as a special English letter.'},
+    {letter:'D',arabic:'د',sound:'/d/'},
+    {letter:'E',arabic:'',sound:'/e/, /iː/',special:true,note:'English vowel sounds do not map to one Arabic letter.'},
+    {letter:'F',arabic:'ف',sound:'/f/'},
+    {letter:'G',arabic:'',sound:'/g/ or /dʒ/',special:true,note:'G has no single standard-Arabic equivalent and can change sound.'},
+    {letter:'H',arabic:'ه',sound:'/h/'},
+    {letter:'I',arabic:'',sound:'/ɪ/, /aɪ/',special:true,note:'English vowel sounds do not map to one Arabic letter.'},
+    {letter:'J',arabic:'ج',sound:'/dʒ/'},
+    {letter:'K',arabic:'ك',sound:'/k/'},
+    {letter:'L',arabic:'ل',sound:'/l/'},
+    {letter:'M',arabic:'م',sound:'/m/'},
+    {letter:'N',arabic:'ن',sound:'/n/'},
+    {letter:'O',arabic:'',sound:'/ɒ/, /oʊ/',special:true,note:'English vowel sounds do not map to one Arabic letter.'},
+    {letter:'P',arabic:'',sound:'/p/',special:true,note:'Standard Arabic has no native /p/ letter; distinguish it from ب /b/.'},
+    {letter:'Q',arabic:'',sound:'/kw/',special:true,note:'English Q is normally learned with /kw/ and has no one-letter Arabic match.'},
+    {letter:'R',arabic:'ر',sound:'/r/',approximate:true,note:'The English R sound is not identical to Arabic ر, but it is the closest bridge.'},
+    {letter:'S',arabic:'س',sound:'/s/'},
+    {letter:'T',arabic:'ت',sound:'/t/'},
+    {letter:'U',arabic:'',sound:'/ʌ/, /juː/',special:true,note:'English vowel sounds do not map to one Arabic letter.'},
+    {letter:'V',arabic:'',sound:'/v/',special:true,note:'Standard Arabic has no native /v/ letter; distinguish it from ف /f/.'},
+    {letter:'W',arabic:'و',sound:'/w/'},
+    {letter:'X',arabic:'',sound:'/ks/',special:true,note:'X usually represents a sound pair rather than one Arabic-letter sound.'},
+    {letter:'Y',arabic:'ي',sound:'/j/',approximate:true,note:'This bridge applies when Y is the consonant /j/ as in yes.'},
+    {letter:'Z',arabic:'ز',sound:'/z/'}
+  ];
+  const LETTER_EXAM_ORDER = ['D','B','F','J','K','M','S','T','V','P','H','N','R','W','Y','Z','A','E','I','O','U','C','G','Q','X','L'];
   const ARABIC_VOCABULARY = {
     hello:'مرحباً',name:'اسم',friend:'صديق',family:'عائلة',morning:'صباح',evening:'مساء',school:'مدرسة',teacher:'معلّم',student:'طالب',book:'كتاب',house:'بيت',room:'غرفة',water:'ماء',bread:'خبز',market:'سوق',street:'شارع',bus:'حافلة',today:'اليوم',tomorrow:'غداً',happy:'سعيد',tired:'متعب',small:'صغير',large:'كبير',near:'قريب',far:'بعيد',help:'مساعدة',learn:'يتعلّم',write:'يكتب',listen:'يستمع',speak:'يتحدث',
     receipt:'إيصال',reservation:'حجز',journey:'رحلة',platform:'رصيف',schedule:'جدول',appointment:'موعد',borrow:'يستعير',return:'يعيد',recommend:'يوصي',prefer:'يفضّل',enough:'كافٍ',several:'عدّة',usually:'عادةً',recently:'مؤخراً',already:'بالفعل',yet:'بعد',healthy:'صحي',exercise:'تمرين',service:'خدمة',repair:'إصلاح',message:'رسالة',website:'موقع إلكتروني',plan:'خطة',decide:'يقرر',compare:'يقارن',expensive:'غالي',comfortable:'مريح',available:'متاح',probably:'على الأرجح',experience:'تجربة',
@@ -67,7 +97,7 @@
     'Rhetorical conditionals':['الشرط البلاغي','استخدم القلب وprovided that وassuming that وbut for لصياغة شروط متقدمة بإيجاز.'],
     'Punctuation as syntax':['الترقيم بوصفه بناءً نحوياً','استخدم النقطتين والفاصلة المنقوطة والشرطة والأقواس لإظهار البنية المنطقية.']
   };
-  const TOTAL_LANGUAGE_BOXES = 5*26 + 4*5*25;
+  const TOTAL_LANGUAGE_BOXES = 5*5*25;
   const LANGUAGE_FUNCTIONS = ['introducing','identifying','describing','asking for information','answering precisely','comparing','sequencing','locating','expressing time','expressing quantity','stating preferences','expressing ability','expressing obligation','giving reasons','explaining results','expressing conditions','contrasting ideas','describing experience','making plans','giving instructions','stating opinions','supporting with evidence','correcting meaning','summarizing','reflecting'];
   const CEFR = [
     {
@@ -209,7 +239,7 @@
     return {
       version:META_VERSION,targetLanguage:'English',baseLanguage:'',selectedLevel:0,selectedStep:1,selectedBox:1,
       passedBoxes:[],passedSteps:[],passedLevels:[],languagePassed:false,
-      modules:{},letterProgress:{},activeLetterByStep:{},videoResponses:{},watchedVideos:{},notes:{},examHistory:[],
+      modules:{},letterProgress:{},activeLetterByStep:{},letterGateProgress:[],activeGateLetter:'D',letterGatePassed:false,videoResponses:{},watchedVideos:{},notes:{},examHistory:[],
       onboardingComplete:false,placementPending:false,placementResult:null,entryLevel:0,challengeLevel:null
     };
   }
@@ -233,6 +263,42 @@
     value.baseLanguage='';value.onboardingComplete=true;value.placementPending=false;value.placementResult=null;value.entryLevel=0;value.challengeLevel=null;
     return value;
   }
+  function migrateEnglishLetterGateV6(value,previousVersion){
+    if(previousVersion>=6)return value;
+    const oldModules=value.modules&&typeof value.modules==='object'?value.modules:{};
+    const oldNotes=value.notes&&typeof value.notes==='object'?value.notes:{};
+    const shiftBoxMap=input=>{
+      const out={};
+      Object.entries(input||{}).forEach(([key,item])=>{
+        const match=/^A1:(\d+):(\d+)$/.exec(key);
+        if(!match){out[key]=item;return;}
+        const box=Number(match[2]);
+        if(box<=1)return;
+        out['A1:'+match[1]+':'+(box-1)]=item;
+      });
+      return out;
+    };
+    value.modules=shiftBoxMap(oldModules);
+    value.notes=shiftBoxMap(oldNotes);
+    value.passedBoxes=arrayUnique((Array.isArray(value.passedBoxes)?value.passedBoxes:[]).flatMap(key=>{
+      const match=/^A1:(\d+):(\d+)$/.exec(key);
+      if(!match)return [key];
+      const box=Number(match[2]);
+      return box>1?['A1:'+match[1]+':'+(box-1)]:[];
+    }));
+    const legacyLetterProgress=value.letterProgress&&typeof value.letterProgress==='object'?value.letterProgress:{};
+    const learned=arrayUnique(Object.values(legacyLetterProgress).flatMap(list=>Array.isArray(list)?list:[]).filter(letter=>LETTERS.includes(letter)));
+    const legacyPassed=[1,2,3,4,5].some(step=>{
+      const practiced=legacyLetterProgress[keyStep('A1',step)]||[];
+      return LETTERS.every(letter=>practiced.includes(letter))&&Boolean(oldModules[keyBox('A1',step,1)]?.exam);
+    });
+    value.letterGateProgress=arrayUnique([...(Array.isArray(value.letterGateProgress)?value.letterGateProgress:[]),...learned]);
+    value.letterGatePassed=Boolean(value.letterGatePassed||legacyPassed);
+    value.activeGateLetter=LETTERS.includes(value.activeGateLetter)?value.activeGateLetter:(LETTERS.find(letter=>!value.letterGateProgress.includes(letter))||'D');
+    if(Number(value.selectedLevel)===0)value.selectedBox=Math.max(1,(Number(value.selectedBox)||1)-1);
+    return value;
+  }
+
   function languageState(){
     let stored=window.DafatiiData.readJSON(progressKey(),null);
     if(!stored){
@@ -243,6 +309,8 @@
       }
     }
     const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
+    const previousVersion=Number(value.version)||0;
+    migrateEnglishLetterGateV6(value,previousVersion);
     value.version=META_VERSION;
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
     value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
@@ -251,6 +319,9 @@
     value.modules=value.modules&&typeof value.modules==='object'?value.modules:{};
     value.letterProgress=value.letterProgress&&typeof value.letterProgress==='object'?value.letterProgress:{};
     value.activeLetterByStep=value.activeLetterByStep&&typeof value.activeLetterByStep==='object'?value.activeLetterByStep:{};
+    value.letterGateProgress=Array.isArray(value.letterGateProgress)?arrayUnique(value.letterGateProgress.filter(letter=>LETTERS.includes(letter))):[];
+    value.activeGateLetter=LETTERS.includes(value.activeGateLetter)?value.activeGateLetter:(LETTERS.find(letter=>!value.letterGateProgress.includes(letter))||'D');
+    value.letterGatePassed=Boolean(value.letterGatePassed);
     value.videoResponses=value.videoResponses&&typeof value.videoResponses==='object'?value.videoResponses:{};
     value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
@@ -435,9 +506,9 @@
     },true);
   }
 
-  function boxCount(li){ return li===0 ? 26 : 25; }
-  function firstLearningBox(li){ return li===0 ? 2 : 1; }
-  function isLetterBox(li,box){ return li===0 && box===1; }
+  function boxCount(){ return 25; }
+  function firstLearningBox(){ return 1; }
+  function isLetterBox(){ return false; }
   function letterProgressKey(li,step){ return keyStep(CEFR[li].id,step); }
   function isBoxPassed(state,li,step,box){ return state.passedBoxes.includes(keyBox(CEFR[li].id,step,box)); }
   function isStepPassed(state,li,step){ return state.passedSteps.includes(keyStep(CEFR[li].id,step)); }
@@ -853,6 +924,45 @@
     return '<header class="language-page-head"><div><small>'+esc(kicker)+'</small><h1>'+esc(title)+'</h1><p>'+esc(description)+'</p></div><div class="language-context"><button type="button" data-language-ui-switch>'+(lang()==='ar'?'EN':'ع')+'</button><span>'+level.id+'</span><span>'+t('step')+' '+pos.step+'</span><span>'+t('box')+' '+pos.box+'</span></div></header>';
   }
 
+  function isEnglishLetterGate(state){return languageIdentity(courseTargetLanguage(state))==='English';}
+  function letterGateRequired(state){return isEnglishLetterGate(state)&&Boolean(state.baseLanguage)&&!state.letterGatePassed;}
+  function letterBridge(letter){return ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>item.letter===String(letter||'').toUpperCase())||ENGLISH_ARABIC_LETTER_BRIDGE[0];}
+  function letterGateExamQuestions(state){
+    const attempts=state.examHistory.filter(item=>item.scope==='letters-gate').length;
+    const start=(attempts*10)%LETTER_EXAM_ORDER.length;
+    return Array.from({length:10},(_,index)=>{
+      const letter=LETTER_EXAM_ORDER[(start+index)%LETTER_EXAM_ORDER.length],bridge=letterBridge(letter);
+      return {...bridge,kind:index%2?'lower':'upper',index};
+    });
+  }
+  function letterGatePage(state){
+    const learned=state.letterGateProgress.length;
+    return '<section class="language-course-page letter-gate-page"><header class="letter-gate-hero"><small>Arabic → English · prerequisite</small><h1>English letters before the course</h1><p>Match English letters to familiar Arabic sounds, then prove you can draw them. You can learn first or go directly to the 10-question drawing exam.</p></header><div class="letter-gate-actions"><button type="button" data-letter-gate-learn><span>Aa</span><small>Learn first</small><h2>Learn the letters</h2><p>'+learned+' / 26 practiced · matched sounds such as د ↔ D are taught first-class; English-only sounds are marked special.</p><b>Open learning →</b></button><button type="button" data-letter-gate-exam><span>10</span><small>Direct path</small><h2>Examine the letters</h2><p>Ten different drawing questions. Passing the exam unlocks the normal English course navigation and pages.</p><b>Start exam →</b></button></div></section>';
+  }
+  function letterGateLearnPage(state){
+    const practiced=state.letterGateProgress||[],firstMissing=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!practiced.includes(item.letter))?.letter||'A';
+    const stored=state.activeGateLetter,allowedStored=practiced.includes(stored)||stored===firstMissing;
+    const letter=allowedStored?stored:firstMissing,bridge=letterBridge(letter),lower=letter.toLowerCase(),word=LETTER_WORDS[letter],done=practiced.includes(letter),allDone=practiced.length===26;
+    const selectors=ENGLISH_ARABIC_LETTER_BRIDGE.map(item=>{
+      const itemDone=practiced.includes(item.letter),allowed=itemDone||item.letter===firstMissing;
+      return '<button type="button" data-gate-letter-select="'+item.letter+'" '+(allowed?'':'disabled')+' class="'+(item.letter===letter?'active ':'')+(itemDone?'done':'')+'"><strong>'+item.letter+'</strong><span>'+(item.arabic||'•')+'</span><b>'+(itemDone?'✓':allowed?'':'🔒')+'</b></button>';
+    }).join('');
+    const bridgeMarkup=bridge.special
+      ? '<div class="letter-sound-bridge special"><span lang="ar" dir="rtl">صوت خاص</span><b>→</b><strong>'+letter+' '+lower+'</strong></div><p class="letter-bridge-note" dir="rtl">لا يوجد مقابل عربي واحد دقيق. '+esc(bridge.note||'استمع إلى النطق الإنجليزي وتعلّم الشكل مباشرة.')+'</p>'
+      : '<div class="letter-sound-bridge"><span lang="ar" dir="rtl">'+esc(bridge.arabic)+'</span><b>↔</b><strong>'+letter+' '+lower+'</strong></div><p class="letter-bridge-note" dir="rtl">اربط صوت '+esc(bridge.arabic)+' بالنطق الإنجليزي '+esc(bridge.sound)+(bridge.approximate?' باعتباره أقرب تقريب صوتي.':'.')+'</p>';
+    return '<section class="language-course-page language-letters-mobile letter-gate-learning" data-letter-gate-learning><header class="letter-gate-minihead"><button type="button" data-letter-gate-home>←</button><div><small>English letter prerequisite</small><strong>'+practiced.length+' / 26</strong></div><a href="#language-letter-exam">Exam →</a></header><div class="letter-sequence-head"><div><small>Letters practiced</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div><div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>'+(bridge.special?'Special English sound':'Arabic sound match')+'</small>'+bridgeMarkup+'<div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example</span><strong>'+esc(word)+'</strong><em dir="rtl">'+esc(LETTER_WORD_AR[word]||'')+'</em><button type="button" data-speak="'+esc(word)+'">Hear word</button></div></article></div><div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div><div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?'✓ This letter is already practiced.':'Trace both forms until each shape matches the guide.')+'</div><div class="letter-complete-row"><button type="button" data-gate-letter-complete="'+letter+'" data-letter-done="'+(done?'true':'false')+'" disabled>'+(done?'✓ '+letter+' practiced':'Complete '+letter)+'</button><button type="button" data-gate-letter-next '+(done?'':'disabled')+'>Next letter →</button></div>'+(allDone?'<a class="language-exam-cta" href="#language-letter-exam"><span>✓</span><div><strong>Letters examination</strong><p>All 26 letters practiced. Take the 10-question drawing exam.</p></div><b>→</b></a>':'')+'</section>';
+  }
+  function letterGateExamPage(state){
+    const questions=letterGateExamQuestions(state);
+    const items=questions.map((q,index)=>{
+      const prompt=q.special
+        ? '<div class="letter-exam-cue special"><span lang="ar" dir="rtl">صوت إنجليزي خاص</span><button type="button" data-letter-exam-listen="'+q.letter+'">▶ استمع</button></div><h2 dir="rtl">استمع ثم ارسم الحرف الإنجليزي '+(q.kind==='lower'?'الصغير':'الكبير')+'.</h2><p dir="rtl">'+esc(q.note||'لا يوجد مقابل عربي واحد لهذا الصوت.')+'</p>'
+        : '<div class="letter-exam-cue"><span lang="ar" dir="rtl">'+esc(q.arabic)+'</span><b>'+esc(q.sound)+'</b></div><h2 dir="rtl">ارسم الحرف الإنجليزي '+(q.kind==='lower'?'الصغير':'الكبير')+' الذي يقابل هذا الصوت.</h2>';
+      return '<fieldset class="letter-gate-exam-question" data-letter-exam-question data-expected-letter="'+q.letter+'" data-letter-kind="'+q.kind+'"><legend><span>'+(index+1)+'</span> / 10</legend>'+prompt+'<div class="letter-exam-draw-stage"><canvas id="letter-exam-canvas-'+index+'" width="720" height="300" aria-label="Draw the requested English letter"></canvas></div><div class="letter-exam-question-actions"><button type="button" data-letter-exam-clear="letter-exam-canvas-'+index+'">Clear</button><span data-letter-exam-feedback>Draw a large centered letter.</span></div></fieldset>';
+    }).join('');
+    return '<section class="language-course-page letter-gate-exam-page" data-letter-gate-exam-page><header class="letter-gate-minihead"><button type="button" data-letter-gate-home>←</button><div><small>English letters prerequisite</small><strong>10 drawing questions</strong></div><a href="#language-letter-learn">Learn →</a></header><header class="letter-gate-exam-head"><small>Exam</small><h1>Draw the English letters</h1><p>Arabic sound matches are used as cues. Special English sounds use audio because they do not have one exact Arabic-letter equivalent. Draw from memory; no letter guide is shown.</p></header><form id="letter-gate-exam-form"><div class="letter-gate-exam-list">'+items+'</div><div class="letter-gate-exam-submit"><div><small>Pass mark</small><strong>8 / 10</strong></div><button class="btn btn-primary" type="submit">Check drawings</button></div><div class="language-exam-result" id="letter-gate-exam-result" aria-live="polite"></div></form></section>';
+  }
+
   function progressPercent(state){
     let completed=0;
     for(let li=0;li<CEFR.length;li++){
@@ -876,7 +986,7 @@
     return '<section class="language-course-page language-onboarding">'+
       '<header class="language-onboarding-hero"><small>'+esc(mode.base)+' → '+esc(mode.target)+'</small><h1>Choose where to begin</h1><p>Start from Level 1 or use placement to find the right entry point.</p></header>'+
       '<div class="language-entry-grid">'+
-        '<button type="button" data-language-start-zero><span>01</span><small>Full pathway</small><h2>Start from zero</h2><p>Begin at A1 · Step 1 · Letters and build every prerequisite in order.</p><b>Start A1 →</b></button>'+
+        '<button type="button" data-language-start-zero><span>01</span><small>Full pathway</small><h2>Start from zero</h2><p>Begin at A1 · Step 1 · Box 1 and build every course prerequisite in order.</p><b>Start A1 →</b></button>'+
         '<button type="button" data-language-placement-start><span>02</span><small>Placement</small><h2>Examine my level</h2><p>Take a hard multimodal exam with listening, dictation, image description, advanced grammar and complex translation.</p><b>Start placement exam →</b></button>'+
       '</div><p class="language-entry-note">Placement chooses your starting level only. It does not mark skipped lower levels as completed.</p></section>';
   }
@@ -902,6 +1012,7 @@
   function homePage(){
     const state=languageState();
     if(!state.baseLanguage)return languageChoicePage(state);
+    if(letterGateRequired(state))return letterGatePage(state);
     if(!state.onboardingComplete&&!state.placementPending)return onboardingPage(state);
     const pos=clampSelection(state),level=CEFR[pos.li],mode=learningLanguage(state,pos.li);
     const levels=CEFR.map((item,index)=>{
@@ -1321,6 +1432,8 @@
 
   function languageContent(page){
     if(page==='language-home')return homePage();
+    if(page==='language-letter-learn')return letterGateLearnPage(languageState());
+    if(page==='language-letter-exam')return letterGateExamPage(languageState());
     if(page==='language-letters')return lettersPage();
     if(page==='language-voice')return voicePage();
     if(page==='language-grammar')return grammarPage();
@@ -1342,8 +1455,10 @@
       if(type==='language' && window.DafatiiCourses.active().id){
         const state=languageState();
         if(!languageAuthoringTarget&&!state.baseLanguage&&page!=='language-home'){setHash('language-home');return;}
-        if(!languageAuthoringTarget&&state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
-        if(!languageAuthoringTarget&&!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&letterGateRequired(state)&&!LETTER_GATE_ROUTES.includes(page)&&!['change-course','profile','settings'].includes(page)){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&!letterGateRequired(state)&&['language-letter-learn','language-letter-exam'].includes(page)){setHash('language-home');return;}
+        if(!languageAuthoringTarget&&!letterGateRequired(state)&&state.placementPending&&page!=='language-examine'){setHash('language-examine');return;}
+        if(!languageAuthoringTarget&&!letterGateRequired(state)&&!state.onboardingComplete&&!state.placementPending&&page!=='language-home'){setHash('language-home');return;}
         if(!LANGUAGE_ROUTES.includes(page) && !['change-course','profile','settings','representer','admin'].includes(page)){setHash('language-home');return;}
       }
       if(type==='personal'&&page==='chat'){setHash('study-rooms');return;}
@@ -1355,7 +1470,7 @@
   }
 
   const navSpec=[
-    ['language-home','nav-home','home'],['language-letters','nav-library','letters'],['language-voice','nav-messages','voice'],
+    ['language-home','nav-home','home'],['language-voice','nav-messages','voice'],
     ['language-grammar','file','grammar'],['language-review','star','review'],['language-examine','check','examine']
   ];
   function icon(name){return window.DafatiiIcons && window.DafatiiIcons.icon ? window.DafatiiIcons.icon(name) : '<span>•</span>';}
@@ -1385,17 +1500,25 @@
       shell.classList.add('language-course-shell');
       shell.dataset.languagePage=current.replace(/^language-/,'')||'home';
     }
+    const state=languageState(),gate=letterGateRequired(state)||['language-letter-learn','language-letter-exam'].includes(current);
+    const side=document.querySelector('.quiet-sidebar > nav'),desktop=document.querySelector('.quiet-desktop-tabs'),bottom=document.querySelector('.bottom-nav');
+    if(gate){
+      if(side)side.innerHTML='';
+      if(desktop)desktop.innerHTML='';
+      if(bottom)bottom.innerHTML='';
+      const toolbarTitle=document.querySelector('.quiet-toolbar-title strong'),toolbarKicker=document.querySelector('.quiet-toolbar-title small');
+      if(toolbarTitle)toolbarTitle.textContent='English letters';
+      if(toolbarKicker)toolbarKicker.textContent='Prerequisite';
+      return;
+    }
     const activeNav=navSpec.find(item=>item[0]===current);
     const toolbarTitle=document.querySelector('.quiet-toolbar-title strong');
     const toolbarKicker=document.querySelector('.quiet-toolbar-title small');
     const target=courseTargetLanguage(languageState());
     if(toolbarTitle)toolbarTitle.textContent=activeNav?languageNavLabel(activeNav):target+' course';
     if(toolbarKicker)toolbarKicker.textContent=target+' course';
-    const side=document.querySelector('.quiet-sidebar > nav');
     if(side)side.innerHTML=sideLanguageNav(current);
-    const desktop=document.querySelector('.quiet-desktop-tabs');
     if(desktop)desktop.innerHTML=sideLanguageNav(current);
-    const bottom=document.querySelector('.bottom-nav');
     if(bottom)bottom.innerHTML=bottomLanguageNav(current);
   }
 
@@ -1455,10 +1578,30 @@
     }
     return false;
   }
-  function scoreLetterCanvas(canvas,letter,kind){
+  function normalizedRasterGrid(data,width,height,cols=24,rows=24){
+    let minX=width,minY=height,maxX=-1,maxY=-1;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(data[(y*width+x)*4+3]>24){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;}
+    const grid=new Uint8Array(cols*rows);
+    if(maxX<minX||maxY<minY)return {grid,cols,rows};
+    const spanX=Math.max(1,maxX-minX+1),spanY=Math.max(1,maxY-minY+1);
+    for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+      if(data[(y*width+x)*4+3]<=24)continue;
+      const col=Math.min(cols-1,Math.floor((x-minX)/spanX*cols)),row=Math.min(rows-1,Math.floor((y-minY)/spanY*rows));
+      grid[row*cols+col]=1;
+    }
+    return {grid,cols,rows};
+  }
+  function normalizedGlyphGuideGrid(canvas,letter,kind){
+    const guide=document.createElement('canvas');guide.width=canvas.width;guide.height=canvas.height;
+    const ctx=guide.getContext('2d',{willReadFrequently:true}),glyph=kind==='lower'?String(letter).toLowerCase():String(letter).toUpperCase();
+    ctx.clearRect(0,0,guide.width,guide.height);ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+Math.round(guide.height*.72)+'px Manrope, "DM Sans", sans-serif';ctx.fillText(glyph,guide.width/2,guide.height/2+guide.height*.035);
+    return normalizedRasterGrid(ctx.getImageData(0,0,guide.width,guide.height).data,guide.width,guide.height);
+  }
+  function scoreLetterCanvas(canvas,letter,kind,normalized=false){
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    const user=rasterGrid(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);
-    const guide=glyphGuideGrid(canvas,letter,kind);
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    const user=normalized?normalizedRasterGrid(data,canvas.width,canvas.height):rasterGrid(data,canvas.width,canvas.height);
+    const guide=normalized?normalizedGlyphGuideGrid(canvas,letter,kind):glyphGuideGrid(canvas,letter,kind);
     let guideCount=0,userCount=0,covered=0,onGuide=0;
     for(let row=0;row<guide.rows;row++){
       for(let col=0;col<guide.cols;col++){
@@ -1476,13 +1619,14 @@
     if(!guideCount||!userCount)return {valid:false,score:0,coverage:0,precision:0};
     const coverage=covered/guideCount,precision=onGuide/userCount;
     const score=coverage*.58+precision*.42;
-    const enoughInk=userCount>=Math.max(5,guideCount*.36);
-    return {valid:enoughInk&&coverage>=.60&&precision>=.58&&score>=.64,score,coverage,precision};
+    const enoughInk=userCount>=Math.max(5,guideCount*(normalized?.18:.36));
+    const valid=normalized?(enoughInk&&coverage>=.38&&precision>=.46&&score>=.43):(enoughInk&&coverage>=.60&&precision>=.58&&score>=.64);
+    return {valid,score,coverage,precision};
   }
-  function bindValidatedLetterCanvas(canvas,letter,kind,onScore){
+  function bindValidatedLetterCanvas(canvas,letter,kind,onScore,options={}){
     if(!canvas)return;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.lineWidth=Math.max(10,Math.round(canvas.width/62));ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111827';
+    const ctx=canvas.getContext('2d',{willReadFrequently:true}),normalized=Boolean(options.normalized);
+    ctx.lineWidth=normalized?Math.max(18,Math.round(canvas.width/34)):Math.max(10,Math.round(canvas.width/62));ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111827';
     let drawing=false,last=null;
     const point=e=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};};
     const drawEvent=e=>{
@@ -1494,7 +1638,7 @@
         ctx.quadraticCurveTo(last.x,last.y,mid.x,mid.y);ctx.stroke();last=p;
       }
     };
-    const evaluate=()=>{const result=scoreLetterCanvas(canvas,letter,kind);canvas.dataset.valid=String(result.valid);canvas.dataset.score=String(result.score);onScore(result);};
+    const evaluate=()=>{const result=scoreLetterCanvas(canvas,letter,kind,normalized);canvas.dataset.valid=String(result.valid);canvas.dataset.score=String(result.score);onScore(result);};
     canvas.onpointerdown=e=>{if(e.cancelable)e.preventDefault();drawing=true;canvas.setPointerCapture(e.pointerId);last=null;drawEvent(e);};
     canvas.onpointermove=e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawEvent(e);};
     canvas.onpointerup=e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawEvent(e);drawing=false;last=null;evaluate();};
@@ -1502,10 +1646,10 @@
     canvas.__letterClear=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);canvas.dataset.valid='false';canvas.dataset.score='0';onScore({valid:false,score:0,coverage:0,precision:0});};
   }
   function bindLetterDrawing(){
-    const upper=document.getElementById('letter-upper-canvas'),lower=document.getElementById('letter-lower-canvas');
-    const complete=document.querySelector('[data-letter-complete]'),next=document.querySelector('[data-letter-next]'),feedback=document.querySelector('[data-letter-feedback]');
+    const upper=document.getElementById('letter-upper-canvas'),lower=document.getElementById('letter-lower-canvas'),gate=Boolean(document.querySelector('[data-letter-gate-learning]'));
+    const complete=document.querySelector(gate?'[data-gate-letter-complete]':'[data-letter-complete]'),next=document.querySelector(gate?'[data-gate-letter-next]':'[data-letter-next]'),feedback=document.querySelector('[data-letter-feedback]');
     if(!upper||!lower||!complete)return;
-    const letter=complete.dataset.letterComplete||'A',alreadyDone=complete.dataset.letterDone==='true';
+    const letter=(gate?complete.dataset.gateLetterComplete:complete.dataset.letterComplete)||'A',alreadyDone=complete.dataset.letterDone==='true';
     let upperResult={valid:false,score:0},lowerResult={valid:false,score:0};
     const update=()=>{
       if(alreadyDone){
@@ -1526,6 +1670,31 @@
       const canvas=document.getElementById(button.dataset.canvasClear);canvas?.__letterClear?.();
     });
     update();
+  }
+
+  function bindLetterGateExam(){
+    document.querySelectorAll('[data-letter-exam-listen]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.letterExamListen));
+    const canvases=[...document.querySelectorAll('[data-letter-exam-question]')].map(question=>{
+      const canvas=question.querySelector('canvas'),letter=question.dataset.expectedLetter,kind=question.dataset.letterKind||'upper',feedback=question.querySelector('[data-letter-exam-feedback]');
+      bindValidatedLetterCanvas(canvas,letter,kind,result=>{
+        if(feedback)feedback.textContent=result.valid?'✓ Shape recognized.':'Keep the requested letter large and centered, then try again.';
+      },{normalized:true});
+      return canvas;
+    });
+    document.querySelectorAll('[data-letter-exam-clear]').forEach(button=>button.onclick=()=>document.getElementById(button.dataset.letterExamClear)?.__letterClear?.());
+    const form=document.getElementById('letter-gate-exam-form');
+    if(!form)return;
+    form.onsubmit=event=>{
+      event.preventDefault();
+      const correct=canvases.filter(canvas=>canvas?.dataset.valid==='true').length,score=Math.round(correct/10*100),passed=correct>=8,result=document.getElementById('letter-gate-exam-result');
+      updateLanguage(state=>{
+        state.examHistory.push({scope:'letters-gate',score,correct,total:10,passed,at:Date.now()});
+        if(passed)state.letterGatePassed=true;
+      });
+      result.className='language-exam-result '+(passed?'passed':'failed');
+      result.textContent=passed?'Passed · '+correct+'/10 drawings recognized. The English course is unlocked.':'Score '+correct+'/10. Redraw the missed letters or return to learning, then retry.';
+      if(passed)setTimeout(()=>setHash('language-home'),700);
+    };
   }
 
   function videoResponseValid(language,value){
@@ -1664,6 +1833,26 @@
       render();
     }));
 
+    document.querySelector('[data-letter-gate-learn]')?.addEventListener('click',()=>setHash('language-letter-learn'));
+    document.querySelector('[data-letter-gate-exam]')?.addEventListener('click',()=>setHash('language-letter-exam'));
+    document.querySelectorAll('[data-letter-gate-home]').forEach(button=>button.onclick=()=>setHash('language-home'));
+    document.querySelectorAll('[data-gate-letter-select]').forEach(button=>button.onclick=()=>{
+      const letter=button.dataset.gateLetterSelect;
+      updateLanguage(state=>{const first=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!state.letterGateProgress.includes(item.letter))?.letter;if(state.letterGateProgress.includes(letter)||letter===first)state.activeGateLetter=letter;});
+      render();
+    });
+    document.querySelector('[data-gate-letter-next]')?.addEventListener('click',event=>{
+      if(event.currentTarget.disabled)return;
+      updateLanguage(state=>{const current=state.activeGateLetter||'A',index=ENGLISH_ARABIC_LETTER_BRIDGE.findIndex(item=>item.letter===current);state.activeGateLetter=ENGLISH_ARABIC_LETTER_BRIDGE[(index+1)%ENGLISH_ARABIC_LETTER_BRIDGE.length].letter;});
+      render();
+    });
+    document.querySelector('[data-gate-letter-complete]')?.addEventListener('click',event=>{
+      if(event.currentTarget.disabled)return;
+      const letter=event.currentTarget.dataset.gateLetterComplete;
+      updateLanguage(state=>{state.letterGateProgress=arrayUnique([...state.letterGateProgress,letter]);state.activeGateLetter=ENGLISH_ARABIC_LETTER_BRIDGE.find(item=>!state.letterGateProgress.includes(item.letter))?.letter||letter;});
+      render();
+    });
+
     document.querySelector('[data-language-start-zero]')?.addEventListener('click',()=>{
       updateLanguage(state=>{state.onboardingComplete=true;state.placementPending=false;state.placementResult=null;state.entryLevel=0;state.selectedLevel=0;state.selectedStep=1;state.selectedBox=1;});
       render();
@@ -1775,6 +1964,7 @@
     bindPlacementExam();
     bindVideoUnderstanding();
     bindLetterDrawing();
+    bindLetterGateExam();
   }
 
   function installCourseChangeRouting(){
