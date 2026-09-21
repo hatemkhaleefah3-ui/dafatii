@@ -11,7 +11,7 @@ const { canConvertLegacyOffice, convertLegacyOfficeToPdf, driveObjectId, isDrive
 const { encodePath } = await import('../functions/_lib/encoding.mjs');
 const { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } = await import('../functions/_lib/policy.mjs');
 const { translateInterfaceText, validateTranslationInput } = await import('../functions/_lib/translate.mjs');
-const { gradeVideoUnderstanding, validateVideoUnderstandingInput, VIDEO_UNDERSTANDING_RATINGS } = await import('../functions/_lib/gemini.mjs');
+const { gradePronunciation, gradeVideoUnderstanding, validatePronunciationInput, validateVideoUnderstandingInput, PRONUNCIATION_RATINGS, VIDEO_UNDERSTANDING_RATINGS } = await import('../functions/_lib/gemini.mjs');
 
 function statement(firstValue) {
   return { bind(...values) { this.values = values; return this; }, async first() { return typeof firstValue === 'function' ? firstValue(this.values) : firstValue; }, async run() { return { meta: { changes: 1 } }; } };
@@ -49,6 +49,14 @@ const videoUnderstandingInput = {
 assert.deepEqual(validateVideoUnderstandingInput(videoUnderstandingInput), videoUnderstandingInput);
 assert.throws(() => validateVideoUnderstandingInput({ ...videoUnderstandingInput, videoUrl: 'https://example.com/watch?v=9hE5-98ZeCg' }), error => error.code === 'INVALID_YOUTUBE_URL');
 assert.throws(() => validateVideoUnderstandingInput({ ...videoUnderstandingInput, responseText: 'x' }), error => error.code === 'VIDEO_RESPONSE_TOO_SHORT');
+assert.deepEqual(PRONUNCIATION_RATINGS, ['bad','moderate','good','very good']);
+const pronunciationInput = {
+  targetText: 'door', kind: 'word', audioData: 'QUJDRA==', mimeType: 'audio/webm',
+  targetLanguage: 'English', level: 'A1'
+};
+assert.deepEqual(validatePronunciationInput(pronunciationInput), pronunciationInput);
+assert.throws(() => validatePronunciationInput({ ...pronunciationInput, mimeType: 'text/plain' }), error => error.code === 'UNSUPPORTED_PRONUNCIATION_AUDIO');
+assert.throws(() => validatePronunciationInput({ ...pronunciationInput, audioData: '' }), error => error.code === 'INVALID_PRONUNCIATION_AUDIO');
 assert.equal(sanitizeFilename('../ lecture\u0000.pdf'), '.._ lecture_.pdf');
 assert.throws(() => objectKey('../../victim', crypto.randomUUID()));
 const uid = crypto.randomUUID(), fid = crypto.randomUUID();
@@ -133,6 +141,7 @@ globalThis.fetch = async (url, init = {}) => {
   assert.equal(headers.get('x-goog-api-key'), 'secret-gemini-key');
   const body = JSON.parse(init.body);
   assert.equal(body.model, 'gemini-3.8-flash');
+  assert.equal(body.store, false);
   assert.equal(body.input[0].type, 'video');
   assert.equal(body.input[0].uri, videoUnderstandingInput.videoUrl);
   assert.deepEqual(body.response_format.schema.properties.rating.enum, ['bad','moderate','good','very good']);
@@ -143,6 +152,27 @@ globalThis.fetch = async (url, init = {}) => {
 };
 assert.deepEqual(await gradeVideoUnderstanding({ GEMINI_API_KEY: 'secret-gemini-key' }, videoUnderstandingInput), { rating: 'good' });
 await assert.rejects(() => gradeVideoUnderstanding({}, videoUnderstandingInput), error => error.code === 'GEMINI_NOT_CONFIGURED');
+globalThis.fetch = originalFetch;
+
+globalThis.fetch = async (url, init = {}) => {
+  assert.equal(String(url), 'https://generativelanguage.googleapis.com/v1beta/interactions');
+  const headers = new Headers(init.headers);
+  assert.equal(headers.get('x-goog-api-key'), 'secret-gemini-key');
+  const body = JSON.parse(init.body);
+  assert.equal(body.model, 'gemini-3.8-flash');
+  assert.equal(body.store, false);
+  assert.equal(body.input[0].type, 'audio');
+  assert.equal(body.input[0].data, pronunciationInput.audioData);
+  assert.equal(body.input[0].mime_type, pronunciationInput.mimeType);
+  assert.equal(body.input[1].type, 'text');
+  assert.match(body.input[1].text, /requested word: "door"/);
+  assert.deepEqual(body.response_format.schema.properties.rating.enum, ['bad','moderate','good','very good']);
+  return new Response(JSON.stringify({
+    steps: [{ type: 'model_output', content: [{ type: 'text', text: '{"rating":"moderate"}' }] }]
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+assert.deepEqual(await gradePronunciation({ GOOGLE_GEMINI_API_KEY: 'secret-gemini-key' }, pronunciationInput), { rating: 'moderate' });
+await assert.rejects(() => gradePronunciation({}, pronunciationInput), error => error.code === 'GEMINI_NOT_CONFIGURED');
 globalThis.fetch = originalFetch;
 
 assert.match(sessionCookie(new Request('https://dafatii.example/'), 'token'), /HttpOnly; Secure; SameSite=Lax/);
@@ -160,6 +190,8 @@ assert.match(apiRouter, /const chatAttachment = purpose === 'chat-attachment'/, 
 assert.match(apiRouter, /teacherProfile \|\| chatAttachment \|\| usesDrive\(context\.env\)/, 'chat attachments must be forced through Google Drive even if the general provider changes');
 assert.match(apiRouter, /path === 'language\/video-understanding'/, 'authenticated API router must expose Gemini video-understanding grading');
 assert.match(apiRouter, /gradeVideoUnderstanding\(context\.env, input\)/, 'video-understanding route must delegate to the server-side Gemini grader');
+assert.match(apiRouter, /path === 'language\/pronunciation'/, 'authenticated API router must expose Gemini pronunciation grading');
+assert.match(apiRouter, /gradePronunciation\(context\.env, input\)/, 'pronunciation route must delegate to the server-side Gemini audio grader');
 assert.doesNotMatch(readFileSync(new URL('../course-modes.js', import.meta.url), 'utf8'), /GEMINI_API_KEY/, 'Gemini secret must never be present in browser code');
 const headers = readFileSync(new URL('../_headers', import.meta.url), 'utf8');
 assert.match(headers, /Content-Security-Policy:/);
