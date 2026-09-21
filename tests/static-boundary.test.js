@@ -149,11 +149,7 @@ assert.ok(lectureMediaCss.includes('Lecture study tools v2') && lectureMediaCss.
 assert.ok(index.includes('lecture-media.js?v=20260919-4') && index.includes('lecture-media.css?v=20260919-4'), 'lecture study assets must be cache-busted');
 const app = fs.readFileSync('app.js', 'utf8');
 assert.match(index, /styles\.css\?v=20260920-6/, 'password recovery styling must be cache-busted');
-assert.match(app, /const ADMIN_ACCESS_EMAIL = 'hatemkhaleefah3@gmail\.com'/, 'administrator access must target the requested account only');
-assert.match(app, /name="adminPin"[^>]*inputmode="numeric"[^>]*pattern="\[0-9\]\{4\}"/, 'administrator access must accept exactly four numeric digits');
-assert.match(app, /authenticated\?\.platformRole!=='admin'/, 'the client must reject a PIN-authenticated non-admin account');
-assert.match(app, /await window\.DafatiiAuth\.logout\(\)/, 'a mismatched administrator session must be revoked');
-assert.doesNotMatch(app, /ADMIN_ACCESS_PIN|['"]2005['"]/, 'the administrator PIN must never be embedded in public client assets');
+assert.doesNotMatch(app, /ADMIN_ACCESS_EMAIL|adminPin|admin-pin-panel|admin-access-toggle|ADMIN_ACCESS_PIN|['"]2005['"]/, 'the obsolete administrator PIN sign-in section must not remain in public client assets');
 assert.ok(app.includes("page==='calendar'?'':`<div class=\"sub-nav\"><div class=\"sub-inner\">"), 'calendar must not render the redundant global Schedule/Deadlines/Exams sub-navigation');
 assert.doesNotMatch(app, /subject-back|data-subjects-back/, 'return controls must not remain embedded in sub-navigation');
 assert.doesNotMatch(app, /authOffline \? 'disabled'/, 'a failed startup check must not disable authentication');

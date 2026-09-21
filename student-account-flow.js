@@ -199,7 +199,9 @@
       const submit = form.querySelector('[type=submit]'), status = document.getElementById('auth-status');
       submit.disabled = true; form.dataset.submitting = 'true'; status.textContent = t('signing');
       try {
-        await window.DafatiiAuth.login({ identifier:form.elements.identifier.value, credential:form.elements.credential.value });
+        const identifier = String(form.elements.identifier.value || '').trim();
+        const credential = String(form.elements.credential.value || '');
+        await window.DafatiiAuth.login({ identifier, credential });
         location.hash = 'profile';
       } catch (error) {
         submit.disabled = false; delete form.dataset.submitting;
