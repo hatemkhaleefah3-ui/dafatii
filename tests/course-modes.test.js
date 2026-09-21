@@ -11,6 +11,7 @@ assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v2'/,'language
 assert.match(js,/LANGUAGE_PAGE_ITEM_TYPES/,'page-specific item catalog missing');
 for(const type of ['letter','word-translation','image-word','sentence-pair','spelling-write','handwriting','pronunciation','text-to-voice','image-to-voice','voice-to-text','voice-to-image','voice-pair','grammar-topic','grammar-rule','grammar-example','grammar-training','youtube-video','story','reading','single-choice','multiple-choice','true-false','fill-blank','ordering','short-answer']) assert.ok(js.includes("'"+type+"'"),'missing language item type '+type);
 assert.match(js,/openLanguageItemEditor/,'item add/edit UI missing');
+assert.match(js,/data-language-edit/,'item edit control missing');
 assert.match(js,/data-language-delete/,'item deletion control missing');
 assert.match(js,/data-language-share/,'shared item action missing');
 assert.match(js,/speechSynthesis/,'pronunciation interaction missing');
