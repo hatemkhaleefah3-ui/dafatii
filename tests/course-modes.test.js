@@ -182,7 +182,7 @@ assert.match(js,/data-exam-speak/,'spoken exam questions must expose a microphon
 assert.match(js,/if\(type==='speak'\)return answerSimilarity/,'spoken production must be scored from the recognized transcript');
 assert.match(js,/Speech recognition is unavailable/,'spoken exams must disclose the fallback limitation when browser recognition is unavailable');
 assert.match(js,/Exam analysis/,'Home must show exam performance analysis');
-assert.match(js,/average+'% average'/,'Home analysis must calculate an exam-score average');
+assert.ok(js.includes("average+'% average'"),'Home analysis must calculate an exam-score average');
 assert.match(js,/function migrateDrivenCourseV7/,'older learner progress must migrate into the driven lane model');
 assert.match(js,/const LEARNING_LANE_PREREQUISITES = \{[\s\S]*'language-voice':\['vocabulary'\][\s\S]*'language-grammar':\['vocabulary','voice'\][\s\S]*'language-video':\['vocabulary','voice','grammar'\]/,'learning lanes must unlock strictly in order');
 assert.match(js,/learningLaneUnlocked\(state,pos,page\)/,'course routes must enforce learning-lane prerequisites');
