@@ -67,7 +67,7 @@ assert.match(js,/id:'grammar-error'/,'normal boxes must include a grammar error-
 assert.match(js,/id:'review-memory'/,'normal boxes must include a memory/retrieval item');
 assert.match(js,/id:'exam-scope'/,'Examine pages must include explicit assessment-scope content');
 assert.match(js,/if\(pos\.li>0\)return videoUnderstandingPage\(state,pos\)/,'Letters route must become Video Understanding after A1');
-assert.match(js,/responseLanguage:li<=2\?'Arabic':'English'/,'A2/B1 responses must be Arabic and B2/C1 responses English');
+assert.match(js,/responseLanguage:String\(courseMeta\(\)\.targetLanguage\|\|'English'\)/,'video responses must use the target course language');
 assert.match(js,/const required=li===0\?\['pronunciation','voice','grammar','review'\]:\['video','voice','grammar','review'\]/,'post-A1 boxes must require Video Understanding instead of pronunciation page');
 assert.match(js,/function videoResponseValid\(language,value\)/,'video response language/length validation must exist');
 assert.match(js,/value\.watchedVideos\[id\]=true/,'video must be fully watched before completion can unlock');
@@ -113,6 +113,9 @@ assert.match(js,/SpeechSynthesisUtterance/,'speech synthesis must remain functio
 assert.match(js,/SpeechRecognition\|\|window\.webkitSpeechRecognition/,'speech recognition must remain functional');
 assert.match(js,/data-language-ui-switch/,'Arabic-English UI switch must remain');
 assert.match(js,/targetLanguage:'English',baseLanguage:''/,'language learning must require an explicit main language');
+assert.match(js,/function allowedBaseLanguages\(target\)/,'main-language eligibility must derive from the target language');
+assert.match(js,/filter\(language=>languageIdentity\(language\)!==targetId\)/,'the main language must never equal the target language');
+assert.match(js,/allowedBaseLanguages\(value\.targetLanguage\)\.includes\(value\.baseLanguage\)/,'stored same-language selections must be invalidated');
 assert.match(js,/function learningLanguage\(state,li\)/,'course language bridge must resolve per level');
 assert.match(js,/instruction:li>=4\?target:base/,'Level 5 must use the target course language');
 assert.match(js,/data-language-base="Arabic"/,'Arabic must be available as a main learning language');
@@ -122,6 +125,12 @@ assert.match(js,/data-language-process-stage/,'learning content must render as a
 assert.match(js,/function bindLearningProcess\(\)/,'focused learning steps must be interactive');
 assert.match(js,/data-exam-stepper/,'exams must use the focused question process');
 assert.match(js,/function bindExamStepper\(\)/,'exam questions must advance one at a time');
+assert.match(js,/const ARABIC_VOCABULARY =/,'English vocabulary must include Arabic meaning bridges');
+assert.match(js,/const ARABIC_GRAMMAR =/,'English grammar must include Arabic explanations');
+assert.match(js,/function vocabularyPairs\(state,pos,words\)/,'vocabulary must resolve source-to-target pairs');
+assert.match(js,/function grammarBridge\(state,pos,data\)/,'grammar must resolve through the selected main language');
+assert.match(js,/page==='pronunciation'\|\|page==='video'/,'pronunciation and video must remain target-language-only');
+assert.match(js,/const responseLanguage=learningLanguage\(state,pos\.li\)\.target/,'video completion must validate the target language');
 
 assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
 assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
@@ -144,9 +153,10 @@ assert.match(js,/querySelector\('\.quiet-return-button'\)\?\.remove\(\)/,'langua
 assert.match(js,/shell\.dataset\.languagePage=current\.replace/,'language routes must expose a page identity for mobile themes');
 assert.ok(css.includes('English course v11 · native mobile learning app'),'native mobile course layout must be present');
 assert.ok(css.includes('Language course v12 · focused box process'),'focused box-process layout must be present');
+assert.ok(css.includes('Language course v13 · contrastive source-to-target learning'),'contrastive language-learning layout must be present');
 assert.ok(css.includes('.language-process-stage[hidden]'),'inactive learning stages must stay hidden');
-assert.ok(index.includes('course-modes.css?v=20260921-1'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-1'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-1') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260921-2'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-2'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260921-2') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
-console.log('course modes v5 tests passed');
+console.log('course modes v6 tests passed');
