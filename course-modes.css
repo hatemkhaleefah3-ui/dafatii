@@ -1103,3 +1103,9 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
   .language-pronunciation-target button{width:100%}
   .language-vocabulary-only{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+.letter-pronunciation-check{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;margin:14px 0;padding:14px;border:1px solid var(--process-line);border-radius:14px;background:var(--surface-2)}
+.letter-pronunciation-check strong{font-weight:900}
+.letter-pronunciation-check button{min-height:44px;padding:0 13px;border:0;border-radius:11px;background:var(--process-ink);color:#fff;font-weight:900;cursor:pointer}
+.letter-pronunciation-check input{grid-column:1/-1;min-height:44px;padding:10px 12px;border:1px solid var(--process-line);border-radius:10px;background:var(--surface);color:var(--text)}
+.letter-pronunciation-check small{grid-column:1/-1;color:var(--muted);font-size:11px;line-height:1.4}
