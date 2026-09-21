@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 6;
+  const META_VERSION = 7;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
-  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-review','language-examine'];
+  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-review','language-examine'];
   const LETTER_GATE_ROUTES = ['language-home','language-letter-learn','language-letter-exam'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
@@ -98,6 +98,55 @@
     'Rhetorical conditionals':['الشرط البلاغي','استخدم القلب وprovided that وassuming that وbut for لصياغة شروط متقدمة بإيجاز.'],
     'Punctuation as syntax':['الترقيم بوصفه بناءً نحوياً','استخدم النقطتين والفاصلة المنقوطة والشرطة والأقواس لإظهار البنية المنطقية.']
   };
+  const LEVEL_LEARNING_SYSTEMS = [
+    {
+      number:1,id:'A1',name:'Word Builder',design:'guided-cards',difficulty:'foundation',
+      vocabulary:'Simple high-frequency words with spelling, meaning and controlled writing.',
+      listening:'Simple words and short spoken models with repeat-and-recognize practice.',
+      grammar:'Simple rules used in one clear model at a time.',
+      video:'Admin-supplied YouTube clips with guided main-idea and word recognition.',
+      exam:'Word pronunciation, spelling/writing, translation and simple-rule checks.',
+      method:'See → hear → retrieve → write → say',examStyle:'direct',target:'Build a dependable A1 foundation.'
+    },
+    {
+      number:2,id:'A2',name:'Sentence Builder',design:'sentence-rails',difficulty:'elementary',
+      vocabulary:'Simple sentences built from known vocabulary and everyday functions.',
+      listening:'Simple sentences with dictation, reconstruction and short spoken responses.',
+      grammar:'Simple grammar patterns applied inside complete sentences.',
+      video:'Admin-supplied YouTube clips with sentence-level understanding checks.',
+      exam:'Simple-sentence pronunciation, writing, translation, grammar and rule checks.',
+      method:'Model → rebuild → vary → speak → write',examStyle:'controlled',target:'Produce accurate everyday A2 sentences.'
+    },
+    {
+      number:3,id:'B1',name:'Connected English',design:'connection-board',difficulty:'intermediate',
+      vocabulary:'Moderate words and connected sentences across practical topics.',
+      listening:'Moderate speech with detail retrieval, paraphrase and connected responses.',
+      grammar:'Moderate grammar and rules used across linked clauses and short paragraphs.',
+      video:'Admin-supplied YouTube clips with main idea, detail, inference and language noticing.',
+      exam:'Moderate word/sentence pronunciation, writing, translation and grammar/rule checks.',
+      method:'Connect → explain → paraphrase → retrieve → transfer',examStyle:'mixed',target:'Operate independently at B1 across common situations.'
+    },
+    {
+      number:4,id:'B2',name:'Precision & Pressure',design:'precision-grid',difficulty:'upper-intermediate',
+      vocabulary:'Advanced words and sentences with precision, register and collocation control.',
+      listening:'Advanced speech with inference, distractors, paraphrase and fast retrieval.',
+      grammar:'Moderate-to-advanced rules tested through near-misses and competing forms.',
+      video:'Admin-supplied YouTube clips with inference, argument structure and evidence tracking.',
+      exam:'Advanced pronunciation, writing and translation plus tricky grammar/rule discrimination.',
+      method:'Distinguish → justify → correct → reformulate → perform',examStyle:'tricky',target:'Build robust B2 performance under ambiguity and time pressure.'
+    },
+    {
+      number:5,id:'C1',name:'C1 / IELTS Readiness',design:'c1-studio',difficulty:'advanced',
+      vocabulary:'Advanced words, collocations, academic phrasing and nuanced sentence control.',
+      listening:'Advanced connected speech with inference, stance, implication and synthesis.',
+      grammar:'Advanced grammar, discourse, register and rhetorical control.',
+      video:'Admin-supplied YouTube clips used for synthesis, inference, argument and evidence analysis.',
+      exam:'Advanced pronunciation/writing plus high-discrimination grammar, rule, inference and reformulation tasks.',
+      method:'Synthesize → qualify → defend → reformulate → self-correct',examStyle:'high-discrimination',
+      target:'C1 / IELTS-readiness target across listening, speaking, reading-oriented understanding and writing. This is preparation, not a guaranteed IELTS result.'
+    }
+  ];
+
   const TOTAL_LANGUAGE_BOXES = 5*5*25;
   const LANGUAGE_FUNCTIONS = ['introducing','identifying','describing','asking for information','answering precisely','comparing','sequencing','locating','expressing time','expressing quantity','stating preferences','expressing ability','expressing obligation','giving reasons','explaining results','expressing conditions','contrasting ideas','describing experience','making plans','giving instructions','stating opinions','supporting with evidence','correcting meaning','summarizing','reflecting'];
   const CEFR = [
@@ -195,7 +244,7 @@
 
   const COPY = {
     en:{
-      home:'Home',letters:'Letters & writing',pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine',
+      home:'Home',letters:'Vocabulary & writing',pronunciation:'Vocabulary & writing',video:'YouTube understanding',voice:'Listening & talking',grammar:'Grammar & rules',review:'Revision',examine:'Examining',
       complete:'Mark section complete',completed:'Completed',locked:'Locked',listen:'Play voice',check:'Check answer',
       speak:'Speak this sentence',start:'Start recognition',notes:'My notes',save:'Save notes',level:'Level',step:'Step',box:'Box',
       pass:'Pass mark: 80%',takeExam:'Take exam',submitExam:'Submit exam',welcome:'Welcome',resume:'Resume learning',
@@ -205,7 +254,7 @@
       examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
     },
     ar:{
-      home:'الرئيسية',letters:'الحروف والكتابة',pronunciation:'النطق والكتابة',video:'فهم الفيديو',voice:'مختبر الصوت',grammar:'القواعد',review:'المراجعة',examine:'الاختبار',
+      home:'الرئيسية',letters:'المفردات والكتابة',pronunciation:'المفردات والكتابة',video:'فهم يوتيوب',voice:'الاستماع والتحدث',grammar:'القواعد والأحكام',review:'المراجعة',examine:'الاختبارات',
       complete:'إكمال هذا الجزء',completed:'مكتمل',locked:'مغلق',listen:'تشغيل الصوت',check:'تحقق من الإجابة',
       speak:'انطق هذه الجملة',start:'ابدأ التعرّف على الصوت',notes:'ملاحظاتي',save:'حفظ الملاحظات',level:'المستوى',step:'الخطوة',box:'الصندوق',
       pass:'درجة النجاح: 80٪',takeExam:'ابدأ الاختبار',submitExam:'إرسال الاختبار',welcome:'مرحباً',resume:'متابعة التعلّم',
@@ -300,6 +349,19 @@
     return value;
   }
 
+  function migrateDrivenCourseV7(value,previousVersion){
+    if(previousVersion>=7)return value;
+    const modules=value.modules&&typeof value.modules==='object'?value.modules:{};
+    Object.entries(modules).forEach(([id,module])=>{
+      if(!module||typeof module!=='object')return;
+      if(module.pronunciation||module.review)module.vocabulary=true;
+      if(/^A1:/.test(id)&&module.exam&&module.pronunciation)module.video=true;
+      if(!/^A1:/.test(id)&&module.review)module.vocabulary=true;
+    });
+    value.modules=modules;
+    return value;
+  }
+
   function languageState(){
     let stored=window.DafatiiData.readJSON(progressKey(),null);
     if(!stored){
@@ -312,6 +374,7 @@
     const value=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:defaultLanguageLearning();
     const previousVersion=Number(value.version)||0;
     migrateEnglishLetterGateV6(value,previousVersion);
+    migrateDrivenCourseV7(value,previousVersion);
     value.version=META_VERSION;
     value.passedBoxes=Array.isArray(value.passedBoxes)?value.passedBoxes:[];
     value.passedSteps=Array.isArray(value.passedSteps)?value.passedSteps:[];
@@ -333,7 +396,7 @@
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
     value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
-    if(previousVersion<6)window.DafatiiData.writeJSON(progressKey(),value);
+    if(previousVersion<7)window.DafatiiData.writeJSON(progressKey(),value);
     return value;
   }
   function updateLanguage(mutator){
@@ -464,7 +527,7 @@
       ? (crypto.randomUUID?crypto.randomUUID().replace(/-/g,'').slice(0,20):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,20))
       : '';
     const templateField=isLang?'<input type="hidden" name="templateName" value="Computer Science">':'<div class="field"><label>Content template</label><select name="templateName">'+templates.map(name=>'<option>'+esc(name)+'</option>').join('')+'</select></div>';
-    const studyField=isLang?'<input type="hidden" name="studyType" value="courses"><div class="field"><label>Target language</label><select name="targetLanguage"><option value="English" selected>English · الإنجليزية</option></select><p class="auth-note">Five levels · 5 steps per level · A1 has 26 boxes per step (Letters + 25 lessons) · A2–C1 have 25 boxes per step · 630 boxes total.</p></div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
+    const studyField=isLang?'<input type="hidden" name="studyType" value="courses"><div class="field"><label>Target language</label><select name="targetLanguage"><option value="English" selected>English · الإنجليزية</option></select><p class="auth-note">Letters prerequisite · 5 driven levels · 5 steps per level · 25 boxes per step · 625 learning boxes · 6 main course pages.</p></div>':'<div class="field"><label>Study structure</label><select name="studyType">'+studyTypeOptions()+'</select></div>';
     const visibility=isPersonal
       ? '<input type="hidden" name="visibility" value="private"><div class="field"><label>Visibility</label><div class="course-private-lock">Personal · only this account uses the workspace</div></div>'
       : isAdmin
@@ -543,7 +606,7 @@
     return out;
   }
   function boxData(li,step,box){
-    const level=CEFR[li],normalIndex=Math.max(0,box-firstLearningBox(li)),seed=(step-1)*25+normalIndex;
+    const level=CEFR[li],profile=LEVEL_LEARNING_SYSTEMS[li],normalIndex=Math.max(0,box-firstLearningBox(li)),seed=(step-1)*25+normalIndex;
     const topic=level.topics[seed%level.topics.length];
     const grammar=level.grammar[seed%level.grammar.length];
     const languageFunction=LANGUAGE_FUNCTIONS[normalIndex%LANGUAGE_FUNCTIONS.length];
@@ -558,8 +621,8 @@
       ['A nuanced account of '+topic+' should distinguish the central '+words[0]+' from a merely '+words[1]+' consideration.','Articulate a defensible position on '+topic+', qualify its main '+words[2]+', and acknowledge one counterargument.']
     ][li];
     return {
-      level:level.id,step,box,topic,languageFunction,phase,title:'Box '+box+' · '+topic+' · '+languageFunction,
-      goal:'Complete this '+phase+' lesson for '+languageFunction+': pronunciation & writing, voice, grammar, revision and the dedicated exam.',
+      level:level.id,levelNumber:profile.number,learningSystem:profile.name,design:profile.design,difficulty:profile.difficulty,examStyle:profile.examStyle,targetOutcome:profile.target,step,box,topic,languageFunction,phase,title:'Box '+box+' · '+topic+' · '+languageFunction,
+      goal:'Complete this '+phase+' lesson for '+languageFunction+': vocabulary & writing, listening & talking, grammar & rules, admin YouTube understanding, then the dedicated exam.',
       pronunciationFocus:sound+' · '+languageFunction,pronunciationWords:words.slice(0,6),
       writingPrompt:'For '+phase+', practice '+languageFunction+': write two clear sentences about '+topic+' using '+words[0]+' and '+words[1]+'. Apply '+grammar[0]+'.',
       voicePrompt:frames[0]+' The communication focus is '+languageFunction+'.',reversePrompt:frames[1]+' Use it for '+languageFunction+'.',grammarTitle:grammar[0],grammarRule:grammar[1],grammarExample1:grammar[2],grammarExample2:grammar[3],
@@ -576,13 +639,13 @@
     return {
       id:keyBox(CEFR[li].id,step,box),
       title:data.title,
-      youtubeUrl:'https://www.youtube.com/results?search_query='+encodeURIComponent(query),
+      youtubeUrl:'',
       responseLanguage:String(courseMeta().targetLanguage||'English')
     };
   }
 
   const LANGUAGE_CONTENT_PAGE_ROUTES = {
-    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',review:'language-review',examine:'language-examine'
+    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',video:'language-video',review:'language-review',examine:'language-examine'
   };
   const languageContentStoreKey=()=> 'dafatii:language-authoring:v1';
   let languageAuthoringTarget=null;
@@ -616,8 +679,8 @@
   }
   function activeLanguagePosition(state){return adminLanguageAuthoring()?{...languageAuthoringTarget}:clampSelection(state);}
   function languagePageName(page,li){
-    if(page==='letters')return li===0?'Pronunciation & writing':'Video understanding';
-    return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
+    if(page==='letters')return 'Vocabulary & writing';
+    return {voice:'Listening & talking',grammar:'Grammar & rules',video:'YouTube understanding',review:'Revision',examine:'Examining'}[page]||page;
   }
   function defaultLanguageContentItems(li,step,box,page){
     const data=isLetterBox(li,box)?null:boxData(li,step,box);
@@ -632,22 +695,29 @@
       ];
     }
     if(!data&&page!=='examine')return [];
-    if(page==='letters'&&li===0){
+    if(page==='letters'){
+      const profile=LEVEL_LEARNING_SYSTEMS[li];
+      const writingBody=[
+        'Write each target word accurately, connect it to its meaning, then use two of the words in very short correct sentences.',
+        'Build clear simple sentences using the target words and '+data.grammarTitle+'. Change one detail in each sentence without breaking the pattern.',
+        'Write connected moderate sentences about '+data.topic+', using precise vocabulary and at least one linking expression.',
+        'Write advanced sentences about '+data.topic+' that distinguish meaning, register and collocation. Correct one deliberate near-miss before finishing.',
+        'Write a concise C1-style response about '+data.topic+' using precise collocation, controlled stance and one deliberate reformulation.'
+      ][li];
       return [
-        {id:'sound-focus',type:'sound',eyebrow:'Pronunciation focus',title:data.pronunciationFocus,body:'Hear the target sound inside meaningful English, repeat slowly, then repeat at natural speed.',audioText:data.voicePrompt},
-        {id:'pronunciation-words',type:'words',eyebrow:'Target words',title:'Sound set for this box',body:'Listen to every target word, then say it without looking at the written model.',words:data.pronunciationWords},
-        {id:'micro-dialogue',type:'info',eyebrow:'Micro dialogue',title:'Use pronunciation inside meaning',body:'Speaker A: '+data.grammarExample1+' Speaker B: '+data.grammarExample2},
-        {id:'writing-task',type:'writing',eyebrow:'Writing',title:'Write, then read it aloud',body:data.writingPrompt,placeholder:'Write 3–5 complete sentences here.'},
-        {id:'pronunciation-recall',type:'info',eyebrow:'Quick recall',title:'Retrieve before moving on',body:'Without looking back, say the target sound, two active words and one complete sentence that performs '+data.languageFunction+'.'}
+        {id:'vocabulary-set',type:'words',eyebrow:profile.name+' · vocabulary',title:profile.vocabulary,body:'Retrieve the target form from meaning before using audio. Then spell and say each item.',words:data.words,wordPairs:pairs},
+        {id:'vocabulary-writing',type:'writing',eyebrow:'Vocabulary → writing',title:['Simple words','Simple sentences','Moderate words & sentences','Advanced words & sentences','Advanced C1 language'][li],body:writingBody,placeholder:['Write the words and two short sentences…','Write 3–4 simple sentences…','Write a connected short paragraph…','Write precise advanced sentences…','Write a concise C1 response…'][li]},
+        {id:'vocabulary-pattern',type:'info',eyebrow:'Useful pattern',title:data.grammarTitle,body:data.grammarExample1+' '+data.grammarExample2},
+        {id:'vocabulary-retrieval',type:'info',eyebrow:'Retrieval method',title:profile.method,body:profile.target}
       ];
     }
-    if(page==='letters'&&li>0){
+    if(page==='video'){
       const video=videoLessonData(li,step,box);
       return [
-        {id:'video-lesson',type:'video',eyebrow:'YouTube video',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
-        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:'Watch for meaning, detail and language',body:'Identify the main idea, two supporting details, one example of '+data.grammarTitle+', and at least two target words: '+data.words.slice(0,4).join(', ')+'.'},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:'Write in '+mode.target+': the main idea, at least two supporting details, and one important expression from the video.',placeholder:'Write only in '+mode.target+'…'},
-        {id:'video-vocabulary',type:'words',eyebrow:'Video vocabulary',title:'Key expressions to notice',body:'Use these expressions to confirm meaning after watching.',words:data.words}
+        {id:'video-lesson',type:'video',eyebrow:'Admin YouTube lesson',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
+        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:['Find words and the main idea','Follow simple sentences','Track idea + details','Track inference + argument','Synthesize stance + evidence'][li],body:'Watch for the main idea, supporting detail, useful language and one example connected to '+data.grammarTitle+'. The video link must be supplied by the course administrator.'},
+        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:['Name the topic and write two words you recognized.','Write the main idea and two simple sentences from what you understood.','Write the main idea, two details and one paraphrase.','Explain the argument, one inference, one distractor or contrast, and supporting evidence.','Synthesize the speaker’s position, evidence, implication and one justified evaluation in precise English.'][li],placeholder:'Respond only in '+mode.target+'…'},
+        {id:'video-vocabulary',type:'words',eyebrow:'Video language',title:'Expressions to notice',body:'Use these expressions to verify and extend what you understood.',words:data.words,wordPairs:pairs}
       ];
     }
     if(page==='voice'){
@@ -707,14 +777,15 @@
       {name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Body',kind:'textarea'}
     ]};
     const schemas={
-      letters: li>0 ? [
-        {type:'video',label:'YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
-        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        commonInfo
-      ] : [
-        {type:'sound',label:'Pronunciation focus',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'audioText',label:'Audio text',kind:'textarea'}]},
-        {type:'words',label:'Word set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+      letters:[
+        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
         {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        commonInfo
+      ],
+      video:[
+        {type:'video',label:'Admin YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
+        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
+        {type:'words',label:'Video vocabulary',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
         commonInfo
       ],
       voice:[
@@ -804,7 +875,7 @@
       const practiced=state.letterProgress[letterProgressKey(li,step)]||[];
       return LETTERS.every(letter=>practiced.includes(letter));
     }
-    const required=li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
+    const required=['vocabulary','voice','grammar','video'];
     return required.every(name=>module[name]===true);
   }
   function boxExamPassed(state,li,step,box){
@@ -832,11 +903,10 @@
   function nextBoxRoute(state,pos){
     if(isLetterBox(pos.li,pos.box))return 'language-letters';
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    if(pos.li===0&&!module.pronunciation)return 'language-letters';
-    if(pos.li>0&&!module.video)return 'language-letters';
+    if(!module.vocabulary)return 'language-letters';
     if(!module.voice)return 'language-voice';
     if(!module.grammar)return 'language-grammar';
-    if(!module.review)return 'language-review';
+    if(!module.video)return 'language-video';
     return 'language-examine';
   }
   function missingRequirements(state,pos){
@@ -846,8 +916,8 @@
       return missing.length?['Practice and draw '+missing.length+' remaining letter'+(missing.length===1?'':'s')]:[];
     }
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
-    const required=pos.li===0?['pronunciation','voice','grammar','review']:['video','voice','grammar','review'];
-    const labels={pronunciation:'Pronunciation & writing',video:'Video understanding',voice:'Voice lab',grammar:'Grammar',review:'Revision'};
+    const required=['vocabulary','voice','grammar','video'];
+    const labels={vocabulary:'Vocabulary & writing',voice:'Listening & talking',grammar:'Grammar & rules',video:'YouTube understanding'};
     return required.filter(name=>!module[name]).map(name=>labels[name]);
   }
   function boundaryReady(state,li,step){
@@ -996,19 +1066,23 @@
   function learningFlow(state,pos){
     const route=nextBoxRoute(state,pos);
     const stages=[
-      {route:'language-letters',label:pos.li>0?t('video'):t('pronunciation'),key:pos.li>0?'video':'pronunciation'},
+      {route:'language-letters',label:t('letters'),key:'vocabulary'},
       {route:'language-voice',label:t('voice'),key:'voice'},
       {route:'language-grammar',label:t('grammar'),key:'grammar'},
-      {route:'language-review',label:t('review'),key:'review'},
+      {route:'language-video',label:t('video'),key:'video'},
       {route:'language-examine',label:t('examine'),key:'exam'}
     ];
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
     return stages.map((stage,index)=>{
-      const letterDone=isLetterBox(pos.li,pos.box)&&(state.letterProgress[letterProgressKey(pos.li,pos.step)]||[]).length===26;
-      const done=stage.key==='exam'?boxExamPassed(state,pos.li,pos.step,pos.box):(stage.key==='pronunciation'?letterDone:Boolean(module[stage.key]));
+      const done=stage.key==='exam'?boxExamPassed(state,pos.li,pos.step,pos.box):Boolean(module[stage.key]);
       const current=stage.route===route;
       return '<a href="#'+stage.route+'" class="language-flow-stage '+(done?'done ':'')+(current?'current':'')+'"><span>'+(done?'✓':String(index+1).padStart(2,'0'))+'</span><div><small>'+(done?'Complete':current?'Up next':'Course stage')+'</small><strong>'+esc(stage.label)+'</strong></div><b>→</b></a>';
     }).join('');
+  }
+
+  function learningAnalytics(state,pos){
+    const profile=LEVEL_LEARNING_SYSTEMS[pos.li],passed=state.passedBoxes.length,steps=state.passedSteps.length,levels=state.passedLevels.length;
+    return '<section class="language-learning-analytics level-system-'+profile.number+'"><div><small>Driven pathway</small><strong>Level '+profile.number+' · '+profile.id+'</strong><span>'+esc(profile.name)+'</span></div><div><small>Boxes passed</small><strong>'+passed+' / '+TOTAL_LANGUAGE_BOXES+'</strong><span>'+progressPercent(state)+'% course progress</span></div><div><small>Steps passed</small><strong>'+steps+' / 25</strong><span>'+levels+' / 5 levels complete</span></div><div><small>Readiness target</small><strong>'+(profile.id==='C1'?'C1 / IELTS':'Next: '+profile.target)+'</strong><span>'+(profile.id==='C1'?'Preparation target; no score guarantee.':esc(profile.examStyle+' assessment'))+'</span></div></section>';
   }
 
   function homePage(){
@@ -1026,8 +1100,9 @@
       return '<button type="button" data-language-step="'+step+'" '+(unlocked?'':'disabled')+' class="language-map-step '+(step===pos.step?'active ':'')+(passed?'passed':'')+'"><span>'+step+'</span><b>'+(passed?'✓':'')+'</b></button>';
     }).join('');
     const nextRoute=nextBoxRoute(state,pos);
-    return '<section class="language-course-page language-home language-home-simple">'+
+    return '<section class="language-course-page language-home language-home-simple level-system-'+LEVEL_LEARNING_SYSTEMS[pos.li].number+'">'+
       '<header class="language-home-simple-head"><div><small>'+esc(mode.immersion?mode.target+' immersion':mode.base+' → '+mode.target)+'</small><strong>'+esc(mode.target)+'</strong></div><div class="language-home-percent"><b>'+progressPercent(state)+'%</b><span>'+level.id+'</span></div></header>'+
+      learningAnalytics(state,pos)+
       '<section class="language-home-current"><div class="language-home-box"><span>'+t('box')+'</span><strong>'+pos.box+'</strong><small>'+level.id+' · '+pos.step+'</small></div><div class="language-home-stage-list">'+learningFlow(state,pos)+'</div><a class="language-home-continue" href="#'+nextRoute+'"><span>'+t('resume')+'</span><b>→</b></a></section>'+
       '<nav class="language-course-map" aria-label="Course map"><div class="language-map-levels">'+levels+'</div><div class="language-map-steps">'+steps+'</div>'+boxSelector(state,pos)+'<button type="button" class="language-level-challenge-link" data-challenge-level="'+pos.li+'">'+level.id+' challenge →</button></nav></section>';
   }
@@ -1053,7 +1128,9 @@
     if(!entries.length)entries=[{item:{type:'info'},markup:'<div class="language-process-empty">No learning activity has been added to this page.</div>'}];
     const labels=processLabels(state,pos.li),stages=entries.map((entry,index)=>processStage(state,pos,page,entry.item,entry.markup,index)).join('');
     const dots=entries.map((entry,index)=>'<button type="button" data-process-go="'+index+'" class="'+(index===0?'active':'')+'" aria-label="'+esc(labels.item)+' '+(index+1)+'"></button>').join('');
-    return '<section class="language-course-page language-process-page '+extraClass+'" data-language-process="'+esc(page)+'" data-process-count="'+entries.length+'">'+processTop(state,pos,entries.length)+'<div class="language-process-stage-list">'+stages+'</div><nav class="language-process-nav"><button type="button" data-process-previous disabled><span>←</span>'+esc(labels.back)+'</button><div class="language-process-dots">'+dots+'</div><button type="button" data-process-next>'+esc(labels.next)+'<span>→</span></button></nav><div class="language-process-completion">'+completion+'</div></section>';
+    const profile=LEVEL_LEARNING_SYSTEMS[pos.li];
+    const banner='<div class="level-system-banner"><div><small>Level '+profile.number+' · '+profile.id+'</small><strong>'+esc(profile.name)+'</strong></div><span>'+esc(profile.method)+'</span><b>'+esc(profile.difficulty)+'</b></div>';
+    return '<section class="language-course-page language-process-page level-system-'+profile.number+' '+extraClass+'" data-language-process="'+esc(page)+'" data-process-count="'+entries.length+'">'+processTop(state,pos,entries.length)+banner+'<div class="language-process-stage-list">'+stages+'</div><nav class="language-process-nav"><button type="button" data-process-previous disabled><span>←</span>'+esc(labels.back)+'</button><div class="language-process-dots">'+dots+'</div><button type="button" data-process-next>'+esc(labels.next)+'<span>→</span></button></nav><div class="language-process-completion">'+completion+'</div></section>';
   }
 
   function contentItemAttrs(item){return ' data-language-content-item="'+esc(item.id)+'" data-language-content-type="'+esc(item.type||'info')+'"';}
@@ -1093,19 +1170,19 @@
     const entries=items.map(item=>{
       let markup='';
       if(item.type==='sound')markup='<article class="language-sound-hero language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'Pronunciation focus')+'</small><h2>'+esc(item.title||'Sound focus')+'</h2><p>'+esc(item.body||'')+'</p></div>'+(item.audioText?'<button class="btn btn-primary" type="button" data-speak="'+esc(item.audioText)+'">'+t('listen')+'</button>':'')+'</article>';
-      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><strong>'+esc(word)+'</strong><span>▶</span></button>').join('')+'</div></article>';
+      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWordPairs(item,state,pos).map(pair=>'<button type="button" data-speak="'+esc(pair.target)+'"><strong>'+esc(pair.target)+'</strong>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'<span>▶</span></button>').join('')+'</div></article>';
       else if(item.type==='writing')markup='<article class="language-writing-task language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Writing task')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
       else markup=infoItemCard(item);
       return {item,markup};
     });
     const hasWriting=items.some(item=>item.type==='writing');
-    const completion='<button class="language-complete-bar '+(module.pronunciation?'done':'')+'" type="button" data-language-module="pronunciation" '+(module.pronunciation||hasWriting?'':'disabled')+'>'+(module.pronunciation?'✓ '+t('completed'):(hasWriting?'Complete the writing task first':'Add a writing item before completion'))+'</button>';
-    return languageProcessPage(state,pos,'pronunciation',entries,completion,'language-pronunciation-lesson');
+    const completion='<button class="language-complete-bar '+(module.vocabulary?'done':'')+'" type="button" data-language-module="vocabulary" '+(module.vocabulary||hasWriting?'':'disabled')+'>'+(module.vocabulary?'✓ '+t('completed'):(hasWriting?'Complete vocabulary and writing items':'Add a writing item before completion'))+'</button>';
+    return languageProcessPage(state,pos,'vocabulary',entries,completion,'language-pronunciation-lesson language-vocabulary-writing-page');
   }
 
   function videoUnderstandingPage(state,pos){
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
-    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    const items=languagePageItems(pos.li,pos.step,pos.box,'video'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=learningLanguage(state,pos.li).target,arabic=responseLanguage==='Arabic';
     const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
     const entries=items.map(item=>{
@@ -1122,8 +1199,11 @@
 
   function lettersPage(){
     const state=languageState(),pos=activeLanguagePosition(state);
-    if(pos.li>0)return videoUnderstandingPage(state,pos);
-    return isLetterBox(pos.li,pos.box)?letterBoxPage(state,pos):pronunciationPage(state,pos);
+    return pronunciationPage(state,pos);
+  }
+  function videoPage(){
+    const state=languageState(),pos=activeLanguagePosition(state);
+    return videoUnderstandingPage(state,pos);
   }
 
   function currentLearningBox(state,pos){
@@ -1207,43 +1287,35 @@
     ].map(q=>({...q,options:arrayUnique(q.options)}));
   }
   function boxQuestionSet(li,step,box){
-    if(isLetterBox(li,box))return letterExamQuestions(step);
-    const level=CEFR[li],data=boxData(li,step,box);
-    const grammarIndex=Math.max(0,level.grammar.findIndex(rule=>rule[0]===data.grammarTitle));
-    const otherRule=level.grammar[(grammarIndex+3)%level.grammar.length];
-    const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1;
-    const adjacent=boxData(li,step,nextBox);
-    const unpunctuated=data.grammarExample1.charAt(0).toLowerCase()+data.grammarExample1.slice(1).replace(/[.!?]$/,'');
+    const level=CEFR[li],profile=LEVEL_LEARNING_SYSTEMS[li],data=boxData(li,step,box),state=languageState();
+    const nextBox=box===boxCount(li)?Math.max(firstLearningBox(li),box-1):box+1,adjacent=boxData(li,step,nextBox);
+    const meaning=usesArabicBridge(state,li)?vocabularyMeaning(data.words[0],'Arabic'):data.words[0];
+    const meaning2=usesArabicBridge(state,li)?vocabularyMeaning(data.words[1],'Arabic'):data.words[1];
+    const simpleDistractors=arrayUnique([adjacent.words[0],data.words[1],data.words[2],data.words[3]]).filter(Boolean);
+    const tricky=li>=3;
+    const hardest=li>=4;
+    const sentence=data.grammarExample1,second=data.grammarExample2;
+    const nearMiss=sentence.replace(/\b(is|are|has|have|was|were)\b/i,match=>match.toLowerCase()==='is'?'are':match.toLowerCase()==='are'?'is':match.toLowerCase()==='has'?'have':match.toLowerCase()==='have'?'has':match.toLowerCase()==='was'?'were':'was');
     const questions=[
-      {prompt:'Which sentence best demonstrates this box’s target grammar?',correct:data.grammarExample1,options:[data.grammarExample1,unpunctuated+' '+data.words[0],data.words.slice(0,4).join(' '),adjacent.reversePrompt]},
-      {prompt:'Which statement correctly describes this box’s grammar focus?',correct:data.grammarRule,options:[data.grammarRule,otherRule[1],'Word order never affects meaning.','Punctuation replaces grammar.']},
-      {prompt:'Which sentence is the listening model for this box?',correct:data.voicePrompt,options:[data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,data.words.slice(0,5).join(' ')]},
-      {prompt:'Which word belongs to this box’s active vocabulary?',correct:data.words[0],options:[data.words[0],adjacent.words[0],otherRule[0],adjacent.topic]},
-      {prompt:'Which option is a complete reader-ready model from this box?',correct:data.grammarExample2,options:[data.grammarExample2,data.grammarExample2.toLowerCase().replace(/[.!?]$/,''),'because '+data.words[0],data.words[1]+' '+data.words[2]]},
-      {prompt:'What is the communicative function of this box?',correct:data.languageFunction,options:[data.languageFunction,adjacent.languageFunction,'spelling isolated letters','avoiding communication']},
-      {prompt:'Which pronunciation focus belongs to this box?',correct:data.pronunciationFocus,options:[data.pronunciationFocus,adjacent.pronunciationFocus,otherRule[0],adjacent.topic]},
-      {prompt:'Which instruction best matches the writing task?',correct:data.writingPrompt,options:[data.writingPrompt,adjacent.writingPrompt,'Copy the vocabulary list without sentences.','Do not use the target grammar.']},
-      {prompt:'Which statement best matches the writing/typing rule for this level?',correct:data.typing,options:[data.typing,adjacent.naming,'Punctuation is never needed.','Use random capitalization to show emphasis.']},
-      {prompt:'Which prompt best tests free recall for this box?',correct:data.recall,options:[data.recall,adjacent.recall,'Repeat one word ten times without context.','Skip the grammar and guess the topic.']}
+      {type:'mcq',prompt:'Translate this meaning into the target word: '+meaning,correct:data.words[0],options:arrayUnique([data.words[0],...simpleDistractors])},
+      {type:'listen-choice',prompt:li===0?'Listen to the word and choose what you heard.':'Listen and choose the exact sentence.',audio:li===0?data.words[1]:data.voicePrompt,correct:li===0?data.words[1]:data.voicePrompt,options:li===0?arrayUnique([data.words[1],...simpleDistractors]):arrayUnique([data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,second])},
+      {type:'fill',prompt:li===0?'Write the English word for: '+meaning2:'Complete the key word needed in this '+(li===1?'simple':'level-appropriate')+' sentence task.',correct:data.words[1],options:[]},
+      {type:'short-answer',prompt:li===0?'Write the target word accurately from memory: '+meaning:li===1?'Write the complete simple model sentence for this box.':'Write the complete model sentence accurately.',correct:li===0?data.words[0]:second,options:[]},
+      {type:'mcq',prompt:tricky?'Choose the grammatically precise sentence. Near-miss distractors are intentional.':'Choose the sentence that correctly applies '+data.grammarTitle+'.',correct:sentence,options:arrayUnique([sentence,nearMiss,adjacent.grammarExample1,data.words.slice(0,4).join(' ')])},
+      {type:'true-false',prompt:'True or false: '+data.grammarRule,correct:'True',options:['True','False']},
+      {type:'listen-fill',prompt:li===0?'Listen and type the word exactly.':hardest?'Listen once and transcribe the advanced sentence exactly.':'Listen and transcribe the sentence exactly.',audio:li===0?data.words[2]:data.voicePrompt,correct:li===0?data.words[2]:data.voicePrompt,options:[]},
+      {type:'short-answer',prompt:li<2?'Translate/rebuild the target-language model using these main-language cues: '+meaning+' · '+meaning2:tricky?'Reformulate the model without changing its core meaning; use this canonical answer for scoring.':'Translate/rebuild the model meaning into the target language.',correct:sentence,options:[]},
+      {type:'ordering',prompt:'Build the model sentence in the correct order.',correct:sentence.replace(/[.!?]$/,''),tokens:sentence.replace(/[.!?]$/,'').split(/\s+/).sort((a,b)=>a.localeCompare(b)),options:[]},
+      {type:'multi-select',prompt:tricky?'Select both statements that remain valid under the rule; distractors may differ by one detail.':'Select both valid learning statements.',correct:[data.grammarRule,data.recall],options:arrayUnique([data.grammarRule,data.recall,adjacent.grammarRule,'Vocabulary alone is enough; grammar never changes meaning.'])}
     ];
-    return questions.map((q,index)=>{
-      const base={...q,options:arrayUnique(q.options)};
-      if(index===1){const trueStatement=box%2===0;return {...base,type:'true-false',prompt:'True or false: '+(trueStatement?q.correct:otherRule[1]),correct:trueStatement?'True':'False',options:['True','False']};}
-      if(index===2)return {...base,type:'listen-choice',prompt:'Listen once, then choose the sentence you heard.',audio:data.voicePrompt};
-      if(index===3)return {...base,type:'fill',prompt:'Complete the active-vocabulary word for this box.',options:[]};
-      if(index===4)return {...base,type:'short-answer',prompt:'Write the complete reader-ready model from this box.',options:[]};
-      if(index===6)return {...base,type:'listen-fill',prompt:'Listen and transcribe the pronunciation focus exactly.',audio:data.pronunciationFocus,options:[]};
-      if(index===8){
-        const tokens=data.grammarExample1.replace(/[.!?]$/,'').split(/\s+/);
-        return {...base,type:'ordering',prompt:'Build the model sentence in the correct order.',correct:tokens.join(' '),tokens:[...tokens].sort((a,b)=>a.localeCompare(b)),options:[]};
-      }
-      if(index===9){
-        const correct=[q.correct,q.options.find(option=>option!==q.correct)].filter(Boolean);
-        return {...base,type:'multi-select',prompt:'Select both valid review prompts.',correct,options:arrayUnique([...q.options,...correct])};
-      }
-      return {...base,type:'mcq'};
-    });
+    if(hardest){
+      questions[3].prompt='Write the precise C1 model. Small grammar, register and punctuation differences matter.';
+      questions[4].prompt='Choose the most defensible C1 form; the distractors are deliberately plausible.';
+      questions[7].prompt='Reformulate at C1 level while preserving meaning, stance and logical relation; score against the canonical model.';
+    }
+    return questions.map(question=>({...question,levelSystem:profile.name,examStyle:profile.examStyle}));
   }
+
   function representativeBoxes(li){
     const last=boxCount(li),first=firstLearningBox(li);
     return arrayUnique([1,first,Math.max(first,Math.round(last*.2)),Math.round(last*.4),Math.round(last*.6),Math.round(last*.8),last]);
@@ -1439,6 +1511,7 @@
     if(page==='language-letters')return lettersPage();
     if(page==='language-voice')return voicePage();
     if(page==='language-grammar')return grammarPage();
+    if(page==='language-video')return videoPage();
     if(page==='language-review')return reviewPage();
     if(page==='language-examine')return examinePage();
     return homePage();
@@ -1472,15 +1545,11 @@
   }
 
   const navSpec=[
-    ['language-home','nav-home','home'],['language-voice','nav-messages','voice'],
-    ['language-grammar','file','grammar'],['language-review','star','review'],['language-examine','check','examine']
+    ['language-home','nav-home','home'],['language-letters','file','letters'],['language-voice','nav-messages','voice'],
+    ['language-grammar','star','grammar'],['language-video','play','video'],['language-examine','check','examine']
   ];
   function icon(name){return window.DafatiiIcons && window.DafatiiIcons.icon ? window.DafatiiIcons.icon(name) : '<span>•</span>';}
-  function languageNavLabel(item){
-    if(item[0]!=='language-letters')return t(item[2]);
-    const state=languageState(),li=Math.min(4,Math.max(0,Number(state.selectedLevel)||Number(state.entryLevel)||0));
-    return li>0?t('video'):t('letters');
-  }
+  function languageNavLabel(item){return t(item[2]);}
   function sideLanguageNav(current){
     return navSpec.map(item=>'<a href="#'+item[0]+'" class="quiet-link '+(current===item[0]?'selected':'')+'" '+(current===item[0]?'aria-current="page"':'')+'>'+icon(item[1])+'<span>'+esc(languageNavLabel(item))+'</span></a>').join('');
   }
@@ -1982,9 +2051,9 @@
   installWorkspaceRoutes();
   installCourseChangeRouting();
   window.DafatiiCourseModes=Object.freeze({
-    courseType,isLanguage,levels:CEFR,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
+    courseType,isLanguage,levels:CEFR,levelSystems:LEVEL_LEARNING_SYSTEMS,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
     languageAuthoring:Object.freeze({
-      pages:['letters','voice','grammar','review','examine'],
+      pages:['letters','voice','grammar','video','examine'],
       pageName:languagePageName,
       getItems:selection=>languagePageItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item})),
       getSchemas:(page,li)=>languageItemSchemas(page,li),
