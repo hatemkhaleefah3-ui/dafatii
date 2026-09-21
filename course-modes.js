@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const META_VERSION = 7;
+  const META_VERSION = 8;
   const COURSE_TYPES = ['dafaa','personal','teaching','language'];
-  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-review','language-examine'];
+  const LANGUAGE_ROUTES = ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-examine'];
   const LETTER_GATE_ROUTES = ['language-home','language-letter-learn','language-letter-exam'];
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const LETTER_WORDS = {A:'apple',B:'book',C:'cat',D:'door',E:'egg',F:'fish',G:'green',H:'home',I:'ice',J:'juice',K:'key',L:'lamp',M:'moon',N:'name',O:'orange',P:'pen',Q:'queen',R:'room',S:'sun',T:'table',U:'umbrella',V:'voice',W:'water',X:'x-ray',Y:'yellow',Z:'zebra'};
@@ -289,7 +289,7 @@
     return {
       version:META_VERSION,targetLanguage:'English',baseLanguage:'',selectedLevel:0,selectedStep:1,selectedBox:1,
       passedBoxes:[],passedSteps:[],passedLevels:[],languagePassed:false,
-      modules:{},letterProgress:{},activeLetterByStep:{},letterGateProgress:[],activeGateLetter:'D',letterGatePassed:false,videoResponses:{},watchedVideos:{},notes:{},examHistory:[],
+      modules:{},letterProgress:{},activeLetterByStep:{},letterGateProgress:[],activeGateLetter:'D',letterGatePassed:false,videoResponses:{},videoRatings:{},pronunciationRatings:{},watchedVideos:{},notes:{},examHistory:[],
       onboardingComplete:false,placementPending:false,placementResult:null,entryLevel:0,challengeLevel:null
     };
   }
@@ -389,6 +389,8 @@
     value.activeGateLetter=LETTERS.includes(value.activeGateLetter)?value.activeGateLetter:(LETTERS.find(letter=>!value.letterGateProgress.includes(letter))||'D');
     value.letterGatePassed=Boolean(value.letterGatePassed);
     value.videoResponses=value.videoResponses&&typeof value.videoResponses==='object'?value.videoResponses:{};
+    value.videoRatings=value.videoRatings&&typeof value.videoRatings==='object'?value.videoRatings:{};
+    value.pronunciationRatings=value.pronunciationRatings&&typeof value.pronunciationRatings==='object'?value.pronunciationRatings:{};
     value.watchedVideos=value.watchedVideos&&typeof value.watchedVideos==='object'?value.watchedVideos:{};
     value.notes=value.notes&&typeof value.notes==='object'?value.notes:{};
     value.examHistory=Array.isArray(value.examHistory)?value.examHistory:[];
@@ -398,7 +400,7 @@
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
     value.challengeLevel=null;
-    if(previousVersion<7)window.DafatiiData.writeJSON(progressKey(),value);
+    if(previousVersion<8)window.DafatiiData.writeJSON(progressKey(),value);
     return value;
   }
   function updateLanguage(mutator){
@@ -645,7 +647,7 @@
   }
 
   const LANGUAGE_CONTENT_PAGE_ROUTES = {
-    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',video:'language-video',review:'language-review',examine:'language-examine'
+    letters:'language-letters',voice:'language-voice',grammar:'language-grammar',video:'language-video',examine:'language-examine'
   };
   const languageContentStoreKey=()=> 'dafatii:language-authoring:v1';
   let languageAuthoringTarget=null;
@@ -698,43 +700,36 @@
     if(page==='letters'){
       const profile=LEVEL_LEARNING_SYSTEMS[li];
       const writingBody=[
-        'Write each target word accurately, connect it to its meaning, then use two of the words in very short correct sentences.',
-        'Build clear simple sentences using the target words and '+data.grammarTitle+'. Change one detail in each sentence without breaking the pattern.',
-        'Write connected moderate sentences about '+data.topic+', using precise vocabulary and at least one linking expression.',
-        'Write advanced sentences about '+data.topic+' that distinguish meaning, register and collocation. Correct one deliberate near-miss before finishing.',
-        'Write a concise C1-style response about '+data.topic+' using precise collocation, controlled stance and one deliberate reformulation.'
+        'Write each target word accurately, connect it to its meaning, then use two of the words in very short sentences.',
+        'Build clear simple sentences using the target words. Change one detail in each sentence while keeping the meaning clear.',
+        'Write connected moderate sentences about '+data.topic+' using precise vocabulary and at least one linking expression.',
+        'Write advanced sentences about '+data.topic+' that distinguish meaning, register and collocation.',
+        'Write a concise C1-style response about '+data.topic+' using precise collocation, controlled stance and deliberate reformulation.'
       ][li];
       return [
-        {id:'vocabulary-set',type:'words',eyebrow:profile.name+' · vocabulary',title:profile.vocabulary,body:'Retrieve the target form from meaning before using audio. Then spell and say each item.',words:data.words,wordPairs:pairs},
-        {id:'vocabulary-writing',type:'writing',eyebrow:'Vocabulary → writing',title:['Simple words','Simple sentences','Moderate words & sentences','Advanced words & sentences','Advanced C1 language'][li],body:writingBody,placeholder:['Write the words and two short sentences…','Write 3–4 simple sentences…','Write a connected short paragraph…','Write precise advanced sentences…','Write a concise C1 response…'][li]},
-        {id:'vocabulary-pattern',type:'info',eyebrow:'Useful pattern',title:data.grammarTitle,body:data.grammarExample1+' '+data.grammarExample2},
-        {id:'vocabulary-retrieval',type:'info',eyebrow:'Retrieval method',title:profile.method,body:profile.target}
+        {id:'vocabulary-set',type:'words',eyebrow:profile.name+' · vocabulary',title:profile.vocabulary,body:'Study meaning and spelling, retrieve each target word from its meaning, and use it in writing.',words:data.words,wordPairs:pairs},
+        {id:'vocabulary-writing',type:'writing',eyebrow:'Vocabulary → writing',title:['Simple words','Simple sentences','Moderate words & sentences','Advanced words & sentences','Advanced C1 language'][li],body:writingBody,placeholder:['Write the words and two short sentences…','Write 3–4 simple sentences…','Write a connected short paragraph…','Write precise advanced sentences…','Write a concise C1 response…'][li]}
       ];
     }
     if(page==='video'){
       const video=videoLessonData(li,step,box);
       return [
         {id:'video-lesson',type:'video',eyebrow:'Admin YouTube lesson',title:video.title,youtubeUrl:video.youtubeUrl,responseLanguage:video.responseLanguage},
-        {id:'video-guide',type:'info',eyebrow:'Before you watch',title:['Find words and the main idea','Follow simple sentences','Track idea + details','Track inference + argument','Synthesize stance + evidence'][li],body:'Watch for the main idea, supporting detail, useful language and one example connected to '+data.grammarTitle+'. The video link must be supplied by the course administrator.'},
-        {id:'video-response',type:'response',eyebrow:'Understanding response',title:'Explain what you understood',body:['Name the topic and write two words you recognized.','Write the main idea and two simple sentences from what you understood.','Write the main idea, two details and one paraphrase.','Explain the argument, one inference, one distractor or contrast, and supporting evidence.','Synthesize the speaker’s position, evidence, implication and one justified evaluation in precise English.'][li],placeholder:'Respond only in '+mode.target+'…'},
-        {id:'video-vocabulary',type:'words',eyebrow:'Video language',title:'Expressions to notice',body:'Use these expressions to verify and extend what you understood.',words:data.words,wordPairs:pairs}
+        {id:'video-response',type:'response',eyebrow:'YouTube understanding',title:'Write what you understood',body:['Tell what the video is mainly about and one correct thing you understood.','Explain the main idea and the simple sentences or details you understood.','Explain the main idea, important details and any relationship you understood.','Explain the argument, key details, contrasts or inference you understood.','Synthesize the speaker’s position, evidence, implication and important relationships you understood.'][li],placeholder:'Write only what you understood from this video…'}
       ];
     }
     if(page==='voice'){
+      const pronunciationTarget=data.words[0];
       return [
-        {id:'listen-repeat',type:'info',eyebrow:arabic?'استماع وتكرار':'Listen & repeat',title:arabic?'ابنِ نموذجاً صوتياً واضحاً':'Build a clean spoken model',body:arabic?'استمع إلى النموذج الإنجليزي كاملاً. كرره ببطء، ثم بالسرعة الطبيعية. لا تترجم أثناء النطق.':'Topic: '+data.topic+'. Pronunciation focus: '+data.pronunciationFocus+'. Repeat the model slowly, then at natural speed.'},
-        {id:'dictation',type:'dictation',eyebrow:'Voice → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
-        {id:'speaking',type:'speaking',eyebrow:arabic?'العربية ← الإنجليزية':'Main language → target',title:arabic?'حوّل المعنى إلى الإنجليزية ثم انطقه':'Speak the target meaning',body:arabic?'عبّر بالإنجليزية عن المعنى مستخدماً هذه الكلمات: '+pairs.slice(0,3).map(pair=>pair.meaning+' ← '+pair.target).join('، ')+'.':data.reversePrompt,targetText:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'},
-        {id:'voice-rubric',type:'info',eyebrow:arabic?'تقييم ذاتي':'Self-check',title:arabic?'المعنى · القاعدة · النبر · الإيقاع':'Meaning · grammar · stress · rhythm',body:arabic?'يجب أن تكون إجابتك الإنجليزية مفهومة، وتستخدم '+rule.title+'، وتتضمن كلمتين مستهدفتين على الأقل، وتضع الوقفات مع المعنى.':'Your response should be understandable, use '+data.grammarTitle+', include at least two target words, and keep pauses aligned with meaning.'}
+        {id:'pronunciation',type:'pronunciation',eyebrow:'Microphone pronunciation',title:'Pronounce: '+pronunciationTarget,targetText:pronunciationTarget,body:'Open the microphone and pronounce the requested word clearly. Gemini judges the actual recording; bad must be repeated, while moderate, good and very good are accepted.'},
+        {id:'dictation',type:'dictation',eyebrow:'Listening → text',title:'Listen, then write exactly what you hear',audioText:data.voicePrompt,placeholder:'Type the complete sentence you hear.'},
+        {id:'speaking',type:'speaking',eyebrow:arabic?'التحدث بالإنجليزية':'Speaking',title:arabic?'عبّر عن المعنى بصوتك':'Speak the requested sentence',body:arabic?'قل بالإنجليزية: '+data.reversePrompt:data.reversePrompt,targetText:data.reversePrompt,placeholder:'Recognition transcript or type your spoken sentence here.'}
       ];
     }
     if(page==='grammar'){
       return [
-        {id:'grammar-rule',type:'rule',eyebrow:arabic?'شرح القاعدة بالعربية':'Grammar rule',title:rule.title,body:rule.rule,example1:data.grammarExample1,example2:data.grammarExample2,direction:rule.direction},
-        {id:'grammar-examples',type:'info',eyebrow:arabic?'أمثلة باللغة الهدف':'Examples',title:arabic?'لاحظ الشكل داخل المعنى':'See the form inside meaning',body:arabic?'النموذج 1: '+data.grammarExample1+' النموذج 2: '+data.grammarExample2:'Model 1: '+data.grammarExample1+' Model 2: '+data.grammarExample2},
-        {id:'grammar-error',type:'info',eyebrow:arabic?'خطأ شائع':'Common error',title:arabic?'صحّح أصغر خطأ محدد':'Correct the smallest specific mistake',body:arabic?'الخطأ الشائع هو اختيار مفردات صحيحة داخل صيغة نحوية خاطئة. أعد كتابة جملة إنجليزية واحدة لتطبّق '+rule.title+' بدقة.':'A common failure is using the right vocabulary with the wrong form. Rewrite one sentence so it accurately demonstrates '+data.grammarTitle+'.'},
-        {id:'naming',type:'info',eyebrow:arabic?'المفردات والسجل':'Naming & register',title:arabic?'اختر كلمات دقيقة':'Choose precise words',body:arabic?'ابدأ بالمعنى العربي، استرجع المقابل الإنجليزي، ثم استخدمه داخل جملة لا منفرداً.':data.naming,words:data.words.slice(0,5),wordPairs:pairs.slice(0,5)},
-        {id:'typing',type:'writing',eyebrow:arabic?'إنتاج من العربية إلى الإنجليزية':'Production',title:arabic?'اكتب باللغة الإنجليزية':'Write for the reader',body:arabic?'اكتب جملتين بالإنجليزية تطبّقان '+rule.title+' وتستخدمان '+pairs.slice(0,2).map(pair=>pair.meaning+' ('+pair.target+')').join(' و ')+'.':data.typing+' '+data.writingPrompt,placeholder:arabic?'اكتب مثالين باللغة الإنجليزية…':'Write two examples that follow the rule.'}
+        {id:'grammar-rule',type:'rule',eyebrow:arabic?'شرح القاعدة بالعربية':'Grammar & rules',title:rule.title,body:rule.rule,example1:data.grammarExample1,example2:data.grammarExample2,direction:rule.direction},
+        {id:'grammar-practice',type:'grammar-practice',eyebrow:arabic?'تطبيق القاعدة':'Rule practice',title:arabic?'طبّق القاعدة فقط':'Apply this rule',body:arabic?'اكتب مثالين يطبّقان '+rule.title+' بدقة. الهدف هنا هو القاعدة، وليس تعلم مفردات جديدة.':'Write two examples that accurately apply '+data.grammarTitle+'. Focus only on the rule and form.',placeholder:arabic?'اكتب مثالين يطبّقان القاعدة…':'Write two rule examples…'}
       ];
     }
     if(page==='review'){
@@ -746,70 +741,70 @@
         {id:'review-notes',type:'notes',eyebrow:arabic?'ملاحظات':'Notes',title:arabic?'احتفظ فقط بما يساعد الاسترجاع':'Keep only what will help future recall',body:arabic?'احفظ المعنى العربي أو التصحيح بالعربية، واترك الأمثلة دائماً باللغة الإنجليزية.':'Save difficult examples, corrections or mnemonics.',placeholder:arabic?'المعنى، الخطأ، التصحيح، مثال إنجليزي…':'Examples, mistakes and mnemonics…'}
       ];
     }
-    if(page==='examine'){
-      return [
-        {id:'exam-guidance',type:'info',eyebrow:'Assessment',title:'Complete the learning before you test it',body:'The Examine page automatically resolves to the correct box, step, level or whole-language assessment for this position.'},
-        {id:'exam-pass-rule',type:'info',eyebrow:'Pass rule',title:'Accuracy matters',body:'Natural course assessments require at least 80%. Independent level challenges require a score greater than 80%.'},
-        {id:'exam-scope',type:'info',eyebrow:'Coverage',title:'Questions sample the whole required scope',body:'Step exams draw from boxes across the step, level exams draw from all five steps, and the whole-language exam draws from A1 through C1.'},
-        {id:'exam-revision',type:'info',eyebrow:'Before submitting',title:'Grammar · vocabulary · listening · meaning',body:'Review weak items, then answer without returning to the lesson pages during the attempt.'}
-      ];
-    }
+    if(page==='examine')return [];
+
     return [];
   }
 
+  const LANGUAGE_PAGE_ITEM_TYPES = Object.freeze({
+    letters:['words','writing'],
+    voice:['pronunciation','dictation','speaking'],
+    grammar:['rule','grammar-practice'],
+    video:['video','response'],
+    review:['words','steps','notes','info'],
+    examine:[]
+  });
+  function pagePureItems(page,items){
+    const allowed=LANGUAGE_PAGE_ITEM_TYPES[page]||[];
+    return (Array.isArray(items)?items:[]).filter(item=>allowed.includes(item?.type));
+  }
   function languagePageItems(li,step,box,page){
     const store=languageContentStore(),key=contentPageKey(li,step,box,page);
-    return Object.prototype.hasOwnProperty.call(store.pages,key)
+    const items=Object.prototype.hasOwnProperty.call(store.pages,key)
       ? (Array.isArray(store.pages[key])?store.pages[key]:[])
       : defaultLanguageContentItems(li,step,box,page);
+    return pagePureItems(page,items);
   }
   function mutateLanguagePageItems(selection,mutator){
     const store=languageContentStore(),key=contentPageKey(selection.li,selection.step,selection.box,selection.page);
     const items=Object.prototype.hasOwnProperty.call(store.pages,key)
       ? (Array.isArray(store.pages[key])?[...store.pages[key]]:[])
       : defaultLanguageContentItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item}));
-    store.pages[key]=mutator(items)||items;
+    store.pages[key]=pagePureItems(selection.page,mutator(items)||items);
     writeLanguageContentStore(store);
     return store.pages[key];
   }
   function languageItemSchemas(page,li){
-    const commonInfo={type:'info',label:'Information',fields:[
-      {name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Body',kind:'textarea'}
-    ]};
     const schemas={
       letters:[
-        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
-        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        commonInfo
-      ],
-      video:[
-        {type:'video',label:'Admin YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
-        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        {type:'words',label:'Video vocabulary',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
-        commonInfo
+        {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Vocabulary instructions',kind:'textarea'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
+        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Writing prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]}
       ],
       voice:[
-        {type:'dictation',label:'Voice to text',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'audioText',label:'Audio text',kind:'textarea'},{name:'placeholder',label:'Input placeholder',kind:'text'}]},
-        {type:'speaking',label:'Text to voice',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Text to speak',kind:'textarea'},{name:'placeholder',label:'Transcript placeholder',kind:'text'}]},
-        commonInfo
+        {type:'pronunciation',label:'Microphone pronunciation',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Prompt title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'targetText',label:'Requested word or letter',kind:'text'}]},
+        {type:'dictation',label:'Listening / dictation',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'audioText',label:'Audio text',kind:'textarea'},{name:'placeholder',label:'Input placeholder',kind:'text'}]},
+        {type:'speaking',label:'Speaking task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Speaking prompt',kind:'textarea'},{name:'targetText',label:'Expected spoken text',kind:'textarea'},{name:'placeholder',label:'Transcript placeholder',kind:'text'}]}
       ],
       grammar:[
         {type:'rule',label:'Grammar rule',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Rule title',kind:'text'},{name:'body',label:'Rule explanation',kind:'textarea'},{name:'example1',label:'Example 1',kind:'text'},{name:'example2',label:'Example 2',kind:'text'}]},
-        {type:'writing',label:'Writing task',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        commonInfo
+        {type:'grammar-practice',label:'Rule practice',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Rule practice prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]}
+      ],
+      video:[
+        {type:'video',label:'Admin YouTube video',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'youtubeUrl',label:'YouTube URL',kind:'text'}]},
+        {type:'response',label:'Understanding response',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Understanding prompt',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]}
       ],
       review:[
         {type:'words',label:'Vocabulary set',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'words',label:'Words (one per line)',kind:'lines'}]},
         {type:'steps',label:'Learning method',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Recall prompt',kind:'textarea'},{name:'steps',label:'Steps (one per line)',kind:'lines'}]},
-        {type:'notes',label:'Notes box',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]},
-        commonInfo
+        {type:'notes',label:'Notes box',fields:[{name:'eyebrow',label:'Label',kind:'text'},{name:'title',label:'Title',kind:'text'},{name:'body',label:'Instructions',kind:'textarea'},{name:'placeholder',label:'Placeholder',kind:'text'}]}
       ],
-      examine:[commonInfo]
+      examine:[]
     };
-    return schemas[page]||[commonInfo];
+    return schemas[page]||[];
   }
   function createLanguageItem(selection,type){
-    const schema=(languageItemSchemas(selection.page,selection.li).find(item=>item.type===type)||languageItemSchemas(selection.page,selection.li)[0]);
+    const schemas=languageItemSchemas(selection.page,selection.li),schema=schemas.find(item=>item.type===type)||schemas[0];
+    if(!schema)throw new Error('This page is managed by its dedicated assessment controls, not lesson content items.');
     const item={id:contentItemId(type),type:schema.type};
     schema.fields.forEach(field=>{item[field.name]=field.kind==='lines'?[]:(field.kind==='select'?(field.options?.[0]||''):'');});
     return item;
@@ -1035,7 +1030,7 @@
     const bridgeMarkup=bridge.special
       ? '<div class="letter-sound-bridge special"><span lang="ar" dir="rtl">صوت خاص</span><b>→</b><strong>'+letter+' '+lower+'</strong></div><p class="letter-bridge-note" dir="rtl">لا يوجد مقابل عربي واحد دقيق. '+esc(bridge.note||'استمع إلى النطق الإنجليزي وتعلّم الشكل مباشرة.')+'</p>'
       : '<div class="letter-sound-bridge"><span lang="ar" dir="rtl">'+esc(bridge.arabic)+'</span><b>↔</b><strong>'+letter+' '+lower+'</strong></div><p class="letter-bridge-note" dir="rtl">اربط صوت '+esc(bridge.arabic)+' بالنطق الإنجليزي '+esc(bridge.sound)+(bridge.approximate?' باعتباره أقرب تقريب صوتي.':'.')+'</p>';
-    return '<section class="language-course-page language-letters-mobile letter-gate-learning" data-letter-gate-learning><header class="letter-gate-minihead"><button type="button" data-letter-gate-home>←</button><div><small>English letter prerequisite</small><strong>'+practiced.length+' / 26</strong></div><a href="#language-letter-exam">Exam →</a></header><div class="letter-sequence-head"><div><small>Letters practiced</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div><div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>'+(bridge.special?'Special English sound':'Arabic sound match')+'</small>'+bridgeMarkup+'<div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'">▶ Hear '+letter+'</button><div class="letter-example-word"><span>Example</span><strong>'+esc(word)+'</strong><em dir="rtl">'+esc(LETTER_WORD_AR[word]||'')+'</em><button type="button" data-speak="'+esc(word)+'">Hear word</button></div></article></div><div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div><div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?'✓ This letter is already practiced.':'Trace both forms until each shape matches the guide.')+'</div><div class="letter-complete-row"><button type="button" data-gate-letter-complete="'+letter+'" data-letter-done="'+(done?'true':'false')+'" disabled>'+(done?'✓ '+letter+' practiced':'Complete '+letter)+'</button><button type="button" data-gate-letter-next '+(done?'':'disabled')+'>Next letter →</button></div>'+(allDone?'<a class="language-exam-cta" href="#language-letter-exam"><span>✓</span><div><strong>Letters examination</strong><p>All 26 letters practiced. Take the 10-question drawing exam.</p></div><b>→</b></a>':'')+'</section>';
+    return '<section class="language-course-page language-letters-mobile letter-gate-learning" data-letter-gate-learning><header class="letter-gate-minihead"><button type="button" data-letter-gate-home>←</button><div><small>English letter prerequisite</small><strong>'+practiced.length+' / 26</strong></div><a href="#language-letter-exam">Exam →</a></header><div class="letter-sequence-head"><div><small>Letters practiced</small><strong>'+practiced.length+' / 26</strong></div><div class="letter-sequence-meter"><i style="width:'+Math.round(practiced.length/26*100)+'%"></i></div></div><div class="letter-learning-shell"><aside class="letter-index-grid">'+selectors+'</aside><article class="letter-focus-card"><small>'+(bridge.special?'Special English sound':'Arabic sound match')+'</small>'+bridgeMarkup+'<div class="letter-glyph-pair"><strong>'+letter+'</strong><span>'+lower+'</span></div><button class="letter-hear-button" type="button" data-speak-letter="'+letter+'">▶ Hear '+letter+'</button><div class="letter-pronunciation-check"><strong>Pronounce '+letter+'</strong>'+pronunciationJudgeMarkup(LETTER_SPEECH[letter]||letter,'letter:'+letter,'letter',String(state.pronunciationRatings['letter:'+letter]||''))+'</div><div class="letter-example-word"><span>Example</span><strong>'+esc(word)+'</strong><em dir="rtl">'+esc(LETTER_WORD_AR[word]||'')+'</em><button type="button" data-speak="'+esc(word)+'">Hear word</button></div></article></div><div class="letter-trace-grid"><article><div><small>Uppercase</small><h2>'+letter+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+letter+'</span><canvas id="letter-upper-canvas" data-letter-canvas="upper" width="720" height="280" aria-label="Draw uppercase '+letter+'"></canvas></div><button type="button" data-canvas-clear="letter-upper-canvas">Clear uppercase</button></article><article><div><small>Lowercase</small><h2>'+lower+'</h2></div><div class="letter-trace-stage"><span aria-hidden="true">'+lower+'</span><canvas id="letter-lower-canvas" data-letter-canvas="lower" width="720" height="280" aria-label="Draw lowercase '+lower+'"></canvas></div><button type="button" data-canvas-clear="letter-lower-canvas">Clear lowercase</button></article></div><div class="letter-draw-feedback" data-letter-feedback aria-live="polite">'+(done?'✓ This letter is already practiced.':'Trace both forms until each shape matches the guide.')+'</div><div class="letter-complete-row"><button type="button" data-gate-letter-complete="'+letter+'" data-letter-done="'+(done?'true':'false')+'" disabled>'+(done?'✓ '+letter+' practiced':'Complete '+letter)+'</button><button type="button" data-gate-letter-next '+(done?'':'disabled')+'>Next letter →</button></div>'+(allDone?'<a class="language-exam-cta" href="#language-letter-exam"><span>✓</span><div><strong>Letters examination</strong><p>All 26 letters practiced. Take the 10-question drawing exam.</p></div><b>→</b></a>':'')+'</section>';
   }
   function letterGateExamPage(state){
     const questions=letterGateExamQuestions(state);
@@ -1193,8 +1188,7 @@
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{},items=languagePageItems(pos.li,pos.step,pos.box,'letters');
     const entries=items.map(item=>{
       let markup='';
-      if(item.type==='sound')markup='<article class="language-sound-hero language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'Pronunciation focus')+'</small><h2>'+esc(item.title||'Sound focus')+'</h2><p>'+esc(item.body||'')+'</p></div>'+(item.audioText?'<button class="btn btn-primary" type="button" data-speak="'+esc(item.audioText)+'">'+t('listen')+'</button>':'')+'</article>';
-      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Target words')+'</small><h2>'+esc(item.title||'Word set')+'</h2><div class="language-pronunciation-grid">'+itemWordPairs(item,state,pos).map(pair=>'<button type="button" data-speak="'+esc(pair.target)+'"><strong>'+esc(pair.target)+'</strong>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'<span>▶</span></button>').join('')+'</div></article>';
+      if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Vocabulary')+'</small><h2>'+esc(item.title||'Vocabulary set')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-pronunciation-grid language-vocabulary-only">'+itemWordPairs(item,state,pos).map(pair=>'<div class="language-vocabulary-card"><strong>'+esc(pair.target)+'</strong>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'</div>').join('')+'</div></article>';
       else if(item.type==='writing')markup='<article class="language-writing-task language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Writing task')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-pronunciation-writing" rows="6" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
       else markup=infoItemCard(item);
       return {item,markup};
@@ -1207,17 +1201,16 @@
   function videoUnderstandingPage(state,pos){
     const data=boxData(pos.li,pos.step,pos.box),id=keyBox(CEFR[pos.li].id,pos.step,pos.box),module=state.modules[id]||{};
     const items=languagePageItems(pos.li,pos.step,pos.box,'video'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
-    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',responseLanguage=learningLanguage(state,pos.li).target,arabic=responseLanguage==='Arabic';
-    const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
+    const watched=Boolean(state.watchedVideos[id]),saved=state.videoResponses[id]||'',rating=String(state.videoRatings[id]||''),responseLanguage=learningLanguage(state,pos.li).target;
+    const youtubeUrl=String(videoItem?.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
     const entries=items.map(item=>{
       let markup='';
-      if(item.type==='video')markup='<article class="language-youtube-card language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'YouTube video')+'</small><h2>'+esc(item.title||data.title)+'</h2><p>Open the target-language lesson, watch it, then return here.</p></div><div class="language-youtube-actions">'+(validYouTube?'<a href="'+esc(youtubeUrl)+'" target="_blank" rel="noopener noreferrer" data-youtube-video>▶ Open YouTube</a>':'<span class="language-youtube-missing">Add a valid YouTube link from Content Control.</span>')+'<button type="button" data-video-watched '+(validYouTube?'':'disabled')+'>'+(watched?'✓ Watched':'I finished watching')+'</button></div></article>';
-      else if(item.type==='response')markup='<article class="language-video-response language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Understanding response')+' · '+esc(responseLanguage)+'</small><h2>'+esc(item.title||'Explain what you understood')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-video-response" rows="8" dir="'+(arabic?'rtl':'ltr')+'" placeholder="'+esc(item.placeholder||'Write here…')+'">'+esc(saved)+'</textarea><p class="language-feedback" data-video-response-feedback></p></article>';
-      else if(item.type==='words')markup='<article class="language-content-item language-word-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Vocabulary')+'</small><h2>'+esc(item.title||'Key expressions')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-vocab-grid">'+itemWords(item).map(word=>'<button type="button" data-speak="'+esc(word)+'"><span>'+esc(word)+'</span><b>▶</b></button>').join('')+'</div></article>';
-      else markup=infoItemCard(item,'video-information-item');
+      if(item.type==='video')markup='<article class="language-youtube-card language-content-item"'+contentItemAttrs(item)+'><div><small>'+esc(item.eyebrow||'YouTube video')+'</small><h2>'+esc(item.title||data.title)+'</h2><p>Watch the admin-supplied video. This page evaluates only what you understood from this video.</p></div><div class="language-youtube-actions">'+(validYouTube?'<a href="'+esc(youtubeUrl)+'" target="_blank" rel="noopener noreferrer" data-youtube-video>▶ Open YouTube</a>':'<span class="language-youtube-missing">Add a valid YouTube link from Content Control.</span>')+'<button type="button" data-video-watched '+(validYouTube?'':'disabled')+'>'+(watched?'✓ Watched':'I finished watching')+'</button></div></article>';
+      else if(item.type==='response')markup='<article class="language-video-response language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'YouTube understanding')+'</small><h2>'+esc(item.title||'Write what you understood')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-video-response" rows="8" placeholder="'+esc(item.placeholder||'Write what you understood…')+'">'+esc(saved)+'</textarea><div class="language-video-grade '+(rating==='bad'?'failed':rating?'accepted':'')+'" data-video-rating '+(rating?'':'hidden')+'><small>Gemini rating</small><strong>'+esc(rating||'')+'</strong><span>'+(rating==='bad'?'Not accepted · revise your understanding and submit again.':rating?'Accepted · YouTube understanding complete.':'')+'</span></div><p class="language-feedback" data-video-response-feedback></p></article>';
       return {item,markup};
     });
-    const completion='<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" '+(module.video||videoItem&&responseItem&&validYouTube?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(videoItem&&responseItem&&validYouTube?'Complete the video response':'Add a valid video and response first'))+'</button>';
+    const ready=Boolean(videoItem&&responseItem&&validYouTube);
+    const completion='<button class="language-complete-bar '+(module.video?'done':'')+'" type="button" data-language-module="video" data-video-evaluate '+(module.video||ready?'':'disabled')+'>'+(module.video?'✓ '+t('completed'):(ready?'Judge understanding with Gemini':'Add a valid video and understanding response first'))+'</button>';
     return languageProcessPage(state,pos,'video',entries,completion,'language-video-page');
   }
 
@@ -1247,13 +1240,14 @@
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,data.box)]||{},items=languagePageItems(pos.li,pos.step,pos.box,'voice');
     const entries=items.map(item=>{
       let markup='';
-      if(item.type==='dictation')markup='<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
+      if(item.type==='pronunciation'){const pkey='box:'+id+':'+item.id,prating=String(state.pronunciationRatings[pkey]||'');markup='<article class="language-practice-card pronunciation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Pronunciation')+'</small><h2>'+esc(item.title||'Pronounce the requested word')+'</h2><p>'+esc(item.body||'')+'</p>'+pronunciationJudgeMarkup(item.targetText||'',pkey,'word',prating)+'</article>';}
+      else if(item.type==='dictation')markup='<article class="language-practice-card dictation language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Voice → text')+'</small><h2>'+esc(item.title||'Listen and write')+'</h2><button class="language-audio-button" type="button" data-speak="'+esc(item.audioText||'')+'">▶ '+t('listen')+'</button><textarea id="language-dictation" rows="4" placeholder="'+esc(item.placeholder||'Type what you hear')+'"></textarea><button type="button" data-check-dictation="'+esc(item.audioText||'')+'">'+t('check')+'</button><p class="language-feedback" data-dictation-feedback></p></article>';
       else if(item.type==='speaking'){const targetText=item.targetText||item.body||'';markup='<article class="language-practice-card reverse language-content-item"'+contentItemAttrs(item)+'><small>'+esc(item.eyebrow||'Text → voice')+'</small><h2>'+esc(item.title||t('speak'))+'</h2><blockquote dir="'+(usesArabicBridge(state,pos.li)?'rtl':'ltr')+'">'+esc(item.body||'')+'</blockquote><button class="language-audio-button secondary" type="button" data-recognize="'+esc(targetText)+'">🎙 '+t('start')+'</button><textarea id="language-reverse-fallback" rows="3" placeholder="'+esc(item.placeholder||'Recognition transcript')+'"></textarea><button type="button" data-check-reverse="'+esc(targetText)+'">'+t('check')+'</button><p class="language-feedback" data-reverse-feedback></p></article>';}
       else markup=infoItemCard(item);
       return {item,markup};
     });
-    const completeReady=items.some(item=>item.type==='dictation')&&items.some(item=>item.type==='speaking');
-    const completion='<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice||completeReady?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):(completeReady?'Complete both voice exercises first':'Add both voice exercise items before completion'))+'</button>';
+    const completeReady=items.some(item=>item.type==='pronunciation')&&items.some(item=>item.type==='dictation')&&items.some(item=>item.type==='speaking');
+    const completion='<button class="language-complete-bar '+(module.voice?'done':'')+'" type="button" data-language-module="voice" '+(module.voice||completeReady?'':'disabled')+'>'+(module.voice?'✓ '+t('completed'):(completeReady?'Complete pronunciation, listening and speaking first':'Add pronunciation, listening and speaking items before completion'))+'</button>';
     return languageProcessPage(state,{li:pos.li,step:pos.step,box:data.box},'voice',entries,completion,'language-practice-page');
   }
 
@@ -1264,16 +1258,11 @@
     const entries=items.map((item,index)=>{
       let markup='';
       if(item.type==='rule')markup='<article class="language-rule-card primary language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Grammar rule')+'</small><h2>'+esc(item.title||'Grammar rule')+'</h2><p>'+esc(item.body||'')+'</p><div class="language-examples" dir="ltr">'+(item.example1?'<code>'+esc(item.example1)+'</code>':'')+(item.example2?'<code>'+esc(item.example2)+'</code>':'')+'</div></article>';
-      else if(item.type==='writing')markup='<article class="language-rule-card language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Writing')+'</small><h2>'+esc(item.title||'Write for the reader')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" dir="ltr" rows="5" placeholder="'+esc(item.placeholder||'Write here…')+'"></textarea></article>';
-      else if(item.type==='info'){
-        const words=itemWords(item),pairs=itemWordPairs(item,state,pos);
-        markup='<article class="language-rule-card language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Information')+'</small><h2>'+esc(item.title||'Information')+'</h2><p>'+esc(item.body||'')+'</p>'+(words.length?'<div class="language-word-row" dir="ltr">'+pairs.map(pair=>'<b><span>'+esc(pair.target)+'</span>'+(pair.meaning?'<small dir="rtl">'+esc(pair.meaning)+'</small>':'')+'</b>').join('')+'</div>':'')+'</article>';
-      }
-      else markup=infoItemCard(item);
+      else if(item.type==='grammar-practice')markup='<article class="language-rule-card language-content-item" dir="'+contentDirection+'"'+contentItemAttrs(item)+'><span>'+String(index+1).padStart(2,'0')+'</span><small>'+esc(item.eyebrow||'Rule practice')+'</small><h2>'+esc(item.title||'Apply the rule')+'</h2><p>'+esc(item.body||'')+'</p><textarea id="language-grammar-writing" dir="ltr" rows="5" placeholder="'+esc(item.placeholder||'Write rule examples…')+'"></textarea></article>';
       return {item,markup};
     });
-    const hasWriting=items.some(item=>item.type==='writing');
-    const completion='<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar||hasWriting?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):(hasWriting?'Write your examples first':'Add a writing item before completion'))+'</button>';
+    const hasPractice=items.some(item=>item.type==='grammar-practice');
+    const completion='<button class="language-complete-bar '+(module.grammar?'done':'')+'" type="button" data-language-module="grammar" '+(module.grammar||hasPractice?'':'disabled')+'>'+(module.grammar?'✓ '+t('completed'):(hasPractice?'Complete the rule practice first':'Add a rule-practice item before completion'))+'</button>';
     return languageProcessPage(state,{li:pos.li,step:pos.step,box:data.box},'grammar',entries,completion,'language-grammar-page');
   }
 
@@ -1478,7 +1467,7 @@
     const arabic=usesArabicBridge(state,pos.li),head='<div class="language-question-head" dir="'+(arabic?'rtl':'ltr')+'"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type,arabic))+'</small><legend>'+esc(examPrompt(q.prompt,arabic))+'</legend></div></div>';
     const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> '+(arabic?'تشغيل الصوت':'Play audio')+'</button>':'';
     let answer='';
-    if(type==='speak')answer='<div class="language-exam-speak"><button type="button" data-exam-speak data-speak-target="'+esc(q.correct||'')+'">🎙 '+(arabic?'ابدأ النطق':'Start speaking')+'</button><label class="language-exam-text"><span>'+(arabic?'النص الذي التقطه المتصفح':'Recognized speech')+'</span><input type="text" name="'+name+'" autocomplete="off" readonly required placeholder="'+(arabic?'استخدم زر الميكروفون…':'Use the microphone button…')+'"></label><small data-exam-speak-status>'+(arabic?'يُقاس النطق عبر نص التعرّف على الكلام في المتصفح.':'Pronunciation is checked through the browser speech-recognition transcript.')+'</small></div>';
+    if(type==='speak')answer='<div class="language-exam-speak">'+pronunciationJudgeMarkup(q.correct||'','',String(q.correct||'').trim().split(/\s+/).length>1?'sentence':'word','',name)+'</div>';
     else if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
     else if(type==='ordering')answer='<div class="language-ordering" data-ordering="'+name+'"><div class="language-order-answer" data-order-answer aria-label="Your sentence"></div><div class="language-order-bank">'+(q.tokens||String(q.correct||'').split(/\s+/)).map(token=>'<button type="button" data-order-token="'+esc(token)+'">'+esc(token)+'</button>').join('')+'</div><input type="hidden" name="'+name+'"></div>';
     else if(type==='multi-select')answer='<div class="language-answer-options multiple">'+(q.options||[]).map(option=>'<label><input type="checkbox" name="'+name+'" value="'+esc(option)+'"><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
@@ -1493,7 +1482,7 @@
     }
     const answer=String(form.get(name)||'').trim(),correct=String(question.correct||'').trim();
     if(type==='fill')return normalizeText(answer)===normalizeText(correct);
-    if(type==='speak')return answerSimilarity(answer,correct)>=(String(question.correct||'').trim().split(/\s+/).length===1?.88:.78);
+    if(type==='speak')return geminiRatingAccepted(answer);
     if(type==='short-answer'||type==='listen-fill')return answerSimilarity(answer,correct)>=.82;
     if(type==='ordering')return normalizeText(answer)===normalizeText(correct);
     return answer===correct;
@@ -1749,20 +1738,22 @@
     const complete=document.querySelector(gate?'[data-gate-letter-complete]':'[data-letter-complete]'),next=document.querySelector(gate?'[data-gate-letter-next]':'[data-letter-next]'),feedback=document.querySelector('[data-letter-feedback]');
     if(!upper||!lower||!complete)return;
     const letter=(gate?complete.dataset.gateLetterComplete:complete.dataset.letterComplete)||'A',alreadyDone=complete.dataset.letterDone==='true';
-    let upperResult={valid:false,score:0},lowerResult={valid:false,score:0};
+    const pronunciation=gate?document.querySelector('[data-pronunciation-key="letter:'+letter+'"]'):null;
+    let upperResult={valid:false,score:0},lowerResult={valid:false,score:0},pronunciationPassed=!gate||pronunciation?.dataset.pronunciationAccepted==='true';
     const update=()=>{
       if(alreadyDone){
         complete.disabled=true;if(next)next.disabled=false;
         if(feedback)feedback.textContent='✓ '+letter+' is already completed. You can retrace it for practice or continue.';
         return;
       }
-      const valid=upperResult.valid&&lowerResult.valid;
+      const valid=upperResult.valid&&lowerResult.valid&&pronunciationPassed;
       complete.disabled=!valid;if(next)next.disabled=true;
       const upperPct=Math.round((upperResult.score||0)*100),lowerPct=Math.round((lowerResult.score||0)*100);
       if(feedback)feedback.textContent=valid
-        ? '✓ Both shapes match the guide closely enough. Complete '+letter+' to continue.'
-        : 'Keep tracing the gray guide · uppercase '+upperPct+'% · lowercase '+lowerPct+'%.';
+        ? '✓ Shapes and Gemini pronunciation are accepted. Complete '+letter+' to continue.'
+        : 'Finish all checks · uppercase '+upperPct+'% · lowercase '+lowerPct+'% · pronunciation '+(pronunciationPassed?'✓':'needed')+'.';
     };
+    if(gate)pronunciation?.addEventListener('dafatii:pronunciationgraded',event=>{pronunciationPassed=Boolean(event.detail?.accepted);update();});
     bindValidatedLetterCanvas(upper,letter,'upper',result=>{upperResult=result;update();});
     bindValidatedLetterCanvas(lower,letter,'lower',result=>{lowerResult=result;update();});
     document.querySelectorAll('[data-canvas-clear]').forEach(button=>button.onclick=()=>{
@@ -1797,33 +1788,114 @@
   }
 
   function videoResponseValid(language,value){
-    const text=String(value||'').trim();
-    if(language==='Arabic'){
-      const arabic=(text.match(/[\u0600-\u06FF]/g)||[]).length;
-      return arabic>=30&&text.split(/\s+/).length>=8;
-    }
-    if(language==='English'){
-      const latin=(text.match(/[A-Za-z]/g)||[]).length;
-      const arabic=(text.match(/[\u0600-\u06FF]/g)||[]).length;
-      return latin>=50&&arabic<8&&text.split(/\s+/).length>=12;
-    }
-    return [...text].length>=45&&text.split(/\s+/).length>=8;
+    return String(value||'').trim().length>=3;
   }
+  const GEMINI_ACCEPTED_RATINGS = Object.freeze(['moderate','good','very good']);
+  function geminiRatingAccepted(rating){return GEMINI_ACCEPTED_RATINGS.includes(String(rating||'').toLowerCase());}
+  function pronunciationJudgeMarkup(targetText,stateKey,kind,rating,inputName=''){
+    const value=String(rating||'').toLowerCase(),accepted=geminiRatingAccepted(value);
+    return '<div class="language-pronunciation-judge '+(value==='bad'?'failed ':accepted?'accepted ':'')+'" data-pronunciation-judge data-pronunciation-target="'+esc(targetText)+'" data-pronunciation-key="'+esc(stateKey||'')+'" data-pronunciation-kind="'+esc(kind||'word')+'" data-pronunciation-accepted="'+(accepted?'true':'false')+'">'+
+      '<div class="language-pronunciation-command"><strong>'+esc(targetText)+'</strong><button type="button" data-gemini-pronunciation>🎙 '+(accepted?'Record again':'Open microphone')+'</button></div>'+
+      '<div class="language-pronunciation-grade" data-pronunciation-grade '+(value?'':'hidden')+'><small>Gemini pronunciation</small><strong data-pronunciation-rating-value>'+esc(value)+'</strong><span data-pronunciation-rating-message>'+(value==='bad'?'Not accepted · pronounce it again.':accepted?'Accepted · pronunciation passed.':'')+'</span></div>'+
+      '<p class="language-feedback" data-pronunciation-feedback>'+(accepted?'Accepted. You may continue.':'')+'</p>'+
+      (inputName?'<input type="hidden" name="'+esc(inputName)+'" value="'+esc(value)+'">':'')+
+    '</div>';
+  }
+  function blobAsBase64(blob){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||'').split(',')[1]||'');
+      reader.onerror=()=>reject(reader.error||new Error('Could not read microphone recording.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+  function bindGeminiPronunciation(){
+    document.querySelectorAll('[data-pronunciation-judge]').forEach(root=>{
+      const button=root.querySelector('[data-gemini-pronunciation]'),feedback=root.querySelector('[data-pronunciation-feedback]'),grade=root.querySelector('[data-pronunciation-grade]'),ratingValue=root.querySelector('[data-pronunciation-rating-value]'),ratingMessage=root.querySelector('[data-pronunciation-rating-message]'),hidden=root.querySelector('input[type="hidden"]');
+      if(!button)return;
+      let recorder=null,stream=null,chunks=[],timer=null,busy=false;
+      const targetText=String(root.dataset.pronunciationTarget||'').trim(),kind=String(root.dataset.pronunciationKind||'word'),stateKey=String(root.dataset.pronunciationKey||'');
+      const stopTracks=()=>{if(stream){stream.getTracks().forEach(track=>track.stop());stream=null;}};
+      const showRating=rating=>{
+        const accepted=geminiRatingAccepted(rating);
+        root.dataset.pronunciationAccepted=accepted?'true':'false';
+        root.classList.toggle('accepted',accepted);root.classList.toggle('failed',rating==='bad');
+        if(hidden){hidden.value=rating;hidden.dispatchEvent(new Event('change',{bubbles:true}));}
+        if(grade)grade.hidden=!rating;
+        if(ratingValue)ratingValue.textContent=rating||'';
+        if(ratingMessage)ratingMessage.textContent=rating==='bad'?'Not accepted · pronounce it again.':accepted?'Accepted · pronunciation passed.':'';
+        root.dispatchEvent(new CustomEvent('dafatii:pronunciationgraded',{bubbles:true,detail:{rating,accepted,stateKey}}));
+      };
+      const evaluate=async blob=>{
+        busy=true;button.disabled=true;button.textContent='Gemini is judging…';
+        if(feedback)feedback.textContent='Uploading this short recording securely for pronunciation evaluation…';
+        try{
+          if(!window.DafatiiApi?.request)throw new Error('The grading API client is unavailable.');
+          const audioData=await blobAsBase64(blob);
+          const state=languageState(),pos=activeLanguagePosition(state);
+          const result=await window.DafatiiApi.request('/language/pronunciation',{method:'POST',body:{
+            targetText,kind,audioData,mimeType:(blob.type||'audio/webm'),targetLanguage:courseTargetLanguage(state),level:CEFR[pos.li].id
+          }});
+          const rating=String(result?.rating||'').toLowerCase();
+          if(!['bad','moderate','good','very good'].includes(rating))throw new Error('Gemini returned an unsupported pronunciation rating.');
+          if(stateKey)updateLanguage(value=>{value.pronunciationRatings[stateKey]=rating;});
+          showRating(rating);
+          if(feedback)feedback.textContent=rating==='bad'?'Not accepted. Listen to the target and pronounce it again.':rating==='moderate'?'Accepted · recognizable pronunciation.':rating==='good'?'Accepted · good pronunciation.':'Accepted · very good pronunciation.';
+        }catch(error){
+          if(feedback)feedback.textContent=error?.message||'Pronunciation grading failed. Try again.';
+        }finally{
+          busy=false;button.disabled=false;button.textContent='🎙 Record again';stopTracks();
+        }
+      };
+      button.onclick=async()=>{
+        if(busy)return;
+        if(recorder&&recorder.state==='recording'){clearTimeout(timer);recorder.stop();button.disabled=true;return;}
+        if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){if(feedback)feedback.textContent='Microphone recording is not supported in this browser.';return;}
+        try{
+          stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+          const candidates=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
+          const mime=candidates.find(type=>typeof MediaRecorder.isTypeSupported!=='function'||MediaRecorder.isTypeSupported(type))||'';
+          recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);chunks=[];
+          recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
+          recorder.onstop=()=>{clearTimeout(timer);const blob=new Blob(chunks,{type:recorder.mimeType||chunks[0]?.type||'audio/webm'});recorder=null;if(!blob.size){stopTracks();if(feedback)feedback.textContent='No microphone audio was captured. Try again.';button.disabled=false;return;}evaluate(blob);};
+          recorder.onerror=()=>{clearTimeout(timer);recorder=null;stopTracks();button.disabled=false;button.textContent='🎙 Open microphone';if(feedback)feedback.textContent='Microphone recording failed. Try again.';};
+          recorder.start();
+          button.textContent='■ Stop & judge';if(feedback)feedback.textContent='Recording… pronounce '+targetText+' clearly, then stop.';
+          timer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},6000);
+        }catch(error){stopTracks();if(feedback)feedback.textContent='Microphone permission is required for pronunciation.';}
+      };
+    });
+  }
+
   function bindVideoUnderstanding(){
     const watchedButton=document.querySelector('[data-video-watched]'),field=document.getElementById('language-video-response');
-    const complete=document.querySelector('[data-language-module="video"]'),feedback=document.querySelector('[data-video-response-feedback]');
+    const complete=document.querySelector('[data-video-evaluate]'),feedback=document.querySelector('[data-video-response-feedback]'),ratingBox=document.querySelector('[data-video-rating]');
     if(!field||!complete)return;
     const state=languageState(),pos=activeLanguagePosition(state),id=keyBox(CEFR[pos.li].id,pos.step,pos.box);
-    const items=languagePageItems(pos.li,pos.step,pos.box,'letters'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
+    const items=languagePageItems(pos.li,pos.step,pos.box,'video'),videoItem=items.find(item=>item.type==='video'),responseItem=items.find(item=>item.type==='response');
     if(!videoItem||!responseItem)return;
-    const youtubeUrl=String(videoItem.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
+    const youtubeUrl=String(videoItem.youtubeUrl||'').trim(),validYouTube=/^https:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i.test(youtubeUrl);
     const responseLanguage=learningLanguage(state,pos.li).target;
-    let watched=Boolean(state.watchedVideos[id]);
+    let watched=Boolean(state.watchedVideos[id]),busy=false;
+    const setRating=(rating,message)=>{
+      if(ratingBox){
+        ratingBox.hidden=!rating;
+        ratingBox.classList.toggle('failed',rating==='bad');
+        ratingBox.classList.toggle('accepted',Boolean(rating&&rating!=='bad'));
+        ratingBox.querySelector('strong').textContent=rating||'';
+        ratingBox.querySelector('span').textContent=message||'';
+      }
+    };
     const updateGate=()=>{
-      const valid=videoResponseValid(responseLanguage,field.value);
-      complete.disabled=complete.classList.contains('done')?false:!(validYouTube&&watched&&valid);
-      if(!complete.classList.contains('done'))complete.textContent=!validYouTube?'Add a valid YouTube video link first':!watched?'Watch the YouTube video first':(valid?t('complete'):'Write a fuller response in '+responseLanguage);
-      if(feedback)feedback.textContent=valid?'Response length and target language are ready.':'Write a fuller response in '+responseLanguage+' with the main idea and supporting details.';
+      const valid=videoResponseValid(responseLanguage,field.value),done=complete.classList.contains('done');
+      complete.disabled=done||busy||!(validYouTube&&watched&&valid);
+      if(done)complete.textContent='✓ '+t('completed');
+      else if(busy)complete.textContent='Gemini is judging…';
+      else if(!validYouTube)complete.textContent='Add a valid YouTube video link first';
+      else if(!watched)complete.textContent='Watch the YouTube video first';
+      else if(!valid)complete.textContent='Write what you understood first';
+      else complete.textContent='Judge understanding with Gemini';
+      if(feedback&&!busy)feedback.textContent=valid?'Ready for Gemini understanding evaluation.':'Write what you understood from the video.';
     };
     watchedButton?.addEventListener('click',()=>{
       if(!validYouTube)return;
@@ -1832,12 +1904,46 @@
       updateLanguage(value=>{value.watchedVideos[id]=true;});
       updateGate();
     });
-    field.addEventListener('input',updateGate);
+    field.addEventListener('input',()=>{
+      setRating('','');
+      if(feedback)feedback.textContent='';
+      updateGate();
+    });
     field.addEventListener('blur',()=>updateLanguage(value=>{value.videoResponses[id]=field.value;}));
-    complete.onclick=()=>{
-      if(complete.disabled)return;
-      updateLanguage(value=>{value.videoResponses[id]=field.value;});
-      markModule('video');
+    complete.onclick=async()=>{
+      if(complete.disabled||busy)return;
+      busy=true;setRating('','');
+      if(feedback)feedback.textContent='Gemini is comparing your explanation with the YouTube video…';
+      updateGate();
+      try{
+        if(!window.DafatiiApi?.request)throw new Error('The grading API client is unavailable.');
+        const result=await window.DafatiiApi.request('/language/video-understanding',{method:'POST',body:{
+          videoUrl:youtubeUrl,responseText:field.value,level:CEFR[pos.li].id,step:pos.step,box:pos.box,targetLanguage:responseLanguage
+        }});
+        const rating=String(result?.rating||'').toLowerCase();
+        if(!['bad','moderate','good','very good'].includes(rating))throw new Error('Gemini returned an unsupported rating.');
+        const accepted=rating!=='bad';
+        updateLanguage(value=>{
+          value.videoResponses[id]=field.value;
+          value.videoRatings[id]=rating;
+          value.modules[id]=value.modules[id]||{};
+          value.modules[id].video=accepted;
+          syncBoxCompletion(value,pos.li,pos.step,pos.box);
+        });
+        if(accepted){
+          setRating(rating,rating==='moderate'?'Accepted · enough correct understanding to continue.':rating==='good'?'Accepted · good understanding.':'Accepted · very good understanding.');
+          if(feedback)feedback.textContent='Accepted. You can continue to the exam.';
+          setTimeout(()=>render(),650);
+        }else{
+          setRating('bad','Not accepted · revise what you understood and submit again.');
+          if(feedback)feedback.textContent='Not accepted. Rewatch the video, rewrite your understanding, and ask Gemini to judge it again.';
+        }
+      }catch(error){
+        setRating('','');
+        if(feedback)feedback.textContent=error?.message||'Gemini grading failed. Try again.';
+      }finally{
+        busy=false;updateGate();
+      }
     };
     updateGate();
   }
@@ -1895,7 +2001,8 @@
       const type=question.dataset.questionType||'mcq';
       if(type==='multi-select')return Boolean(question.querySelector('input[type="checkbox"]:checked'));
       if(type==='ordering')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
-      if(['fill','short-answer','listen-fill','speak'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
+      if(type==='speak')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
+      if(['fill','short-answer','listen-fill'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
       return Boolean(question.querySelector('input[type="radio"]:checked'));
     };
     const show=index=>{
@@ -1923,17 +2030,7 @@
     bindLearningProcess();
     bindExamStepper();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
-    document.querySelectorAll('[data-exam-speak]').forEach(button=>button.onclick=()=>{
-      const question=button.closest('.language-exam-question-item'),field=question?.querySelector('input[type="text"]'),status=question?.querySelector('[data-exam-speak-status]');
-      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!field)return;
-      if(!Recognition){field.readOnly=false;field.placeholder='Speech recognition is unavailable. Type what you said for fallback scoring.';if(status)status.textContent='Browser speech recognition is unavailable; typed fallback cannot directly assess pronunciation.';field.focus();return;}
-      const recognition=new Recognition();recognition.lang=speechLocale(courseTargetLanguage(languageState()));recognition.interimResults=false;recognition.maxAlternatives=1;
-      if(status)status.textContent='Listening…';
-      recognition.onresult=event=>{field.value=event.results[0][0].transcript;if(status)status.textContent='Captured. Continue when the recognized words match what you intended to say.';};
-      recognition.onerror=()=>{if(status)status.textContent='Recognition failed. Try speaking again.';};
-      recognition.start();
-    });
+    bindGeminiPronunciation();
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
 
@@ -1996,7 +2093,7 @@
     }
     const grammarWriting=document.getElementById('language-grammar-writing'),grammarComplete=document.querySelector('[data-language-module="grammar"]');
     if(grammarWriting&&grammarComplete&&!grammarComplete.classList.contains('done')){
-      const update=()=>{grammarComplete.disabled=normalizeText(grammarWriting.value).length<20;grammarComplete.textContent=grammarComplete.disabled?'Write your examples first':t('complete');};
+      const update=()=>{grammarComplete.disabled=normalizeText(grammarWriting.value).length<12;grammarComplete.textContent=grammarComplete.disabled?'Complete the rule practice first':t('complete');};
       grammarWriting.addEventListener('input',update);update();
     }
 
@@ -2006,8 +2103,10 @@
     });
 
     const voiceComplete=document.querySelector('[data-language-module="voice"]');
-    let dictationPassed=false,reversePassed=false;
-    const updateVoice=()=>{if(voiceComplete&&!voiceComplete.classList.contains('done')){voiceComplete.disabled=!(dictationPassed&&reversePassed);voiceComplete.textContent=voiceComplete.disabled?'Complete both voice exercises first':t('complete');}};
+    const pronunciationJudge=document.querySelector('.language-practice-card.pronunciation [data-pronunciation-judge]');
+    let pronunciationPassed=pronunciationJudge?.dataset.pronunciationAccepted==='true',dictationPassed=false,reversePassed=false;
+    const updateVoice=()=>{if(voiceComplete&&!voiceComplete.classList.contains('done')){voiceComplete.disabled=!(pronunciationPassed&&dictationPassed&&reversePassed);voiceComplete.textContent=voiceComplete.disabled?'Complete pronunciation, listening and speaking first':t('complete');}};
+    pronunciationJudge?.addEventListener('dafatii:pronunciationgraded',event=>{pronunciationPassed=Boolean(event.detail?.accepted);updateVoice();});
     document.querySelector('[data-check-dictation]')?.addEventListener('click',event=>{
       const score=similarity(document.getElementById('language-dictation').value,event.currentTarget.dataset.checkDictation);
       dictationPassed=score>=.92;document.querySelector('[data-dictation-feedback]').textContent=dictationPassed?'Excellent match.':'Try again. Focus on every content word and ending.';updateVoice();
@@ -2094,7 +2193,7 @@
   window.DafatiiCourseModes=Object.freeze({
     courseType,isLanguage,levels:CEFR,levelSystems:LEVEL_LEARNING_SYSTEMS,boxData,boxCount,totalBoxes:TOTAL_LANGUAGE_BOXES,openTypeChooser,
     languageAuthoring:Object.freeze({
-      pages:['letters','voice','grammar','video','examine'],
+      pages:['letters','voice','grammar','video'],
       pageName:languagePageName,
       getItems:selection=>languagePageItems(selection.li,selection.step,selection.box,selection.page).map(item=>({...item})),
       getSchemas:(page,li)=>languageItemSchemas(page,li),

@@ -11,7 +11,7 @@ for (const type of ['dafaa','personal','teaching','language']) {
 for (const level of ['A1','A2','B1','B2','C1']) {
   assert.ok(js.includes("id:'"+level+"'"), 'missing CEFR level '+level);
 }
-for (const route of ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-review','language-examine']) {
+for (const route of ['language-home','language-letter-learn','language-letter-exam','language-letters','language-voice','language-grammar','language-video','language-examine']) {
   assert.ok(js.includes(route), 'missing language route '+route);
 }
 
@@ -78,15 +78,17 @@ for (const type of ['mcq','true-false','multi-select','fill','short-answer','spe
 assert.match(js,/function examAnswerCorrect\(question,form,index\)/,'mixed exam types must use a shared scorer');
 assert.match(js,/data-ordering=/,'sentence-order questions must render an interactive builder');
 assert.match(js,/examTypeLabel/,'exam question types must be visibly labeled');
-assert.match(js,/id:'voice-rubric'/,'normal boxes must include a dedicated voice self-check item');
-assert.match(js,/id:'grammar-error'/,'normal boxes must include a grammar error-analysis item');
-assert.match(js,/id:'review-memory'/,'normal boxes must include a memory/retrieval item');
-assert.match(js,/id:'exam-scope'/,'Examine pages must include explicit assessment-scope content');
+assert.match(js,/const LANGUAGE_PAGE_ITEM_TYPES = Object\.freeze\(\{[\s\S]*letters:\['words','writing'\][\s\S]*voice:\['pronunciation','dictation','speaking'\][\s\S]*grammar:\['rule','grammar-practice'\][\s\S]*video:\['video','response'\][\s\S]*examine:\[\]/,'every course page must enforce its own item-type boundary');
+assert.match(js,/return pagePureItems\(page,items\)/,'stored/admin-authored content must be filtered through the page boundary at render time');
+assert.match(js,/store\.pages\[key\]=pagePureItems\(selection\.page/,'admin authoring must not persist cross-lane item types');
+assert.match(js,/if\(page==='examine'\)return \[\]/,'Examining must contain exam questions only, not lesson content cards');
+assert.doesNotMatch(js,/id:'video-vocabulary'/,'YouTube Understanding must not contain a vocabulary lane item');
+assert.doesNotMatch(js,/id:'video-guide'/,'YouTube Understanding must not contain a generic lesson-info item');
 assert.match(js,/function lettersPage\(\)[\s\S]{0,180}return pronunciationPage\(state,pos\)/,'Vocabulary & Writing must remain its own lane at every level');
 assert.match(js,/function videoPage\(\)[\s\S]{0,180}return videoUnderstandingPage\(state,pos\)/,'YouTube Understanding must remain a separate lane at every level');
 assert.match(js,/responseLanguage:String\(courseMeta\(\)\.targetLanguage\|\|'English'\)/,'video responses must use the target course language');
 assert.match(js,/const required=\['vocabulary','voice','grammar','video'\]/,'every level must require the same four learning lanes before its exam');
-assert.match(js,/function videoResponseValid\(language,value\)/,'video response language/length validation must exist');
+assert.match(js,/function videoResponseValid\(language,value\)[\s\S]{0,120}trim\(\)\.length>=3/,'local video gating must only require a response; Gemini judges understanding correctness');
 assert.match(js,/value\.watchedVideos\[id\]=true/,'video must be fully watched before completion can unlock');
 const navSpecStart=js.indexOf('const navSpec=['),navSpecEnd=js.indexOf('function icon(',navSpecStart);
 assert.ok(navSpecStart>=0&&navSpecEnd>navSpecStart,'language navSpec must exist');
@@ -95,6 +97,8 @@ for (const route of ['language-home','language-letters','language-voice','langua
   assert.ok(navSpecText.includes("'"+route+"'"),'six-lane language nav missing '+route);
 }
 assert.equal((navSpecText.match(/\['language-/g)||[]).length,6,'language course must expose exactly six main navigation destinations');
+const routesDecl=js.slice(js.indexOf('const LANGUAGE_ROUTES ='),js.indexOf('const LETTER_GATE_ROUTES ='));
+assert.ok(!routesDecl.includes("'language-review'"),'Revision must not remain an active seventh course page');
 assert.ok(navSpecText.indexOf("'language-home'") < navSpecText.indexOf("'language-letters'"),'Home must precede Vocabulary & Writing');
 assert.ok(navSpecText.indexOf("'language-letters'") < navSpecText.indexOf("'language-voice'"),'Vocabulary & Writing must precede Listening & Talking');
 assert.ok(navSpecText.indexOf("'language-voice'") < navSpecText.indexOf("'language-grammar'"),'Listening & Talking must precede Grammar & Rules');
@@ -116,7 +120,7 @@ assert.match(js,/function languageItemSchemas\(page,li\)/,'language items must e
 assert.match(js,/function saveLanguageItem\(selection,item\)/,'language item edits must persist');
 assert.match(js,/function deleteLanguageItem\(selection,id\)/,'language items must support deletion');
 assert.match(js,/function emptyLanguagePage\(selection\)/,'language pages must support removing all items');
-assert.match(js,/pages:\['letters','voice','grammar','video','examine'\]/,'content authoring must cover the four learning lanes plus Examining');
+assert.match(js,/pages:\['letters','voice','grammar','video'\]/,'generic content authoring must cover only the four lesson-content lanes; exams use dedicated controls');
 assert.match(js,/getExamQuestions:selection=>examQuestionsFor/,'exam control must expose the resolved assessment question set');
 assert.match(js,/saveExamQuestion/,'exam questions must support editing and adding');
 assert.match(js,/emptyExamQuestions/,'exam controls must support removing all questions');
@@ -163,8 +167,8 @@ assert.match(js,/page==='pronunciation'\|\|page==='video'/,'YouTube work must re
 assert.match(js,/const responseLanguage=learningLanguage\(state,pos\.li\)\.target/,'video completion must validate the target language');
 
 
-// Driven language course v7
-assert.match(js,/const META_VERSION = 7/,'driven course architecture must use language progress metadata v7');
+// Driven language course v8
+assert.match(js,/const META_VERSION = 8/,'pure-lane/Gemini course architecture must use language progress metadata v8');
 assert.match(js,/const LEVEL_LEARNING_SYSTEMS = \[/,'five level-specific learning systems must be declared');
 for (const system of ['Word Builder','Sentence Builder','Connected English','Precision & Pressure','C1 / IELTS Readiness']) {
   assert.ok(js.includes(system),'missing level-specific learning system '+system);
@@ -178,12 +182,35 @@ assert.match(js,/This is preparation, not a guaranteed IELTS result/,'C1 target 
 assert.match(js,/const tricky=li>=3/,'tricky box exams must begin at Level 4');
 assert.match(js,/const hardest=li>=4/,'Level 5 must have an additional C1 difficulty layer');
 assert.match(js,/type:'speak'/,'every generated box exam bank must include spoken production');
-assert.match(js,/data-exam-speak/,'spoken exam questions must expose a microphone action');
-assert.match(js,/if\(type==='speak'\)return answerSimilarity/,'spoken production must be scored from the recognized transcript');
-assert.match(js,/Speech recognition is unavailable/,'spoken exams must disclose the fallback limitation when browser recognition is unavailable');
+assert.match(js,/pronunciationJudgeMarkup\(q\.correct\|\|''/,'spoken exam questions must use the shared Gemini microphone grader');
+assert.match(js,/if\(type==='speak'\)return geminiRatingAccepted\(answer\)/,'spoken exam production must be scored from Gemini rating acceptance');
+assert.match(js,/window\.DafatiiApi\.request\('\/language\/pronunciation'/,'spoken pronunciation audio must be sent to the authenticated Gemini grading endpoint');
 assert.match(js,/Exam analysis/,'Home must show exam performance analysis');
 assert.ok(js.includes("average+'% average'"),'Home analysis must calculate an exam-score average');
 assert.match(js,/function migrateDrivenCourseV7/,'older learner progress must migrate into the driven lane model');
+assert.match(js,/videoResponses:\{\},videoRatings:\{\},pronunciationRatings:\{\},watchedVideos:\{\}/,'video and pronunciation ratings must have durable learner state');
+assert.match(js,/window\.DafatiiApi\.request\('\/language\/video-understanding'/,'YouTube understanding must be judged through the authenticated backend API');
+assert.match(js,/\['bad','moderate','good','very good'\]\.includes\(rating\)/,'client must accept exactly the four requested Gemini rating values');
+assert.match(js,/const accepted=rating!=='bad'/,'only bad must be rejected');
+assert.match(js,/value\.modules\[id\]\.video=accepted/,'accepted Gemini ratings must unlock YouTube Understanding progression while bad keeps it incomplete');
+assert.match(js,/const GEMINI_ACCEPTED_RATINGS = Object\.freeze\(\['moderate','good','very good'\]\)/,'Gemini acceptance must reject only bad');
+assert.match(js,/function bindGeminiPronunciation\(\)/,'microphone recordings must use one Gemini pronunciation pipeline');
+assert.match(js,/navigator\.mediaDevices\?\.getUserMedia/,'pronunciation must capture real microphone audio');
+assert.match(js,/new MediaRecorder\(stream/,'pronunciation must record audio instead of relying only on speech transcripts');
+assert.match(js,/audioData,mimeType:/,'pronunciation API payload must contain recorded audio data and MIME type');
+assert.match(js,/value\.pronunciationRatings\[stateKey\]=rating/,'practice pronunciation ratings must persist without storing microphone audio');
+assert.match(js,/upperResult\.valid&&lowerResult\.valid&&pronunciationPassed/,'letter completion must require an accepted Gemini pronunciation grade');
+assert.match(js,/Not accepted\. Rewatch the video, rewrite your understanding/,'bad must require the learner to redo the YouTube understanding response');
+assert.doesNotMatch(js,/GEMINI_API_KEY/,'the Gemini API key must never be embedded in course-modes.js');
+assert.match(js,/data-gemini-pronunciation/,'Listening & Talking must include a Gemini microphone pronunciation action');
+assert.match(js,/pronunciationJudgeMarkup\(LETTER_SPEECH\[letter\]\|\|letter,'letter:'\+letter,'letter'/,'letter learning must use Gemini microphone pronunciation');
+assert.match(js,/pronunciationPassed&&dictationPassed&&reversePassed/,'Listening & Talking completion must require pronunciation, listening and speaking');
+assert.match(js,/upperResult\.valid&&lowerResult\.valid&&pronunciationPassed/,'letter learning completion must require drawing plus microphone pronunciation');
+const vocabularyPageStart=js.indexOf('function pronunciationPage(state,pos){');
+const vocabularyPageEnd=js.indexOf('function videoUnderstandingPage(state,pos){',vocabularyPageStart);
+assert.ok(vocabularyPageStart>=0&&vocabularyPageEnd>vocabularyPageStart,'Vocabulary & Writing page renderer must exist');
+assert.doesNotMatch(js.slice(vocabularyPageStart,vocabularyPageEnd),/data-speak=/,'Vocabulary & Writing must not contain listening/pronunciation audio controls');
+
 assert.match(js,/const LEARNING_LANE_PREREQUISITES = \{[\s\S]*'language-voice':\['vocabulary'\][\s\S]*'language-grammar':\['vocabulary','voice'\][\s\S]*'language-video':\['vocabulary','voice','grammar'\]/,'learning lanes must unlock strictly in order');
 assert.match(js,/learningLaneUnlocked\(state,pos,page\)/,'course routes must enforce learning-lane prerequisites');
 assert.match(js,/if\(!learningLaneUnlocked\(state,pos,page\)\)\{setHash\(nextBoxRoute\(state,pos\)\);return;\}/,'out-of-order lane navigation must redirect to the next required lane');
@@ -207,6 +234,11 @@ assert.ok(css.includes('Language course v14 · driven six-lane progression'),'dr
 assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,'mobile course navigation must fit all six main destinations');
 assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,'desktop Home analytics must expose five status/analysis cells');
 assert.ok(css.includes('.language-exam-speak'),'spoken exam controls must be styled');
+for (const selector of ['.language-vocabulary-card','.language-video-grade','.letter-pronunciation-check','.language-pronunciation-judge','.language-pronunciation-command','.language-pronunciation-grade']) {
+  assert.ok(css.includes(selector),'missing pure-lane/microphone/Gemini style '+selector);
+}
+assert.ok(css.includes('Language course v16 · Gemini pronunciation grading'),'Gemini pronunciation stylesheet block must be present');
+assert.ok(css.includes('Language course v15 · pure lanes, microphone pronunciation, Gemini video grading'),'pure-lane Gemini stylesheet block must be present');
 
 assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
 assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
@@ -234,8 +266,8 @@ assert.ok(css.includes('English course v11 · native mobile learning app'),'nati
 assert.ok(css.includes('Language course v12 · focused box process'),'focused box-process layout must be present');
 assert.ok(css.includes('Language course v13 · contrastive source-to-target learning'),'contrastive language-learning layout must be present');
 assert.ok(css.includes('.language-process-stage[hidden]'),'inactive learning stages must stay hidden');
-assert.ok(index.includes('course-modes.css?v=20260921-4'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-4'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-4') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260921-6'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-6'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260921-6') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
-console.log('course modes v7 driven progression tests passed');
+console.log('course modes v8 pure-lane Gemini grading tests passed');

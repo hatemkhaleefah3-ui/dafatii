@@ -17,6 +17,8 @@ assert.ok(js.includes("window.DafatiiDeleteManager?.activate?.()"), 'Delete must
 assert.match(js,/data-dcc-language-root="content"/,'language Content Control must offer Control the content');
 assert.match(js,/data-dcc-language-root="exam"/,'language Content Control must offer Control the exam');
 assert.match(js,/function openLanguageContentSelector\(\)/,'language content selector must exist');
+assert.match(js,/language-\(\?:home\|letters\|voice\|grammar\|video\|examine\)/,'language Content Control must recognize the dedicated YouTube route');
+assert.match(js,/pages=Array\.isArray\(api\?\.pages\)[\s\S]{0,180}\['letters','voice','grammar','video'\]/,'language lesson-content selector must use only the four pure content lanes');
 for (const selector of ['level','step','box','page']) {
   assert.ok(js.includes('data-dcc-language-select="'+selector+'"'),'language content control missing selector '+selector);
 }
@@ -47,9 +49,9 @@ assert.ok(calendar.includes('data-planner-add-type') && calendar.includes('data-
 assert.ok(js.includes("const typeIcons={tasks:'✓',todos:'☑',goals:'◇',schedule:'◷'}") && !js.includes("attendance:'◎'"), 'planner add metadata must include only the four remaining planner sections');
 assert.ok(social.includes('data-content-edit-room') && social.includes('data-content-delete-room'), 'user-created study rooms must expose edit/delete endpoints');
 
-assert.ok(index.includes('content-controls.css?v=20260920-3') && index.includes('content-controls.js?v=20260920-3'), 'new content-control assets must load');
+assert.ok(index.includes('content-controls.css?v=20260920-3') && index.includes('content-controls.js?v=20260921-1'), 'new content-control assets must load');
 assert.ok(index.includes('delete-manager.css?v=20260919-1') && index.includes('delete-manager.js?v=20260919-1'), 'replacement delete manager assets must load');
-assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260920-3'), 'delete manager must load before content controls delegate to it');
+assert.ok(index.indexOf('delete-manager.js?v=20260919-1') < index.indexOf('content-controls.js?v=20260921-1'), 'delete manager must load before content controls delegate to it');
 assert.match(js,/dcc-trigger-language-docked/,'language content controls must dock into the toolbar');
 
 console.log('unified content controls tests passed');

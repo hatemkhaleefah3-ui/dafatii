@@ -262,7 +262,7 @@
 
   const languageApi = () => window.DafatiiCourseModes?.languageAuthoring || null;
   const isLanguageCourse = () => Boolean(window.DafatiiCourseModes?.isLanguage?.());
-  const isLanguageRoute = () => /^language-(?:home|letters|voice|grammar|review|examine)(?:\/|$)/i.test(routeName());
+  const isLanguageRoute = () => /^language-(?:home|letters|voice|grammar|video|examine)(?:\/|$)/i.test(routeName());
 
   function sheetFrame(title,subtitle,body,note=''){
     return '<button class="dcc-sheet-backdrop" type="button" aria-label="Close content controls"></button>'+
@@ -303,8 +303,8 @@
     return Array.from({length:count},(_,index)=>index+1).map(box=>'<option value="'+box+'" '+(box===selected?'selected':'')+'>Box '+box+'</option>').join('');
   }
   function pageOptions(li,selected='letters'){
-    const api=languageApi();
-    return ['letters','voice','grammar','review','examine'].map(page=>'<option value="'+page+'" '+(page===selected?'selected':'')+'>'+escapeHtml(api?.pageName?.(page,li)||page)+'</option>').join('');
+    const api=languageApi(),pages=Array.isArray(api?.pages)&&api.pages.length?api.pages:['letters','voice','grammar','video'];
+    return pages.map(page=>'<option value="'+page+'" '+(page===selected?'selected':'')+'>'+escapeHtml(api?.pageName?.(page,li)||page)+'</option>').join('');
   }
   function selectorGrid(mode,selection){
     const content=mode==='content';
