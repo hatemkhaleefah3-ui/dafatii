@@ -266,8 +266,8 @@ assert.ok(css.includes('English course v11 · native mobile learning app'),'nati
 assert.ok(css.includes('Language course v12 · focused box process'),'focused box-process layout must be present');
 assert.ok(css.includes('Language course v13 · contrastive source-to-target learning'),'contrastive language-learning layout must be present');
 assert.ok(css.includes('.language-process-stage[hidden]'),'inactive learning stages must stay hidden');
-assert.ok(index.includes('course-modes.css?v=20260921-5'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-5'),'course JS must be cache-busted');
-assert.ok(index.indexOf('course-modes.js?v=20260921-5') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
+assert.ok(index.includes('course-modes.css?v=20260921-6'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-6'),'course JS must be cache-busted');
+assert.ok(index.indexOf('course-modes.js?v=20260921-6') > index.indexOf('content-controls.js'),'course modes must load after workspace wrappers');
 
 console.log('course modes v8 pure-lane Gemini grading tests passed');
