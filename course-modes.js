@@ -246,7 +246,7 @@
   const progressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v3';
   const legacyProgressKey=()=> 'dafatii:language-progress:'+String(window.DafatiiCourses.active().id||'none')+':v2';
   function migrateLegacyLanguage(value){
-    value.version=META_VERSION;
+    value.version=5;
     value.passedSteps=[];
     value.passedLevels=[];
     for(let li=0;li<CEFR.length;li++){
@@ -332,6 +332,7 @@
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
     value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
+    if(previousVersion<6)window.DafatiiData.writeJSON(progressKey(),value);
     return value;
   }
   function updateLanguage(mutator){
