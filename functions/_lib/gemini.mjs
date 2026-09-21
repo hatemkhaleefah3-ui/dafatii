@@ -108,8 +108,8 @@ Return the structured rating only.`;
 
 export function validatePronunciationInput(input) {
   const targetText = String(input?.targetText || '').trim();
-  if (!targetText || targetText.length > 80) throw new HttpError(400, 'INVALID_PRONUNCIATION_TARGET', 'Pronunciation target must contain 1 to 80 characters.');
-  const kind = input?.kind === 'letter' ? 'letter' : 'word';
+  if (!targetText || targetText.length > 240) throw new HttpError(400, 'INVALID_PRONUNCIATION_TARGET', 'Pronunciation target must contain 1 to 240 characters.');
+  const kind = ['letter','word','sentence'].includes(input?.kind) ? input.kind : 'word';
   const audioData = String(input?.audioData || '').trim();
   if (!audioData || audioData.length > 4_000_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(audioData)) throw new HttpError(400, 'INVALID_PRONUNCIATION_AUDIO', 'Pronunciation audio is missing or invalid.');
   const mimeType = String(input?.mimeType || '').toLowerCase().split(';')[0].trim();
