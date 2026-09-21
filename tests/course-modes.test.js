@@ -92,7 +92,7 @@ assert.match(js,/function languageVideoUnderstandingPage\(/,'page 1 must render 
 assert.match(js,/function languageStoryReadingPage\(/,'page 2 must render story reading and understanding');
 assert.match(js,/data-watch-read-prev[\s\S]*data-watch-read-next/,'Watching & Reading must have previous and next page controls');
 assert.match(js,/languagePageIndex\('language-video',loc,\[0,1\]\)/,'Watching & Reading must be exactly two internal pages');
-assert.match(js,/data-language-response-kind="\+kind\+"/,'video and story pages must use separate learner response identities');
+assert.ok(js.includes('data-language-response-kind="'+kind+'"'),'video and story pages must use separate learner response identities');
 assert.match(js,/languageWatchReadNoteKey\(kind,loc\)/,'both responses must save separately per course location');
 assert.match(js,/data-language-response-word-count/,'each response editor must show a live word count');
 assert.match(js,/Unsaved changes/,'response editor must communicate unsaved state');
