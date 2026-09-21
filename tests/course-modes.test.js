@@ -101,8 +101,15 @@ for(const token of ['#0B1020','#7C5CFF','#2DE2E6','#FF4FA3']) assert.ok(css.incl
 for(const selector of ['.studio-listen-button','.studio-wave','.studio-image-grid','.mixer-console','.glass-terminal','.karaoke-line','.studio-mic-button','.dual-waveforms','.teleprompter-text','.studio-aperture-frame','.studio-chat-bubble','.podcast-stage']) assert.ok(css.includes(selector),'Studio styling missing '+selector);
 
 for(const font of ['Fraunces','Playfair+Display','Inter','Caveat','Amiri','Noto+Naskh+Arabic','Sora','Space+Grotesk','Tajawal']) assert.ok(index.includes(font),'font missing '+font);
-assert.ok(index.includes('course-modes.css?v=20260921-22'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260921-21'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260921-23'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260921-22'),'JS cache version missing');
+
+
+assert.match(css,/LANGUAGE LEARNING SYSTEM — Precision UI/,'precision language learning layer missing');
+for(const selector of ['.language-home-emblem','.language-session-position','.language-progress-meta','.language-lesson-brief']) assert.ok(css.includes(selector),'precision learning selector missing '+selector);
+assert.match(js,/Move from recognition to recall, then production/,'learner-first home hierarchy missing');
+assert.match(js,/role="progressbar"/,'semantic language progress missing');
+assert.match(js,/Retrieve and apply what you learned with minimal scaffolding/,'exam learning objective missing');
 
 assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'shared language record changed');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
