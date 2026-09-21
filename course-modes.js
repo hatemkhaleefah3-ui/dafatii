@@ -120,7 +120,7 @@
     }
     if(page==='language-voice'){
       const type=pageItemType(page,source.type)?.id||'hearing-word';
-      return{id,type,text:String(source.text||source.title||'Practice'),instruction:String(source.instruction||source.body||''),voiceFileName:type.startsWith('hearing-')?String(source.voiceFileName||''):''};
+      return{id,type,text:String(source.text||source.title||'Practice'),instruction:String(source.instruction||source.body||''),voiceFileName:type.startsWith('hearing-')?String(source.voiceFileName||''):'',voiceFileId:type.startsWith('hearing-')?String(source.voiceFileId||''):'',voiceContentType:type.startsWith('hearing-')?String(source.voiceContentType||''):''};
     }
     if(page==='language-grammar'){
       const type=pageItemType(page,source.type)?.id||(index===0?'grammar-law':'grammar-note');
@@ -362,8 +362,8 @@
     return '<article class="language-learning-card vocab-card" data-language-item="'+esc(item.id)+'"><div class="language-item-kicker"><span>Vocabulary</span><b>'+String(index+1).padStart(2,'0')+'</b></div><div class="vocab-main-word">'+esc(word)+'</div><div class="vocab-meaning-panel" dir="'+(native==='Arabic'?'rtl':'ltr')+'"><small>'+esc(native)+' meaning</small><strong>'+esc(meaning||'Meaning not added yet')+'</strong></div><div class="vocab-native-badge">'+(native==='Arabic'?'العربية':'English')+'</div></article>';
   }
   function renderVoiceItem(item,index){
-    const type=pageItemType('language-voice',item.type)?.id||'hearing-word',speaking=type.startsWith('speaking-'),sentence=type.endsWith('-sentence'),label=(speaking?'Speaking':'Hearing')+' · '+(sentence?'sentence':'word'),text=String(item.text||'Practice');
-    const hear='<button type="button" class="voice-action hear-action" data-language-speak="'+esc(text)+'"><span class="voice-action-icon" aria-hidden="true">▶</span><span><strong>Hear pronunciation</strong><small>Listen to '+(sentence?'the sentence':'the word')+' in '+esc(targetLanguage())+'</small></span></button>';
+    const type=pageItemType('language-voice',item.type)?.id||'hearing-word',speaking=type.startsWith('speaking-'),sentence=type.endsWith('-sentence'),label=(speaking?'Speaking':'Hearing')+' · '+(sentence?'sentence':'word'),text=String(item.text||'Practice'),voiceId=type.startsWith('hearing-')?String(item.voiceFileId||''):'';
+    const hear='<button type="button" class="voice-action hear-action" data-language-speak="'+esc(text)+'" data-language-voice-file-id="'+esc(voiceId)+'"><span class="voice-action-icon" aria-hidden="true">▶</span><span><strong>Hear pronunciation</strong><small>'+(voiceId?'Play the imported voice file':'Listen to '+(sentence?'the sentence':'the word')+' in '+esc(targetLanguage()))+'</small></span></button>';
     const mic='<button type="button" class="voice-action mic-action" data-language-record><span class="voice-action-icon mic-icon" aria-hidden="true">●</span><span><strong>Open microphone</strong><small>Record yourself and play it back</small></span></button>';
     return '<article class="language-learning-card voice-card '+(speaking?'speaking-card':'hearing-card')+'" data-language-item="'+esc(item.id)+'" data-item-type="'+esc(type)+'"><div class="language-item-kicker"><span>'+esc(label)+'</span><b>'+String(index+1).padStart(2,'0')+'</b></div><div class="'+(sentence?'voice-sentence':'voice-word')+'">'+esc(text)+'</div><p class="voice-instruction">'+esc(item.instruction||'Practice carefully, then continue when you are ready.')+'</p><div class="voice-practice-actions">'+(speaking?mic+hear:hear+mic)+'</div><div class="voice-record-status" data-language-speech-status></div><div class="voice-record-status" data-language-record-status>Microphone opens only after you press Open microphone.</div><audio class="voice-playback" data-language-record-playback controls hidden></audio></article>';
   }
@@ -402,17 +402,32 @@
     return '<section class="language-content-page language-item-process" data-language-content-page="'+esc(page)+'"><header class="language-page-head"><div><small>Level '+Math.max(1,Number(learner.currentLevel)||1)+' · Step '+Math.max(1,Number(learner.currentStep)||1)+' · Box '+Math.max(1,Number(learner.currentBox)||1)+'</small><h1>'+esc(routeTitle(page))+'</h1><p>'+esc(targetLanguage())+' · item '+(items.length?index+1:0)+' of '+items.length+'</p></div></header><div class="language-step-progress"><span style="width:'+Math.round(((index+1)/Math.max(items.length,1))*100)+'%"></span></div>'+markup+'<footer class="language-item-navigation"><button type="button" class="btn btn-ghost" data-language-item-prev '+(index===0?'disabled':'')+'>Previous</button><span>'+(items.length?index+1:0)+' / '+items.length+'</span><button type="button" class="btn btn-primary" data-language-item-next '+(!items.length||index>=items.length-1?'disabled':'')+'>Next</button></footer></section>';
   }
   function intermediatePage(page){const content=readLanguageContent(),items=itemsFor(content,page),learner=readLearnerState(),index=Math.max(0,Math.min(Math.max(items.length-1,0),Number(learner.intermediateIndex)||0)),item=items[index]||{id:'empty',title:'No content yet',body:'Use Content Control to add this process.'},zero=page==='language-start-zero',choices=Array.isArray(item.choices)?item.choices:[];return '<section class="language-intermediate-page" data-language-intermediate="'+esc(page)+'"><div class="language-step-progress"><span style="width:'+Math.round(((index+1)/Math.max(items.length,1))*100)+'%"></span></div><header><small>'+(zero?'Start from zero':'Level check')+' · '+(index+1)+' / '+Math.max(items.length,1)+'</small><h1>'+(zero?'Learn the letters':'Determine your starting level')+'</h1><p>'+(zero?'One letter at a time before Level 1 · Step 1.':'A simple step-by-step English check. No advanced grading rules are connected yet.')+'</p></header><article class="language-process-card"><small>'+esc(item.title||'Step')+'</small><h2>'+esc(item.title||'Step')+'</h2><p>'+esc(item.body||'')+'</p>'+(choices.length?'<div class="language-test-choices">'+choices.map((choice,i)=>'<button type="button" data-language-answer="'+i+'">'+esc(choice)+'</button>').join('')+'</div>':'')+'</article><footer><button type="button" class="btn btn-ghost" data-language-step-prev '+(index===0?'disabled':'')+'>Previous</button>'+(index<items.length-1?'<button type="button" class="btn btn-primary" data-language-step-next>Next</button>':'<button type="button" class="btn btn-primary" data-language-step-finish>'+(zero?'Start Level 1 · Step 1':'Finish level check')+'</button>')+'</footer></section>';}
-  let activeLanguageRecorder=null,activeLanguageStream=null,activeLanguageRecordingUrl='';
+  let activeLanguageRecorder=null,activeLanguageStream=null,activeLanguageRecordingUrl='',activeLanguageHearingAudio=null;
   function stopLanguageRecorder(){try{if(activeLanguageRecorder&&activeLanguageRecorder.state!=='inactive')activeLanguageRecorder.stop();}catch{}try{activeLanguageStream?.getTracks?.().forEach(track=>track.stop());}catch{}activeLanguageRecorder=null;activeLanguageStream=null;}
+  function stopLanguageHearingAudio(){try{activeLanguageHearingAudio?.pause?.();if(activeLanguageHearingAudio)activeLanguageHearingAudio.src='';}catch{}activeLanguageHearingAudio=null;}
   function playLanguageSpeech(text,status){
     if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){if(status)status.textContent='Speech playback is not supported by this browser.';return;}
     window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(String(text||''));utterance.lang=LANGUAGE_SPEECH_LOCALES[targetLanguage()]||'en-US';utterance.rate=.86;const voices=window.speechSynthesis.getVoices(),base=utterance.lang.split('-')[0].toLowerCase(),voice=voices.find(item=>String(item.lang||'').toLowerCase().startsWith(base));if(voice)utterance.voice=voice;utterance.onstart=()=>{if(status)status.textContent='Playing pronunciation…';};utterance.onend=()=>{if(status)status.textContent='Listen again whenever you need.';};utterance.onerror=()=>{if(status)status.textContent='Pronunciation playback could not start.';};window.speechSynthesis.speak(utterance);
+  }
+  async function playLanguageHearing(button){
+    const status=button.closest('.voice-card')?.querySelector('[data-language-speech-status]'),fileId=String(button.dataset.languageVoiceFileId||''),text=String(button.dataset.languageSpeak||'');
+    stopLanguageHearingAudio();window.speechSynthesis?.cancel?.();
+    if(!fileId){playLanguageSpeech(text,status);return;}
+    if(!window.DafatiiFiles?.getViewUrl){if(status)status.textContent='Imported voice playback is not available in this browser session.';return;}
+    try{
+      if(status)status.textContent='Loading imported voice…';
+      const url=await window.DafatiiFiles.getViewUrl(fileId),audio=new Audio(url);activeLanguageHearingAudio=audio;audio.preload='auto';
+      audio.onplay=()=>{if(status)status.textContent='Playing imported voice…';};
+      audio.onended=()=>{if(activeLanguageHearingAudio===audio)activeLanguageHearingAudio=null;if(status)status.textContent='Listen again whenever you need.';};
+      audio.onerror=()=>{if(activeLanguageHearingAudio===audio)activeLanguageHearingAudio=null;if(status)status.textContent='The imported voice file could not be played.';};
+      await audio.play();
+    }catch{activeLanguageHearingAudio=null;if(status)status.textContent='The imported voice file could not be opened.';}
   }
   async function toggleLanguageRecording(button){
     const card=button.closest('.voice-card'),status=card?.querySelector('[data-language-record-status]'),playback=card?.querySelector('[data-language-record-playback]');
     if(button.dataset.recording==='1'){try{activeLanguageRecorder?.stop();}catch{}button.dataset.recording='0';button.classList.remove('is-recording');button.querySelector('strong').textContent='Start microphone';if(status)status.textContent='Processing your recording…';return;}
     if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){if(status)status.textContent='Microphone recording is not supported by this browser.';return;}
-    stopLanguageRecorder();if(activeLanguageRecordingUrl){URL.revokeObjectURL(activeLanguageRecordingUrl);activeLanguageRecordingUrl='';}
+    stopLanguageRecorder();stopLanguageHearingAudio();if(activeLanguageRecordingUrl){URL.revokeObjectURL(activeLanguageRecordingUrl);activeLanguageRecordingUrl='';}
     try{
       const stream=await navigator.mediaDevices.getUserMedia({audio:true}),chunks=[],recorder=new MediaRecorder(stream);activeLanguageStream=stream;activeLanguageRecorder=recorder;
       recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
@@ -429,9 +444,9 @@
     }
     if(LANGUAGE_ROUTES.includes(page)&&page!=='language-home'){
       const content=readLanguageContent(),loc=currentLocation(),items=itemsFor(content,page,loc),index=languagePageIndex(page,loc,items);
-      document.querySelector('[data-language-item-prev]')?.addEventListener('click',()=>{stopLanguageRecorder();setLanguagePageIndex(page,loc,index-1);render();});
-      document.querySelector('[data-language-item-next]')?.addEventListener('click',()=>{stopLanguageRecorder();setLanguagePageIndex(page,loc,index+1);render();});
-      if(page==='language-voice'){document.querySelectorAll('[data-language-speak]').forEach(button=>button.addEventListener('click',()=>playLanguageSpeech(button.dataset.languageSpeak,button.closest('.voice-card')?.querySelector('[data-language-speech-status]'))));document.querySelectorAll('[data-language-record]').forEach(button=>button.addEventListener('click',()=>toggleLanguageRecording(button)));}
+      document.querySelector('[data-language-item-prev]')?.addEventListener('click',()=>{stopLanguageRecorder();stopLanguageHearingAudio();setLanguagePageIndex(page,loc,index-1);render();});
+      document.querySelector('[data-language-item-next]')?.addEventListener('click',()=>{stopLanguageRecorder();stopLanguageHearingAudio();setLanguagePageIndex(page,loc,index+1);render();});
+      if(page==='language-voice'){document.querySelectorAll('[data-language-speak]').forEach(button=>button.addEventListener('click',()=>playLanguageHearing(button)));document.querySelectorAll('[data-language-record]').forEach(button=>button.addEventListener('click',()=>toggleLanguageRecording(button)));}
       if(page==='language-examine'){
         document.querySelectorAll('[data-exam-choice]').forEach(button=>button.addEventListener('click',()=>{const card=button.closest('.exam-card'),feedback=card?.querySelector('.exam-feedback'),correct=String(button.dataset.examChoice||'')===String(button.dataset.examAnswer||'');card?.querySelectorAll('[data-exam-choice]').forEach(item=>item.classList.remove('is-correct','is-wrong'));button.classList.add(correct?'is-correct':'is-wrong');if(feedback)feedback.textContent=correct?'Correct.':'Try again.';}));
         document.querySelector('[data-exam-multiple-check]')?.addEventListener('click',event=>{const card=event.currentTarget.closest('.exam-card'),selected=[...(card?.querySelectorAll('[data-exam-multiple-option]:checked')||[])].map(input=>input.value).sort(),expected=String(event.currentTarget.dataset.examMultipleCheck||'').split('|').filter(Boolean).sort(),feedback=card?.querySelector('.exam-feedback'),correct=selected.length===expected.length&&selected.every((value,i)=>value===expected[i]);if(feedback)feedback.textContent=correct?'Correct.':'Check your selections and try again.';});
@@ -454,10 +469,10 @@
   function itemDisplayName(page,item){if(page==='language-letters')return item.word||'Vocabulary';if(page==='language-voice')return item.text||'Voice practice';return item.title||itemTypeLabel(page,item.type)||'Untitled';}
   function itemChoices(items,page){return items.length?'<div class="language-control-items">'+items.map((item,index)=>'<label><input type="radio" name="languageItem" value="'+esc(item.id)+'" '+(index===0?'checked':'')+'><span><strong>'+esc(itemDisplayName(page,item))+'</strong><small>'+esc(itemTypeLabel(page,item.type))+'</small></span></label>').join('')+'</div>':'<p class="auth-note">No content items exist at this location.</p>';}
   function openLanguageControl(page){
-    const importAction='<button type="button" data-language-control-action="import"><strong>Import content</strong><span>Import the language content Excel workbook</span></button>';
-    const video=page==='language-video',actions=video?'<button type="button" data-language-control-action="access"><strong>Access page</strong><span>Return to this video page</span></button><button type="button" data-language-control-action="edit"><strong>Edit video</strong><span>Change the YouTube link, title and writing prompt</span></button>'+importAction:'<button type="button" data-language-control-action="access"><strong>Access content</strong><span>Open or focus one content item</span></button><button type="button" data-language-control-action="add"><strong>Add content</strong><span>Add a page-specific content item or structure</span></button><button type="button" data-language-control-action="edit"><strong>Edit content</strong><span>Edit an item or delete it from its edit form</span></button>'+importAction;
+    const importAction='<button type="button" data-language-control-action="import"><strong>Import content</strong><span>Import the language content Excel workbook</span></button>',voiceImportAction='<button type="button" data-language-control-action="import-voice"><strong>Import voice files</strong><span>Upload a ZIP and match hearing audio by voice file name</span></button>';
+    const video=page==='language-video',actions=video?'<button type="button" data-language-control-action="access"><strong>Access page</strong><span>Return to this video page</span></button><button type="button" data-language-control-action="edit"><strong>Edit video</strong><span>Change the YouTube link, title and writing prompt</span></button>'+importAction+voiceImportAction:'<button type="button" data-language-control-action="access"><strong>Access content</strong><span>Open or focus one content item</span></button><button type="button" data-language-control-action="add"><strong>Add content</strong><span>Add a page-specific content item or structure</span></button><button type="button" data-language-control-action="edit"><strong>Edit content</strong><span>Edit an item or delete it from its edit form</span></button>'+importAction+voiceImportAction;
     const close=languageControlSheet('Content Control','<div class="language-control-step"><small>Step 1 of 3</small><h3>What do you want to do?</h3><div class="language-control-actions">'+actions+'</div></div>');
-    document.querySelectorAll('[data-language-control-action]').forEach(button=>button.onclick=()=>{if(button.dataset.languageControlAction==='import'){renderLanguageExcelImport(page,close);return;}renderLanguageControlLocation(page,button.dataset.languageControlAction,close);});
+    document.querySelectorAll('[data-language-control-action]').forEach(button=>button.onclick=()=>{const action=button.dataset.languageControlAction;if(action==='import'){renderLanguageExcelImport(page,close);return;}if(action==='import-voice'){renderLanguageVoiceImport(page,close);return;}renderLanguageControlLocation(page,action,close);});
   }
   function accessLanguageContent(originPage,page,loc,itemId){
     if(LANGUAGE_INTERMEDIATE_ROUTES.includes(page)){const content=readLanguageContent(),items=itemsFor(content,page,loc),index=Math.max(0,items.findIndex(item=>item.id===itemId));writeLearnerState({intermediateIndex:index});hideLanguageControl(originPage);render();return;}
@@ -484,7 +499,7 @@
   function languageTypeSelect(page,selected=''){const types=pageItemTypes(page);return types.length?'<div class="field language-type-field"><label>Content item type</label><select name="type" data-language-editor-type>'+types.map(item=>'<option value="'+esc(item.id)+'" '+(item.id===selected?'selected':'')+'>'+esc(item.label)+'</option>').join('')+'</select></div>':'';}
   function languageEditorFields(page,item={}){
     if(page==='language-letters')return languageTypeSelect(page,item.type||'vocabulary')+'<div class="field"><label>Word</label><input name="word" maxlength="160" value="'+esc(item.word||'')+'" placeholder="Word in '+esc(targetLanguage())+'"></div><div class="field" data-language-types="sentence-vocabulary"><label>Sentence</label><textarea name="sentence" rows="3" maxlength="800">'+esc(item.sentence||'')+'</textarea></div><div class="language-editor-pair" data-language-types="vocabulary,sentence-vocabulary"><div class="field"><label>Meaning in English</label><textarea name="meaningEnglish" rows="3" maxlength="800">'+esc(item.meaningEnglish||'')+'</textarea></div><div class="field"><label>Meaning in Arabic</label><textarea name="meaningArabic" rows="3" maxlength="800" dir="rtl">'+esc(item.meaningArabic||'')+'</textarea></div></div><div class="field" data-language-types="image-vocabulary"><label>Image file name</label><input name="imageFileName" maxlength="260" value="'+esc(item.imageFileName||'')+'" placeholder="image-word.jpg"></div><div class="field" data-language-types="image-vocabulary"><label>Image URL</label><input name="imageUrl" type="url" maxlength="1200" value="'+esc(item.imageUrl||'')+'" placeholder="https://…"></div><div class="field" data-language-types="image-vocabulary"><label>Image description</label><input name="imageAlt" maxlength="240" value="'+esc(item.imageAlt||'')+'"></div>';
-    if(page==='language-voice')return languageTypeSelect(page,item.type||'hearing-word')+'<div class="field"><label>Word or sentence</label><textarea name="text" rows="3" maxlength="900">'+esc(item.text||'')+'</textarea></div><div class="field"><label>Practice instruction</label><textarea name="instruction" rows="3" maxlength="900">'+esc(item.instruction||'')+'</textarea></div><div class="field" data-language-types="hearing-word,hearing-sentence"><label>Voice file name</label><input name="voiceFileName" maxlength="260" value="'+esc(item.voiceFileName||'')+'" placeholder="pronunciation.mp3"></div><p class="auth-note">Hearing items can retain a voice file name from Excel and also use browser speech playback. Speaking items ask the learner for microphone permission only after pressing the microphone button.</p>';
+    if(page==='language-voice')return languageTypeSelect(page,item.type||'hearing-word')+'<div class="field"><label>Word or sentence</label><textarea name="text" rows="3" maxlength="900">'+esc(item.text||'')+'</textarea></div><div class="field"><label>Practice instruction</label><textarea name="instruction" rows="3" maxlength="900">'+esc(item.instruction||'')+'</textarea></div><div class="field" data-language-types="hearing-word,hearing-sentence"><label>Voice file name</label><input name="voiceFileName" maxlength="260" value="'+esc(item.voiceFileName||'')+'" placeholder="pronunciation.mp3"></div><p class="auth-note" data-language-types="hearing-word,hearing-sentence">'+(item.voiceFileId?'Matched voice file is uploaded and active.':'No uploaded voice file is currently matched to this item.')+'</p><p class="auth-note">Hearing items can retain a voice file name from Excel and also use browser speech playback. Speaking items ask the learner for microphone permission only after pressing the microphone button.</p>';
     if(page==='language-grammar')return languageTypeSelect(page,item.type||'grammar-law')+'<div class="field"><label>Title</label><input name="title" maxlength="160" value="'+esc(item.title||'')+'"></div><div class="field"><label>Content</label><textarea name="body" rows="6" maxlength="2400">'+esc(item.body||'')+'</textarea></div><div class="field" data-language-types="grammar-training"><label>Training answer</label><input name="answer" maxlength="500" value="'+esc(item.answer||'')+'" placeholder="Optional exact answer"></div>';
     if(page==='language-examine'){const choices=Array.isArray(item.choices)?item.choices.join('\n'):'',answers=Array.isArray(item.answers)?item.answers.join('\n'):'';return languageTypeSelect(page,item.type||'exam-single-choice')+'<div class="field"><label>Question</label><textarea name="question" rows="4" maxlength="1400">'+esc(item.question||'')+'</textarea></div><div class="field" data-language-types="exam-single-choice,exam-multiple-choice"><label>Choices — one per line</label><textarea name="choices" rows="5" maxlength="1600">'+esc(choices)+'</textarea></div><div class="field" data-language-types="exam-single-choice,exam-true-false,exam-fill-blank,exam-short-answer"><label>Answer / model answer</label><textarea name="answer" rows="3" maxlength="1000">'+esc(item.answer||'')+'</textarea></div><div class="field" data-language-types="exam-multiple-choice"><label>Correct answers — one per line</label><textarea name="answers" rows="4" maxlength="1400">'+esc(answers)+'</textarea></div>';}
     const choices=Array.isArray(item.choices)?item.choices.join('\n'):'';
@@ -496,7 +511,7 @@
   function readLanguageEditorData(form,page,base={}){
     const data=Object.fromEntries(new FormData(form)),id=String(base.id||languageUid('content'));
     if(page==='language-letters'){const type=pageItemType(page,data.type)?.id||'vocabulary';if(type==='sentence-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',sentence:String(data.sentence||'').trim(),meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};if(type==='image-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',imageFileName:String(data.imageFileName||'').trim(),imageUrl:String(data.imageUrl||'').trim(),imageAlt:String(data.imageAlt||'').trim()};return{id,type:'vocabulary',word:String(data.word||'').trim()||'Word',meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};}
-    if(page==='language-voice'){const type=pageItemType(page,data.type)?.id||'hearing-word';return{id,type,text:String(data.text||'').trim()||'Practice',instruction:String(data.instruction||'').trim(),voiceFileName:type.startsWith('hearing-')?String(data.voiceFileName||'').trim():''};}
+    if(page==='language-voice'){const type=pageItemType(page,data.type)?.id||'hearing-word',voiceFileName=type.startsWith('hearing-')?String(data.voiceFileName||'').trim():'',sameVoiceName=voiceFileName&&voiceFileName.toLocaleLowerCase()===String(base.voiceFileName||'').trim().toLocaleLowerCase();return{id,type,text:String(data.text||'').trim()||'Practice',instruction:String(data.instruction||'').trim(),voiceFileName,voiceFileId:sameVoiceName?String(base.voiceFileId||''):'',voiceContentType:sameVoiceName?String(base.voiceContentType||''):''};}
     if(page==='language-grammar'){const type=pageItemType(page,data.type)?.id||'grammar-law';return{id,type,title:String(data.title||'').trim()||itemTypeLabel(page,type),body:String(data.body||'').trim(),answer:type==='grammar-training'?String(data.answer||'').trim():''};}
     if(page==='language-examine'){const type=pageItemType(page,data.type)?.id||'exam-single-choice',choices=String(data.choices||'').split(/\n+/).map(value=>value.trim()).filter(Boolean),answers=String(data.answers||'').split(/\n+/).map(value=>value.trim()).filter(Boolean);return{id,type,question:String(data.question||'').trim()||'Question',choices:(type==='exam-single-choice'||type==='exam-multiple-choice')?choices:[],answer:type==='exam-multiple-choice'?'':String(data.answer||'').trim(),answers:type==='exam-multiple-choice'?answers:[]};}
     const next={id,title:String(data.title||'').trim()||'Untitled',body:String(data.body||'').trim()};if(page==='language-level-test')next.choices=String(data.choices||'').split(/\n+/).map(value=>value.trim()).filter(Boolean);return next;
@@ -553,6 +568,7 @@
   function languageExcelFeatureCount(item){return Object.keys(item).filter(key=>!['id','type'].includes(key)&&!(Array.isArray(item[key])&&!item[key].length)&&excelText(Array.isArray(item[key])?item[key].join(''):item[key])).length;}
   function mergeLanguageExcelItem(existing,incoming,page,index){
     const base=existing&&existing.type===incoming.type?{...existing,id:existing.id}:{id:incoming.id,type:incoming.type};
+    if(page==='language-voice'&&incoming.type?.startsWith('hearing-')&&incoming.voiceFileName&&String(incoming.voiceFileName).toLocaleLowerCase()!==String(base.voiceFileName||'').toLocaleLowerCase()){base.voiceFileId='';base.voiceContentType='';}
     return normalizeLanguagePageItem({...base,...incoming},page,index);
   }
   async function importLanguageExcel(file){
@@ -610,6 +626,78 @@
     const form=sheet.querySelector('[data-language-excel-import]'),status=form.querySelector('[data-language-excel-status]'),button=form.querySelector('button[type=submit]');
     form.querySelector('[data-language-excel-cancel]').onclick=()=>{close();openLanguageControl(originPage);};
     form.onsubmit=async event=>{event.preventDefault();button.disabled=true;status.textContent='Validating workbook…';try{const result=await importLanguageExcel(form.querySelector('[data-language-excel-file]').files?.[0]);status.textContent='Imported '+result.rows+' rows across '+result.locations+' content locations.';hideLanguageControl(originPage);setTimeout(()=>{close();render();},250);}catch(error){status.textContent=error.message;button.disabled=false;}};
+  }
+
+
+  const LANGUAGE_VOICE_MIME=Object.freeze({mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',m4a:'audio/mp4',mp4:'audio/mp4',webm:'audio/webm'});
+  const voiceBaseName=value=>String(value||'').replace(/\\/g,'/').split('/').filter(Boolean).pop()||'';
+  function languageVoiceTargets(content){
+    const targets=[];
+    Object.entries(content.pages||{}).forEach(([key,items])=>{
+      if(!key.endsWith('|language-voice')||!Array.isArray(items))return;
+      items.forEach(item=>{if(!['hearing-word','hearing-sentence'].includes(item?.type))return;const filename=voiceBaseName(item.voiceFileName);if(filename)targets.push({item,key,filename,match:filename.toLocaleLowerCase()});});
+    });
+    return targets;
+  }
+  async function importLanguageVoiceZip(file,onProgress){
+    if(!file)throw new Error('Choose a ZIP file first.');
+    if(!/\.zip$/i.test(String(file.name||'')))throw new Error('Import voice files accepts one .zip file only.');
+    if(file.size>314572800)throw new Error('The ZIP file exceeds the 300 MB import limit.');
+    if(!window.JSZip)throw new Error('ZIP import is not available yet. Reload the page and try again.');
+    if(!window.DafatiiFiles?.upload)throw new Error('Course file upload is not available in this session.');
+    const content=readLanguageContent(),targets=languageVoiceTargets(content);
+    if(!targets.length)throw new Error('No hearing items have a voice file name to match.');
+    const zip=await window.JSZip.loadAsync(await file.arrayBuffer()),entries=new Map(),duplicates=[];
+    Object.values(zip.files).filter(entry=>!entry.dir).forEach(entry=>{
+      const base=voiceBaseName(entry.name),match=base.toLocaleLowerCase(),extension=base.toLocaleLowerCase().split('.').pop();
+      if(!LANGUAGE_VOICE_MIME[extension])return;
+      if(entries.has(match))duplicates.push(base);else entries.set(match,{entry,base,extension});
+    });
+    if(duplicates.length)throw new Error('Duplicate audio filenames in ZIP: '+[...new Set(duplicates)].slice(0,8).join(', ')+'.');
+    const matches=new Map();
+    targets.forEach(target=>{const source=entries.get(target.match);if(source){if(!matches.has(target.match))matches.set(target.match,{source,targets:[]});matches.get(target.match).targets.push(target);}});
+    if(!matches.size)throw new Error('No ZIP audio filenames matched any hearing item voice file name.');
+    const uploaded=[],oldIds=new Set();let completed=0;
+    try{
+      for(const {source,targets:matchedTargets} of matches.values()){
+        const blob=await source.entry.async('blob');
+        if(!blob.size)throw new Error(source.base+' is empty.');
+        if(blob.size>52428800)throw new Error(source.base+' exceeds the 50 MB per-file limit.');
+        const audioFile=new File([blob],source.base,{type:LANGUAGE_VOICE_MIME[source.extension]}),courseId=window.DafatiiCourses.active().id;
+        onProgress?.({file:source.base,completed,total:matches.size,ratio:0});
+        const result=await window.DafatiiFiles.upload(audioFile,{courseId,purpose:'language-hearing-audio',onProgress:progress=>onProgress?.({file:source.base,completed,total:matches.size,ratio:progress.ratio})});
+        const fileId=String(result?.id||'');if(!fileId)throw new Error('Storage did not return a file ID for '+source.base+'.');
+        uploaded.push(fileId);
+        matchedTargets.forEach(target=>{if(target.item.voiceFileId)oldIds.add(String(target.item.voiceFileId));target.item.voiceFileId=fileId;target.item.voiceContentType=LANGUAGE_VOICE_MIME[source.extension];});
+        completed++;onProgress?.({file:source.base,completed,total:matches.size,ratio:1});
+      }
+      writeLanguageContent(content);
+      const referenced=new Set(languageVoiceTargets(content).map(target=>String(target.item.voiceFileId||'')).filter(Boolean));
+      for(const id of oldIds){if(!referenced.has(id)&&window.DafatiiFiles.delete){void window.DafatiiFiles.delete(id).catch(()=>{});}}
+      const unmatchedTargets=targets.filter(target=>!entries.has(target.match)).length,unmatchedFiles=[...entries.keys()].filter(name=>!matches.has(name)).length;
+      return{files:matches.size,items:[...matches.values()].reduce((sum,value)=>sum+value.targets.length,0),unmatchedTargets,unmatchedFiles};
+    }catch(error){
+      for(const id of uploaded){try{await window.DafatiiFiles.delete?.(id);}catch{}}
+      throw error;
+    }
+  }
+  function renderLanguageVoiceImport(originPage,close){
+    const sheet=document.querySelector('.language-control-sheet');if(!sheet)return;
+    sheet.querySelector(':scope > .language-control-step')?.remove();
+    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-voice-import><small>Voice ZIP import</small><h3>Import voice files</h3><div class="field"><label>ZIP with hearing audio files</label><input data-language-voice-zip type="file" accept=".zip,application/zip" required></div><div class="language-location-fixed"><strong>Exact filename matching</strong><span>Each MP3, WAV, OGG, M4A/MP4 audio, or WebM file is matched to hearing items whose <em>voice file name</em> is the same filename.</span></div><p class="auth-note">Folder names inside the ZIP are ignored. Filenames are matched case-insensitively. One uploaded file can serve multiple hearing items that use the same filename.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-voice-cancel>Cancel</button><button type="submit" class="btn btn-primary">Import voice ZIP</button></div><p class="auth-note" data-language-voice-status></p></form>');
+    const form=sheet.querySelector('[data-language-voice-import]'),status=form.querySelector('[data-language-voice-status]'),button=form.querySelector('button[type=submit]');
+    form.querySelector('[data-language-voice-cancel]').onclick=()=>{close();openLanguageControl(originPage);};
+    form.onsubmit=async event=>{
+      event.preventDefault();button.disabled=true;status.textContent='Reading ZIP…';
+      try{
+        const result=await importLanguageVoiceZip(form.querySelector('[data-language-voice-zip]').files?.[0],progress=>{
+          const current=Math.min(progress.total,progress.completed+(progress.ratio<1?1:0));
+          status.textContent='Uploading '+progress.file+' · '+current+' / '+progress.total;
+        });
+        status.textContent='Matched '+result.files+' voice files to '+result.items+' hearing items'+(result.unmatchedTargets?' · '+result.unmatchedTargets+' hearing items still unmatched':'')+'.';
+        hideLanguageControl(originPage);setTimeout(()=>{close();render();},350);
+      }catch(error){status.textContent=error.message;button.disabled=false;}
+    };
   }
 
   function renderLanguageImportStep(originPage,page,loc,target,close){

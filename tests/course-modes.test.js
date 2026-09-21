@@ -51,6 +51,16 @@ assert.match(js,/page==='language-examine'\?renderExamItem/,'exam page must use 
 
 assert.match(js,/function languageTypeSelect\(page,selected=''\)/,'Content Control must expose page-specific types');
 assert.ok(js.includes('data-language-control-action="import"'),'Content Control must expose Import content');
+assert.ok(js.includes('data-language-control-action="import-voice"'),'Content Control must expose Import voice files');
+assert.match(js,/function renderLanguageVoiceImport\(/,'voice ZIP import must have its own bottom-sheet flow');
+assert.match(js,/data-language-voice-zip type="file" accept="\.zip,application\/zip"/,'voice import must accept ZIP only');
+assert.match(js,/window\.JSZip\.loadAsync/,'voice import must unzip files in the browser');
+assert.match(js,/function languageVoiceTargets\(content\)/,'voice import must scan hearing items across the course');
+assert.match(js,/purpose:'language-hearing-audio'/,'matched audio must use the course file upload path');
+assert.match(js,/target\.item\.voiceFileId=fileId/,'matched hearing items must store an uploaded file ID');
+assert.match(js,/window\.DafatiiFiles\.getViewUrl\(fileId\)/,'hearing playback must resolve stored course audio');
+assert.match(js,/new Audio\(url\)/,'hearing playback must use the imported voice file');
+assert.match(js,/if\(!fileId\)\{playLanguageSpeech/,'browser speech must remain a fallback only when no imported audio is associated');
 assert.match(js,/function renderLanguageExcelImport\(/,'Excel import must have its own bottom-sheet flow');
 assert.match(js,/accept="\.xlsx,\.xls"/,'Import content must accept Excel files only');
 assert.doesNotMatch(js,/data-language-excel-file[^>]*\.csv|data-language-excel-file[^>]*\.zip/,'bulk import must not accept CSV or ZIP');
@@ -84,7 +94,7 @@ for(const selector of [
   '.exam-single-card','.exam-multiple-card','.exam-truefalse-card','.exam-fill-card','.exam-short-card'
 ]) assert.ok(css.includes(selector),'missing premium styling '+selector);
 
-assert.ok(index.includes('course-modes.css?v=20260921-14'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-14'),'course JS must be cache-busted');
+assert.ok(index.includes('course-modes.css?v=20260921-15'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-15'),'course JS must be cache-busted');
 
 console.log('language mic video editor and exam tests passed');
