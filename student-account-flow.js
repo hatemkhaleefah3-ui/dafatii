@@ -4,7 +4,6 @@
   const PROFILE_KEY = 'dafatii:studentProfile:v2';
   const ONBOARDING_KEY = 'dafatii:onboarding:v1';
   const INITIAL_PIN_KEY = 'dafatii:studentInitialPin:v1';
-  const administratorEmail = 'hatemkhaleefah3@gmail.com';
   const allowedAvatarTypes = new Set(['image/jpeg','image/png','image/webp']);
   let signupStep = 1;
   let signupDraft = {};
@@ -18,7 +17,7 @@
       password:'Password', repeatPassword:'Repeat password', passwordHint:'Use at least 12 characters. A longer passphrase or a mix of letters, numbers, and symbols is recommended.',
       weak:'Weak', medium:'Medium', strong:'Strong', mismatch:'Passwords do not match.', weakPassword:'Choose a medium or strong password before continuing.',
       identifier:'Email, phone number or student ID', credential:'Password or 4-digit PIN', signIn:'Sign in', signing:'Signing in…', creating:'Creating account…',
-      loginHint:'Phone sign-in should include the country code. A 12-digit number without + is treated as a student ID.', adminSignInHint:'Use the administrator sign-in below and enter your 4-digit administrator PIN.',
+      loginHint:'Phone sign-in should include the country code. A 12-digit number without + is treated as a student ID.',
       primary:'Primary School', middle:'Middle School', preparatory:'Preparatory School', institute:'Institute', college:'College', primaryStudies:'Primary studies (undergraduate)', postgraduate:'Postgraduate studies',
       first:'First stage', second:'Second stage', third:'Third stage', fourth:'Fourth stage', fifth:'Fifth stage', sixth:'Sixth stage',
       scientific:'Scientific', literary:'Literary', medical:'Medical', technical:'Technical', mechanical:'Mechanical', electrical:'Electrical', chemical:'Chemical', petroleum:'Petroleum', engineering:'Engineering', sciences:'Sciences', education:'Education',
@@ -34,7 +33,7 @@
       password:'كلمة المرور', repeatPassword:'أعد كتابة كلمة المرور', passwordHint:'استخدم 12 محرفاً على الأقل. يفضّل عبارة مرور أطول أو مزيجاً من الحروف والأرقام والرموز.',
       weak:'ضعيفة', medium:'متوسطة', strong:'قوية', mismatch:'كلمتا المرور غير متطابقتين.', weakPassword:'اختر كلمة مرور متوسطة أو قوية قبل المتابعة.',
       identifier:'البريد أو الهاتف أو رقم الطالب', credential:'كلمة المرور أو PIN من 4 أرقام', signIn:'تسجيل الدخول', signing:'جارٍ تسجيل الدخول…', creating:'جارٍ إنشاء الحساب…',
-      loginHint:'لتسجيل الدخول بالهاتف استخدم رمز الدولة. الرقم المكوّن من 12 رقماً بدون + يُعامل كرقم طالب.', adminSignInHint:'استخدم دخول المشرف أدناه وأدخل رمز المشرف المكوّن من 4 أرقام.',
+      loginHint:'لتسجيل الدخول بالهاتف استخدم رمز الدولة. الرقم المكوّن من 12 رقماً بدون + يُعامل كرقم طالب.',
       primary:'المدرسة الابتدائية', middle:'المدرسة المتوسطة', preparatory:'المدرسة الإعدادية', institute:'المعهد', college:'الكلية', primaryStudies:'الدراسات الأولية', postgraduate:'الدراسات العليا',
       first:'المرحلة الأولى', second:'المرحلة الثانية', third:'المرحلة الثالثة', fourth:'المرحلة الرابعة', fifth:'المرحلة الخامسة', sixth:'المرحلة السادسة',
       scientific:'علمي', literary:'أدبي', medical:'طبي', technical:'تقني', mechanical:'ميكانيكي', electrical:'كهربائي', chemical:'كيميائي', petroleum:'نفطي', engineering:'هندسي', sciences:'علوم', education:'تربية',
@@ -202,14 +201,6 @@
       try {
         const identifier = String(form.elements.identifier.value || '').trim();
         const credential = String(form.elements.credential.value || '');
-        if (identifier.normalize('NFKC').toLowerCase() === administratorEmail && !/^\d{4}$/.test(credential)) {
-          const adminToggle = document.getElementById('admin-access-toggle');
-          const adminPanel = document.getElementById('admin-pin-panel');
-          if (adminPanel?.hidden) adminToggle?.click();
-          status.textContent = t('adminSignInHint');
-          submit.disabled = false; delete form.dataset.submitting;
-          return;
-        }
         await window.DafatiiAuth.login({ identifier, credential });
         location.hash = 'profile';
       } catch (error) {
