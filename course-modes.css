@@ -850,3 +850,47 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
 }
 
 @media(max-width:420px){.language-process-count i,.language-process-count b{display:none}.language-process-language small{max-width:150px}.language-map-levels,.language-map-steps{gap:2px}.language-home-stage-list .language-flow-stage{flex-basis:118px}}
+
+
+/* English letters prerequisite gate v1 */
+.letter-gate-page,.letter-gate-learning,.letter-gate-exam-page{max-width:1080px;margin:0 auto}
+.letter-gate-hero{padding:clamp(28px,6vw,64px) 0 24px;border-bottom:1px solid var(--border)}
+.letter-gate-hero small,.letter-gate-exam-head small{color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.11em}
+.letter-gate-hero h1,.letter-gate-exam-head h1{max-width:780px;margin:7px 0 12px;font:900 clamp(36px,6vw,68px)/.98 Manrope,sans-serif;letter-spacing:-.055em}
+.letter-gate-hero p,.letter-gate-exam-head p{max-width:760px;margin:0;color:var(--muted);font-size:15px;line-height:1.65}
+.letter-gate-actions{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)}
+.letter-gate-actions>button{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;min-height:260px;padding:30px 0;border:0;border-inline-end:1px solid var(--border);background:transparent;color:var(--text);text-align:start;cursor:pointer}
+.letter-gate-actions>button:last-child{padding-inline-start:28px;border-inline-end:0}
+.letter-gate-actions>button>span{grid-row:1/5;display:grid;place-items:center;align-self:start;width:72px;height:72px;border-radius:20px;background:var(--surface-2);color:var(--accent);font:900 24px/1 Manrope,sans-serif}
+.letter-gate-actions small{color:var(--muted);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.09em}
+.letter-gate-actions h2{margin:3px 0 6px;font:900 28px/1.05 Manrope,sans-serif}
+.letter-gate-actions p{max-width:390px;margin:0;color:var(--muted);line-height:1.55}
+.letter-gate-actions b{align-self:end;margin-top:22px;color:var(--accent)}
+.letter-gate-minihead{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.letter-gate-minihead>button,.letter-gate-minihead>a{display:grid;place-items:center;min-height:42px;padding:0 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-weight:850;text-decoration:none;cursor:pointer}
+.letter-gate-minihead>div{display:grid;gap:2px}.letter-gate-minihead small{color:var(--muted);font-size:11px;font-weight:800}.letter-gate-minihead strong{font-size:15px}
+.letter-sound-bridge{display:flex;align-items:center;gap:16px;margin:15px 0 8px;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));border-radius:18px;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.letter-sound-bridge>span{font:900 58px/1.05 sans-serif}.letter-sound-bridge>b{color:var(--muted);font-size:22px}.letter-sound-bridge>strong{font:900 42px/1 Manrope,sans-serif}
+.letter-sound-bridge.special>span{font:850 19px/1.2 sans-serif}.letter-sound-bridge.special{border-style:dashed}
+.letter-bridge-note{margin:0 0 18px!important;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px!important;line-height:1.75!important;text-align:right}
+.letter-gate-exam-head{padding:34px 0 20px}
+.letter-gate-exam-list{display:grid;gap:18px}
+.letter-gate-exam-question{margin:0;padding:24px;border:1px solid var(--border);border-radius:24px;background:var(--surface)}
+.letter-gate-exam-question>legend{padding:0 8px;color:var(--muted);font-weight:850}.letter-gate-exam-question>legend span{color:var(--accent)}
+.letter-gate-exam-question h2{margin:14px 0 8px;font:850 clamp(20px,3vw,30px)/1.35 sans-serif}.letter-gate-exam-question>p{margin:0 0 12px;color:var(--muted);line-height:1.7}
+.letter-exam-cue{display:flex;align-items:center;gap:14px}.letter-exam-cue>span{display:grid;place-items:center;min-width:72px;height:72px;border-radius:18px;background:var(--surface-2);font:900 46px/1 sans-serif}.letter-exam-cue>b{color:var(--muted);font:800 16px/1.2 Manrope,sans-serif}
+.letter-exam-cue.special>span{min-width:150px;padding-inline:14px;font-size:17px}.letter-exam-cue.special>button{min-height:44px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);color:var(--text);padding:0 13px;font-weight:850;cursor:pointer}
+.letter-exam-draw-stage{margin-top:16px;border:2px dashed color-mix(in srgb,var(--accent) 28%,var(--border));border-radius:20px;background:var(--surface-2);overflow:hidden}
+.letter-exam-draw-stage canvas{display:block;width:100%;height:280px;touch-action:none;overscroll-behavior:none}
+.letter-exam-question-actions{display:flex;align-items:center;gap:12px;margin-top:10px}.letter-exam-question-actions button{min-height:40px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2);color:var(--text);padding:0 12px;font-weight:800;cursor:pointer}.letter-exam-question-actions span{color:var(--muted);font-size:12px;font-weight:750}
+.letter-gate-exam-submit{position:sticky;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 14px 36px rgba(15,23,42,.12);backdrop-filter:blur(18px)}
+.letter-gate-exam-submit>div{display:grid}.letter-gate-exam-submit small{color:var(--muted);font-size:11px;font-weight:800}.letter-gate-exam-submit strong{font-size:18px}
+@media(max-width:720px){
+  .letter-gate-page,.letter-gate-learning,.letter-gate-exam-page{width:100%;max-width:none;padding:0 14px calc(90px + env(safe-area-inset-bottom))!important}
+  .letter-gate-hero{padding-top:24px}.letter-gate-hero h1,.letter-gate-exam-head h1{font-size:clamp(36px,11vw,50px)}
+  .letter-gate-actions{grid-template-columns:1fr}.letter-gate-actions>button,.letter-gate-actions>button:last-child{min-height:210px;padding:22px 0;border-inline-end:0;border-bottom:1px solid var(--border)}
+  .letter-gate-actions>button:last-child{border-bottom:0}.letter-gate-actions>button>span{width:60px;height:60px;border-radius:17px}
+  .letter-gate-actions h2{font-size:24px}.letter-gate-minihead{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(18px)}
+  .letter-sound-bridge{justify-content:center}.letter-gate-exam-question{padding:17px;border-radius:20px}.letter-exam-draw-stage canvas{height:250px}
+  .letter-exam-question-actions{align-items:flex-start}.letter-gate-exam-submit{bottom:calc(12px + env(safe-area-inset-bottom))}
+}
