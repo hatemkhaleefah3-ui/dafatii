@@ -72,7 +72,7 @@ assert.doesNotMatch(js,/name:'scenes'/,'video items must not contain narrated sc
 assert.match(js,/return out\.slice\(0,15\)/,'step exams must include a 15-question generated bank');
 assert.match(js,/return out\.slice\(0,25\)/,'level exams must include a 25-question generated bank');
 assert.match(js,/return out\.slice\(0,40\)/,'whole-language exam must include a 40-question generated bank');
-for (const type of ['mcq','true-false','multi-select','fill','short-answer','listen-choice','listen-fill','ordering']) {
+for (const type of ['mcq','true-false','multi-select','fill','short-answer','speak','listen-choice','listen-fill','ordering']) {
   assert.ok(js.includes("type:'"+type+"'"),'natural exams missing question type '+type);
 }
 assert.match(js,/function examAnswerCorrect\(question,form,index\)/,'mixed exam types must use a shared scorer');
@@ -177,6 +177,12 @@ assert.match(js,/examStyle:'high-discrimination'/,'Level 5 must use high-discrim
 assert.match(js,/This is preparation, not a guaranteed IELTS result/,'C1 target must not promise a guaranteed IELTS outcome');
 assert.match(js,/const tricky=li>=3/,'tricky box exams must begin at Level 4');
 assert.match(js,/const hardest=li>=4/,'Level 5 must have an additional C1 difficulty layer');
+assert.match(js,/type:'speak'/,'every generated box exam bank must include spoken production');
+assert.match(js,/data-exam-speak/,'spoken exam questions must expose a microphone action');
+assert.match(js,/if\(type==='speak'\)return answerSimilarity/,'spoken production must be scored from the recognized transcript');
+assert.match(js,/Speech recognition is unavailable/,'spoken exams must disclose the fallback limitation when browser recognition is unavailable');
+assert.match(js,/Exam analysis/,'Home must show exam performance analysis');
+assert.match(js,/average+'% average'/,'Home analysis must calculate an exam-score average');
 assert.match(js,/function migrateDrivenCourseV7/,'older learner progress must migrate into the driven lane model');
 assert.match(js,/const LEARNING_LANE_PREREQUISITES = \{[\s\S]*'language-voice':\['vocabulary'\][\s\S]*'language-grammar':\['vocabulary','voice'\][\s\S]*'language-video':\['vocabulary','voice','grammar'\]/,'learning lanes must unlock strictly in order');
 assert.match(js,/learningLaneUnlocked\(state,pos,page\)/,'course routes must enforce learning-lane prerequisites');
@@ -199,6 +205,8 @@ for (const selector of [
 }
 assert.ok(css.includes('Language course v14 · driven six-lane progression'),'driven progression stylesheet block must be present');
 assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,'mobile course navigation must fit all six main destinations');
+assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,'desktop Home analytics must expose five status/analysis cells');
+assert.ok(css.includes('.language-exam-speak'),'spoken exam controls must be styled');
 
 assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
 assert.match(js,/name="pricing" value="free"/,'personal courses must remain free-only');
