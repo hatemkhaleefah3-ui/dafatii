@@ -8,6 +8,7 @@ import { assertSameOrigin, fail, HttpError, logEvent, ok, readJson } from '../..
 import { isUuid, objectKey, positiveIntegerSetting, sanitizeFilename, validateRecord, validateUpload } from '../../_lib/policy.mjs';
 import { requestPasswordRecovery, resetPassword } from '../../_lib/password-recovery.mjs';
 import { translateInterfaceText } from '../../_lib/translate.mjs';
+import { gradeVideoUnderstanding } from '../../_lib/gemini.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
@@ -351,6 +352,10 @@ async function dispatch(context) {
   if (method === 'POST' && path === 'translate') {
     const input = await readJson(context.request, 16384);
     return ok({ translations: await translateInterfaceText(context.env, input) });
+  }
+  if (method === 'POST' && path === 'language/video-understanding') {
+    const input = await readJson(context.request, 8192);
+    return ok(await gradeVideoUnderstanding(context.env, input));
   }
   if (method === 'POST' && path === 'sync/hydrate') return hydrate(context, user);
   if (method === 'POST' && path === 'sync/mutations') return mutate(context, user);
