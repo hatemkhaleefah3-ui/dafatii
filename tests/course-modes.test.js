@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const js=fs.readFileSync('course-modes.js','utf8');
 const css=fs.readFileSync('course-modes.css','utf8');
 const index=fs.readFileSync('index.html','utf8');
+const headersFile=fs.readFileSync('_headers','utf8');
 
 for(const route of ['language-home','language-letters','language-voice','language-grammar','language-video','language-examine']) assert.ok(js.includes("'"+route+"'"),'missing route '+route);
 for(const language of ['English','Arabic','Spanish','French','German','Turkish','Persian','Kurdish','Italian','Portuguese','Russian','Chinese','Japanese','Korean','Hindi','Urdu']) assert.ok(js.includes("['"+language+"'"),'missing language '+language);
@@ -42,9 +43,10 @@ assert.match(js,/navigator\.mediaDevices\?\.getUserMedia/,'modern microphone per
 assert.match(js,/navigator\.getUserMedia\|\|navigator\.webkitGetUserMedia\|\|navigator\.mozGetUserMedia/,'legacy microphone fallback missing');
 assert.match(js,/function requestLanguageMicrophone\(\)/,'microphone request helper missing');
 assert.match(js,/navigator\.permissions\.query\(\{name:'microphone'\}\)/,'microphone permission-state diagnostics missing');
-assert.match(js,/data\.micState=state/,'mic button state machine missing');
+assert.match(js,/dataset\.micState=state/,'mic button state machine missing');
 assert.match(js,/studioRoot\?\.addEventListener\('click'/,'Page 2 microphone must use delegated click handling');
 assert.match(js,/Microphone access is blocked for this site/,'denied microphone permission must show actionable status');
+assert.match(headersFile,/Permissions-Policy:.*microphone=\(self\)/,'deployment headers must allow same-origin microphone access');
 assert.match(js,/new MediaRecorder\(stream\)/,'recording missing');
 assert.match(js,/data-mic-countdown/,'mic countdown missing');
 assert.match(js,/data-mic-level/,'mic level meter missing');
