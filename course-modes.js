@@ -616,7 +616,7 @@
   }
   function activeLanguagePosition(state){return adminLanguageAuthoring()?{...languageAuthoringTarget}:clampSelection(state);}
   function languagePageName(page,li){
-    if(page==='letters')return li===0?'Letters & writing':'Video understanding';
+    if(page==='letters')return li===0?'Pronunciation & writing':'Video understanding';
     return {voice:'Voice lab',grammar:'Grammar',review:'Revision',examine:'Examine'}[page]||page;
   }
   function defaultLanguageContentItems(li,step,box,page){
