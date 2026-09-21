@@ -251,7 +251,7 @@
       changeLevel:'Change level',progress:'Course progress',current:'Current',available:'Available',passed:'Passed',
       lettersIntro:'Letter, pronunciation, spelling and writing practice',voiceIntro:'Dictation and reverse speaking practice',
       grammarIntro:'Grammar, naming, spelling and typing rules',reviewIntro:'Retrieval, learning tricks and durable notes',
-      examIntro:'Examine adapts to your position: box exam, step exam, level exam, or the final whole-language exam. Level challenges are always available.'
+      examIntro:'Examining follows your exact position: box exam, step exam, level exam, then the final whole-language exam. No stage can bypass the driven pathway.'
     },
     ar:{
       home:'الرئيسية',letters:'المفردات والكتابة',pronunciation:'المفردات والكتابة',video:'فهم يوتيوب',voice:'الاستماع والتحدث',grammar:'القواعد والأحكام',review:'المراجعة',examine:'الاختبارات',
@@ -261,7 +261,7 @@
       changeLevel:'تغيير المستوى',progress:'تقدم الدورة',current:'الحالي',available:'متاح',passed:'مجتاز',
       lettersIntro:'تدريب الحروف والنطق والإملاء والكتابة',voiceIntro:'إملاء صوتي وتدريب عكسي على النطق',
       grammarIntro:'القواعد والتسمية والإملاء والكتابة',reviewIntro:'استرجاع ومهارات تعلّم وملاحظات ثابتة',
-      examIntro:'تتغير صفحة الاختبار حسب موقعك: اختبار صندوق أو خطوة أو مستوى أو اختبار اللغة الكامل. ويمكن تحدي أي مستوى في أي وقت.'
+      examIntro:'يتبع الاختبار موقعك بدقة: صندوق ثم خطوة ثم مستوى ثم اختبار اللغة النهائي، ولا يمكن تجاوز المسار المتدرج.'
     }
   };
 
@@ -397,7 +397,7 @@
     value.onboardingComplete=Boolean(value.onboardingComplete);
     value.placementPending=Boolean(value.placementPending);
     value.entryLevel=Math.min(4,Math.max(0,Number(value.entryLevel)||0));
-    value.challengeLevel=Number.isInteger(value.challengeLevel)?value.challengeLevel:null;
+    value.challengeLevel=null;
     if(previousVersion<7)window.DafatiiData.writeJSON(progressKey(),value);
     return value;
   }
@@ -1086,16 +1086,27 @@
       {route:'language-examine',label:t('examine'),key:'exam'}
     ];
     const module=state.modules[keyBox(CEFR[pos.li].id,pos.step,pos.box)]||{};
+    const learned={vocabulary:Boolean(module.vocabulary),voice:Boolean(module.voice),grammar:Boolean(module.grammar),video:Boolean(module.video)};
     return stages.map((stage,index)=>{
       const done=stage.key==='exam'?boxExamPassed(state,pos.li,pos.step,pos.box):Boolean(module[stage.key]);
       const current=stage.route===route;
-      return '<a href="#'+stage.route+'" class="language-flow-stage '+(done?'done ':'')+(current?'current':'')+'"><span>'+(done?'✓':String(index+1).padStart(2,'0'))+'</span><div><small>'+(done?'Complete':current?'Up next':'Course stage')+'</small><strong>'+esc(stage.label)+'</strong></div><b>→</b></a>';
+      const unlocked=index===0||(index===1&&learned.vocabulary)||(index===2&&learned.vocabulary&&learned.voice)||(index===3&&learned.vocabulary&&learned.voice&&learned.grammar)||(index===4&&learned.vocabulary&&learned.voice&&learned.grammar&&learned.video);
+      return '<a href="#'+stage.route+'" class="language-flow-stage '+(done?'done ':'')+(current?'current ':'')+(!unlocked?'locked':'')+'" '+(!unlocked?'aria-disabled="true" tabindex="-1"':'')+'><span>'+(done?'✓':String(index+1).padStart(2,'0'))+'</span><div><small>'+(done?'Complete':current?'Up next':unlocked?'Available':'Locked')+'</small><strong>'+esc(stage.label)+'</strong></div><b>→</b></a>';
     }).join('');
   }
 
   function learningAnalytics(state,pos){
     const profile=LEVEL_LEARNING_SYSTEMS[pos.li],passed=state.passedBoxes.length,steps=state.passedSteps.length,levels=state.passedLevels.length;
-    return '<section class="language-learning-analytics level-system-'+profile.number+'"><div><small>Driven pathway</small><strong>Level '+profile.number+' · '+profile.id+'</strong><span>'+esc(profile.name)+'</span></div><div><small>Boxes passed</small><strong>'+passed+' / '+TOTAL_LANGUAGE_BOXES+'</strong><span>'+progressPercent(state)+'% course progress</span></div><div><small>Steps passed</small><strong>'+steps+' / 25</strong><span>'+levels+' / 5 levels complete</span></div><div><small>Readiness target</small><strong>'+(profile.id==='C1'?'C1 / IELTS':'Next: '+profile.target)+'</strong><span>'+(profile.id==='C1'?'Preparation target; no score guarantee.':esc(profile.examStyle+' assessment'))+'</span></div></section>';
+    const scored=(state.examHistory||[]).filter(item=>['box','step','level','language'].includes(item.scope)&&Number.isFinite(Number(item.score)));
+    const last=scored.length?Number(scored[scored.length-1].score):null;
+    const average=scored.length?Math.round(scored.reduce((sum,item)=>sum+Number(item.score),0)/scored.length):null;
+    return '<section class="language-learning-analytics level-system-'+profile.number+'">'+
+      '<div><small>Driven pathway</small><strong>Level '+profile.number+' · '+profile.id+'</strong><span>'+esc(profile.name)+'</span></div>'+
+      '<div><small>Course status</small><strong>'+passed+' / '+TOTAL_LANGUAGE_BOXES+' boxes</strong><span>'+progressPercent(state)+'% complete</span></div>'+
+      '<div><small>Hierarchy</small><strong>'+steps+' / 25 steps</strong><span>'+levels+' / 5 levels complete</span></div>'+
+      '<div><small>Exam analysis</small><strong>'+(average===null?'No score yet':average+'% average')+'</strong><span>'+(last===null?'Pass the first box exam to begin analysis.':'Last '+last+'% · '+scored.length+' scored exam'+(scored.length===1?'':'s'))+'</span></div>'+
+      '<div><small>Readiness target</small><strong>'+(profile.id==='C1'?'C1 / IELTS':'Next outcome')+'</strong><span>'+(profile.id==='C1'?'Preparation target; no score guarantee.':esc(profile.target))+'</span></div>'+
+      '</section>';
   }
 
   function homePage(){
@@ -1313,7 +1324,7 @@
       {type:'mcq',prompt:'Translate this meaning into the target word: '+meaning,correct:data.words[0],options:arrayUnique([data.words[0],...simpleDistractors])},
       {type:'listen-choice',prompt:li===0?'Listen to the word and choose what you heard.':'Listen and choose the exact sentence.',audio:li===0?data.words[1]:data.voicePrompt,correct:li===0?data.words[1]:data.voicePrompt,options:li===0?arrayUnique([data.words[1],...simpleDistractors]):arrayUnique([data.voicePrompt,adjacent.voicePrompt,data.reversePrompt,second])},
       {type:'fill',prompt:li===0?'Write the English word for: '+meaning2:'Complete the key word needed in this '+(li===1?'simple':'level-appropriate')+' sentence task.',correct:data.words[1],options:[]},
-      {type:'short-answer',prompt:li===0?'Write the target word accurately from memory: '+meaning:li===1?'Write the complete simple model sentence for this box.':'Write the complete model sentence accurately.',correct:li===0?data.words[0]:second,options:[]},
+      {type:'speak',prompt:li===0?'Pronounce this word clearly: '+data.words[0]:li===1?'Pronounce the complete simple sentence clearly.':tricky?'Pronounce the sentence accurately despite the more complex wording.':'Pronounce the complete model sentence clearly.',correct:li===0?data.words[0]:second,options:[]},
       {type:'mcq',prompt:tricky?'Choose the grammatically precise sentence. Near-miss distractors are intentional.':'Choose the sentence that correctly applies '+data.grammarTitle+'.',correct:sentence,options:arrayUnique([sentence,nearMiss,adjacent.grammarExample1,data.words.slice(0,4).join(' ')])},
       {type:'true-false',prompt:'True or false: '+data.grammarRule,correct:'True',options:['True','False']},
       {type:'listen-fill',prompt:li===0?'Listen and type the word exactly.':hardest?'Listen once and transcribe the advanced sentence exactly.':'Listen and transcribe the sentence exactly.',audio:li===0?data.words[2]:data.voicePrompt,correct:li===0?data.words[2]:data.voicePrompt,options:[]},
@@ -1322,7 +1333,7 @@
       {type:'multi-select',prompt:tricky?'Select both statements that remain valid under the rule; distractors may differ by one detail.':'Select both valid learning statements.',correct:[data.grammarRule,data.recall],options:arrayUnique([data.grammarRule,data.recall,adjacent.grammarRule,'Vocabulary alone is enough; grammar never changes meaning.'])}
     ];
     if(hardest){
-      questions[3].prompt='Write the precise C1 model. Small grammar, register and punctuation differences matter.';
+      questions[3].prompt='Pronounce the precise C1 model clearly, preserving word boundaries and the intended phrasing.';
       questions[4].prompt='Choose the most defensible C1 form; the distractors are deliberately plausible.';
       questions[7].prompt='Reformulate at C1 level while preserving meaning, stance and logical relation; score against the canonical model.';
     }
@@ -1441,7 +1452,7 @@
     return 'The final C1 boundary is one comprehensive examination across the complete English pathway.';
   }
   function examTypeLabel(type,arabic=false){
-    const labels=arabic?{mcq:'اختيار واحد','true-false':'صح أو خطأ','multi-select':'إجابات متعددة',fill:'إكمال الكلمة','short-answer':'إجابة مكتوبة','listen-choice':'اختيار سمعي','listen-fill':'إملاء سمعي',ordering:'بناء الجملة'}:{mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'};
+    const labels=arabic?{mcq:'اختيار واحد','true-false':'صح أو خطأ','multi-select':'إجابات متعددة',fill:'إكمال الكلمة','short-answer':'إجابة مكتوبة',speak:'نطق صوتي','listen-choice':'اختيار سمعي','listen-fill':'إملاء سمعي',ordering:'بناء الجملة'}:{mcq:'Single choice','true-false':'True / false','multi-select':'Multiple response',fill:'Fill the blank','short-answer':'Written response',speak:'Spoken production','listen-choice':'Listening choice','listen-fill':'Listening transcription',ordering:'Sentence builder'};
     return labels[type]||labels.mcq;
   }
   function examPrompt(prompt,arabic){
@@ -1467,7 +1478,8 @@
     const arabic=usesArabicBridge(state,pos.li),head='<div class="language-question-head" dir="'+(arabic?'rtl':'ltr')+'"><span>'+(index+1)+'</span><div><small>'+esc(examTypeLabel(type,arabic))+'</small><legend>'+esc(examPrompt(q.prompt,arabic))+'</legend></div></div>';
     const listen=(type==='listen-choice'||type==='listen-fill')?'<button type="button" class="language-exam-listen" data-speak="'+esc(q.audio||q.correct||'')+'"><span>▶</span> '+(arabic?'تشغيل الصوت':'Play audio')+'</button>':'';
     let answer='';
-    if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
+    if(type==='speak')answer='<div class="language-exam-speak"><button type="button" data-exam-speak data-speak-target="'+esc(q.correct||'')+'">🎙 '+(arabic?'ابدأ النطق':'Start speaking')+'</button><label class="language-exam-text"><span>'+(arabic?'النص الذي التقطه المتصفح':'Recognized speech')+'</span><input type="text" name="'+name+'" autocomplete="off" readonly required placeholder="'+(arabic?'استخدم زر الميكروفون…':'Use the microphone button…')+'"></label><small data-exam-speak-status>'+(arabic?'يُقاس النطق عبر نص التعرّف على الكلام في المتصفح.':'Pronunciation is checked through the browser speech-recognition transcript.')+'</small></div>';
+    else if(type==='fill'||type==='short-answer'||type==='listen-fill')answer='<label class="language-exam-text"><span>'+(arabic?'إجابتك باللغة الهدف':'Your answer')+'</span><input type="text" name="'+name+'" autocomplete="off" required placeholder="'+(arabic?'اكتب الإجابة باللغة الهدف…':'Type your answer…')+'"></label>';
     else if(type==='ordering')answer='<div class="language-ordering" data-ordering="'+name+'"><div class="language-order-answer" data-order-answer aria-label="Your sentence"></div><div class="language-order-bank">'+(q.tokens||String(q.correct||'').split(/\s+/)).map(token=>'<button type="button" data-order-token="'+esc(token)+'">'+esc(token)+'</button>').join('')+'</div><input type="hidden" name="'+name+'"></div>';
     else if(type==='multi-select')answer='<div class="language-answer-options multiple">'+(q.options||[]).map(option=>'<label><input type="checkbox" name="'+name+'" value="'+esc(option)+'"><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
     else answer='<div class="language-answer-options">'+(q.options||[]).map(option=>'<label><input type="radio" name="'+name+'" value="'+esc(option)+'" required><span><i></i>'+esc(option)+'</span></label>').join('')+'</div>';
@@ -1481,6 +1493,7 @@
     }
     const answer=String(form.get(name)||'').trim(),correct=String(question.correct||'').trim();
     if(type==='fill')return normalizeText(answer)===normalizeText(correct);
+    if(type==='speak')return answerSimilarity(answer,correct)>=(String(question.correct||'').trim().split(/\s+/).length===1?.88:.78);
     if(type==='short-answer'||type==='listen-fill')return answerSimilarity(answer,correct)>=.82;
     if(type==='ordering')return normalizeText(answer)===normalizeText(correct);
     return answer===correct;
@@ -1494,7 +1507,7 @@
     const state=languageState();
     if(state.placementPending)return placementExamPage();
     const pos=activeLanguagePosition(state);
-    if(Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
+    if(false&&Number.isInteger(state.challengeLevel)&&!languageAuthoringTarget){
       const li=state.challengeLevel,ctx={scope:'level',li,step:5,box:boxCount(li)},questions=assessmentQuestions(ctx),passed=isLevelPassed(state,li);
       const challengePos={li,step:5,box:boxCount(li)};
       return '<section class="language-course-page language-exam-process-page">'+processTop(state,challengePos,questions.length)+'<button type="button" class="language-cancel-challenge" data-cancel-level-challenge>←</button>'+examFormMarkup(questions,'challenge',passed,state,challengePos)+'</section>';
@@ -1882,7 +1895,7 @@
       const type=question.dataset.questionType||'mcq';
       if(type==='multi-select')return Boolean(question.querySelector('input[type="checkbox"]:checked'));
       if(type==='ordering')return Boolean(question.querySelector('input[type="hidden"]')?.value.trim());
-      if(['fill','short-answer','listen-fill'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
+      if(['fill','short-answer','listen-fill','speak'].includes(type))return Boolean(question.querySelector('input[type="text"]')?.value.trim());
       return Boolean(question.querySelector('input[type="radio"]:checked'));
     };
     const show=index=>{
@@ -1910,6 +1923,17 @@
     bindLearningProcess();
     bindExamStepper();
     document.querySelectorAll('[data-speak]').forEach(button=>button.onclick=()=>speak(button.dataset.speak));
+    document.querySelectorAll('[data-exam-speak]').forEach(button=>button.onclick=()=>{
+      const question=button.closest('.language-exam-question-item'),field=question?.querySelector('input[type="text"]'),status=question?.querySelector('[data-exam-speak-status]');
+      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!field)return;
+      if(!Recognition){field.readOnly=false;field.placeholder='Speech recognition is unavailable. Type what you said for fallback scoring.';if(status)status.textContent='Browser speech recognition is unavailable; typed fallback cannot directly assess pronunciation.';field.focus();return;}
+      const recognition=new Recognition();recognition.lang=speechLocale(courseTargetLanguage(languageState()));recognition.interimResults=false;recognition.maxAlternatives=1;
+      if(status)status.textContent='Listening…';
+      recognition.onresult=event=>{field.value=event.results[0][0].transcript;if(status)status.textContent='Captured. Continue when the recognized words match what you intended to say.';};
+      recognition.onerror=()=>{if(status)status.textContent='Recognition failed. Try speaking again.';};
+      recognition.start();
+    });
     document.querySelectorAll('[data-speak-letter]').forEach(button=>button.onclick=()=>speakLetter(button.dataset.speakLetter));
     document.querySelector('[data-language-ui-switch]')?.addEventListener('click',()=>{applyInterfaceLanguage(lang()==='ar'?'en':'ar');render();});
 
