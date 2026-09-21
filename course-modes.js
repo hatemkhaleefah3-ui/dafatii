@@ -115,12 +115,12 @@
     if(page==='language-letters'){
       const type=pageItemType(page,source.type)?.id||'vocabulary';
       if(type==='sentence-vocabulary')return{id,type,word:String(source.word||source.title||'Word'),sentence:String(source.sentence||source.body||''),meaningEnglish:String(source.meaningEnglish||source.meaning||''),meaningArabic:String(source.meaningArabic||'')};
-      if(type==='image-vocabulary')return{id,type,word:String(source.word||source.title||'Word'),imageUrl:String(source.imageUrl||''),imageAlt:String(source.imageAlt||source.body||'Image representing the word')};
+      if(type==='image-vocabulary')return{id,type,word:String(source.word||source.title||'Word'),imageFileName:String(source.imageFileName||''),imageUrl:String(source.imageUrl||''),imageAlt:String(source.imageAlt||source.body||'Image representing the word')};
       return{id,type:'vocabulary',word:String(source.word||source.title||'Word'),meaningEnglish:String(source.meaningEnglish||source.meaning||source.body||''),meaningArabic:String(source.meaningArabic||'')};
     }
     if(page==='language-voice'){
       const type=pageItemType(page,source.type)?.id||'hearing-word';
-      return{id,type,text:String(source.text||source.title||'Practice'),instruction:String(source.instruction||source.body||'')};
+      return{id,type,text:String(source.text||source.title||'Practice'),instruction:String(source.instruction||source.body||''),voiceFileName:type.startsWith('hearing-')?String(source.voiceFileName||''):''};
     }
     if(page==='language-grammar'){
       const type=pageItemType(page,source.type)?.id||(index===0?'grammar-law':'grammar-note');
@@ -454,9 +454,10 @@
   function itemDisplayName(page,item){if(page==='language-letters')return item.word||'Vocabulary';if(page==='language-voice')return item.text||'Voice practice';return item.title||itemTypeLabel(page,item.type)||'Untitled';}
   function itemChoices(items,page){return items.length?'<div class="language-control-items">'+items.map((item,index)=>'<label><input type="radio" name="languageItem" value="'+esc(item.id)+'" '+(index===0?'checked':'')+'><span><strong>'+esc(itemDisplayName(page,item))+'</strong><small>'+esc(itemTypeLabel(page,item.type))+'</small></span></label>').join('')+'</div>':'<p class="auth-note">No content items exist at this location.</p>';}
   function openLanguageControl(page){
-    const video=page==='language-video',actions=video?'<button type="button" data-language-control-action="access"><strong>Access page</strong><span>Return to this video page</span></button><button type="button" data-language-control-action="edit"><strong>Edit video</strong><span>Change the YouTube link, title and writing prompt</span></button>':'<button type="button" data-language-control-action="access"><strong>Access content</strong><span>Open or focus one content item</span></button><button type="button" data-language-control-action="add"><strong>Add content</strong><span>Add a page-specific content item or structure</span></button><button type="button" data-language-control-action="edit"><strong>Edit content</strong><span>Edit an item or delete it from its edit form</span></button>';
+    const importAction='<button type="button" data-language-control-action="import"><strong>Import content</strong><span>Import the language content Excel workbook</span></button>';
+    const video=page==='language-video',actions=video?'<button type="button" data-language-control-action="access"><strong>Access page</strong><span>Return to this video page</span></button><button type="button" data-language-control-action="edit"><strong>Edit video</strong><span>Change the YouTube link, title and writing prompt</span></button>'+importAction:'<button type="button" data-language-control-action="access"><strong>Access content</strong><span>Open or focus one content item</span></button><button type="button" data-language-control-action="add"><strong>Add content</strong><span>Add a page-specific content item or structure</span></button><button type="button" data-language-control-action="edit"><strong>Edit content</strong><span>Edit an item or delete it from its edit form</span></button>'+importAction;
     const close=languageControlSheet('Content Control','<div class="language-control-step"><small>Step 1 of 3</small><h3>What do you want to do?</h3><div class="language-control-actions">'+actions+'</div></div>');
-    document.querySelectorAll('[data-language-control-action]').forEach(button=>button.onclick=()=>renderLanguageControlLocation(page,button.dataset.languageControlAction,close));
+    document.querySelectorAll('[data-language-control-action]').forEach(button=>button.onclick=()=>{if(button.dataset.languageControlAction==='import'){renderLanguageExcelImport(page,close);return;}renderLanguageControlLocation(page,button.dataset.languageControlAction,close);});
   }
   function accessLanguageContent(originPage,page,loc,itemId){
     if(LANGUAGE_INTERMEDIATE_ROUTES.includes(page)){const content=readLanguageContent(),items=itemsFor(content,page,loc),index=Math.max(0,items.findIndex(item=>item.id===itemId));writeLearnerState({intermediateIndex:index});hideLanguageControl(originPage);render();return;}
@@ -482,8 +483,8 @@
   }
   function languageTypeSelect(page,selected=''){const types=pageItemTypes(page);return types.length?'<div class="field language-type-field"><label>Content item type</label><select name="type" data-language-editor-type>'+types.map(item=>'<option value="'+esc(item.id)+'" '+(item.id===selected?'selected':'')+'>'+esc(item.label)+'</option>').join('')+'</select></div>':'';}
   function languageEditorFields(page,item={}){
-    if(page==='language-letters')return languageTypeSelect(page,item.type||'vocabulary')+'<div class="field"><label>Word</label><input name="word" maxlength="160" value="'+esc(item.word||'')+'" placeholder="Word in '+esc(targetLanguage())+'"></div><div class="field" data-language-types="sentence-vocabulary"><label>Sentence</label><textarea name="sentence" rows="3" maxlength="800">'+esc(item.sentence||'')+'</textarea></div><div class="language-editor-pair" data-language-types="vocabulary,sentence-vocabulary"><div class="field"><label>Meaning in English</label><textarea name="meaningEnglish" rows="3" maxlength="800">'+esc(item.meaningEnglish||'')+'</textarea></div><div class="field"><label>Meaning in Arabic</label><textarea name="meaningArabic" rows="3" maxlength="800" dir="rtl">'+esc(item.meaningArabic||'')+'</textarea></div></div><div class="field" data-language-types="image-vocabulary"><label>Image URL</label><input name="imageUrl" type="url" maxlength="1200" value="'+esc(item.imageUrl||'')+'" placeholder="https://…"></div><div class="field" data-language-types="image-vocabulary"><label>Image description</label><input name="imageAlt" maxlength="240" value="'+esc(item.imageAlt||'')+'"></div>';
-    if(page==='language-voice')return languageTypeSelect(page,item.type||'hearing-word')+'<div class="field"><label>Word or sentence</label><textarea name="text" rows="3" maxlength="900">'+esc(item.text||'')+'</textarea></div><div class="field"><label>Practice instruction</label><textarea name="instruction" rows="3" maxlength="900">'+esc(item.instruction||'')+'</textarea></div><p class="auth-note">Hearing items use browser speech playback. Speaking items ask the learner for microphone permission only after pressing the microphone button.</p>';
+    if(page==='language-letters')return languageTypeSelect(page,item.type||'vocabulary')+'<div class="field"><label>Word</label><input name="word" maxlength="160" value="'+esc(item.word||'')+'" placeholder="Word in '+esc(targetLanguage())+'"></div><div class="field" data-language-types="sentence-vocabulary"><label>Sentence</label><textarea name="sentence" rows="3" maxlength="800">'+esc(item.sentence||'')+'</textarea></div><div class="language-editor-pair" data-language-types="vocabulary,sentence-vocabulary"><div class="field"><label>Meaning in English</label><textarea name="meaningEnglish" rows="3" maxlength="800">'+esc(item.meaningEnglish||'')+'</textarea></div><div class="field"><label>Meaning in Arabic</label><textarea name="meaningArabic" rows="3" maxlength="800" dir="rtl">'+esc(item.meaningArabic||'')+'</textarea></div></div><div class="field" data-language-types="image-vocabulary"><label>Image file name</label><input name="imageFileName" maxlength="260" value="'+esc(item.imageFileName||'')+'" placeholder="image-word.jpg"></div><div class="field" data-language-types="image-vocabulary"><label>Image URL</label><input name="imageUrl" type="url" maxlength="1200" value="'+esc(item.imageUrl||'')+'" placeholder="https://…"></div><div class="field" data-language-types="image-vocabulary"><label>Image description</label><input name="imageAlt" maxlength="240" value="'+esc(item.imageAlt||'')+'"></div>';
+    if(page==='language-voice')return languageTypeSelect(page,item.type||'hearing-word')+'<div class="field"><label>Word or sentence</label><textarea name="text" rows="3" maxlength="900">'+esc(item.text||'')+'</textarea></div><div class="field"><label>Practice instruction</label><textarea name="instruction" rows="3" maxlength="900">'+esc(item.instruction||'')+'</textarea></div><div class="field" data-language-types="hearing-word,hearing-sentence"><label>Voice file name</label><input name="voiceFileName" maxlength="260" value="'+esc(item.voiceFileName||'')+'" placeholder="pronunciation.mp3"></div><p class="auth-note">Hearing items can retain a voice file name from Excel and also use browser speech playback. Speaking items ask the learner for microphone permission only after pressing the microphone button.</p>';
     if(page==='language-grammar')return languageTypeSelect(page,item.type||'grammar-law')+'<div class="field"><label>Title</label><input name="title" maxlength="160" value="'+esc(item.title||'')+'"></div><div class="field"><label>Content</label><textarea name="body" rows="6" maxlength="2400">'+esc(item.body||'')+'</textarea></div><div class="field" data-language-types="grammar-training"><label>Training answer</label><input name="answer" maxlength="500" value="'+esc(item.answer||'')+'" placeholder="Optional exact answer"></div>';
     if(page==='language-examine'){const choices=Array.isArray(item.choices)?item.choices.join('\n'):'',answers=Array.isArray(item.answers)?item.answers.join('\n'):'';return languageTypeSelect(page,item.type||'exam-single-choice')+'<div class="field"><label>Question</label><textarea name="question" rows="4" maxlength="1400">'+esc(item.question||'')+'</textarea></div><div class="field" data-language-types="exam-single-choice,exam-multiple-choice"><label>Choices — one per line</label><textarea name="choices" rows="5" maxlength="1600">'+esc(choices)+'</textarea></div><div class="field" data-language-types="exam-single-choice,exam-true-false,exam-fill-blank,exam-short-answer"><label>Answer / model answer</label><textarea name="answer" rows="3" maxlength="1000">'+esc(item.answer||'')+'</textarea></div><div class="field" data-language-types="exam-multiple-choice"><label>Correct answers — one per line</label><textarea name="answers" rows="4" maxlength="1400">'+esc(answers)+'</textarea></div>';}
     const choices=Array.isArray(item.choices)?item.choices.join('\n'):'';
@@ -494,26 +495,129 @@
   }
   function readLanguageEditorData(form,page,base={}){
     const data=Object.fromEntries(new FormData(form)),id=String(base.id||languageUid('content'));
-    if(page==='language-letters'){const type=pageItemType(page,data.type)?.id||'vocabulary';if(type==='sentence-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',sentence:String(data.sentence||'').trim(),meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};if(type==='image-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',imageUrl:String(data.imageUrl||'').trim(),imageAlt:String(data.imageAlt||'').trim()};return{id,type:'vocabulary',word:String(data.word||'').trim()||'Word',meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};}
-    if(page==='language-voice'){const type=pageItemType(page,data.type)?.id||'hearing-word';return{id,type,text:String(data.text||'').trim()||'Practice',instruction:String(data.instruction||'').trim()};}
+    if(page==='language-letters'){const type=pageItemType(page,data.type)?.id||'vocabulary';if(type==='sentence-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',sentence:String(data.sentence||'').trim(),meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};if(type==='image-vocabulary')return{id,type,word:String(data.word||'').trim()||'Word',imageFileName:String(data.imageFileName||'').trim(),imageUrl:String(data.imageUrl||'').trim(),imageAlt:String(data.imageAlt||'').trim()};return{id,type:'vocabulary',word:String(data.word||'').trim()||'Word',meaningEnglish:String(data.meaningEnglish||'').trim(),meaningArabic:String(data.meaningArabic||'').trim()};}
+    if(page==='language-voice'){const type=pageItemType(page,data.type)?.id||'hearing-word';return{id,type,text:String(data.text||'').trim()||'Practice',instruction:String(data.instruction||'').trim(),voiceFileName:type.startsWith('hearing-')?String(data.voiceFileName||'').trim():''};}
     if(page==='language-grammar'){const type=pageItemType(page,data.type)?.id||'grammar-law';return{id,type,title:String(data.title||'').trim()||itemTypeLabel(page,type),body:String(data.body||'').trim(),answer:type==='grammar-training'?String(data.answer||'').trim():''};}
     if(page==='language-examine'){const type=pageItemType(page,data.type)?.id||'exam-single-choice',choices=String(data.choices||'').split(/\n+/).map(value=>value.trim()).filter(Boolean),answers=String(data.answers||'').split(/\n+/).map(value=>value.trim()).filter(Boolean);return{id,type,question:String(data.question||'').trim()||'Question',choices:(type==='exam-single-choice'||type==='exam-multiple-choice')?choices:[],answer:type==='exam-multiple-choice'?'':String(data.answer||'').trim(),answers:type==='exam-multiple-choice'?answers:[]};}
     const next={id,title:String(data.title||'').trim()||'Untitled',body:String(data.body||'').trim()};if(page==='language-level-test')next.choices=String(data.choices||'').split(/\n+/).map(value=>value.trim()).filter(Boolean);return next;
   }
   function languageDraftHasContent(page,item){if(page==='language-letters')return item.word!=='Word'||Boolean(item.sentence||item.meaningEnglish||item.meaningArabic||item.imageUrl);if(page==='language-voice')return item.text!=='Practice'||Boolean(item.instruction);if(page==='language-grammar')return Boolean(item.body||item.answer||!['Grammar / rule','Note','Example','Training'].includes(item.title));if(page==='language-examine')return item.question!=='Question'||Boolean(item.answer||(item.answers||[]).length||(item.choices||[]).length);return item.title!=='Untitled'||Boolean(item.body||(item.choices||[]).length);}
-  async function importLanguageFiles(files,page){
-    const result=[];for(const file of [...files].slice(0,12)){const name=String(file.name||'Imported file'),lower=name.toLowerCase(),pushValues=values=>{if(!values.length)return;if(page==='language-letters')result.push({id:languageUid('import'),type:'vocabulary',word:values[0]||'Word',meaningEnglish:values.slice(1).join(' · '),meaningArabic:''});else if(page==='language-voice')result.push({id:languageUid('import'),type:'hearing-word',text:values[0]||'Practice',instruction:values.slice(1).join(' · ')});else if(page==='language-grammar')result.push({id:languageUid('import'),type:'grammar-note',title:values[0]||'Note',body:values.slice(1).join(' · '),answer:''});else if(page==='language-examine')result.push({id:languageUid('import'),type:'exam-short-answer',question:values[0]||'Question',choices:[],answer:values.slice(1).join(' · '),answers:[]});else result.push({id:languageUid('import'),title:values[0]||'Imported content',body:values.slice(1).join(' · ')});};
-      if(/\.(xlsx|xls|csv)$/.test(lower)&&window.XLSX){const workbook=window.XLSX.read(await file.arrayBuffer(),{type:'array'}),sheet=workbook.Sheets[workbook.SheetNames[0]],rows=window.XLSX.utils.sheet_to_json(sheet,{header:1,blankrows:false});rows.slice(0,80).forEach(row=>pushValues((Array.isArray(row)?row:[row]).map(value=>String(value??'').trim()).filter(Boolean)));}
-      else if(lower.endsWith('.zip')&&window.JSZip){const zip=await window.JSZip.loadAsync(await file.arrayBuffer());Object.values(zip.files).filter(entry=>!entry.dir).slice(0,80).forEach(entry=>pushValues([entry.name,'Imported from ZIP package.']));}
-      else pushValues([name,'Imported file reference.']);
-    }return result;
+  const LANGUAGE_EXCEL_HEADERS=Object.freeze([
+    'item type','item level','item step','item box','item page','item turning number',
+    'title','text / instruction','word','sentence','meaning English','meaning Arabic',
+    'image file name','image URL','voice file name',
+    'choice 1','choice 2','choice 3','choice 4','choice 5','choice 6',
+    'correct answer','youtube video link','youtube understanding prompt'
+  ]);
+  const LANGUAGE_EXCEL_TYPE_PAGE=Object.freeze({
+    vocabulary:'language-letters','sentence-vocabulary':'language-letters','image-vocabulary':'language-letters',
+    'hearing-word':'language-voice','speaking-word':'language-voice','hearing-sentence':'language-voice','speaking-sentence':'language-voice',
+    'grammar-law':'language-grammar','grammar-note':'language-grammar','grammar-example':'language-grammar','grammar-training':'language-grammar',
+    'youtube-video':'language-video',
+    'exam-single-choice':'language-examine','exam-multiple-choice':'language-examine','exam-true-false':'language-examine','exam-fill-blank':'language-examine','exam-short-answer':'language-examine'
+  });
+  const excelText=value=>String(value==null?'':value).trim();
+  function excelPositiveInt(value,label,rowNumber){
+    const number=Number(value);if(!Number.isInteger(number)||number<1)throw new Error('Row '+rowNumber+': '+label+' must be a positive whole number.');return number;
   }
+  function ensureLanguageExcelLocation(content,levelNumber,stepNumber,boxNumber){
+    content.levels=Array.isArray(content.levels)?content.levels:[];
+    for(let n=1;n<=levelNumber;n++){const id='level-'+n;if(!content.levels.some(item=>item.id===id))content.levels.push({id,name:'Level '+n,steps:[]});}
+    const level=content.levels.find(item=>item.id==='level-'+levelNumber);level.steps=Array.isArray(level.steps)?level.steps:[];
+    for(let n=1;n<=stepNumber;n++){const id='step-'+n;if(!level.steps.some(item=>item.id===id))level.steps.push({id,name:'Step '+n,boxes:[]});}
+    const step=level.steps.find(item=>item.id==='step-'+stepNumber);step.boxes=Array.isArray(step.boxes)?step.boxes:[];
+    for(let n=1;n<=boxNumber;n++){const id='box-'+n;if(!step.boxes.some(item=>item.id===id))step.boxes.push({id,name:'Box '+n});}
+    return{level:'level-'+levelNumber,step:'step-'+stepNumber,box:'box-'+boxNumber};
+  }
+  function languageExcelItem(row,type){
+    const put=(object,key,column)=>{const value=excelText(row[column]);if(value)object[key]=value;};
+    const item={id:languageUid('excel'),type};
+    if(type==='vocabulary'){put(item,'word','word');put(item,'meaningEnglish','meaning English');put(item,'meaningArabic','meaning Arabic');}
+    if(type==='sentence-vocabulary'){put(item,'word','word');put(item,'sentence','sentence');put(item,'meaningEnglish','meaning English');put(item,'meaningArabic','meaning Arabic');}
+    if(type==='image-vocabulary'){put(item,'word','word');put(item,'imageFileName','image file name');put(item,'imageUrl','image URL');}
+    if(['hearing-word','speaking-word','hearing-sentence','speaking-sentence'].includes(type)){
+      if(type.endsWith('-word'))put(item,'text','word');else put(item,'text','sentence');
+      put(item,'instruction','text / instruction');if(type.startsWith('hearing-'))put(item,'voiceFileName','voice file name');
+    }
+    if(['grammar-law','grammar-note','grammar-example','grammar-training'].includes(type)){put(item,'title','title');put(item,'body','text / instruction');if(type==='grammar-training')put(item,'answer','correct answer');}
+    if(type.startsWith('exam-')){
+      put(item,'question','text / instruction');
+      const choices=[];for(let n=1;n<=6;n++){const value=excelText(row['choice '+n]);if(value)choices.push(value);}
+      if(type==='exam-single-choice'||type==='exam-multiple-choice')item.choices=choices;
+      const correct=excelText(row['correct answer']);
+      if(type==='exam-multiple-choice'){if(correct)item.answers=correct.split(/\s*\|\s*|\n+/).map(value=>value.trim()).filter(Boolean);}
+      else if(correct)item.answer=correct;
+    }
+    return item;
+  }
+  function languageExcelFeatureCount(item){return Object.keys(item).filter(key=>!['id','type'].includes(key)&&!(Array.isArray(item[key])&&!item[key].length)&&excelText(Array.isArray(item[key])?item[key].join(''):item[key])).length;}
+  function mergeLanguageExcelItem(existing,incoming,page,index){
+    const base=existing&&existing.type===incoming.type?{...existing,id:existing.id}:{id:incoming.id,type:incoming.type};
+    return normalizeLanguagePageItem({...base,...incoming},page,index);
+  }
+  async function importLanguageExcel(file){
+    if(!file)throw new Error('Choose an Excel file first.');
+    if(!/\.(xlsx|xls)$/i.test(String(file.name||'')))throw new Error('Import content accepts Excel .xlsx or .xls files only.');
+    if(!window.XLSX)throw new Error('Excel import is not available yet. Reload the page and try again.');
+    const workbook=window.XLSX.read(await file.arrayBuffer(),{type:'array'}),sheet=workbook.Sheets['Content Items']||workbook.Sheets[workbook.SheetNames[0]];
+    if(!sheet)throw new Error('The Excel workbook does not contain a worksheet.');
+    const matrix=window.XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',blankrows:false,raw:false});
+    if(!matrix.length)throw new Error('The Excel worksheet is empty.');
+    const headers=(matrix[0]||[]).map(value=>excelText(value)),normalizedHeaders=headers.map(value=>value.toLowerCase());
+    const missing=LANGUAGE_EXCEL_HEADERS.filter(header=>!normalizedHeaders.includes(header.toLowerCase()));
+    if(missing.length)throw new Error('Missing Excel columns: '+missing.join(', ')+'.');
+    const headerMap={};headers.forEach((header,index)=>{headerMap[header.toLowerCase()]=index;});
+    const parsed=[],seen=new Set();
+    matrix.slice(1).forEach((values,rowOffset)=>{
+      const rowNumber=rowOffset+2,row={};LANGUAGE_EXCEL_HEADERS.forEach(header=>{row[header]=values[headerMap[header.toLowerCase()]]??'';});
+      const type=excelText(row['item type']);if(!type)return;
+      const expectedPage=LANGUAGE_EXCEL_TYPE_PAGE[type];if(!expectedPage)throw new Error('Row '+rowNumber+': unknown item type "'+type+'".');
+      const page=excelText(row['item page']);if(page!==expectedPage)throw new Error('Row '+rowNumber+': item page must be '+expectedPage+' for '+type+'.');
+      const level=excelPositiveInt(row['item level'],'item level',rowNumber),step=excelPositiveInt(row['item step'],'item step',rowNumber),box=excelPositiveInt(row['item box'],'item box',rowNumber),turn=excelPositiveInt(row['item turning number'],'item turning number',rowNumber);
+      const unique=[level,step,box,page,turn].join('|');if(seen.has(unique))throw new Error('Row '+rowNumber+': duplicate turning number '+turn+' for the same level, step, box, and page.');seen.add(unique);
+      if(type==='youtube-video'){
+        const config={};const title=excelText(row.title),url=excelText(row['youtube video link']),prompt=excelText(row['youtube understanding prompt']);if(title)config.title=title;if(url)config.url=url;if(prompt)config.prompt=prompt;
+        if(!Object.keys(config).length)throw new Error('Row '+rowNumber+': the YouTube row has no non-empty content columns.');
+        parsed.push({rowNumber,type,page,level,step,box,turn,config});return;
+      }
+      const item=languageExcelItem(row,type);if(!languageExcelFeatureCount(item))throw new Error('Row '+rowNumber+': '+type+' has no non-empty content columns.');
+      parsed.push({rowNumber,type,page,level,step,box,turn,item});
+    });
+    if(!parsed.length)throw new Error('No content rows were found in the Excel file.');
+    const content=JSON.parse(JSON.stringify(readLanguageContent()));
+    const groups=new Map();parsed.forEach(entry=>{const key=[entry.level,entry.step,entry.box,entry.page].join('|');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(entry);});
+    for(const entries of groups.values()){
+      entries.sort((a,b)=>a.turn-b.turn);
+      for(const entry of entries){
+        const loc=ensureLanguageExcelLocation(content,entry.level,entry.step,entry.box),key=pageKey(entry.page,loc),index=entry.turn-1;
+        if(entry.type==='youtube-video'){
+          if(entry.turn!==1)throw new Error('Row '+entry.rowNumber+': youtube-video turning number must be 1.');
+          content.video=content.video||{};const current=content.video[key]||{title:'Watch and understand',prompt:'Write what you understood from this video in your own words.',url:''};content.video[key]={...current,...entry.config};content.pages=content.pages||{};content.pages[key]=[];continue;
+        }
+        content.pages=content.pages||{};const items=Array.isArray(content.pages[key])?content.pages[key]:[];
+        if(index>items.length)throw new Error('Row '+entry.rowNumber+': item turning number '+entry.turn+' skips an empty position on '+entry.page+'.');
+        const existing=items[index];const next=mergeLanguageExcelItem(existing,entry.item,entry.page,index);
+        if(index===items.length)items.push(next);else items[index]=next;content.pages[key]=items;
+      }
+    }
+    writeLanguageContent(content);
+    return{rows:parsed.length,locations:groups.size};
+  }
+  function renderLanguageExcelImport(originPage,close){
+    const sheet=document.querySelector('.language-control-sheet');if(!sheet)return;
+    sheet.querySelector(':scope > .language-control-step')?.remove();
+    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-excel-import><small>Excel bulk import</small><h3>Import content</h3><div class="field"><label>Language content Excel file</label><input data-language-excel-file type="file" accept=".xlsx,.xls" required></div><div class="language-location-fixed"><strong>Exact workbook structure</strong><span>Uses item type, level, step, box, page and turning number exactly like the provided Excel file.</span></div><p class="auth-note">Only non-empty feature columns valid for each item type are applied. Existing values at the same turning position are kept when the matching Excel feature cell is blank. Hearing rows support <strong>voice file name</strong>; YouTube rows support <strong>youtube video link</strong>; exam rows use <strong>correct answer</strong>.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-excel-cancel>Cancel</button><button type="submit" class="btn btn-primary">Import Excel</button></div><p class="auth-note" data-language-excel-status></p></form>');
+    const form=sheet.querySelector('[data-language-excel-import]'),status=form.querySelector('[data-language-excel-status]'),button=form.querySelector('button[type=submit]');
+    form.querySelector('[data-language-excel-cancel]').onclick=()=>{close();openLanguageControl(originPage);};
+    form.onsubmit=async event=>{event.preventDefault();button.disabled=true;status.textContent='Validating workbook…';try{const result=await importLanguageExcel(form.querySelector('[data-language-excel-file]').files?.[0]);status.textContent='Imported '+result.rows+' rows across '+result.locations+' content locations.';hideLanguageControl(originPage);setTimeout(()=>{close();render();},250);}catch(error){status.textContent=error.message;button.disabled=false;}};
+  }
+
   function renderLanguageImportStep(originPage,page,loc,target,close){
     const sheet=document.querySelector('.language-control-sheet');if(!sheet)return;
-    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-add-form><small>Step 3 of 3</small><h3>Add content</h3>'+languageEditorFields(page,{})+'<div class="field"><label>Excel or ZIP files</label><input data-language-import-files type="file" accept=".xlsx,.xls,.csv,.zip" multiple></div><p class="auth-note">Imports use the default item type for this page. You can edit imported items afterward.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-import-cancel>Cancel</button><button type="submit" class="btn btn-primary">Add</button></div><p class="auth-note" data-language-import-status></p></form>');
+    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-add-form><small>Step 3 of 3</small><h3>Add content</h3>'+languageEditorFields(page,{})+'<p class="auth-note">Use this form for one manual content item. For bulk Excel rows, return to Content Control and choose Import content.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-import-cancel>Cancel</button><button type="submit" class="btn btn-primary">Add</button></div><p class="auth-note" data-language-import-status></p></form>');
     const step=sheet.querySelector('[data-language-add-form]');syncLanguageEditorType(step);step.querySelector('[data-language-import-cancel]').onclick=close;
     step.onsubmit=async event=>{event.preventDefault();const status=step.querySelector('[data-language-import-status]'),button=step.querySelector('button[type=submit]');button.disabled=true;status.textContent='Adding…';try{const content=readLanguageContent();let destination={...loc};if(!LANGUAGE_INTERMEDIATE_ROUTES.includes(page)&&target!=='language'){if(target==='level'){const number=(content.levels?.length||0)+1,newLevel={id:'level-'+number,name:'Level '+number,steps:[{id:'step-1',name:'Step 1',boxes:[{id:'box-1',name:'Box 1'}]}]};content.levels.push(newLevel);destination={level:newLevel.id,step:'step-1',box:'box-1'};}else{const level=content.levels.find(item=>item.id===loc.level)||content.levels[0];if(target==='step'){const number=(level.steps?.length||0)+1,newStep={id:'step-'+number,name:'Step '+number,boxes:[{id:'box-1',name:'Box 1'}]};level.steps.push(newStep);destination={level:level.id,step:newStep.id,box:'box-1'};}if(target==='box'){const stepObj=(level.steps||[]).find(item=>item.id===loc.step)||level.steps?.[0],number=(stepObj.boxes?.length||0)+1,newBox={id:'box-'+number,name:'Box '+number};stepObj.boxes.push(newBox);destination={level:level.id,step:stepObj.id,box:newBox.id};}}}
-      const draft=readLanguageEditorData(step,page,{id:languageUid('content')}),imported=await importLanguageFiles(step.querySelector('[data-language-import-files]').files||[],page),additions=[...imported];if(languageDraftHasContent(page,draft)||!imported.length)additions.unshift(draft);
+      const draft=readLanguageEditorData(step,page,{id:languageUid('content')}),additions=[draft];
       if(LANGUAGE_INTERMEDIATE_ROUTES.includes(page)){content.intermediate=content.intermediate||{};content.intermediate[page]=Array.isArray(content.intermediate[page])?content.intermediate[page]:[];content.intermediate[page].push(...additions);}else{content.pages=content.pages||{};const key=pageKey(page,destination);content.pages[key]=Array.isArray(content.pages[key])?content.pages[key]:[];content.pages[key].push(...additions);}
       writeLanguageContent(content);close();render();
     }catch(error){status.textContent=error.message;button.disabled=false;}};

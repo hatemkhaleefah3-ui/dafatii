@@ -50,6 +50,18 @@ assert.match(js,/data-exam-short-review/,'short answer must support model-answer
 assert.match(js,/page==='language-examine'\?renderExamItem/,'exam page must use the exam renderer in its item-by-item flow');
 
 assert.match(js,/function languageTypeSelect\(page,selected=''\)/,'Content Control must expose page-specific types');
+assert.ok(js.includes('data-language-control-action="import"'),'Content Control must expose Import content');
+assert.match(js,/function renderLanguageExcelImport\(/,'Excel import must have its own bottom-sheet flow');
+assert.match(js,/accept="\.xlsx,\.xls"/,'Import content must accept Excel files only');
+assert.doesNotMatch(js,/data-language-excel-file[^>]*\.csv|data-language-excel-file[^>]*\.zip/,'bulk import must not accept CSV or ZIP');
+for(const header of ['item type','item level','item step','item box','item page','item turning number','voice file name','correct answer','youtube video link']) assert.ok(js.includes("'"+header+"'"),'Excel schema missing '+header);
+assert.match(js,/LANGUAGE_EXCEL_TYPE_PAGE/,'Excel import must validate item-type page destinations');
+assert.match(js,/duplicate turning number/,'Excel import must reject duplicate turning positions');
+assert.match(js,/index=entry\.turn-1/,'item turning number must map to the exact page position');
+assert.match(js,/existing&&existing\.type===incoming\.type/,'matching rows must preserve existing values when Excel feature cells are blank');
+assert.match(js,/voiceFileName/,'hearing items must preserve voice file names');
+assert.match(js,/imageFileName/,'image vocabulary must preserve image file names');
+assert.match(js,/content\.video\[key\]=\{\.\.\.current,\.\.\.entry\.config\}/,'YouTube Excel rows must update the box video configuration');
 assert.match(js,/Correct answers — one per line/,'multiple choice editor needs correct-answer fields');
 assert.match(js,/Answer \/ model answer/,'exam editor needs answer/model-answer field');
 assert.match(js,/data-language-delete-item/,'delete must remain inside edit form');
@@ -72,7 +84,7 @@ for(const selector of [
   '.exam-single-card','.exam-multiple-card','.exam-truefalse-card','.exam-fill-card','.exam-short-card'
 ]) assert.ok(css.includes(selector),'missing premium styling '+selector);
 
-assert.ok(index.includes('course-modes.css?v=20260921-13'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-13'),'course JS must be cache-busted');
+assert.ok(index.includes('course-modes.css?v=20260921-14'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-14'),'course JS must be cache-busted');
 
 console.log('language mic video editor and exam tests passed');
