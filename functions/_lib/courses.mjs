@@ -2,14 +2,12 @@ import { sha256 } from './crypto.mjs';
 import { HttpError } from './http.mjs';
 import { validateRecord } from './policy.mjs';
 
-export const LANGUAGE_AUTHORING_KEY = 'dafatii:language-authoring:v1';
-
 export const COURSE_CONTENT_KEYS = new Set([
   'dafatii:subjects','dafatii:lectures','dafatii:weeklySchedule','dafatii:scheduleNotes',
   'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
   'dafatii:examDays','dafatii:examPeriods','dafatii:studentSuite:v1','dafatii:studyRoomState:v1',
   'dafatii:studyRoomWorkspace:v1','dafatii:chatState:v1','dafatii:chatProState:v1',
-  'dafatii:materialFiles:v1',LANGUAGE_AUTHORING_KEY
+  'dafatii:materialFiles:v1'
 ]);
 
 export const PERMISSIONS = [
