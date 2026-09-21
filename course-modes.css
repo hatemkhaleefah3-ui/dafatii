@@ -1033,8 +1033,11 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
     margin-top:18px;
   }
   .language-learning-analytics>div{min-height:94px;padding:14px 10px}
-  .language-learning-analytics>div:nth-child(2){border-inline-end:0}
-  .language-learning-analytics>div:nth-child(-n+2){border-bottom:1px solid var(--process-line)}
+  .language-learning-analytics>div:nth-child(2),
+  .language-learning-analytics>div:nth-child(4),
+  .language-learning-analytics>div:nth-child(5){border-inline-end:0}
+  .language-learning-analytics>div:nth-child(-n+4){border-bottom:1px solid var(--process-line)}
+  .language-learning-analytics>div:nth-child(5){grid-column:1/-1}
   .language-learning-analytics strong{font-size:17px}
   .level-system-banner{
     grid-template-columns:minmax(0,1fr) auto;
