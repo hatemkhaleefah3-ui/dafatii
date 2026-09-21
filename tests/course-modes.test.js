@@ -87,15 +87,21 @@ assert.match(js,/function languageVideoUnderstandingPage\(/,'Watching page missi
 assert.match(js,/function languageStoryReadingPage\(/,'Story page missing');
 assert.match(js,/story-book-shell/,'old-book story renderer missing');
 
-assert.match(css,/Language Page 1 — Ink & Paper v18/,'Ink & Paper marker missing');
+assert.match(css,/CANONICAL LANGUAGE COURSE DESIGN/,'canonical language design marker missing');
+assert.equal((css.match(/CANONICAL LANGUAGE COURSE DESIGN/g)||[]).length,1,'exactly one canonical language design layer is allowed');
+assert.doesNotMatch(css,/Focused language learning experiences v12|Voice visibility, premium video notes, and exam question system v13|Premium bilingual language content v16|Watching & Reading — two-page learning experience v17|Language Page 1 — Ink & Paper v18|Language Page 2 — Midnight Studio v18|Reliable microphone interaction states v19/,'legacy language design layers must be deleted');
 for(const token of ['#FBF6EC','#1B2A41','#C8553D','#C9A227','#7A9E7E']) assert.ok(css.includes(token),'Ink palette missing '+token);
 for(const selector of ['.word-flip-card','.paper-polaroid','.envelope-options','.pinned-note','.letterpress-tiles','.journal-sheet','.copybook-sheet','.typewriter-sheet','.corkboard-strip','.filing-drawer','.writing-desk-spread','.wax-submit']) assert.ok(css.includes(selector),'Ink styling missing '+selector);
-assert.match(css,/Language Page 2 — Midnight Studio v18/,'Midnight Studio marker missing');
+assert.match(css,/Home — Observatory/,'Observatory canonical theme missing');
+assert.match(css,/Intermediate — Atelier \/ Calibration/,'intermediate canonical themes missing');
+assert.match(css,/Grammar — Blueprint Atelier/,'Blueprint Atelier canonical theme missing');
+assert.match(css,/Watching & Reading — Cinema & Editorial/,'Cinema & Editorial canonical theme missing');
+assert.match(css,/Examining — Arena Focus/,'Arena Focus canonical theme missing');
 for(const token of ['#0B1020','#7C5CFF','#2DE2E6','#FF4FA3']) assert.ok(css.includes(token),'Studio palette missing '+token);
 for(const selector of ['.studio-listen-button','.studio-wave','.studio-image-grid','.mixer-console','.glass-terminal','.karaoke-line','.studio-mic-button','.dual-waveforms','.teleprompter-text','.studio-aperture-frame','.studio-chat-bubble','.podcast-stage']) assert.ok(css.includes(selector),'Studio styling missing '+selector);
 
 for(const font of ['Fraunces','Playfair+Display','Inter','Caveat','Amiri','Noto+Naskh+Arabic','Sora','Space+Grotesk','Tajawal']) assert.ok(index.includes(font),'font missing '+font);
-assert.ok(index.includes('course-modes.css?v=20260921-21'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260921-22'),'CSS cache version missing');
 assert.ok(index.includes('course-modes.js?v=20260921-21'),'JS cache version missing');
 
 assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'shared language record changed');
