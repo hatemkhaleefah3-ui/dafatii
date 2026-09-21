@@ -17,8 +17,9 @@ for (const route of routes) assert.ok(navSpecText.includes("'"+route+"'"),'langu
 assert.equal((navSpecText.match(/\['language-/g)||[]).length,6,'language course must expose exactly six navigation destinations');
 
 assert.match(js,/function languageContent\(page\)\{[\s\S]{0,240}language-empty-page/,'language routes must render the empty page shell');
-assert.doesNotMatch(js,/TOTAL_LANGUAGE_BOXES|LEVEL_LEARNING_SYSTEMS|ARABIC_VOCABULARY|ARABIC_GRAMMAR|letterGate|placementExam|defaultAssessmentQuestions|languageAuthoring|language-progress:|MediaRecorder|SpeechRecognition|speechSynthesis|video-understanding|pronunciation/,'retired language learning implementation must stay deleted');
+assert.doesNotMatch(js,/TOTAL_LANGUAGE_BOXES|LEVEL_LEARNING_SYSTEMS|ARABIC_VOCABULARY|ARABIC_GRAMMAR|letterGate|placementExam|defaultAssessmentQuestions|languageAuthoring|MediaRecorder|SpeechRecognition|speechSynthesis|video-understanding|pronunciation/,'retired language learning implementation must stay deleted');
 assert.doesNotMatch(js,/language-letter-learn|language-letter-exam|language-review/,'retired language subroutes must stay deleted');
+assert.match(js,/function purgeLegacyLanguageBrowserState\(\)/,'legacy browser language state should be actively removed');
 
 assert.match(js,/querySelector\('\.quiet-workspace>\.sub-nav'\)\?\.remove\(\)/,'language shell must remove the redundant workspace capsule');
 assert.match(js,/querySelector\('\.quiet-return-button'\)\?\.remove\(\)/,'language shell must remove the floating return control');
