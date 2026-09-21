@@ -899,7 +899,7 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
 /* Language course v14 · driven six-lane progression */
 .language-learning-analytics{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(5,minmax(0,1fr));
   margin:26px 0 0;
   border-block:1px solid var(--process-line);
 }
@@ -1062,3 +1062,18 @@ body:has(.dcc-language-control-bar) .dcc-language-item-selected::after{content:"
   cursor:not-allowed;
   opacity:.3;
 }
+
+.language-flow-stage.locked{opacity:.38;pointer-events:none}
+.language-exam-speak{display:grid;gap:10px;margin-top:16px}
+.language-exam-speak>button{
+  justify-self:start;
+  min-height:48px;
+  padding:0 16px;
+  border:1px solid var(--process-line);
+  border-radius:12px;
+  background:var(--process-ink);
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+.language-exam-speak>small{color:var(--muted);font-size:11px;line-height:1.45}
