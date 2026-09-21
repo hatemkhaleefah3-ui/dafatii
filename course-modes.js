@@ -49,6 +49,39 @@
     ['Italian','Italiano'],['Portuguese','Português'],['Russian','Русский'],['Chinese','中文'],
     ['Japanese','日本語'],['Korean','한국어'],['Hindi','हिन्दी'],['Urdu','اردو']
   ]);
+
+  const LANGUAGE_ITEM_EXAMPLES = Object.freeze({
+    'lesson-note':{title:'How to use this lesson',note:'Start with the cards in order. Listen, repeat, then write one answer before moving on.'},
+    'learning-goal':{title:'Today’s goal',note:'By the end of this lesson, introduce yourself with one clear sentence.'},
+    letter:{title:'Letter A',target:'A a',native:'صوت قريب من «أَ»',pronunciation:'ay',note:'Use the capital form at the beginning of a sentence.'},
+    'word-translation':{title:'A useful greeting',target:'Hello',native:'مرحباً',pronunciation:'heh-LOW'},
+    'image-word':{title:'Name the image',target:'Cat',native:'قطة'},
+    'sentence-pair':{title:'A simple sentence',target:'I have a book.',native:'لدي كتاب.'},
+    'spelling-write':{title:'Spell the word',target:'friend',prompt:'Write the word: friend',answer:'friend'},
+    handwriting:{title:'Write a sentence',target:'My name is Sara.',prompt:'Copy the sentence with clear spacing.',answer:'My name is Sara.'},
+    pronunciation:{title:'Say it clearly',target:'Good morning',native:'صباح الخير',pronunciation:'good MOR-ning'},
+    'text-to-voice':{title:'Read aloud',target:'How are you today?',prompt:'Press Listen, then repeat with the same rhythm.'},
+    'image-to-voice':{title:'Describe the image',target:'This is a red apple.',prompt:'Look at the image and say the sentence aloud.'},
+    'voice-to-text':{title:'Listen and type',target:'Welcome to our class.',prompt:'Listen to the phrase, then type it.',answer:'Welcome to our class.'},
+    'voice-to-image':{title:'Listen and identify',target:'The blue bicycle is near the tree.',prompt:'Listen and identify the correct image.'},
+    'voice-pair':{title:'Compare the phrase',target:'Thank you',native:'شكراً'},
+    'grammar-topic':{title:'Present simple',target:'Present simple',note:'Use it for habits, routines, and facts: I study every day.'},
+    'grammar-rule':{title:'Normal rule',target:'Subject + base verb',rule:'Normal rule',note:'With he, she, or it, add -s or -es to the verb.'},
+    'grammar-example':{title:'Present simple example',target:'She reads every night.',native:'هي تقرأ كل ليلة.',example:'reads has -s because the subject is she.'},
+    'grammar-training':{title:'Choose the correct form',prompt:'He ___ English every day.',choices:'study\nstudies\nstudying',answer:'studies'},
+    'youtube-video':{title:'Watch a short lesson',videoUrl:'https://www.youtube.com/watch?v=ysz5S6PUM-U',note:'Watch once for the main idea, then watch again and note three useful words.'},
+    story:{title:'A short story',target:'Maya opens the window. The morning is sunny, and she smiles at her new neighbour.',native:'تفتح مايا النافذة. الصباح مشمس، وتبتسم لجارتها الجديدة.'},
+    reading:{title:'Read for meaning',target:'Our class meets on Monday and Wednesday. We practise speaking together for thirty minutes.',native:'يلتقي صفنا يومي الاثنين والأربعاء. نتدرب على التحدث معاً لمدة ثلاثين دقيقة.'},
+    note:{title:'Reader note',note:'Look for familiar words first. Use the sentence around an unknown word to infer its meaning.'},
+    'single-choice':{title:'Choose one answer',prompt:'Which word means «كتاب»?',choices:'Book\nTable\nWindow',answer:'Book'},
+    'multiple-choice':{title:'Choose the best answers',prompt:'Which are greetings?',choices:'Hello\nGoodbye\nBook\nThank you',answer:'Hello'},
+    'true-false':{title:'True or false',prompt:'“She go to school” is correct.',answer:'False'},
+    'fill-blank':{title:'Complete the sentence',prompt:'I ___ a student.',answer:'am'},
+    ordering:{title:'Put the words in order',prompt:'morning / good / everyone',answer:'Good morning everyone'},
+    'short-answer':{title:'Write your answer',prompt:'Write one sentence introducing yourself.',answer:''}
+  });
+  function itemExample(type){return {...(LANGUAGE_ITEM_EXAMPLES[type]||{})};}
+
   const COPY = {
     en:{home:'Home',letters:'Vocabulary & writing',voice:'Listening & speaking',grammar:'Grammar & rules',video:'Watching & reading',examine:'Examining'},
     ar:{home:'الرئيسية',letters:'المفردات والكتابة',voice:'الاستماع والتحدث',grammar:'القواعد والأحكام',video:'المشاهدة والقراءة',examine:'الاختبارات'}
@@ -317,8 +350,9 @@
   function languageItemsPage(page){
     const meta=pageMeta(page),editable=canManageLanguageItems(),items=languageItems().filter(item=>item.page===page);
     const add=editable?'<button class="btn btn-primary language-add-item" type="button" data-language-add="'+esc(page)+'">Add content item</button>':'';
-    const empty='<div class="language-item-empty"><span>✦</span><h2>No items yet</h2><p>Add a '+esc(meta.title.toLowerCase())+' item to start building this page.</p>'+add+'</div>';
-    return '<section class="language-items-page theme-'+esc(meta.theme)+'" data-language-items-page="'+esc(page)+'"><header class="language-items-hero"><div><small>'+esc(meta.eyebrow)+'</small><h1>'+esc(meta.title)+'</h1><p>Each card has its own learning interaction and shared management controls.</p></div>'+add+'</header><div class="language-item-grid">'+(items.length?items.map(item=>languageItemCard(item,editable)).join(''):empty)+'</div></section>';
+    const examples=editable?'<button class="language-add-examples" type="button" data-language-add-examples="'+esc(page)+'">Add page examples</button>':'';
+    const empty='<div class="language-item-empty"><span>✦</span><h2>No items yet</h2><p>Add a '+esc(meta.title.toLowerCase())+' item to start building this page.</p>'+add+examples+'</div>';
+    return '<section class="language-items-page theme-'+esc(meta.theme)+'" data-language-items-page="'+esc(page)+'"><header class="language-items-hero"><div><small>'+esc(meta.eyebrow)+'</small><h1>'+esc(meta.title)+'</h1><p>Each card has its own learning interaction and shared management controls.</p></div><div class="language-hero-actions">'+examples+add+'</div></header><div class="language-item-grid">'+(items.length?items.map(item=>languageItemCard(item,editable)).join(''):empty)+'</div></section>';
   }
   function refreshLanguageItemsPage(){
     const page=(location.hash||'#language-home').replace(/^#\/?/,'').split('/')[0];
@@ -337,11 +371,14 @@
   }
   function openLanguageItemEditor(page,id=''){
     if(!canManageLanguageItems())return;
-    const existing=id?itemById(id):null,meta=pageMeta(page),initialType=existing?.type||meta.types[0];
+    const existing=id?itemById(id):null,meta=pageMeta(page),initialType=existing?.type||meta.types[0],initialExample=itemExample(initialType),initialValues={...initialExample,...(existing||{})};
     const typeOptions=meta.types.map(type=>'<option value="'+esc(type)+'" '+(type===initialType?'selected':'')+'>'+esc(typeMeta(type).label)+'</option>').join('');
-    const close=sheet(existing?'Edit content item':'Add content item','<form class="language-item-editor" id="language-item-editor"><input type="hidden" name="id" value="'+esc(existing?.id||'')+'"><input type="hidden" name="page" value="'+esc(page)+'"><label class="language-editor-field"><span>Item type</span><select name="type">'+typeOptions+'</select><small id="language-type-hint">'+esc(typeMeta(initialType).hint)+'</small></label>'+editorFields.map(field=>editorControl(field,existing?.[field[0]])).join('')+'<button class="btn btn-primary" type="submit">'+(existing?'Save item':'Add item')+'</button><p class="auth-note" id="language-item-status"></p></form>');
+    const exampleButton='<button class="language-use-example" type="button" data-language-use-example>Use this type’s example</button>';
+    const close=sheet(existing?'Edit content item':'Add content item','<form class="language-item-editor" id="language-item-editor"><input type="hidden" name="id" value="'+esc(existing?.id||'')+'"><input type="hidden" name="page" value="'+esc(page)+'"><label class="language-editor-field"><span>Item type</span><select name="type">'+typeOptions+'</select><small id="language-type-hint">'+esc(typeMeta(initialType).hint)+'</small></label>'+exampleButton+editorFields.map(field=>editorControl(field,initialValues[field[0]])).join('')+'<button class="btn btn-primary" type="submit">'+(existing?'Save item':'Add item')+'</button><p class="auth-note" id="language-item-status"></p></form>');
     const form=document.getElementById('language-item-editor'),type=form.elements.type,status=document.getElementById('language-item-status');
-    type.onchange=()=>document.getElementById('language-type-hint').textContent=typeMeta(type.value).hint;
+    const applyExample=()=>{const sample=itemExample(type.value);editorFields.forEach(([key])=>{if(Object.hasOwn(sample,key)&&form.elements[key])form.elements[key].value=sample[key];});document.getElementById('language-type-hint').textContent=typeMeta(type.value).hint;};
+    type.onchange=()=>{document.getElementById('language-type-hint').textContent=typeMeta(type.value).hint;};
+    form.querySelector('[data-language-use-example]').onclick=applyExample;
     form.onsubmit=event=>{
       event.preventDefault();
       const values=Object.fromEntries(new FormData(form)),typeName=String(values.type||'');
@@ -357,8 +394,15 @@
     const url=location.href;
     try{if(navigator.share){await navigator.share({title:itemText(item,'title')||typeMeta(item.type).label,text,url});return;}await navigator.clipboard.writeText(text+'\n'+url);const button=document.querySelector('[data-language-share="'+CSS.escape(id)+'"]');if(button){button.textContent='Copied';setTimeout(()=>button.textContent='Share',1500);}}catch{}
   }
+  function addPageExamples(page){
+    if(!canManageLanguageItems())return;
+    const existing=languageItems(),existingTypes=new Set(existing.filter(item=>item.page===page).map(item=>item.type));
+    const samples=pageMeta(page).types.filter(type=>!existingTypes.has(type)).map(type=>({id:crypto.randomUUID(),page,type,updatedAt:Date.now(),...itemExample(type)}));
+    if(samples.length){persistLanguageItems([...existing,...samples]);refreshLanguageItemsPage();}
+  }
   function bindLanguageItems(){
     document.querySelectorAll('[data-language-add]').forEach(button=>button.onclick=()=>openLanguageItemEditor(button.dataset.languageAdd));
+    document.querySelectorAll('[data-language-add-examples]').forEach(button=>button.onclick=()=>addPageExamples(button.dataset.languageAddExamples));
     document.querySelectorAll('[data-language-edit]').forEach(button=>button.onclick=()=>{const item=itemById(button.dataset.languageEdit);if(item)openLanguageItemEditor(item.page,item.id);});
     document.querySelectorAll('[data-language-delete]').forEach(button=>button.onclick=()=>{const item=itemById(button.dataset.languageDelete);if(!item||!confirm('Delete this content item?'))return;persistLanguageItems(languageItems().filter(entry=>entry.id!==item.id));refreshLanguageItemsPage();});
     document.querySelectorAll('[data-language-share]').forEach(button=>button.onclick=()=>shareLanguageItem(button.dataset.languageShare));
@@ -429,6 +473,7 @@
     languageRoutes:[...LANGUAGE_ROUTES],
     languageChoices:LANGUAGE_CHOICES.map(item=>item[0]),
     languageItemTypes:LANGUAGE_ITEM_TYPES,
-    languageContentKey:LANGUAGE_CONTENT_KEY
+    languageContentKey:LANGUAGE_CONTENT_KEY,
+    languageItemExamples:LANGUAGE_ITEM_EXAMPLES
   });
 })();
