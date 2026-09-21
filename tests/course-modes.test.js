@@ -29,6 +29,8 @@ assert.match(js,/localStorage\.setItem\(key,JSON\.stringify/,'paragraph autosave
 assert.match(js,/word-diff/,'word diff missing');
 
 assert.match(js,/function renderVoiceItem\(item,index\)/,'Page 2 renderer missing');
+assert.ok(js.includes("voice:'Listening & speaking'"),'Page 2 navigation label must be Listening & speaking');
+assert.match(js,/data-native-audio="1"/,'native-audio option fallback must use the learner native-language voice');
 for(const marker of ['studio-listen-control','studio-image-grid','mixer-console','glass-terminal','karaoke-line','dual-waveforms','teleprompter-text','studio-aperture-frame','studio-chat-bubble','podcast-stage']) assert.ok(js.includes(marker),'Page 2 UI missing '+marker);
 assert.match(js,/function setupStudioExercises\(\)/,'Page 2 bindings missing');
 assert.match(js,/data-studio-speed="0\.75"/,'0.75x speed missing');
@@ -78,8 +80,8 @@ for(const token of ['#0B1020','#7C5CFF','#2DE2E6','#FF4FA3']) assert.ok(css.incl
 for(const selector of ['.studio-listen-button','.studio-wave','.studio-image-grid','.mixer-console','.glass-terminal','.karaoke-line','.studio-mic-button','.dual-waveforms','.teleprompter-text','.studio-aperture-frame','.studio-chat-bubble','.podcast-stage']) assert.ok(css.includes(selector),'Studio styling missing '+selector);
 
 for(const font of ['Fraunces','Playfair+Display','Inter','Caveat','Amiri','Noto+Naskh+Arabic','Sora','Space+Grotesk','Tajawal']) assert.ok(index.includes(font),'font missing '+font);
-assert.ok(index.includes('course-modes.css?v=20260921-18'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260921-18'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260921-19'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260921-19'),'JS cache version missing');
 
 assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'shared language record changed');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
