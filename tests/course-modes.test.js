@@ -25,7 +25,7 @@ for(const type of ['exam-single-choice','exam-multiple-choice','exam-true-false'
 assert.match(js,/function nativeMeaning\(item\)/,'vocabulary must choose a meaning from learner native language');
 assert.match(js,/class="language-auto-text" dir="auto"/,'language content must let English and Arabic text choose LTR or RTL direction automatically');
 assert.match(css,/\.language-content-page \.language-auto-text[\s\S]*unicode-bidi:plaintext[\s\S]*text-align:start/,'language item layouts must be bidi-safe for English and Arabic');
-assert.match(js,/content\.version=4/,'language content schema must migrate to version 4 after removing speaking item types');
+assert.match(js,/content\.version=5/,'language content schema must migrate to version 5 for Watching & Reading');
 assert.match(js,/meaningEnglish[\s\S]*meaningArabic/,'vocabulary items must store both English and Arabic meanings');
 assert.match(js,/function renderVocabularyItem\(/,'vocabulary needs a dedicated renderer');
 
@@ -85,12 +85,23 @@ assert.match(js,/Answer \/ model answer/,'exam editor needs answer/model-answer 
 assert.match(js,/data-language-delete-item/,'delete must remain inside edit form');
 assert.ok(!js.includes('data-language-control-action="delete"'),'delete must not return as a top-level Content Control action');
 
-assert.match(js,/function languageVideoPage\(\)/,'video page must remain dedicated');
-assert.match(js,/video-note-editor/,'video understanding field must use premium editor shell');
-assert.match(js,/data-language-video-word-count/,'video editor must show a live word count');
-assert.match(js,/Unsaved changes/,'video editor must communicate unsaved state');
-assert.match(js,/event\.metaKey\|\|event\.ctrlKey/,'video notes must support keyboard save');
-assert.match(js,/youtube-nocookie\.com\/embed/,'video player must keep YouTube embed');
+assert.match(js,/function languageVideoPage\(\)/,'Watching & Reading must remain a dedicated route');
+assert.match(js,/Watching & reading/,'English language navigation must rename the route');
+assert.match(js,/المشاهدة والقراءة/,'Arabic language navigation must rename the route');
+assert.match(js,/function languageVideoUnderstandingPage\(/,'page 1 must render YouTube video understanding');
+assert.match(js,/function languageStoryReadingPage\(/,'page 2 must render story reading and understanding');
+assert.match(js,/data-watch-read-prev[\s\S]*data-watch-read-next/,'Watching & Reading must have previous and next page controls');
+assert.match(js,/languagePageIndex\('language-video',loc,\[0,1\]\)/,'Watching & Reading must be exactly two internal pages');
+assert.match(js,/data-language-response-kind="\+kind\+"/,'video and story pages must use separate learner response identities');
+assert.match(js,/languageWatchReadNoteKey\(kind,loc\)/,'both responses must save separately per course location');
+assert.match(js,/data-language-response-word-count/,'each response editor must show a live word count');
+assert.match(js,/Unsaved changes/,'response editor must communicate unsaved state');
+assert.match(js,/event\.metaKey\|\|event\.ctrlKey/,'responses must support keyboard save');
+assert.match(js,/youtube-nocookie\.com\/embed/,'video page must keep YouTube embed');
+assert.match(js,/story-book-shell[\s\S]*story-book-page[\s\S]*story-book-text/,'story reading must use the dedicated old-book renderer');
+assert.match(js,/Story text/,'Content Control must edit the story text');
+assert.match(js,/Story understanding prompt/,'Content Control must edit the story response prompt');
+assert.match(js,/'story-reading':'language-video'/,'Excel import must support story-reading on the Watching & Reading route');
 
 assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'language content must use shared course record');
 assert.match(js,/personal-focus-room/,'personal course behavior must remain');
@@ -98,11 +109,11 @@ assert.match(js,/personal-focus-room/,'personal course behavior must remain');
 for(const selector of [
   '.vocab-card','.image-vocab-card','.voice-card','.voice-listen-stage','.voice-practice-actions','.mic-action.is-recording',
   '.grammar-law-card','.grammar-thread-card',
-  '.video-note-editor','.video-note-editor:focus-within',
+  '.video-note-editor','.video-note-editor:focus-within','.watching-reading-page','.story-book-shell','.story-book-page','.story-book-text',
   '.exam-single-card','.exam-multiple-card','.exam-truefalse-card','.exam-fill-card','.exam-short-card','.premium-language-item'
 ]) assert.ok(css.includes(selector),'missing premium styling '+selector);
 
-assert.ok(index.includes('course-modes.css?v=20260921-16'),'course CSS must be cache-busted');
-assert.ok(index.includes('course-modes.js?v=20260921-16'),'course JS must be cache-busted');
+assert.ok(index.includes('course-modes.css?v=20260921-17'),'course CSS must be cache-busted');
+assert.ok(index.includes('course-modes.js?v=20260921-17'),'course JS must be cache-busted');
 
 console.log('language mic video editor and exam tests passed');
