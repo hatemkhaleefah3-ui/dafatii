@@ -54,15 +54,9 @@ Drive identifiers are server metadata only. Dafatii stores stable UUID relations
 | GET | `/api/v1/files/{id}/content` | Stream authorized Drive content |
 | DELETE | `/api/v1/files/{id}` | Delete the Drive original, R2 manifest and metadata |
 
-## Language AI grading
-
-The language course sends YouTube-understanding responses to `POST /api/v1/language/video-understanding`. The authenticated Pages Function validates the public YouTube URL and learner response, sends both to Gemini with the server-only `GEMINI_API_KEY`, and returns exactly one rating: `bad`, `moderate`, `good`, or `very good`. The browser treats only `bad` as a failed understanding check; every other rating is accepted.
-
-The API key must remain an encrypted Cloudflare secret. The browser never calls Gemini directly and never receives the key.
-
 ## Cloudflare configuration
 
-Apply `migrations/0001_production_backend.sql` and `migrations/0002_course_rbac.sql` to the same D1 database, then bind it as `DB` in both Preview and Production. No new migration is required for Drive because the existing opaque `object_key` stores provider-qualified identifiers.
+Apply the repository migrations through `migrations/0008_remove_language_course_backend.sql` to the same D1 database, then bind it as `DB` in both Preview and Production. Migration 0008 removes persisted records from the retired language-course authoring backend.
 
 Create a private R2 bucket such as `dafatii-app-storage` and bind it to the Pages project as `R2_STORAGE`. Do not expose a public bucket URL.
 
@@ -75,7 +69,6 @@ Set these plaintext variables in both environments:
 - `MAX_UPLOAD_BYTES` (default 512 MiB)
 - `AUTH_ATTEMPT_LIMIT`, `UPLOAD_INIT_LIMIT`, `USER_STORAGE_QUOTA_BYTES`
 - `PASSWORD_RESET_FROM` (for example `Dafatii <account@your-verified-domain.com>`)
-- `GEMINI_MODEL=gemini-3.8-flash` (optional; this is the default for YouTube-understanding grading)
 
 Set these as encrypted secrets:
 
@@ -84,7 +77,6 @@ Set these as encrypted secrets:
 - `GOOGLE_DRIVE_REFRESH_TOKEN`
 - `RATE_LIMIT_PEPPER`
 - `RESEND_API_KEY`
-- `GEMINI_API_KEY` (required for `/api/v1/language/video-understanding`; never expose it to browser code)
 
 Password recovery sends a non-enumerating, single-use link through Resend. Reset tokens expire after 30 minutes, are stored only as SHA-256 hashes, and become unusable after the first successful reset. A reset revokes every existing session for that account. Verify the sender domain in Resend before setting `PASSWORD_RESET_FROM`; without both email settings the API returns `PASSWORD_RECOVERY_UNAVAILABLE` for every address.
 
