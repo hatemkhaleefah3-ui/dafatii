@@ -57,6 +57,13 @@ assert.match(js,/function languageEditorFields\(page,item=\{\}\)/,'Content Contr
 for(const label of ['Pairs — one per line','Word tooltips','Categories — Category','Model translation','Accepted variants','Image choices — one direct URL per line','Native audio options','Learner role','Dialogue — one per line']) assert.ok(js.includes(label),'Content Control field missing '+label);
 assert.match(js,/function readLanguageEditorData\(form,page,base=\{\}\)/,'Content Control parser missing');
 assert.match(js,/LANGUAGE_EXCEL_TYPE_PAGE/,'Excel type map missing');
+const excelHeaders=['question','source English','source Arabic','accepted variants','keywords','pairs','word glosses','categories','learner role','dialogue','image choice 1','image choice 4','native audio label 1','native audio voice file name 1','native audio label 6','native audio voice file name 6','story text','story understanding prompt'];
+for(const header of excelHeaders) assert.ok(js.includes("'"+header+"'"),'new Excel schema missing '+header);
+assert.match(js,/function languageExcelValidateItem\(row,type,item,rowNumber\)/,'Excel import must validate required fields by item type');
+assert.match(js,/listen_voice_to_image correct answer must be the 1-based image choice number/,'image-listening answer convention must be explicit');
+assert.match(js,/story-reading requires story text/,'story-reading Excel row must require story text');
+assert.match(js,/youtube video link is not a recognized YouTube URL/,'YouTube Excel links must be validated');
+
 for(const type of page1.concat(page2)) assert.ok(js.includes(type),'new type missing from source '+type);
 assert.match(js,/duplicate turning number/,'Excel duplicate protection missing');
 assert.match(js,/index=entry\.turn-1/,'turning number placement missing');
@@ -80,8 +87,8 @@ for(const token of ['#0B1020','#7C5CFF','#2DE2E6','#FF4FA3']) assert.ok(css.incl
 for(const selector of ['.studio-listen-button','.studio-wave','.studio-image-grid','.mixer-console','.glass-terminal','.karaoke-line','.studio-mic-button','.dual-waveforms','.teleprompter-text','.studio-aperture-frame','.studio-chat-bubble','.podcast-stage']) assert.ok(css.includes(selector),'Studio styling missing '+selector);
 
 for(const font of ['Fraunces','Playfair+Display','Inter','Caveat','Amiri','Noto+Naskh+Arabic','Sora','Space+Grotesk','Tajawal']) assert.ok(index.includes(font),'font missing '+font);
-assert.ok(index.includes('course-modes.css?v=20260921-19'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260921-19'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260921-20'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260921-20'),'JS cache version missing');
 
 assert.match(js,/LANGUAGE_CONTENT_KEY = 'dafatii:language-content:v1'/,'shared language record changed');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');

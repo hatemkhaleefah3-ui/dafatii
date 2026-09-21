@@ -741,10 +741,18 @@
   function languageDraftHasContent(page,item){if(page==='language-letters')return item.word!=='Word'||Boolean(item.sentence||item.meaningEnglish||item.meaningArabic||item.imageUrl);if(page==='language-voice')return item.text!=='Practice'||Boolean(item.instruction);if(page==='language-grammar')return Boolean(item.body||item.answer||!['Grammar / rule','Note','Example','Training'].includes(item.title));if(page==='language-examine')return item.question!=='Question'||Boolean(item.answer||(item.answers||[]).length||(item.choices||[]).length);return item.title!=='Untitled'||Boolean(item.body||(item.choices||[]).length);}
   const LANGUAGE_EXCEL_HEADERS=Object.freeze([
     'item type','item level','item step','item box','item page','item turning number',
-    'title','text / instruction','word','sentence','meaning English','meaning Arabic',
-    'image URL','voice file name',
+    'title','text / instruction','question','word','sentence','meaning English','meaning Arabic',
+    'source English','source Arabic','image URL','voice file name','correct answer',
+    'accepted variants','keywords','pairs','word glosses','categories','learner role','dialogue',
     'choice 1','choice 2','choice 3','choice 4','choice 5','choice 6',
-    'correct answer','youtube video link','youtube understanding prompt'
+    'image choice 1','image choice 2','image choice 3','image choice 4',
+    'native audio label 1','native audio voice file name 1',
+    'native audio label 2','native audio voice file name 2',
+    'native audio label 3','native audio voice file name 3',
+    'native audio label 4','native audio voice file name 4',
+    'native audio label 5','native audio voice file name 5',
+    'native audio label 6','native audio voice file name 6',
+    'youtube video link','youtube understanding prompt','story text','story understanding prompt'
   ]);
   const LANGUAGE_EXCEL_TYPE_PAGE=Object.freeze({
     word_to_native:'language-letters',image_to_word:'language-letters',sentence_to_native:'language-letters',match_pairs:'language-letters',word_builder:'language-letters',fill_blank:'language-letters',trace_letter_word:'language-letters',spelling_write:'language-letters',sentence_builder:'language-letters',category_sort:'language-letters',paragraph_translate_write:'language-letters',
@@ -766,32 +774,64 @@
     for(let n=1;n<=boxNumber;n++){const id='box-'+n;if(!step.boxes.some(item=>item.id===id))step.boxes.push({id,name:'Box '+n});}
     return{level:'level-'+levelNumber,step:'step-'+stepNumber,box:'box-'+boxNumber};
   }
+  const excelLines=value=>excelText(value).split(/\n+/).map(v=>v.trim()).filter(Boolean);
+  const excelDelimited=value=>excelText(value).split(/\n+|\s*\|\s*/).map(v=>v.trim()).filter(Boolean);
+  function languageExcelChoices(row){const list=[];for(let n=1;n<=6;n++){const value=excelText(row['choice '+n]);if(value)list.push(value);}return list;}
+  function languageExcelImageChoices(row){const list=[];for(let n=1;n<=4;n++){const value=directImageUrl(row['image choice '+n]);if(value)list.push(value);}return list;}
+  function languageExcelAudioChoices(row){const list=[];for(let n=1;n<=6;n++){const label=excelText(row['native audio label '+n]),voiceFileName=excelText(row['native audio voice file name '+n]);if(label||voiceFileName)list.push({label:label||('Option '+n),voiceFileName});}return list;}
   function languageExcelItem(row,type){
-    const put=(object,key,column)=>{const value=excelText(row[column]);if(value)object[key]=value;},choices=()=>{const list=[];for(let n=1;n<=6;n++){const value=excelText(row['choice '+n]);if(value)list.push(value);}return list;};
-    const item={id:languageUid('excel'),type},correct=excelText(row['correct answer']);
+    const put=(object,key,column)=>{const value=excelText(row[column]);if(value)object[key]=value;},item={id:languageUid('excel'),type},correct=excelText(row['correct answer']),choices=languageExcelChoices(row);
     if(type==='word_to_native'){put(item,'word','word');put(item,'meaningEnglish','meaning English');put(item,'meaningArabic','meaning Arabic');}
-    if(type==='image_to_word'){put(item,'imageUrl','image URL');item.choices=choices();if(correct)item.answer=correct;}
-    if(type==='sentence_to_native'){put(item,'sentence','sentence');item.choices=choices();if(correct)item.answer=correct;}
-    if(type==='match_pairs'){item.pairs=excelText(row['text / instruction']).split(/\n+/).map(line=>{const [left,...rest]=line.split('|');return{left:String(left||'').trim(),right:rest.join('|').trim()};}).filter(pair=>pair.left&&pair.right);}
-    if(type==='word_builder'||type==='trace_letter_word'){put(item,'word','word');}
-    if(type==='fill_blank'){put(item,'sentence','sentence');item.choices=choices();if(correct)item.answer=correct;}
+    if(type==='image_to_word'){put(item,'imageUrl','image URL');item.choices=choices;if(correct)item.answer=correct;}
+    if(type==='sentence_to_native'){put(item,'sentence','sentence');item.choices=choices;if(correct)item.answer=correct;const glosses={};excelLines(row['word glosses']).forEach(line=>{const [word,...rest]=line.split('|');if(word?.trim()&&rest.join('|').trim())glosses[word.trim().toLocaleLowerCase()]=rest.join('|').trim();});item.wordGlosses=glosses;}
+    if(type==='match_pairs')item.pairs=excelLines(row.pairs).map(line=>{const [left,...rest]=line.split('|');return{left:String(left||'').trim(),right:rest.join('|').trim()};}).filter(pair=>pair.left&&pair.right);
+    if(type==='word_builder'||type==='trace_letter_word')put(item,'word','word');
+    if(type==='fill_blank'){put(item,'sentence','sentence');item.choices=choices;if(correct)item.answer=correct;}
     if(type==='spelling_write'){put(item,'word','word');put(item,'meaningEnglish','meaning English');put(item,'meaningArabic','meaning Arabic');put(item,'imageUrl','image URL');}
-    if(type==='sentence_builder'){put(item,'sourceEnglish','meaning English');put(item,'sourceArabic','meaning Arabic');if(correct)item.answer=correct;}
-    if(type==='category_sort'){item.categories=excelText(row['text / instruction']).split(/\n+/).map(line=>{const p=line.indexOf(':');return p<0?null:{name:line.slice(0,p).trim(),words:line.slice(p+1).split(',').map(v=>v.trim()).filter(Boolean)}}).filter(Boolean);}
-    if(type==='paragraph_translate_write'){put(item,'sourceEnglish','meaning English');put(item,'sourceArabic','meaning Arabic');if(correct)item.modelAnswer=correct;item.keywords=excelText(row['text / instruction']).split(/[\n,]+/).map(v=>v.trim()).filter(Boolean);}
+    if(type==='sentence_builder'){put(item,'sourceEnglish','source English');put(item,'sourceArabic','source Arabic');if(correct)item.answer=correct;}
+    if(type==='category_sort')item.categories=excelLines(row.categories).map(line=>{const p=line.indexOf(':');return p<0?null:{name:line.slice(0,p).trim(),words:line.slice(p+1).split(',').map(v=>v.trim()).filter(Boolean)}}).filter(Boolean);
+    if(type==='paragraph_translate_write'){put(item,'sourceEnglish','source English');put(item,'sourceArabic','source Arabic');if(correct)item.modelAnswer=correct;item.acceptedVariants=excelLines(row['accepted variants']);item.keywords=excelText(row.keywords).split(/[\n,]+/).map(v=>v.trim()).filter(Boolean);}
     if(LANGUAGE_EXCEL_TYPE_PAGE[type]==='language-voice'){
       put(item,'text','text / instruction');put(item,'voiceFileName','voice file name');if(correct)item.answer=correct;
-      if(['listen_voice_to_text','listen_missing_word'].includes(type))item.choices=choices();
-      if(type==='listen_voice_to_image')item.imageChoices=choices().map(directImageUrl).filter(Boolean);
+      if(['listen_voice_to_text','listen_missing_word'].includes(type))item.choices=choices;
+      if(type==='listen_voice_to_image')item.imageChoices=languageExcelImageChoices(row);
+      if(type==='listen_voice_to_native_voice')item.audioChoices=languageExcelAudioChoices(row);
       if(type==='listen_missing_word')put(item,'sentence','sentence');
       if(type==='speak_image_to_voice')put(item,'imageUrl','image URL');
-      if(type==='speak_answer_question')put(item,'question','sentence');
-      if(type==='listen_voice_to_native_voice')item.audioChoices=choices().map(label=>({label,voiceFileName:''}));
-      if(type==='speak_dialogue_roleplay')item.dialogue=excelText(row['text / instruction']).split(/\n+/).map(line=>{const [role,...rest]=line.split('|');return{role:String(role||'A').trim(),text:rest.join('|').trim()};}).filter(line=>line.text);
+      if(type==='speak_answer_question')put(item,'question','question');
+      if(type==='speak_dialogue_roleplay'){put(item,'learnerRole','learner role');item.dialogue=excelLines(row.dialogue).map(line=>{const [role,...rest]=line.split('|');return{role:String(role||'A').trim(),text:rest.join('|').trim()};}).filter(line=>line.text);}
     }
     if(['grammar-law','grammar-note','grammar-example','grammar-training'].includes(type)){put(item,'title','title');put(item,'body','text / instruction');if(type==='grammar-training'&&correct)item.answer=correct;}
-    if(type.startsWith('exam-')){put(item,'question','text / instruction');const list=choices();if(type==='exam-single-choice'||type==='exam-multiple-choice')item.choices=list;if(type==='exam-multiple-choice'){if(correct)item.answers=correct.split(/\s*\|\s*|\n+/).map(value=>value.trim()).filter(Boolean);}else if(correct)item.answer=correct;}
+    if(type.startsWith('exam-')){put(item,'question','question');if(type==='exam-single-choice'||type==='exam-multiple-choice')item.choices=choices;if(type==='exam-multiple-choice'){if(correct)item.answers=excelDelimited(correct);}else if(correct)item.answer=correct;}
     return item;
+  }
+  function languageExcelValidateItem(row,type,item,rowNumber){
+    const need=(ok,message)=>{if(!ok)throw new Error('Row '+rowNumber+': '+message);},choiceCount=Array.isArray(item.choices)?item.choices.length:0;
+    if(type==='word_to_native'){need(item.word,'word_to_native requires word.');need(item.meaningEnglish||item.meaningArabic,'word_to_native requires meaning English or meaning Arabic.');}
+    if(type==='image_to_word'){need(item.imageUrl,'image_to_word requires image URL.');need(choiceCount>=2,'image_to_word requires at least two choice columns.');need(item.answer,'image_to_word requires correct answer.');need(item.choices.includes(item.answer),'image_to_word correct answer must exactly match one choice.');}
+    if(type==='sentence_to_native'){need(item.sentence,'sentence_to_native requires sentence.');need(choiceCount>=2,'sentence_to_native requires at least two choice columns.');need(item.answer,'sentence_to_native requires correct answer.');need(item.choices.includes(item.answer),'sentence_to_native correct answer must exactly match one choice.');}
+    if(type==='match_pairs')need(item.pairs?.length>=2,'match_pairs requires at least two lines in pairs using "course word | native meaning".');
+    if(type==='word_builder'||type==='trace_letter_word')need(item.word,type+' requires word.');
+    if(type==='fill_blank'){need(item.sentence&&item.sentence.includes('___'),'fill_blank requires sentence containing ___.');need(choiceCount>=2,'fill_blank requires at least two choice columns.');need(item.answer,'fill_blank requires correct answer.');need(item.choices.includes(item.answer),'fill_blank correct answer must exactly match one choice.');}
+    if(type==='spelling_write'){need(item.word,'spelling_write requires word.');need(item.imageUrl||item.meaningEnglish||item.meaningArabic,'spelling_write requires image URL or a native meaning.');}
+    if(type==='sentence_builder'){need(item.sourceEnglish||item.sourceArabic,'sentence_builder requires source English or source Arabic.');need(item.answer,'sentence_builder requires correct answer.');}
+    if(type==='category_sort'){need(item.categories?.length>=2,'category_sort requires at least two category lines using "Category: word, word".');need(item.categories.every(category=>category.words.length),'every category_sort category must contain at least one word.');}
+    if(type==='paragraph_translate_write'){need(item.sourceEnglish||item.sourceArabic,'paragraph_translate_write requires source English or source Arabic.');need(item.modelAnswer,'paragraph_translate_write requires correct answer as the model translation.');}
+    if(type==='listen_voice_to_text'){need(item.text,'listen_voice_to_text requires text / instruction.');need(choiceCount>=2,'listen_voice_to_text requires at least two choice columns.');need(item.answer,'listen_voice_to_text requires correct answer.');need(item.choices.includes(item.answer),'listen_voice_to_text correct answer must exactly match one choice.');}
+    if(type==='listen_voice_to_image'){need(item.text,'listen_voice_to_image requires text / instruction.');need(item.imageChoices?.length>=2,'listen_voice_to_image requires at least two image choice columns.');need(item.answer,'listen_voice_to_image requires correct answer as image number 1–4.');const imageNumber=Number(item.answer);need(Number.isInteger(imageNumber)&&imageNumber>=1&&imageNumber<=item.imageChoices.length,'listen_voice_to_image correct answer must be the 1-based image choice number.');}
+    if(type==='listen_voice_to_native_voice'){need(item.text,'listen_voice_to_native_voice requires text / instruction.');need(item.audioChoices?.length>=2,'listen_voice_to_native_voice requires at least two native audio labels.');need(item.answer,'listen_voice_to_native_voice requires correct answer.');need(item.audioChoices.some(option=>option.label===item.answer),'listen_voice_to_native_voice correct answer must exactly match a native audio label.');}
+    if(type==='listen_dictation'){need(item.text,'listen_dictation requires text / instruction.');need(item.answer,'listen_dictation requires correct answer.');}
+    if(type==='listen_missing_word'){need(item.text,'listen_missing_word requires text / instruction for the audio.');need(item.sentence&&item.sentence.includes('___'),'listen_missing_word requires sentence containing ___.');need(choiceCount>=2,'listen_missing_word requires at least two choice columns.');need(item.answer,'listen_missing_word requires correct answer.');need(item.choices.includes(item.answer),'listen_missing_word correct answer must exactly match one choice.');}
+    if(type==='speak_voice_to_voice'||type==='speak_text_to_voice')need(item.text,type+' requires text / instruction.');
+    if(type==='speak_image_to_voice'){need(item.imageUrl,'speak_image_to_voice requires image URL.');need(item.answer,'speak_image_to_voice requires correct answer / expected speech.');}
+    if(type==='speak_answer_question'){need(item.question,'speak_answer_question requires question.');need(item.answer,'speak_answer_question requires correct answer / expected answer.');}
+    if(type==='speak_dialogue_roleplay'){need(item.learnerRole,'speak_dialogue_roleplay requires learner role.');need(item.dialogue?.length>=2,'speak_dialogue_roleplay requires at least two dialogue lines using "role | text".');need(item.dialogue.some(line=>line.role===item.learnerRole),'speak_dialogue_roleplay learner role must appear in the dialogue.');}
+    if(['grammar-law','grammar-note','grammar-example'].includes(type)){need(item.title,'grammar content requires title.');need(item.body,'grammar content requires text / instruction.');}
+    if(type==='grammar-training'){need(item.title,'grammar-training requires title.');need(item.body,'grammar-training requires text / instruction.');}
+    if(type==='exam-single-choice'){need(item.question,'exam-single-choice requires question.');need(choiceCount>=2,'exam-single-choice requires at least two choices.');need(item.answer,'exam-single-choice requires correct answer.');need(item.choices.includes(item.answer),'exam-single-choice correct answer must exactly match one choice.');}
+    if(type==='exam-multiple-choice'){need(item.question,'exam-multiple-choice requires question.');need(choiceCount>=2,'exam-multiple-choice requires at least two choices.');need(item.answers?.length,'exam-multiple-choice requires correct answer; separate multiple correct answers with |.');need(item.answers.every(answer=>item.choices.includes(answer)),'every exam-multiple-choice correct answer must exactly match a choice.');}
+    if(type==='exam-true-false'){need(item.question,'exam-true-false requires question.');need(['True','False'].includes(item.answer),'exam-true-false correct answer must be exactly True or False.');}
+    if(type==='exam-fill-blank'||type==='exam-short-answer'){need(item.question,type+' requires question.');need(item.answer,type+' requires correct answer / model answer.');}
   }
   function languageExcelFeatureCount(item){return Object.keys(item).filter(key=>!['id','type'].includes(key)&&!(Array.isArray(item[key])&&!item[key].length)&&excelText(Array.isArray(item[key])?item[key].join(''):item[key])).length;}
   function mergeLanguageExcelItem(existing,incoming,page,index){
@@ -821,12 +861,12 @@
       const unique=[level,step,box,page,turn].join('|');if(seen.has(unique))throw new Error('Row '+rowNumber+': duplicate turning number '+turn+' for the same level, step, box, and page.');seen.add(unique);
       if(type==='youtube-video'||type==='story-reading'){
         const config={};
-        if(type==='youtube-video'){const title=excelText(row.title),url=excelText(row['youtube video link']),prompt=excelText(row['youtube understanding prompt']);if(title)config.title=title;if(url)config.url=url;if(prompt)config.prompt=prompt;if(turn!==1)throw new Error('Row '+rowNumber+': youtube-video turning number must be 1.');}
-        else{const storyTitle=excelText(row.title),storyText=excelText(row['text / instruction']),storyPrompt=excelText(row['youtube understanding prompt']);if(storyTitle)config.storyTitle=storyTitle;if(storyText)config.storyText=storyText;if(storyPrompt)config.storyPrompt=storyPrompt;if(turn!==2)throw new Error('Row '+rowNumber+': story-reading turning number must be 2.');}
+        if(type==='youtube-video'){const title=excelText(row.title),url=excelText(row['youtube video link']),prompt=excelText(row['youtube understanding prompt']);if(title)config.title=title;if(url)config.url=url;if(prompt)config.prompt=prompt;if(turn!==1)throw new Error('Row '+rowNumber+': youtube-video turning number must be 1.');if(url&&!youtubeVideoId(url))throw new Error('Row '+rowNumber+': youtube video link is not a recognized YouTube URL.');}
+        else{const storyTitle=excelText(row.title),storyText=excelText(row['story text']),storyPrompt=excelText(row['story understanding prompt']);if(storyTitle)config.storyTitle=storyTitle;if(storyText)config.storyText=storyText;if(storyPrompt)config.storyPrompt=storyPrompt;if(turn!==2)throw new Error('Row '+rowNumber+': story-reading turning number must be 2.');if(!storyText)throw new Error('Row '+rowNumber+': story-reading requires story text.');}
         if(!Object.keys(config).length)throw new Error('Row '+rowNumber+': the '+type+' row has no non-empty content columns.');
         parsed.push({rowNumber,type,page,level,step,box,turn,config});return;
       }
-      const item=languageExcelItem(row,type);if(['image_to_word','speak_image_to_voice'].includes(type)&&item.imageUrl&&!directImageUrl(item.imageUrl))throw new Error('Row '+rowNumber+': '+type+' requires a valid direct HTTP(S) image URL.');if(!languageExcelFeatureCount(item))throw new Error('Row '+rowNumber+': '+type+' has no non-empty content columns.');
+      const item=languageExcelItem(row,type);if(['image_to_word','spelling_write','speak_image_to_voice'].includes(type)&&item.imageUrl&&!directImageUrl(item.imageUrl))throw new Error('Row '+rowNumber+': '+type+' requires a valid direct HTTP(S) image URL.');if(!languageExcelFeatureCount(item))throw new Error('Row '+rowNumber+': '+type+' has no non-empty content columns.');languageExcelValidateItem(row,type,item,rowNumber);
       parsed.push({rowNumber,type,page,level,step,box,turn,item});
     });
     if(!parsed.length)throw new Error('No content rows were found in the Excel file.');
@@ -851,7 +891,7 @@
   function renderLanguageExcelImport(originPage,close){
     const sheet=document.querySelector('.language-control-sheet');if(!sheet)return;
     sheet.querySelector(':scope > .language-control-step')?.remove();
-    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-excel-import><small>Excel bulk import</small><h3>Import content</h3><div class="field"><label>Language content Excel file</label><input data-language-excel-file type="file" accept=".xlsx,.xls" required></div><div class="language-location-fixed"><strong>Exact workbook structure</strong><span>Uses item type, level, step, box, page and turning number exactly like the provided Excel file.</span></div><p class="auth-note">Only non-empty feature columns valid for each item type are applied. Existing values at the same turning position are kept when the matching Excel feature cell is blank. Hearing rows support <strong>voice file name</strong>; YouTube rows support <strong>youtube video link</strong>; exam rows use <strong>correct answer</strong>.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-excel-cancel>Cancel</button><button type="submit" class="btn btn-primary">Import Excel</button></div><p class="auth-note" data-language-excel-status></p></form>');
+    sheet.insertAdjacentHTML('beforeend','<form class="language-control-step language-item-editor" data-language-excel-import><small>Excel bulk import</small><h3>Import content</h3><div class="field"><label>Language content Excel file</label><input data-language-excel-file type="file" accept=".xlsx,.xls" required></div><div class="language-location-fixed"><strong>Exact workbook structure · v2</strong><span>Uses item type, level, step, box, page and turning number exactly like the new Content Items template.</span></div><p class="auth-note">Leave columns blank when they do not apply to the item type. The importer validates each type’s required fields. Listening & Speaking supports model <strong>voice file name</strong>, image choices and native-audio option filenames. Paragraph translation supports sources, accepted variants and keywords. Story reading has dedicated story columns.</p><div class="language-control-footer"><button type="button" class="btn btn-ghost" data-language-excel-cancel>Cancel</button><button type="submit" class="btn btn-primary">Import Excel</button></div><p class="auth-note" data-language-excel-status></p></form>');
     const form=sheet.querySelector('[data-language-excel-import]'),status=form.querySelector('[data-language-excel-status]'),button=form.querySelector('button[type=submit]');
     form.querySelector('[data-language-excel-cancel]').onclick=()=>{close();openLanguageControl(originPage);};
     form.onsubmit=async event=>{event.preventDefault();button.disabled=true;status.textContent='Validating workbook…';try{const result=await importLanguageExcel(form.querySelector('[data-language-excel-file]').files?.[0]);status.textContent='Imported '+result.rows+' rows across '+result.locations+' content locations.';hideLanguageControl(originPage);setTimeout(()=>{close();render();},250);}catch(error){status.textContent=error.message;button.disabled=false;}};
