@@ -10,7 +10,7 @@ const index=fs.readFileSync('index.html','utf8');
 
 assert.ok(js.includes("const isChat = () => /^chat(?:\\/|$)/i.test(routeName())"), 'chat app must be excluded from unified content controls');
 assert.match(js,/const isAdmin = \(\) => \{[\s\S]*platformRole === 'admin'/,'Manage Content access must be determined by the platform admin role');
-assert.match(js,/return Boolean\(isAdmin\(\) && workspace\(\) && scope\(\) && !isChat\(\)\)/,'the content-control access button must be admin-only');
+assert.match(js,/return Boolean\(isAdmin\(\) && workspace\(\) && scope\(\) && !isChat\(\) && !isLanguageCourse\(\)\)/,'the content-control access button must be admin-only and absent from language courses');
 assert.ok(js.includes("dcc-trigger-icon") && js.includes(">⌃</span>") && js.includes("<strong>Manage</strong>"), 'eligible pages need the premium Manage Content button');
 assert.ok(js.includes('data-dcc-action="delete"') && js.includes('data-dcc-action="edit"') && js.includes('data-dcc-action="add"'), 'content sheet must expose delete, edit, and add');
 assert.ok(js.includes("window.DafatiiDeleteManager?.activate?.()"), 'Delete must delegate to the replacement delete manager');
