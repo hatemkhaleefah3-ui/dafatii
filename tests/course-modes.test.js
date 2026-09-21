@@ -182,21 +182,28 @@ assert.match(js,/This is preparation, not a guaranteed IELTS result/,'C1 target 
 assert.match(js,/const tricky=li>=3/,'tricky box exams must begin at Level 4');
 assert.match(js,/const hardest=li>=4/,'Level 5 must have an additional C1 difficulty layer');
 assert.match(js,/type:'speak'/,'every generated box exam bank must include spoken production');
-assert.match(js,/data-exam-speak/,'spoken exam questions must expose a microphone action');
-assert.match(js,/if\(type==='speak'\)return answerSimilarity/,'spoken production must be scored from the recognized transcript');
-assert.match(js,/Speech recognition is unavailable/,'spoken exams must disclose the fallback limitation when browser recognition is unavailable');
+assert.match(js,/pronunciationJudgeMarkup\(q\.correct\|\|''/,'spoken exam questions must use the shared Gemini microphone grader');
+assert.match(js,/if\(type==='speak'\)return geminiRatingAccepted\(answer\)/,'spoken exam production must be scored from Gemini rating acceptance');
+assert.match(js,/window\.DafatiiApi\.request\('\/language\/pronunciation'/,'spoken pronunciation audio must be sent to the authenticated Gemini grading endpoint');
 assert.match(js,/Exam analysis/,'Home must show exam performance analysis');
 assert.ok(js.includes("average+'% average'"),'Home analysis must calculate an exam-score average');
 assert.match(js,/function migrateDrivenCourseV7/,'older learner progress must migrate into the driven lane model');
-assert.match(js,/videoResponses:\{\},videoRatings:\{\},watchedVideos:\{\}/,'video understanding ratings must have durable learner state');
+assert.match(js,/videoResponses:\{\},videoRatings:\{\},pronunciationRatings:\{\},watchedVideos:\{\}/,'video and pronunciation ratings must have durable learner state');
 assert.match(js,/window\.DafatiiApi\.request\('\/language\/video-understanding'/,'YouTube understanding must be judged through the authenticated backend API');
 assert.match(js,/\['bad','moderate','good','very good'\]\.includes\(rating\)/,'client must accept exactly the four requested Gemini rating values');
 assert.match(js,/const accepted=rating!=='bad'/,'only bad must be rejected');
 assert.match(js,/value\.modules\[id\]\.video=accepted/,'accepted Gemini ratings must unlock YouTube Understanding progression while bad keeps it incomplete');
+assert.match(js,/const GEMINI_ACCEPTED_RATINGS = Object\.freeze\(\['moderate','good','very good'\]\)/,'Gemini acceptance must reject only bad');
+assert.match(js,/function bindGeminiPronunciation\(\)/,'microphone recordings must use one Gemini pronunciation pipeline');
+assert.match(js,/navigator\.mediaDevices\?\.getUserMedia/,'pronunciation must capture real microphone audio');
+assert.match(js,/new MediaRecorder\(stream/,'pronunciation must record audio instead of relying only on speech transcripts');
+assert.match(js,/audioData,mimeType:/,'pronunciation API payload must contain recorded audio data and MIME type');
+assert.match(js,/value\.pronunciationRatings\[stateKey\]=rating/,'practice pronunciation ratings must persist without storing microphone audio');
+assert.match(js,/upperResult\.valid&&lowerResult\.valid&&pronunciationPassed/,'letter completion must require an accepted Gemini pronunciation grade');
 assert.match(js,/Not accepted\. Rewatch the video, rewrite your understanding/,'bad must require the learner to redo the YouTube understanding response');
 assert.doesNotMatch(js,/GEMINI_API_KEY/,'the Gemini API key must never be embedded in course-modes.js');
-assert.match(js,/data-pronunciation-record/,'Listening & Talking must include a microphone pronunciation action');
-assert.match(js,/data-letter-pronunciation-record/,'letter learning must include microphone pronunciation');
+assert.match(js,/data-gemini-pronunciation/,'Listening & Talking must include a Gemini microphone pronunciation action');
+assert.match(js,/pronunciationJudgeMarkup\(LETTER_SPEECH\[letter\]\|\|letter,'letter:'\+letter,'letter'/,'letter learning must use Gemini microphone pronunciation');
 assert.match(js,/pronunciationPassed&&dictationPassed&&reversePassed/,'Listening & Talking completion must require pronunciation, listening and speaking');
 assert.match(js,/upperResult\.valid&&lowerResult\.valid&&pronunciationPassed/,'letter learning completion must require drawing plus microphone pronunciation');
 const vocabularyPageStart=js.indexOf('function pronunciationPage(state,pos){');
@@ -227,9 +234,10 @@ assert.ok(css.includes('Language course v14 · driven six-lane progression'),'dr
 assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,'mobile course navigation must fit all six main destinations');
 assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,'desktop Home analytics must expose five status/analysis cells');
 assert.ok(css.includes('.language-exam-speak'),'spoken exam controls must be styled');
-for (const selector of ['.language-vocabulary-card','.language-pronunciation-target','.language-video-grade','.letter-pronunciation-check']) {
+for (const selector of ['.language-vocabulary-card','.language-video-grade','.letter-pronunciation-check','.language-pronunciation-judge','.language-pronunciation-command','.language-pronunciation-grade']) {
   assert.ok(css.includes(selector),'missing pure-lane/microphone/Gemini style '+selector);
 }
+assert.ok(css.includes('Language course v16 · Gemini pronunciation grading'),'Gemini pronunciation stylesheet block must be present');
 assert.ok(css.includes('Language course v15 · pure lanes, microphone pronunciation, Gemini video grading'),'pure-lane Gemini stylesheet block must be present');
 
 assert.match(js,/isPersonal=type==='personal'/,'personal course setup must remain intact');
