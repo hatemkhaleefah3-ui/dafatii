@@ -42,12 +42,9 @@
     for(let i=localStorage.length-1;i>=0;i--){
       const key=localStorage.key(i)||'';
       if(
-        key.startsWith('dafatii:language-learner:') ||
-        key.startsWith('dafatii:language-progress:') ||
+        key.startsWith('dafatii:language-') ||
         key.startsWith('dafatii:paragraph-translate:') ||
-        key.startsWith('dafatii:language-watch-read:') ||
-        (activeId && key==='__dafatii:course-cache:'+activeId+':dafatii:language-content:v1') ||
-        (activeId && key==='__dafatii:course-cache:'+activeId+':dafatii:language-authoring:v1')
+        (activeId && key.startsWith('__dafatii:course-cache:'+activeId+':dafatii:language-'))
       ) localStorage.removeItem(key);
     }
     try{ window.DafatiiData?.remove?.('dafatii:language-authoring:v1'); }catch{}
