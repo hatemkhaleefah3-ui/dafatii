@@ -7,7 +7,8 @@ Dafatii uses a local-first browser interface with a real Cloudflare backend. UI 
 | Data | Service | Purpose |
 |---|---|---|
 | Accounts, sessions, courses, enrollment, roles and permissions | Cloudflare D1 | Relational and authorization data |
-| User-uploaded originals | Owner's private Google Drive | Files, images, audio, video, PDF, Word, Excel, PowerPoint and archives |
+| User-uploaded originals | Owner's private Google Drive | Files, images, video, PDF, Word, Excel, PowerPoint and archives |
+| Imported Language Course hearing audio | Cloudflare R2 (`R2_STORAGE`) | Course-owned pronunciation audio matched from voice ZIP imports without Google OAuth |
 | App-owned manifests and future generated previews/thumbnails | Cloudflare R2 (`R2_STORAGE`) | Durable object storage controlled by Dafatii |
 | API and authorization | Cloudflare Pages Functions | Validates sessions, permissions, uploads, reads and deletion |
 
@@ -21,7 +22,7 @@ flowchart TD
   API --> R2[("R2 app manifests and previews")]
 ```
 
-Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive` for every new upload to use Google Drive.
+Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive` for normal new uploads. Language Course hearing audio imported from ZIP uses the private `R2_STORAGE` binding deliberately, so pronunciation imports do not depend on Google Drive OAuth.
 
 ## Browser contracts and viewers
 
