@@ -22,6 +22,8 @@ assert.match(app, /DafatiiAuth\.login\(\{identifier,credential\}\)/, 'the browse
 assert.match(app, /adminSignInHint/, 'administrator email/password attempts must be guided to the PIN flow');
 assert.ok(ui.includes("ONBOARDING_KEY = 'dafatii:onboarding:v1'") && ui.includes("location.hash = 'onboarding'"), 'new signups must enter the sequential onboarding flow before the workspace');
 assert.ok(server.includes('student_credentials') && server.includes('validateStudentSignup') && server.includes('verifyStudentPin'), 'student identity server module incomplete');
+assert.ok(ui.includes("const administratorEmail = 'hatemkhaleefah3@gmail.com';") && ui.includes("adminSignInHint"), 'administrator email must be guided to the dedicated PIN flow');
+assert.ok(ui.includes("DafatiiAuth.login({ identifier, credential })"), 'student sign-in must preserve generic identifier support');
 assert.ok(migration.includes('student_id TEXT NOT NULL UNIQUE') && migration.includes('pin_hash TEXT NOT NULL'), 'credential migration must keep ID unique and PIN hashed');
 
 console.log('student account flow regression tests passed');
