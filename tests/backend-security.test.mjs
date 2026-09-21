@@ -138,7 +138,7 @@ assert.match(apiRouter, /verifyMagicBytes\(file\.content_type,[\s\S]*prefix\.arr
 assert.match(apiRouter, /isDriveObject\(file\.object_key\) \|\| isR2HearingObject\(file\.object_key\)/, 'view URLs must support both Drive and R2 hearing audio');
 assert.match(apiRouter, /Accept-Ranges':'bytes'/, 'R2 hearing audio playback must support browser range requests');
 assert.doesNotMatch(apiRouter, /language\/video-understanding|language\/pronunciation|gradeVideoUnderstanding|gradePronunciation/, 'retired language grading routes must stay deleted');
-assert.match(readFileSync(new URL('../functions/_lib/courses.mjs', import.meta.url), 'utf8'), /dafatii:language-content:v1/, 'simple language content must be allowed as shared Course content');
+assert.doesNotMatch(readFileSync(new URL('../functions/_lib/courses.mjs', import.meta.url), 'utf8'), /dafatii:language-content:v1/, 'retired language content must not be accepted by the course backend');
 assert.match(readFileSync(new URL('../functions/_lib/course-routes.mjs', import.meta.url), 'utf8'), /languageCourse \|\| course\.join_policy === 'direct'/, 'free language enrollment must activate immediately for onboarding');
 assert.doesNotMatch(readFileSync(new URL('../course-modes.js', import.meta.url), 'utf8'), /GEMINI_API_KEY|gradeVideoUnderstanding|gradePronunciation/, 'retired Gemini and language AI grading code must stay out of the browser bundle');
 const languageRemovalMigration = readFileSync(new URL('../migrations/0008_remove_language_course_backend.sql', import.meta.url), 'utf8');
