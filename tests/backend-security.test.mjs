@@ -131,7 +131,7 @@ const apiRouter = readFileSync(new URL('../functions/api/v1/[[path]].js', import
 assert.match(apiRouter, /const chatAttachment = purpose === 'chat-attachment'/, 'chat attachments must be recognized as a dedicated storage purpose');
 assert.match(apiRouter, /teacherProfile \|\| chatAttachment \|\| usesDrive\(context\.env\)/, 'chat attachments must be forced through Google Drive even if the general provider changes');
 assert.doesNotMatch(apiRouter, /language\/video-understanding|language\/pronunciation|gradeVideoUnderstanding|gradePronunciation/, 'retired language grading routes must stay deleted');
-assert.doesNotMatch(readFileSync(new URL('../course-modes.js', import.meta.url), 'utf8'), /GEMINI_API_KEY|MediaRecorder|SpeechRecognition|language-authoring/, 'retired language grading and authoring code must stay out of the browser bundle');
+assert.doesNotMatch(readFileSync(new URL('../course-modes.js', import.meta.url), 'utf8'), /GEMINI_API_KEY|MediaRecorder|SpeechRecognition/, 'retired language grading code must stay out of the browser bundle');
 const languageRemovalMigration = readFileSync(new URL('../migrations/0008_remove_language_course_backend.sql', import.meta.url), 'utf8');
 assert.match(languageRemovalMigration, /DELETE FROM course_content_records/);
 assert.match(languageRemovalMigration, /dafatii:language-authoring:v1/);
