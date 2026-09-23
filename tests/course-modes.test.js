@@ -79,11 +79,20 @@ assert.match(js,/normalizeLearningItem/,'language item schema normalization miss
 
 assert.doesNotMatch(css,/CANONICAL LANGUAGE COURSE DESIGN|LANGUAGE LEARNING SYSTEM — Precision UI|Ink & Paper|Midnight Studio|Home — Observatory|Grammar — Blueprint Atelier|Cinema & Editorial|Arena Focus/,'retired language-specific themes must stay removed');
 assert.match(css,/Language learning v1 — native Dafatii theme/,'native theme marker missing');
+assert.match(js,/LANGUAGE_VISUAL_META=Object\.freeze/,'premium item visual metadata missing');
+assert.match(js,/language-module-shell/,'connected learning module shell missing');
+assert.match(js,/language-module-rail/,'learning path rail missing');
+assert.match(js,/data-session-jump/,'direct learning-path navigation missing');
+assert.match(js,/data-active-language-type/,'type-aware presentation hook missing');
+assert.match(js,/language-learning-home-hero/,'premium language home composition missing');
+assert.match(css,/Language learning premium composition v2/,'premium composition marker missing');
+for(const selector of ['.language-module-shell','.language-module-rail','.language-module-step','.language-item-identity','.language-home-orbit','.language-pillar-card-top']) assert.ok(css.includes(selector),'premium interconnected selector missing '+selector);
+
 for(const token of ['var(--surface)','var(--surface-2)','var(--text)','var(--muted)','var(--border)','var(--accent)']) assert.ok(css.includes(token),'site theme token missing '+token);
 for(const selector of ['.language-flashcard','.language-writing-split','.language-record-module','.language-grammar-sandbox','.language-video-layout','.language-story-reader','.language-exam-focus']) assert.ok(css.includes(selector),'learning layout selector missing '+selector);
 assert.match(css,/prefers-reduced-motion/,'reduced motion handling missing');
 
-assert.ok(index.includes('course-modes.css?v=20260923-1'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260923-2'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260923-2'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260923-3'),'JS cache version missing');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
-console.log('language learning v1 seeded item tests passed');
+console.log('language learning premium v2 tests passed');
