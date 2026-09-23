@@ -88,23 +88,29 @@ assert.match(js,/normalizeLearningItem/,'language item schema normalization miss
 assert.doesNotMatch(css,/CANONICAL LANGUAGE COURSE DESIGN|LANGUAGE LEARNING SYSTEM — Precision UI|Ink & Paper|Midnight Studio|Home — Observatory|Grammar — Blueprint Atelier|Cinema & Editorial|Arena Focus/,'retired language-specific themes must stay removed');
 assert.match(css,/Language learning v1 — native Dafatii theme/,'native theme marker missing');
 assert.match(js,/LANGUAGE_VISUAL_META=Object\.freeze/,'premium item visual metadata missing');
-assert.match(js,/language-module-shell/,'connected learning module shell missing');
-assert.match(js,/language-module-rail/,'learning path rail missing');
-assert.match(js,/data-session-jump/,'direct learning-path navigation missing');
 assert.match(js,/data-active-language-type/,'type-aware presentation hook missing');
-assert.match(js,/language-learning-home-hero/,'premium language home composition missing');
+assert.doesNotMatch(js,/languagePageHeader\(/,'page title and description renderer must be removed');
+assert.doesNotMatch(js,/data-session-jump/,'content item slider jump controls must be removed');
+assert.doesNotMatch(js,/language-module-rail/,'content item slider markup must be removed');
+assert.doesNotMatch(js,/language-learning-home-hero/,'home title and description hero must be removed');
+assert.match(js,/function languageFloatingControl\(page\)/,'floating content control renderer missing');
+assert.match(js,/class="language-content-fab"/,'floating content control icon button missing');
 assert.match(css,/Language learning premium composition v2/,'premium composition marker missing');
 assert.match(css,/Language learning v2\.1 — content integrated into the page background/,'integrated page composition marker missing');
+assert.match(css,/Language learning v2\.2 — minimal pages \+ floating content control/,'minimal page composition marker missing');
 assert.match(css,/Content control bottom sheet/,'content control bottom-sheet styles missing');
 assert.match(css,/\.language-learning-page:not\(\.language-learning-home\) \.language-item-shell\{[\s\S]*?border:0;/,'outer item card border must be flattened into the page');
 assert.match(css,/\.language-control-overlay\{[\s\S]*?align-items:flex-end;/,'content controls must open as a bottom sheet');
-for(const selector of ['.language-module-shell','.language-module-rail','.language-module-step','.language-item-identity','.language-home-orbit','.language-pillar-card-top']) assert.ok(css.includes(selector),'premium interconnected selector missing '+selector);
+assert.match(css,/\.language-content-fab\{[\s\S]*?position:fixed;/,'content control must be fixed above navigation');
+assert.match(css,/inset-inline-end:18px/,'floating control must use logical right\/left positioning');
+assert.match(css,/bottom:calc\(78px \+ env\(safe-area-inset-bottom\)\)/,'floating control must sit above the main bottom navigation');
+for(const selector of ['.language-module-main-minimal','.language-item-identity','.language-pillar-card-top','.language-content-fab','.language-content-fab-icon']) assert.ok(css.includes(selector),'minimal language UI selector missing '+selector);
 
 for(const token of ['var(--surface)','var(--surface-2)','var(--text)','var(--muted)','var(--border)','var(--accent)']) assert.ok(css.includes(token),'site theme token missing '+token);
 for(const selector of ['.language-flashcard','.language-writing-split','.language-record-module','.language-grammar-sandbox','.language-video-layout','.language-story-reader','.language-exam-focus']) assert.ok(css.includes(selector),'learning layout selector missing '+selector);
 assert.match(css,/prefers-reduced-motion/,'reduced motion handling missing');
 
-assert.ok(index.includes('course-modes.css?v=20260923-3'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260923-4'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260923-4'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260923-5'),'JS cache version missing');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
-console.log('language learning integrated content controls tests passed');
+console.log('language learning minimal pages floating control tests passed');

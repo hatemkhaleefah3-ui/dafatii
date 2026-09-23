@@ -1068,3 +1068,99 @@
 @media(prefers-reduced-motion:reduce){
   .language-control-sheet{animation:none}
 }
+
+
+/* Language learning v2.2 — minimal pages + floating content control */
+.language-learning-page-minimal{
+  padding-top:18px;
+}
+.language-module-main-minimal{
+  width:min(960px,100%);
+  margin:0 auto;
+}
+.language-learning-page-minimal .language-session-meta{
+  margin-bottom:20px;
+}
+.language-learning-home-minimal{
+  padding-top:18px;
+}
+.language-learning-home-minimal .language-home-focus{
+  margin-top:0;
+}
+.language-content-fab{
+  position:fixed;
+  z-index:850;
+  inset-inline-end:18px;
+  bottom:calc(78px + env(safe-area-inset-bottom));
+  display:grid;
+  place-items:center;
+  width:54px;
+  height:54px;
+  padding:0;
+  border:1px solid color-mix(in srgb,var(--accent) 38%,var(--border));
+  border-radius:18px;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  color:var(--text);
+  box-shadow:0 14px 36px rgba(15,23,42,.18);
+  backdrop-filter:blur(16px);
+  cursor:pointer;
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.language-content-fab:hover,.language-content-fab:focus-visible{
+  transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--accent) 68%,var(--border));
+  background:color-mix(in srgb,var(--accent) 7%,var(--surface));
+  box-shadow:0 18px 42px rgba(15,23,42,.22);
+  outline:0;
+}
+.language-content-fab:active{transform:translateY(0)}
+.language-content-fab-icon{
+  position:relative;
+  display:grid;
+  gap:5px;
+  width:23px;
+}
+.language-content-fab-icon i{
+  position:relative;
+  display:block;
+  height:2px;
+  border-radius:99px;
+  background:currentColor;
+}
+.language-content-fab-icon i::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  width:6px;
+  height:6px;
+  border:2px solid var(--surface);
+  border-radius:50%;
+  background:var(--accent);
+  transform:translateY(-50%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 58%,transparent);
+}
+.language-content-fab-icon i:nth-child(1)::after{inset-inline-start:3px}
+.language-content-fab-icon i:nth-child(2)::after{inset-inline-end:2px}
+.language-content-fab-icon i:nth-child(3)::after{inset-inline-start:8px}
+
+/* Removed page-level title/description and item slider have no reserved layout space. */
+.language-learning-page-minimal>.language-learning-head,
+.language-learning-page-minimal>.language-module-rail,
+.language-learning-page-minimal .language-module-steps{display:none!important}
+
+@media(max-width:720px){
+  .language-learning-page-minimal{padding-top:10px}
+  .language-content-fab{
+    inset-inline-end:14px;
+    bottom:calc(74px + env(safe-area-inset-bottom));
+    width:50px;
+    height:50px;
+    border-radius:16px;
+  }
+}
+@media(max-width:520px){
+  .language-module-main-minimal{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  .language-content-fab{transition:none}
+}
