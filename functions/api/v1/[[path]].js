@@ -11,6 +11,19 @@ import { translateInterfaceText } from '../../_lib/translate.mjs';
 
 const recordDto = row => ({ key: row.record_key, format: row.format, value: row.deleted ? null : JSON.parse(row.value_json), deleted: Boolean(row.deleted), revision: row.revision, updatedAt: row.updated_at });
 const requireDb = env => { if (!env.DB) throw new HttpError(503, 'DATABASE_UNAVAILABLE', 'Database binding is unavailable.'); };
+let retiredLanguageMediaCleanupPromise = null;
+async function purgeRetiredLanguageMedia(env) {
+  if (retiredLanguageMediaCleanupPromise) return retiredLanguageMediaCleanupPromise;
+  retiredLanguageMediaCleanupPromise = (async () => {
+    const result = await env.DB.prepare("SELECT id, object_key FROM files WHERE object_key LIKE 'r2/hearing-audio/%'").all();
+    if ((result.results || []).length && !env.R2_STORAGE) throw new HttpError(503, 'R2_CONFIGURATION_ERROR', 'Retired media cleanup storage is unavailable.');
+    for (const row of result.results || []) {
+      await env.R2_STORAGE.delete(row.object_key);
+      await env.DB.prepare('DELETE FROM files WHERE id = ?').bind(row.id).run();
+    }
+  })().catch(error => { retiredLanguageMediaCleanupPromise = null; throw error; });
+  return retiredLanguageMediaCleanupPromise;
+}
 const routePath = request => new URL(request.url).pathname.replace(/^\/api\/v1\/?/, '');
 const usesDrive = env => String(env.STORAGE_PROVIDER || 'gcs').toLowerCase() === 'drive';
 const uploadSessionKey = fileId => `upload-sessions/${fileId}.json`;
@@ -422,6 +435,7 @@ async function deleteFile(context, user, fileId) {
 
 async function dispatch(context) {
   requireDb(context.env);
+  await purgeRetiredLanguageMedia(context.env);
   assertSameOrigin(context.request, context.env);
   const method = context.request.method;
   const path = routePath(context.request);
