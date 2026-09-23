@@ -372,7 +372,25 @@
     'language-grammar':{eyebrow:'Grammar & rules',title:'Discover the pattern, then name it',description:'Build sentences before opening the rule so form follows meaning.'},
     'language-video':{eyebrow:'Watching & reading',title:'Understand language in context',description:'Use synchronized video and graded stories without separating meaning from the source.'},
     'language-examine':{eyebrow:'Examining',title:'One question. One decision.',description:'Focused formative assessment adapts difficulty while keeping progress visible.'}
+  });  const LANGUAGE_VISUAL_META=Object.freeze({
+    'vocabulary-card':{icon:'Aa',mode:'Recall',cue:'See · retrieve · rate'},
+    'guided-writing':{icon:'✎',mode:'Produce',cue:'Plan · write · refine'},
+    'minimal-pair':{icon:'◌',mode:'Discriminate',cue:'Listen · compare · choose'},
+    shadowing:{icon:'↻',mode:'Shadow',cue:'Hear · repeat · match'},
+    pronunciation:{icon:'◉',mode:'Pronounce',cue:'Model · record · compare'},
+    'sentence-builder':{icon:'≡',mode:'Build',cue:'Arrange · inspect · discover'},
+    'grammar-rule':{icon:'⌘',mode:'Understand',cue:'Example · rule · exception'},
+    'grammar-practice':{icon:'✓',mode:'Apply',cue:'Choose · check · explain'},
+    'youtube-lesson':{icon:'▶',mode:'Watch',cue:'Watch · follow · inspect'},
+    'graded-story':{icon:'¶',mode:'Read',cue:'Read · infer · check'},
+    cloze:{icon:'□',mode:'Recall',cue:'Read · complete · verify'},
+    'matching-grid':{icon:'⇄',mode:'Connect',cue:'Scan · match · confirm'},
+    'adaptive-choice':{icon:'◇',mode:'Decide',cue:'Read · reason · choose'},
+    'dialogue-scenario':{icon:'❝',mode:'Respond',cue:'Context · produce · adapt'}
   });
+  function languageVisualMeta(item){return LANGUAGE_VISUAL_META[item?.type]||{icon:'•',mode:'Practice',cue:'Learn · apply · review'};}
+
+
 
   const learningUid=prefix=>prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
   const cleanUrl=value=>{const raw=String(value||'').trim();if(!raw)return'';try{const url=new URL(raw);return ['https:','http:'].includes(url.protocol)?url.href:'';}catch{return'';}};
@@ -474,9 +492,13 @@
   function pageManageButton(page){return canManageLanguageLearning()?'<button class="btn btn-ghost language-manage-button" type="button" data-language-manage="'+esc(page)+'">Manage content</button>':'';}
   function languagePageHeader(page){
     const copy=LANGUAGE_PAGE_COPY[page]||{eyebrow:'Language course',title:languageNavLabel(navSpec.find(item=>item[0]===page)||navSpec[0]),description:''};
-    return '<header class="language-learning-head"><div><small>'+esc(copy.eyebrow)+' · '+esc(targetLanguage())+'</small><h1>'+esc(copy.title)+'</h1><p>'+esc(copy.description)+'</p></div>'+pageManageButton(page)+'</header>';
+    const index=Math.max(0,LANGUAGE_ROUTES.indexOf(page));
+    return '<header class="language-learning-head" data-pillar="'+esc(page)+'"><div class="language-learning-head-copy"><div class="language-page-index" aria-hidden="true">'+String(index).padStart(2,'0')+'</div><div><small>'+esc(copy.eyebrow)+' · '+esc(targetLanguage())+'</small><h1>'+esc(copy.title)+'</h1><p>'+esc(copy.description)+'</p></div></div>'+pageManageButton(page)+'</header>';
   }
-  function itemKicker(item){const meta=itemType(item.page,item.type);return '<div class="language-item-kicker"><span>'+esc(meta?.label||'Learning item')+'</span><small>Keep meaning, media, and action together.</small></div>';}
+  function itemKicker(item){
+    const meta=itemType(item.page,item.type),visual=languageVisualMeta(item);
+    return '<div class="language-item-kicker"><div class="language-item-identity"><span class="language-item-mark" aria-hidden="true">'+esc(visual.icon)+'</span><div><small>'+esc(visual.mode)+'</small><strong>'+esc(meta?.label||'Learning item')+'</strong></div></div><div class="language-item-cue"><span>'+esc(visual.cue)+'</span><i aria-hidden="true"></i></div></div>';
+  }
   function emptyState(page){
     return '<section class="language-empty-state"><span aria-hidden="true">＋</span><h2>No learning items yet</h2><p>This pillar is ready for its first carefully designed item.</p>'+(canManageLanguageLearning()?'<button class="btn btn-primary" type="button" data-language-manage="'+esc(page)+'">Add the first item</button>':'')+'</section>';
   }
@@ -552,22 +574,26 @@
   function sessionPage(page){
     const items=itemsForPage(page);
     if(!items.length)return '<section class="language-learning-page" data-language-learning-page="'+esc(page)+'">'+languagePageHeader(page)+emptyState(page)+'</section>';
-    const index=currentItemIndex(page,items),item=items[index];
-    return '<section class="language-learning-page" data-language-learning-page="'+esc(page)+'">'+languagePageHeader(page)+'<div class="language-session-meta"><span>Item <strong>'+(index+1)+'</strong> of '+items.length+'</span><div class="language-session-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round((index+1)/items.length*100)+'"><span style="width:'+((index+1)/items.length*100)+'%"></span></div></div><div class="language-learning-stage">'+renderLearningItem(item)+'</div><nav class="language-session-nav" aria-label="Learning item navigation"><button type="button" class="btn btn-ghost" data-session-move="-1" '+(index===0?'disabled':'')+'>Previous</button><button type="button" class="btn btn-primary" data-session-move="1" '+(index===items.length-1?'disabled':'')+'>Next</button></nav></section>';
+    const index=currentItemIndex(page,items),item=items[index],progress=Math.round((index+1)/items.length*100);
+    const rail=items.map((entry,itemIndex)=>{
+      const meta=itemType(page,entry.type),visual=languageVisualMeta(entry),active=itemIndex===index;
+      return '<button type="button" class="language-module-step '+(active?'is-active':'')+'" data-session-jump="'+itemIndex+'" '+(active?'aria-current="step"':'')+'><span class="language-module-step-mark">'+esc(visual.icon)+'</span><span><small>'+String(itemIndex+1).padStart(2,'0')+' · '+esc(visual.mode)+'</small><strong>'+esc(entry.title||meta?.label||'Learning item')+'</strong><em>'+esc(visual.cue)+'</em></span></button>';
+    }).join('');
+    return '<section class="language-learning-page" data-language-learning-page="'+esc(page)+'">'+languagePageHeader(page)+'<div class="language-module-shell"><aside class="language-module-rail"><header><small>Learning path</small><strong>'+items.length+' connected '+(items.length===1?'practice':'practices')+'</strong><p>Move through the sequence or open any activity directly.</p></header><div class="language-module-steps">'+rail+'</div></aside><main class="language-module-main" data-active-language-type="'+esc(item.type)+'"><div class="language-session-meta"><span><b>'+esc(languageVisualMeta(item).mode)+'</b> · Item <strong>'+(index+1)+'</strong> of '+items.length+'</span><div class="language-session-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><span style="width:'+progress+'%"></span></div><em>'+progress+'%</em></div><div class="language-learning-stage">'+renderLearningItem(item)+'</div><nav class="language-session-nav" aria-label="Learning item navigation"><button type="button" class="btn btn-ghost" data-session-move="-1" '+(index===0?'disabled':'')+'>← Previous</button><span>Continue the learning path</span><button type="button" class="btn btn-primary" data-session-move="1" '+(index===items.length-1?'disabled':'')+'>Next →</button></nav></main></div></section>';
   }
   function languageHomePage(){
     const model=readLanguageLearning(),due=dueVocabularyCount();
     const count=(page,type)=>model.items.filter(item=>item.page===page&&(!type||item.type===type)).length;
     const cards=[
-      ['Vocabulary & writing','Recall → produce','language-letters',count('language-letters')],
-      ['Listening & pronouncing','Discriminate → shadow','language-voice',count('language-voice')],
-      ['Grammar & rules','Build → discover','language-grammar',count('language-grammar')],
-      ['Watching','Comprehensible video','language-video',count('language-video','youtube-lesson')],
-      ['Reading','Graded stories','language-video',count('language-video','graded-story')],
-      ['Examining','Adaptive formative checks','language-examine',count('language-examine')]
+      ['01','Aa','Vocabulary & writing','Recall → produce','language-letters',count('language-letters'),'Encode meaning, retrieve it, then write with it.'],
+      ['02','◌','Listening & pronouncing','Discriminate → shadow','language-voice',count('language-voice'),'Train the ear first, then reproduce rhythm and sound.'],
+      ['03','≡','Grammar & rules','Build → discover','language-grammar',count('language-grammar'),'Assemble meaning before naming the grammatical pattern.'],
+      ['04','▶','Watching','Comprehensible video','language-video',count('language-video','youtube-lesson'),'Follow speech, subtitles, and context in one field of attention.'],
+      ['05','¶','Reading','Graded stories','language-video',count('language-video','graded-story'),'Read for meaning with translation available exactly where needed.'],
+      ['06','◇','Examining','Adaptive formative checks','language-examine',count('language-examine'),'Measure retrieval and production without clutter or test overload.']
     ];
-    const first=cards.find(card=>card[3]>0)?.[2]||'language-letters';
-    return '<section class="language-learning-page language-learning-home" data-language-learning-page="language-home"><header class="language-learning-head"><div><small>'+esc(targetLanguage())+' · language learning</small><h1>Learn through retrieval and context</h1><p>Related text, sound, image, and action stay together so attention remains on the language—not the interface.</p></div></header><section class="language-home-focus"><div><small>Review queue</small><strong>'+due+'</strong><span>'+(due===1?'word is':'words are')+' ready for retrieval practice.</span></div><a class="btn btn-primary" href="#'+first+'">'+(model.items.length?'Continue learning':'Open the first pillar')+'</a></section><div class="language-pillar-grid">'+cards.map(card=>'<a href="#'+card[2]+'" class="language-pillar-card"><small>'+card[1]+'</small><strong>'+card[0]+'</strong><span>'+card[3]+' '+(card[3]===1?'item':'items')+'</span></a>').join('')+'</div></section>';
+    const first=cards.find(card=>card[5]>0)?.[4]||'language-letters';
+    return '<section class="language-learning-page language-learning-home" data-language-learning-page="language-home"><header class="language-learning-home-hero"><div class="language-home-eyebrow"><span>'+esc(targetLanguage())+'</span><i></i><span>Language learning system</span></div><div class="language-home-title-row"><div><h1>One connected path from input to production.</h1><p>Vocabulary, sound, grammar, context, reading, and assessment are designed as one learning system—not six unrelated tools.</p></div><div class="language-home-orbit" aria-hidden="true"><span>Aa</span><span>◌</span><span>≡</span><span>▶</span><span>¶</span><span>◇</span></div></div></header><section class="language-home-focus"><div class="language-home-focus-count"><small>Ready now</small><strong>'+due+'</strong><span>'+(due===1?'review is':'reviews are')+' due</span></div><div class="language-home-focus-copy"><strong>Continue where memory needs you most.</strong><p>Short retrieval sessions keep the course moving without turning the dashboard into a checklist.</p></div><a class="btn btn-primary" href="#'+first+'">'+(model.items.length?'Continue learning':'Open the first pillar')+'</a></section><div class="language-pillar-grid">'+cards.map(card=>'<a href="#'+card[4]+'" class="language-pillar-card"><div class="language-pillar-card-top"><span class="language-pillar-number">'+card[0]+'</span><span class="language-pillar-icon" aria-hidden="true">'+card[1]+'</span></div><small>'+card[3]+'</small><strong>'+card[2]+'</strong><p>'+card[6]+'</p><footer><span>'+card[5]+' '+(card[5]===1?'item':'items')+'</span><b>Open →</b></footer></a>').join('')+'</div></section>';
   }
 
   function examItems(){return itemsForPage('language-examine');}
@@ -755,6 +781,7 @@
   }
   function bindSessionNavigation(page){
     document.querySelectorAll('[data-session-move]').forEach(button=>button.onclick=()=>{const items=itemsForPage(page),index=currentItemIndex(page,items),next=Math.min(items.length-1,Math.max(0,index+Number(button.dataset.sessionMove)));setCurrentItemIndex(page,next);refreshLanguagePage(page);});
+    document.querySelectorAll('[data-session-jump]').forEach(button=>button.onclick=()=>{setCurrentItemIndex(page,Number(button.dataset.sessionJump)||0);refreshLanguagePage(page);});
   }
   function bindWriting(){
     document.querySelectorAll('[data-writing-input]').forEach(input=>{
