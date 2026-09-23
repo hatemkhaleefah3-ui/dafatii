@@ -11,6 +11,27 @@ assert.match(js,/LANGUAGE_LEARNING_KEY = 'dafatii:language-learning:v1'/,'new la
 assert.doesNotMatch(js,/dafatii:language-content:v1.*readJSON|LANGUAGE_CONTENT_KEY/,'retired language record must not return');
 for(const type of ['vocabulary-card','guided-writing','minimal-pair','shadowing','pronunciation','sentence-builder','grammar-rule','grammar-practice','youtube-lesson','graded-story','cloze','matching-grid','adaptive-choice','dialogue-scenario']) assert.ok(js.includes("'"+type+"'"),'missing learning item type '+type);
 
+
+assert.match(js,/LANGUAGE_SEED_VERSION = 1/,'language seed version missing');
+assert.match(js,/LANGUAGE_SEED_ITEMS = Object\.freeze/,'language seed library missing');
+for(const seed of [
+  'seed-v1-vocabulary-card','seed-v1-guided-writing','seed-v1-minimal-pair','seed-v1-shadowing','seed-v1-pronunciation',
+  'seed-v1-sentence-builder','seed-v1-grammar-rule','seed-v1-grammar-practice','seed-v1-youtube-lesson','seed-v1-graded-story',
+  'seed-v1-cloze','seed-v1-matching-grid','seed-v1-adaptive-choice','seed-v1-dialogue-scenario'
+]) assert.ok(js.includes("id:'"+seed+"'"),'missing seeded learning item '+seed);
+assert.match(js,/imageUrl:'https:\/\/images\.unsplash\.com\//,'seed vocabulary card must include a contextual image');
+assert.match(js,/modelAnswer:'I usually wake up/,'seed guided writing must include a complete model answer');
+assert.match(js,/optionA:'ship',optionB:'sheep'/,'seed minimal pair must contain a real phonemic contrast');
+assert.match(js,/pattern:'Subject \+ frequency adverb \+ verb \+ object \+ time expression'/,'seed sentence builder must include its syntax pattern');
+assert.match(js,/youtubeUrl:'https:\/\/www\.youtube\.com\/watch\?v=bq6GBbh3uhU'/,'seed video lesson must include an educational video');
+assert.match(js,/level:'A2'/,'seed graded reader must include a CEFR level');
+assert.match(js,/checkpoints:\[/,'seed graded reader must include comprehension checkpoints');
+assert.match(js,/pairs:\[/,'seed matching assessment must include complete pairs');
+assert.match(js,/function ensureLanguageLearningSeed\(value\)/,'missing one-time seed merger');
+assert.match(js,/present=new Set\(normalized\.items\.map\(item=>item\.page\+'\:'\+item\.type\)\)/,'seed merger must preserve existing item types');
+assert.match(js,/if\(type==='language'\)writeLanguageLearning\(defaultLanguageLearning\(\)\)/,'new language courses must persist the starter set');
+assert.match(js,/seedItemCount:LANGUAGE_SEED_ITEMS\.length/,'seed metadata exposure missing');
+
 assert.match(js,/function scheduleReview\(itemId,rating\)/,'SRS scheduling missing');
 assert.match(js,/intervalDays=rating==='hard'\?1:rating==='easy'/,'Hard Good Easy review scheduling missing');
 assert.match(js,/data-srs-rating="hard"/,'Hard review control missing');
@@ -63,6 +84,6 @@ for(const selector of ['.language-flashcard','.language-writing-split','.languag
 assert.match(css,/prefers-reduced-motion/,'reduced motion handling missing');
 
 assert.ok(index.includes('course-modes.css?v=20260923-1'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260923-1'),'JS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260923-2'),'JS cache version missing');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
-console.log('language learning v1 tests passed');
+console.log('language learning v1 seeded item tests passed');

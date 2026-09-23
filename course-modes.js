@@ -47,6 +47,126 @@
     Japanese:'ja-JP',Korean:'ko-KR',Hindi:'hi-IN',Urdu:'ur-PK'
   });
 
+  const LANGUAGE_SEED_VERSION = 1;
+  const LANGUAGE_SEED_ITEMS = Object.freeze([
+    {
+      id:'seed-v1-vocabulary-card',page:'language-letters',type:'vocabulary-card',createdAt:1,
+      title:'Library — learn it in context',target:'library',partOfSpeech:'noun',native:'مكتبة',
+      sentence:'I study at the library after class because it is quiet.',
+      imageUrl:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=82',audioUrl:''
+    },
+    {
+      id:'seed-v1-guided-writing',page:'language-letters',type:'guided-writing',createdAt:2,
+      title:'Describe your morning routine',
+      prompt:'Write 80–120 words about a normal morning. Say when you wake up, what you do first, what you eat or drink, and how you prepare for the day. Connect your ideas with sequence words.',
+      helperWords:['usually','first','then','after that','before','because','finally'],minWords:80,
+      modelAnswer:'I usually wake up at seven o’clock. First, I open the curtains and drink a glass of water. Then I wash my face and make coffee. After that, I eat a simple breakfast while I check my schedule. Before I leave home, I pack my notebook and headphones because I like to study on the way. Finally, I walk to the bus stop and review a few English words.'
+    },
+    {
+      id:'seed-v1-minimal-pair',page:'language-voice',type:'minimal-pair',createdAt:3,
+      title:'Hear /ɪ/ and /iː/: ship or sheep?',prompt:'Listen to both words. Which word contains the long /iː/ vowel sound?',
+      optionA:'ship',optionB:'sheep',answer:'sheep',audioUrlA:'',audioUrlB:''
+    },
+    {
+      id:'seed-v1-shadowing',page:'language-voice',type:'shadowing',createdAt:4,
+      title:'Shadow a natural morning sentence',
+      text:'I usually wake up at seven, make coffee, and check my schedule before I leave home.',
+      native:'عادةً أستيقظ في السابعة، وأعد القهوة، وأراجع جدولي قبل أن أغادر المنزل.',audioUrl:''
+    },
+    {
+      id:'seed-v1-pronunciation',page:'language-voice',type:'pronunciation',createdAt:5,
+      title:'Practice the /θ/ sound clearly',
+      text:'Three thoughtful students walked through the library.',
+      native:'مرّ ثلاثة طلاب متأنّين عبر المكتبة.',audioUrl:''
+    },
+    {
+      id:'seed-v1-sentence-builder',page:'language-grammar',type:'sentence-builder',createdAt:6,
+      title:'Build a present-simple habit',
+      prompt:'Build a natural sentence about a regular study habit.',
+      tokens:[
+        {text:'I',role:'subject'},{text:'usually',role:'modifier'},{text:'study',role:'verb'},
+        {text:'English',role:'object'},{text:'after dinner',role:'modifier'}
+      ],
+      answer:'I usually study English after dinner',
+      pattern:'Subject + frequency adverb + verb + object + time expression',
+      rule:'Frequency adverbs such as usually normally come before the main verb: I usually study. With the verb be, they normally come after be: I am usually early.'
+    },
+    {
+      id:'seed-v1-grammar-rule',page:'language-grammar',type:'grammar-rule',createdAt:7,
+      title:'Present simple with he, she, and it',
+      rule:'In affirmative present-simple sentences, add -s or -es to the base verb when the subject is he, she, or it.',
+      example:'She studies English every evening.',
+      exception:'Some common forms change spelling: have → has, do → does, go → goes. Verbs ending in consonant + y usually change y to ies: study → studies.'
+    },
+    {
+      id:'seed-v1-grammar-practice',page:'language-grammar',type:'grammar-practice',createdAt:8,
+      title:'Choose the correct present-simple form',
+      prompt:'Omar has an English lesson every day. Which sentence is grammatically correct?',
+      choices:['Omar study English every day.','Omar studies English every day.','Omar studying English every day.'],
+      answer:'Omar studies English every day.',
+      explanation:'Omar is third-person singular, so the present-simple affirmative verb needs -s: studies.'
+    },
+    {
+      id:'seed-v1-youtube-lesson',page:'language-video',type:'youtube-lesson',createdAt:9,
+      title:'Daily routine — listen for present-simple verbs',
+      youtubeUrl:'https://www.youtube.com/watch?v=bq6GBbh3uhU',
+      transcript:[
+        {start:0,target:'What do you do every day?',native:'ماذا تفعل كل يوم؟'},
+        {start:18,target:'I get up, get ready, and have breakfast.',native:'أستيقظ، وأستعد، وأتناول الإفطار.'},
+        {start:38,target:'Then I start work and follow my daily routine.',native:'ثم أبدأ العمل وأتبع روتيني اليومي.'},
+        {start:58,target:'Simple verbs help us describe habits clearly.',native:'تساعدنا الأفعال البسيطة على وصف العادات بوضوح.'}
+      ],
+      glossary:{
+        routine:'a usual sequence of actions',breakfast:'the first meal of the day',
+        ready:'prepared for what comes next',habit:'something you do regularly',daily:'happening every day'
+      }
+    },
+    {
+      id:'seed-v1-graded-story',page:'language-video',type:'graded-story',createdAt:10,
+      title:'The Early Library',level:'A2',narrationUrl:'',
+      text:'Maya has an important English test on Friday. On Thursday morning, she wakes up earlier than usual and takes the first bus to the city library. The streets are quiet, and the library has only a few visitors. Maya finds a table near a large window. First, she reviews ten vocabulary cards. Then she reads a short story and writes three sentences about it. At ten o’clock, her friend Lina arrives. They practise a dialogue together and correct each other’s mistakes. Maya does not study all day. At noon, she closes her notebook and walks outside for lunch. She feels calm because she has followed a simple plan. On Friday, the test is challenging, but the words and sentence patterns feel familiar.',
+      glossary:{
+        earlier:'before the usual time',visitors:'people who come to a place',reviews:'studies again',
+        dialogue:'a conversation between people',correct:'identify and fix an error',calm:'relaxed and not worried',
+        challenging:'difficult in an interesting way',familiar:'known because you have seen or experienced it before'
+      },
+      checkpoints:[
+        {question:'Why does Maya go to the library early?',answer:'She has an important English test on Friday.'},
+        {question:'What does Maya do after reviewing vocabulary cards?',answer:'She reads a short story and writes three sentences about it.'},
+        {question:'Why does Maya feel calm at lunchtime?',answer:'She has followed a simple plan.'}
+      ]
+    },
+    {
+      id:'seed-v1-cloze',page:'language-examine',type:'cloze',createdAt:11,
+      title:'Present-simple cloze',skill:'Grammar',difficulty:2,
+      prompt:'Every morning, Lina ___ the bus to university.',answer:'takes',audioUrl:''
+    },
+    {
+      id:'seed-v1-matching-grid',page:'language-examine',type:'matching-grid',createdAt:12,
+      title:'Match routine verbs with their meanings',skill:'Vocabulary',difficulty:2,
+      pairs:[
+        {left:'wake up',right:'stop sleeping'},
+        {left:'get dressed',right:'put on clothes'},
+        {left:'have breakfast',right:'eat the first meal of the day'},
+        {left:'leave home',right:'go out from where you live'}
+      ]
+    },
+    {
+      id:'seed-v1-adaptive-choice',page:'language-examine',type:'adaptive-choice',createdAt:13,
+      title:'Read for a specific detail',skill:'Reading',difficulty:2,audioUrl:'',
+      question:'Maya leaves home at 7:20. Her bus arrives at 7:30, and the journey takes twenty minutes. What time does she arrive?',
+      choices:['7:30','7:40','7:50','8:00'],answer:'7:50'
+    },
+    {
+      id:'seed-v1-dialogue-scenario',page:'language-examine',type:'dialogue-scenario',createdAt:14,
+      title:'Order politely at a café',skill:'Speaking',difficulty:3,timerSeconds:60,
+      scenario:'You are at a café before class. The server asks, “What would you like?”',
+      prompt:'Respond with one polite sentence to order a coffee.',
+      expected:'Could I have a coffee, please?'
+    }
+  ]);
+
+
 
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const lang = () => (typeof interfaceLanguage === 'function' ? interfaceLanguage() : document.documentElement.lang) === 'ar' ? 'ar' : 'en';
@@ -101,6 +221,7 @@
       const suite=readSuite();
       suite.courseMeta={version:1,courseType:type,targetLanguage:selectedLanguage,studyType:type==='language'?'courses':(input.studyType||'courses')};
       writeSuite(suite);
+      if(type==='language')writeLanguageLearning(defaultLanguageLearning());
       if(type==='personal')window.DafatiiCourses.writeJSON('dafatii:chatState:v1',{conversations:[],selected:{private:'',group:'',unknown:''},reported:[],blocked:[]});
       return course;
     };
@@ -127,7 +248,7 @@
       ['dafaa','◇','Create Dafaa','Full Dafatii course with subjects, calendar, study rooms and chat.','إنشاء دفعة','دورة دفاتري كاملة بالمواد والتقويم وغرف الدراسة والمحادثة.'],
       ['personal','◎','Create Personal course','Private solo course. No Chat app; Study Rooms becomes one focused personal room.','إنشاء دورة شخصية','دورة فردية بلا تطبيق المحادثة ومع غرفة دراسة شخصية واحدة.'],
       ['teaching','▣','Create Teaching course','The existing course workspace prepared for teaching and course management.','إنشاء دورة تدريس','مساحة الدورة الحالية مع أدوات التدريس والإدارة.'],
-      ['language','Aa','Create Language course','Create a blank language course workspace to build from scratch.','إنشاء دورة لغة','أنشئ مساحة دورة لغة فارغة للبناء من الصفر.']
+      ['language','Aa','Create Language course','Create a structured language course with one complete starter item for every learning type.','إنشاء دورة لغة','أنشئ دورة لغة منظمة مع عنصر نموذجي مكتمل لكل نوع من أنواع التعلم.']
     ].filter(card=>card[0]!=='language'||isAdminActor());
     sheet(lang()==='ar'?'إنشاء دورة':'Create a course','<div class="course-type-grid">'+cards.map(card=>{
       const title=lang()==='ar'?card[4]:card[2],desc=lang()==='ar'?card[5]:card[3];
@@ -145,7 +266,7 @@
     if(!actor||actor.platformRole!=='admin')return;
     const arabic=lang()==='ar';
     const choices=LANGUAGE_CHOICES.map(([value,native])=>'<button class="language-choice" type="button" data-language-choice="'+esc(value)+'" aria-pressed="false"><strong dir="auto">'+esc(native)+'</strong><span>'+esc(value)+'</span></button>').join('');
-    const close=sheet(arabic?'إنشاء دورة لغة':'Create Language course','<form id="course-mode-form" class="language-course-create"><input type="hidden" name="courseType" value="language"><input type="hidden" name="targetLanguage" value=""><input type="hidden" name="name" value=""><input type="hidden" name="templateName" value="Computer Science"><input type="hidden" name="studyType" value="courses"><input type="hidden" name="institution" value=""><input type="hidden" name="stage" value="university"><input type="hidden" name="pricing" value="free"><input type="hidden" name="priceMinor" value="0"><input type="hidden" name="visibility" value="public"><input type="hidden" name="joinPolicy" value="direct"><input type="hidden" name="learningField" value="Languages"><input type="hidden" name="difficultyLevel" value="beginner"><div class="language-create-intro"><small>'+(arabic?'دورة لغة':'Language course')+'</small><h3>'+(arabic?'اختر اللغة':'Select a language')+'</h3><p>'+(arabic?'سيتم إنشاء دورة فارغة بالكامل دون محتوى أو عناصر تعلم مسبقة.':'The course will be created completely blank, with no seeded content or learning item system.')+'</p></div><div class="language-picker" role="radiogroup" aria-label="'+(arabic?'لغة الدورة':'Course language')+'">'+choices+'</div><button class="btn btn-primary auth-submit language-create-submit" id="language-course-create" type="submit" disabled>'+(arabic?'إنشاء الدورة':'Create course')+'</button><p class="auth-note" id="course-mode-status">'+(arabic?'اختر لغة للمتابعة.':'Select a language to continue.')+'</p></form>');
+    const close=sheet(arabic?'إنشاء دورة لغة':'Create Language course','<form id="course-mode-form" class="language-course-create"><input type="hidden" name="courseType" value="language"><input type="hidden" name="targetLanguage" value=""><input type="hidden" name="name" value=""><input type="hidden" name="templateName" value="Computer Science"><input type="hidden" name="studyType" value="courses"><input type="hidden" name="institution" value=""><input type="hidden" name="stage" value="university"><input type="hidden" name="pricing" value="free"><input type="hidden" name="priceMinor" value="0"><input type="hidden" name="visibility" value="public"><input type="hidden" name="joinPolicy" value="direct"><input type="hidden" name="learningField" value="Languages"><input type="hidden" name="difficultyLevel" value="beginner"><div class="language-create-intro"><small>'+(arabic?'دورة لغة':'Language course')+'</small><h3>'+(arabic?'اختر اللغة':'Select a language')+'</h3><p>'+(arabic?'ستتضمن الدورة عنصراً نموذجياً مكتمل المحتوى لكل نوع من عناصر التعلم، ويمكنك تعديله أو حذفه لاحقاً.':'The course will include one fully populated starter item for every learning type. You can edit or delete any starter item.')+'</p></div><div class="language-picker" role="radiogroup" aria-label="'+(arabic?'لغة الدورة':'Course language')+'">'+choices+'</div><button class="btn btn-primary auth-submit language-create-submit" id="language-course-create" type="submit" disabled>'+(arabic?'إنشاء الدورة':'Create course')+'</button><p class="auth-note" id="course-mode-status">'+(arabic?'اختر لغة للمتابعة.':'Select a language to continue.')+'</p></form>');
     const form=document.getElementById('course-mode-form');
     const target=form.querySelector('input[name="targetLanguage"]'),name=form.querySelector('input[name="name"]'),submit=document.getElementById('language-course-create'),status=document.getElementById('course-mode-status');
     form.querySelectorAll('[data-language-choice]').forEach(button=>button.addEventListener('click',()=>{
@@ -307,9 +428,24 @@
   function normalizeLanguageLearning(value){
     const raw=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
     const items=Array.isArray(raw.items)?raw.items.map(item=>normalizeLearningItem(item,String(item?.page||''))).filter(Boolean):[];
-    return{version:1,items};
+    return{version:1,seedVersion:Math.max(0,Number(raw.seedVersion)||0),items};
   }
-  function readLanguageLearning(){return normalizeLanguageLearning(window.DafatiiCourses.readJSON(LANGUAGE_LEARNING_KEY,{version:1,items:[]}));}
+  function defaultLanguageLearning(){
+    return{version:1,seedVersion:LANGUAGE_SEED_VERSION,items:LANGUAGE_SEED_ITEMS.map(item=>normalizeLearningItem(item,item.page)).filter(Boolean)};
+  }
+  function ensureLanguageLearningSeed(value){
+    const normalized=normalizeLanguageLearning(value);
+    if(normalized.seedVersion>=LANGUAGE_SEED_VERSION)return normalized;
+    const present=new Set(normalized.items.map(item=>item.page+':'+item.type));
+    const missing=LANGUAGE_SEED_ITEMS.filter(item=>!present.has(item.page+':'+item.type)).map(item=>normalizeLearningItem(item,item.page)).filter(Boolean);
+    return{version:1,seedVersion:LANGUAGE_SEED_VERSION,items:[...normalized.items,...missing]};
+  }
+  function readLanguageLearning(){
+    const raw=window.DafatiiCourses.readJSON(LANGUAGE_LEARNING_KEY,null);
+    const next=ensureLanguageLearningSeed(raw);
+    if((Number(raw?.seedVersion)||0)<LANGUAGE_SEED_VERSION&&canManageLanguageLearning())window.DafatiiCourses.writeJSON(LANGUAGE_LEARNING_KEY,next);
+    return next;
+  }
   function writeLanguageLearning(value){const next=normalizeLanguageLearning(value);window.DafatiiCourses.writeJSON(LANGUAGE_LEARNING_KEY,next);return next;}
   function itemsForPage(page){return readLanguageLearning().items.filter(item=>item.page===page);}
   function icon(name){return window.DafatiiIcons&&window.DafatiiIcons.icon?window.DafatiiIcons.icon(name):'<span>•</span>';}
@@ -741,6 +877,8 @@
     languageRoutes:[...LANGUAGE_ROUTES],
     languageChoices:LANGUAGE_CHOICES.map(item=>item[0]),
     learningKey:LANGUAGE_LEARNING_KEY,
-    languageItemTypes:LANGUAGE_ITEM_TYPES
+    languageItemTypes:LANGUAGE_ITEM_TYPES,
+    seedVersion:LANGUAGE_SEED_VERSION,
+    seedItemCount:LANGUAGE_SEED_ITEMS.length
   });
 })();
