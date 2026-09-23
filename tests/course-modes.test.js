@@ -1,5 +1,6 @@
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
+const path=require('node:path');
 
 const js=fs.readFileSync('course-modes.js','utf8');
 const css=fs.readFileSync('course-modes.css','utf8');
@@ -28,5 +29,31 @@ for(const selector of ['.course-mode-sheet','.course-type-grid','.course-type-ca
 
 assert.ok(index.includes('course-modes.css?v=20260923-5'),'CSS cache version missing');
 assert.ok(index.includes('course-modes.js?v=20260923-6'),'JS cache version missing');
+
+
+const productionRoots=['.','functions','migrations'];
+const allowedExtensions=new Set(['.js','.mjs','.css','.html','.md','.sql','.json','.jsonc']);
+const skipTop=new Set(['tests','node_modules','.git']);
+function productionFiles(root){
+  const out=[];
+  for(const entry of fs.readdirSync(root,{withFileTypes:true})){
+    if(root==='.'&&skipTop.has(entry.name))continue;
+    const full=path.join(root,entry.name);
+    if(entry.isDirectory())out.push(...productionFiles(full));
+    else if(allowedExtensions.has(path.extname(entry.name).toLowerCase()))out.push(full);
+  }
+  return out;
+}
+const forbiddenProductTokens=[
+  'language-home','language-letters','language-voice','language-grammar','language-video','language-examine',
+  'dafatii:language-learning','dafatii:language-content','dafatii:language-authoring',
+  'language-hearing-audio','r2/hearing-audio','Create Language course','openLanguageCourseForm',
+  'LANGUAGE_ROUTES','LANGUAGE_CHOICES','LANGUAGE_ITEM_TYPES','LANGUAGE_SEED_ITEMS'
+];
+const scanned=[...new Set(productionRoots.flatMap(productionFiles))];
+for(const file of scanned){
+  const source=fs.readFileSync(file,'utf8');
+  for(const token of forbiddenProductTokens)assert.ok(!source.includes(token),'removed Language Course product token remains in '+file+': '+token);
+}
 
 console.log('course modes without language course tests passed');
