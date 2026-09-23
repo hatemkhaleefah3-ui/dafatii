@@ -489,18 +489,16 @@
     const now=Date.now(),reviews=reviewState();
     return itemsForPage('language-letters').filter(item=>item.type==='vocabulary-card'&&(!reviews[item.id]||Number(reviews[item.id].dueAt)<=now)).length;
   }
-  function pageManageButton(page){return canManageLanguageLearning()?'<button class="btn btn-ghost language-manage-button" type="button" data-language-control="'+esc(page)+'">Control content</button>':'';}
-  function languagePageHeader(page){
-    const copy=LANGUAGE_PAGE_COPY[page]||{eyebrow:'Language course',title:languageNavLabel(navSpec.find(item=>item[0]===page)||navSpec[0]),description:''};
-    const index=Math.max(0,LANGUAGE_ROUTES.indexOf(page));
-    return '<header class="language-learning-head" data-pillar="'+esc(page)+'"><div class="language-learning-head-copy"><div class="language-page-index" aria-hidden="true">'+String(index).padStart(2,'0')+'</div><div><small>'+esc(copy.eyebrow)+' · '+esc(targetLanguage())+'</small><h1>'+esc(copy.title)+'</h1><p>'+esc(copy.description)+'</p></div></div>'+pageManageButton(page)+'</header>';
+  function languageFloatingControl(page){
+    if(!canManageLanguageLearning()||page==='language-home')return'';
+    return '<button type="button" class="language-content-fab" data-language-control="'+esc(page)+'" aria-label="Control content" title="Control content"><span class="language-content-fab-icon" aria-hidden="true"><i></i><i></i><i></i></span></button>';
   }
   function itemKicker(item){
     const meta=itemType(item.page,item.type),visual=languageVisualMeta(item);
     return '<div class="language-item-kicker"><div class="language-item-identity"><span class="language-item-mark" aria-hidden="true">'+esc(visual.icon)+'</span><div><small>'+esc(visual.mode)+'</small><strong>'+esc(meta?.label||'Learning item')+'</strong></div></div><div class="language-item-cue"><span>'+esc(visual.cue)+'</span><i aria-hidden="true"></i></div></div>';
   }
   function emptyState(page){
-    return '<section class="language-empty-state"><span aria-hidden="true">＋</span><h2>No learning items yet</h2><p>This pillar is ready for its first carefully designed item.</p>'+(canManageLanguageLearning()?'<button class="btn btn-primary" type="button" data-language-control="'+esc(page)+'">Control content</button>':'')+'</section>';
+    return '<section class="language-empty-state"><span aria-hidden="true">＋</span><h2>No learning items yet</h2><p>This pillar is ready for its first carefully designed item.</p></section>';
   }
   function audioControls(text,url,compact=false){
     return '<div class="language-audio-controls '+(compact?'compact':'')+'"><button type="button" class="language-audio-button" data-language-audio data-audio-url="'+esc(url||'')+'" data-speech-text="'+esc(text||'')+'" data-rate="1" aria-label="Play at normal speed"><span aria-hidden="true">▶</span><strong>Play</strong></button><button type="button" class="language-speed-button" data-language-audio data-audio-url="'+esc(url||'')+'" data-speech-text="'+esc(text||'')+'" data-rate=".5" aria-label="Play slowly"><span aria-hidden="true">🐢</span><strong>0.5×</strong></button></div>';
@@ -573,13 +571,9 @@
   }
   function sessionPage(page){
     const items=itemsForPage(page);
-    if(!items.length)return '<section class="language-learning-page" data-language-learning-page="'+esc(page)+'">'+languagePageHeader(page)+emptyState(page)+'</section>';
+    if(!items.length)return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="'+esc(page)+'">'+languageFloatingControl(page)+emptyState(page)+'</section>';
     const index=currentItemIndex(page,items),item=items[index],progress=Math.round((index+1)/items.length*100);
-    const rail=items.map((entry,itemIndex)=>{
-      const meta=itemType(page,entry.type),visual=languageVisualMeta(entry),active=itemIndex===index;
-      return '<button type="button" class="language-module-step '+(active?'is-active':'')+'" data-session-jump="'+itemIndex+'" '+(active?'aria-current="step"':'')+'><span class="language-module-step-mark">'+esc(visual.icon)+'</span><span><small>'+String(itemIndex+1).padStart(2,'0')+' · '+esc(visual.mode)+'</small><strong>'+esc(entry.title||meta?.label||'Learning item')+'</strong><em>'+esc(visual.cue)+'</em></span></button>';
-    }).join('');
-    return '<section class="language-learning-page" data-language-learning-page="'+esc(page)+'">'+languagePageHeader(page)+'<div class="language-module-shell"><aside class="language-module-rail"><header><small>Learning path</small><strong>'+items.length+' connected '+(items.length===1?'practice':'practices')+'</strong><p>Move through the sequence or open any activity directly.</p></header><div class="language-module-steps">'+rail+'</div></aside><main class="language-module-main" data-active-language-type="'+esc(item.type)+'"><div class="language-session-meta"><span><b>'+esc(languageVisualMeta(item).mode)+'</b> · Item <strong>'+(index+1)+'</strong> of '+items.length+'</span><div class="language-session-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><span style="width:'+progress+'%"></span></div><em>'+progress+'%</em></div><div class="language-learning-stage">'+renderLearningItem(item)+'</div><nav class="language-session-nav" aria-label="Learning item navigation"><button type="button" class="btn btn-ghost" data-session-move="-1" '+(index===0?'disabled':'')+'>← Previous</button><span>Continue the learning path</span><button type="button" class="btn btn-primary" data-session-move="1" '+(index===items.length-1?'disabled':'')+'>Next →</button></nav></main></div></section>';
+    return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="'+esc(page)+'">'+languageFloatingControl(page)+'<main class="language-module-main language-module-main-minimal" data-active-language-type="'+esc(item.type)+'"><div class="language-session-meta"><span><b>'+esc(languageVisualMeta(item).mode)+'</b> · Item <strong>'+(index+1)+'</strong> of '+items.length+'</span><div class="language-session-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><span style="width:'+progress+'%"></span></div><em>'+progress+'%</em></div><div class="language-learning-stage">'+renderLearningItem(item)+'</div><nav class="language-session-nav" aria-label="Learning item navigation"><button type="button" class="btn btn-ghost" data-session-move="-1" '+(index===0?'disabled':'')+'>← Previous</button><span>Continue</span><button type="button" class="btn btn-primary" data-session-move="1" '+(index===items.length-1?'disabled':'')+'>Next →</button></nav></main></section>';
   }
   function languageHomePage(){
     const model=readLanguageLearning(),due=dueVocabularyCount();
@@ -593,7 +587,7 @@
       ['06','◇','Examining','Adaptive formative checks','language-examine',count('language-examine'),'Measure retrieval and production without clutter or test overload.']
     ];
     const first=cards.find(card=>card[5]>0)?.[4]||'language-letters';
-    return '<section class="language-learning-page language-learning-home" data-language-learning-page="language-home"><header class="language-learning-home-hero"><div class="language-home-eyebrow"><span>'+esc(targetLanguage())+'</span><i></i><span>Language learning system</span></div><div class="language-home-title-row"><div><h1>One connected path from input to production.</h1><p>Vocabulary, sound, grammar, context, reading, and assessment are designed as one learning system—not six unrelated tools.</p></div><div class="language-home-orbit" aria-hidden="true"><span>Aa</span><span>◌</span><span>≡</span><span>▶</span><span>¶</span><span>◇</span></div></div></header><section class="language-home-focus"><div class="language-home-focus-count"><small>Ready now</small><strong>'+due+'</strong><span>'+(due===1?'review is':'reviews are')+' due</span></div><div class="language-home-focus-copy"><strong>Continue where memory needs you most.</strong><p>Short retrieval sessions keep the course moving without turning the dashboard into a checklist.</p></div><a class="btn btn-primary" href="#'+first+'">'+(model.items.length?'Continue learning':'Open the first pillar')+'</a></section><div class="language-pillar-grid">'+cards.map(card=>'<a href="#'+card[4]+'" class="language-pillar-card"><div class="language-pillar-card-top"><span class="language-pillar-number">'+card[0]+'</span><span class="language-pillar-icon" aria-hidden="true">'+card[1]+'</span></div><small>'+card[3]+'</small><strong>'+card[2]+'</strong><p>'+card[6]+'</p><footer><span>'+card[5]+' '+(card[5]===1?'item':'items')+'</span><b>Open →</b></footer></a>').join('')+'</div></section>';
+    return '<section class="language-learning-page language-learning-home language-learning-home-minimal" data-language-learning-page="language-home"><section class="language-home-focus"><div class="language-home-focus-count"><small>Ready now</small><strong>'+due+'</strong><span>'+(due===1?'review is':'reviews are')+' due</span></div><div class="language-home-focus-copy"><strong>'+esc(targetLanguage())+' learning</strong><p>Continue the next useful activity or open a learning area below.</p></div><a class="btn btn-primary" href="#'+first+'">'+(model.items.length?'Continue learning':'Open the first pillar')+'</a></section><div class="language-pillar-grid">'+cards.map(card=>'<a href="#'+card[4]+'" class="language-pillar-card"><div class="language-pillar-card-top"><span class="language-pillar-number">'+card[0]+'</span><span class="language-pillar-icon" aria-hidden="true">'+card[1]+'</span></div><small>'+card[3]+'</small><strong>'+card[2]+'</strong><p>'+card[6]+'</p><footer><span>'+card[5]+' '+(card[5]===1?'item':'items')+'</span><b>Open →</b></footer></a>').join('')+'</div></section>';
   }
 
   function examItems(){return itemsForPage('language-examine');}
@@ -652,14 +646,14 @@
     return '<section class="language-exam-results"><header><small>Assessment complete</small><h2>'+percent+'%</h2><p>'+correct+' correct of '+total+' answered · '+(state.skipped?.length||0)+' skipped</p></header><div class="language-skill-results">'+Object.entries(groups).map(([skill,value])=>{const score=Math.round(value.correct/value.total*100);return '<div><span><strong>'+esc(skill)+'</strong><em>'+score+'%</em></span><div><i style="width:'+score+'%"></i></div></div>';}).join('')+'</div><button type="button" class="btn btn-primary" data-exam-restart>Start a new assessment</button></section>';
   }
   function examPage(){
-    const items=examItems(),state=readExam();
-    if(!items.length)return '<section class="language-learning-page" data-language-learning-page="language-examine">'+languagePageHeader('language-examine')+emptyState('language-examine')+'</section>';
-    if(state.complete)return '<section class="language-learning-page" data-language-learning-page="language-examine">'+languagePageHeader('language-examine')+examResultsMarkup(state)+'</section>';
+    const items=examItems(),state=readExam(),control=languageFloatingControl('language-examine');
+    if(!items.length)return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="language-examine">'+control+emptyState('language-examine')+'</section>';
+    if(state.complete)return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="language-examine">'+control+examResultsMarkup(state)+'</section>';
     if(!state.currentId){
-      return '<section class="language-learning-page" data-language-learning-page="language-examine">'+languagePageHeader('language-examine')+'<section class="language-exam-intro"><small>Adaptive formative assessment</small><h2>'+items.length+' available questions</h2><p>Difficulty moves up after correct answers and down after errors. Only one question is shown at a time.</p><button type="button" class="btn btn-primary" data-exam-start>Start assessment</button></section></section>';
+      return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="language-examine">'+control+'<section class="language-exam-intro"><small>Adaptive formative assessment</small><h2>'+items.length+' available questions</h2><p>Difficulty moves up after correct answers and down after errors. Only one question is shown at a time.</p><button type="button" class="btn btn-primary" data-exam-start>Start assessment</button></section></section>';
     }
     const item=items.find(entry=>entry.id===state.currentId)||selectAdaptiveExamItem(items,state);
-    return '<section class="language-learning-page" data-language-learning-page="language-examine">'+languagePageHeader('language-examine')+(item?examQuestionMarkup(item,state,items.length):examResultsMarkup({...state,complete:true}))+'</section>';
+    return '<section class="language-learning-page language-learning-page-minimal" data-language-learning-page="language-examine">'+control+(item?examQuestionMarkup(item,state,items.length):examResultsMarkup({...state,complete:true}))+'</section>';
   }
   function languageLearningPage(page){
     if(page==='language-home')return languageHomePage();
@@ -805,7 +799,6 @@
   }
   function bindSessionNavigation(page){
     document.querySelectorAll('[data-session-move]').forEach(button=>button.onclick=()=>{const items=itemsForPage(page),index=currentItemIndex(page,items),next=Math.min(items.length-1,Math.max(0,index+Number(button.dataset.sessionMove)));setCurrentItemIndex(page,next);refreshLanguagePage(page);});
-    document.querySelectorAll('[data-session-jump]').forEach(button=>button.onclick=()=>{setCurrentItemIndex(page,Number(button.dataset.sessionJump)||0);refreshLanguagePage(page);});
   }
   function bindWriting(){
     document.querySelectorAll('[data-writing-input]').forEach(input=>{
