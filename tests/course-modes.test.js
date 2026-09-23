@@ -73,7 +73,15 @@ assert.match(js,/data-exam-skip/,'exam skip missing');
 assert.match(js,/data-exam-flag/,'flag for review missing');
 assert.match(js,/language-skill-results/,'skill breakdown results missing');
 
-assert.match(js,/function openLanguageManager\(page\)/,'language content manager missing');
+assert.match(js,/function openLanguageControl\(page\)/,'language content control bottom sheet missing');
+assert.match(js,/data-language-control-action="add"/,'Add item control missing');
+assert.match(js,/data-language-control-action="edit"/,'Edit item control missing');
+assert.match(js,/data-language-control-action="remove"/,'Remove item control missing');
+assert.match(js,/Control content/,'Control content label missing');
+assert.doesNotMatch(js,/>Manage content</,'legacy Manage content label must be removed');
+assert.match(js,/function openLanguageAddPicker\(page\)/,'add item picker missing');
+assert.match(js,/function openLanguageEditPicker\(page\)/,'edit item picker missing');
+assert.match(js,/function openLanguageRemovePicker\(page\)/,'remove item picker missing');
 assert.match(js,/function openLanguageItemEditor\(page,item\)/,'language item editor missing');
 assert.match(js,/normalizeLearningItem/,'language item schema normalization missing');
 
@@ -86,13 +94,17 @@ assert.match(js,/data-session-jump/,'direct learning-path navigation missing');
 assert.match(js,/data-active-language-type/,'type-aware presentation hook missing');
 assert.match(js,/language-learning-home-hero/,'premium language home composition missing');
 assert.match(css,/Language learning premium composition v2/,'premium composition marker missing');
+assert.match(css,/Language learning v2\.1 — content integrated into the page background/,'integrated page composition marker missing');
+assert.match(css,/Content control bottom sheet/,'content control bottom-sheet styles missing');
+assert.match(css,/\.language-learning-page:not\(\.language-learning-home\) \.language-item-shell\{[\s\S]*?border:0;/,'outer item card border must be flattened into the page');
+assert.match(css,/\.language-control-overlay\{[\s\S]*?align-items:flex-end;/,'content controls must open as a bottom sheet');
 for(const selector of ['.language-module-shell','.language-module-rail','.language-module-step','.language-item-identity','.language-home-orbit','.language-pillar-card-top']) assert.ok(css.includes(selector),'premium interconnected selector missing '+selector);
 
 for(const token of ['var(--surface)','var(--surface-2)','var(--text)','var(--muted)','var(--border)','var(--accent)']) assert.ok(css.includes(token),'site theme token missing '+token);
 for(const selector of ['.language-flashcard','.language-writing-split','.language-record-module','.language-grammar-sandbox','.language-video-layout','.language-story-reader','.language-exam-focus']) assert.ok(css.includes(selector),'learning layout selector missing '+selector);
 assert.match(css,/prefers-reduced-motion/,'reduced motion handling missing');
 
-assert.ok(index.includes('course-modes.css?v=20260923-2'),'CSS cache version missing');
-assert.ok(index.includes('course-modes.js?v=20260923-3'),'JS cache version missing');
+assert.ok(index.includes('course-modes.css?v=20260923-3'),'CSS cache version missing');
+assert.ok(index.includes('course-modes.js?v=20260923-4'),'JS cache version missing');
 assert.match(js,/personal-focus-room/,'personal course behavior changed');
-console.log('language learning premium v2 tests passed');
+console.log('language learning integrated content controls tests passed');

@@ -489,7 +489,7 @@
     const now=Date.now(),reviews=reviewState();
     return itemsForPage('language-letters').filter(item=>item.type==='vocabulary-card'&&(!reviews[item.id]||Number(reviews[item.id].dueAt)<=now)).length;
   }
-  function pageManageButton(page){return canManageLanguageLearning()?'<button class="btn btn-ghost language-manage-button" type="button" data-language-manage="'+esc(page)+'">Manage content</button>':'';}
+  function pageManageButton(page){return canManageLanguageLearning()?'<button class="btn btn-ghost language-manage-button" type="button" data-language-control="'+esc(page)+'">Control content</button>':'';}
   function languagePageHeader(page){
     const copy=LANGUAGE_PAGE_COPY[page]||{eyebrow:'Language course',title:languageNavLabel(navSpec.find(item=>item[0]===page)||navSpec[0]),description:''};
     const index=Math.max(0,LANGUAGE_ROUTES.indexOf(page));
@@ -500,7 +500,7 @@
     return '<div class="language-item-kicker"><div class="language-item-identity"><span class="language-item-mark" aria-hidden="true">'+esc(visual.icon)+'</span><div><small>'+esc(visual.mode)+'</small><strong>'+esc(meta?.label||'Learning item')+'</strong></div></div><div class="language-item-cue"><span>'+esc(visual.cue)+'</span><i aria-hidden="true"></i></div></div>';
   }
   function emptyState(page){
-    return '<section class="language-empty-state"><span aria-hidden="true">＋</span><h2>No learning items yet</h2><p>This pillar is ready for its first carefully designed item.</p>'+(canManageLanguageLearning()?'<button class="btn btn-primary" type="button" data-language-manage="'+esc(page)+'">Add the first item</button>':'')+'</section>';
+    return '<section class="language-empty-state"><span aria-hidden="true">＋</span><h2>No learning items yet</h2><p>This pillar is ready for its first carefully designed item.</p>'+(canManageLanguageLearning()?'<button class="btn btn-primary" type="button" data-language-control="'+esc(page)+'">Control content</button>':'')+'</section>';
   }
   function audioControls(text,url,compact=false){
     return '<div class="language-audio-controls '+(compact?'compact':'')+'"><button type="button" class="language-audio-button" data-language-audio data-audio-url="'+esc(url||'')+'" data-speech-text="'+esc(text||'')+'" data-rate="1" aria-label="Play at normal speed"><span aria-hidden="true">▶</span><strong>Play</strong></button><button type="button" class="language-speed-button" data-language-audio data-audio-url="'+esc(url||'')+'" data-speech-text="'+esc(text||'')+'" data-rate=".5" aria-label="Play slowly"><span aria-hidden="true">🐢</span><strong>0.5×</strong></button></div>';
@@ -667,17 +667,41 @@
     return sessionPage(page);
   }
 
-  function managerRows(page,items){
-    if(!items.length)return '<p class="language-manager-empty">No items in this pillar yet.</p>';
-    return '<div class="language-manager-list">'+items.map((item,index)=>'<article><span><small>'+(index+1)+' · '+esc(itemType(page,item.type)?.label||item.type)+'</small><strong>'+esc(item.title||'Untitled')+'</strong></span><div><button type="button" data-edit-learning-item="'+esc(item.id)+'">Edit</button><button type="button" data-delete-learning-item="'+esc(item.id)+'">Delete</button></div></article>').join('')+'</div>';
+  function languageControlSheet(title,body){
+    const root=document.getElementById('overlay-root');
+    if(!root)return()=>{};
+    root.innerHTML='<div class="entity-sheet-overlay suite-overlay language-control-overlay" id="language-control-overlay"><section class="entity-sheet suite-sheet language-control-sheet" role="dialog" aria-modal="true" aria-labelledby="language-control-title"><div class="entity-sheet-handle" aria-hidden="true"></div><div class="entity-sheet-head"><div><small>Language course</small><h2 id="language-control-title">'+esc(title)+'</h2></div><button class="icon-btn" id="language-control-close" type="button" aria-label="Close">×</button></div>'+body+'</section></div>';
+    const close=()=>{root.innerHTML='';};
+    document.getElementById('language-control-close').onclick=close;
+    document.getElementById('language-control-overlay').onclick=event=>{if(event.target.id==='language-control-overlay')close();};
+    return close;
   }
-  function openLanguageManager(page){
+  function languageItemPickerRows(page,items,action){
+    if(!items.length)return '<p class="language-control-empty">There are no items on this page yet.</p>';
+    return '<div class="language-control-item-list">'+items.map((item,index)=>{const visual=languageVisualMeta(item),meta=itemType(page,item.type);return '<button type="button" data-language-'+action+'-item="'+esc(item.id)+'"><span class="language-control-item-mark">'+esc(visual.icon)+'</span><span><small>'+String(index+1).padStart(2,'0')+' · '+esc(meta?.label||item.type)+'</small><strong>'+esc(item.title||'Untitled')+'</strong></span><b aria-hidden="true">›</b></button>';}).join('')+'</div>';
+  }
+  function openLanguageControl(page){
     if(!canManageLanguageLearning())return;
-    const items=itemsForPage(page),types=itemTypes(page);
-    const close=sheet('Manage '+(LANGUAGE_PAGE_COPY[page]?.eyebrow||'language content'),'<div class="language-manager"><section><small>Add learning item</small><div class="language-type-grid">'+types.map(type=>'<button type="button" data-add-learning-type="'+esc(type.id)+'"><strong>'+esc(type.label)+'</strong><span>'+esc(type.description)+'</span></button>').join('')+'</div></section><section><small>Current items</small>'+managerRows(page,items)+'</section></div>');
+    const items=itemsForPage(page),copy=LANGUAGE_PAGE_COPY[page]?.eyebrow||'language content';
+    const close=languageControlSheet('Control content','<div class="language-control-actions"><button type="button" data-language-control-action="add"><span>＋</span><div><strong>Add item</strong><small>Create a new learning item for '+esc(copy)+'.</small></div><b>›</b></button><button type="button" data-language-control-action="edit" '+(!items.length?'disabled':'')+'><span>✎</span><div><strong>Edit item</strong><small>Choose an existing item and change its learning content.</small></div><b>›</b></button><button type="button" data-language-control-action="remove" '+(!items.length?'disabled':'')+'><span>−</span><div><strong>Remove item</strong><small>Choose an item to remove from this page.</small></div><b>›</b></button></div>');
+    document.querySelector('[data-language-control-action="add"]')?.addEventListener('click',()=>{close();openLanguageAddPicker(page);});
+    document.querySelector('[data-language-control-action="edit"]')?.addEventListener('click',()=>{close();openLanguageEditPicker(page);});
+    document.querySelector('[data-language-control-action="remove"]')?.addEventListener('click',()=>{close();openLanguageRemovePicker(page);});
+  }
+  function openLanguageAddPicker(page){
+    const types=itemTypes(page);
+    const close=languageControlSheet('Add item','<div class="language-control-picker-head"><small>Choose item type</small><p>The new item will inherit this page’s learning structure and design.</p></div><div class="language-control-type-list">'+types.map(type=>'<button type="button" data-add-learning-type="'+esc(type.id)+'"><span>'+esc(languageVisualMeta({type:type.id}).icon)+'</span><div><strong>'+esc(type.label)+'</strong><small>'+esc(type.description)+'</small></div><b>›</b></button>').join('')+'</div>');
     document.querySelectorAll('[data-add-learning-type]').forEach(button=>button.onclick=()=>{close();openLanguageItemEditor(page,{type:button.dataset.addLearningType});});
-    document.querySelectorAll('[data-edit-learning-item]').forEach(button=>button.onclick=()=>{const item=items.find(entry=>entry.id===button.dataset.editLearningItem);if(item){close();openLanguageItemEditor(page,item);}});
-    document.querySelectorAll('[data-delete-learning-item]').forEach(button=>button.onclick=()=>{const id=button.dataset.deleteLearningItem;if(!confirm('Delete this learning item?'))return;const model=readLanguageLearning();model.items=model.items.filter(item=>item.id!==id);writeLanguageLearning(model);close();refreshLanguagePage(page);});
+  }
+  function openLanguageEditPicker(page){
+    const items=itemsForPage(page);
+    const close=languageControlSheet('Edit item','<div class="language-control-picker-head"><small>Choose item</small><p>Select the learning item you want to edit.</p></div>'+languageItemPickerRows(page,items,'edit'));
+    document.querySelectorAll('[data-language-edit-item]').forEach(button=>button.onclick=()=>{const item=items.find(entry=>entry.id===button.dataset.languageEditItem);if(item){close();openLanguageItemEditor(page,item);}});
+  }
+  function openLanguageRemovePicker(page){
+    const items=itemsForPage(page);
+    const close=languageControlSheet('Remove item','<div class="language-control-picker-head"><small>Choose item</small><p>Removing an item deletes it from the course content for everyone.</p></div>'+languageItemPickerRows(page,items,'remove'));
+    document.querySelectorAll('[data-language-remove-item]').forEach(button=>button.onclick=()=>{const id=button.dataset.languageRemoveItem,item=items.find(entry=>entry.id===id);if(!item)return;if(!confirm('Remove “'+String(item.title||'this item').replace(/[“”]/g,'')+'” from the course?'))return;const model=readLanguageLearning();model.items=model.items.filter(entry=>entry.id!==id);writeLanguageLearning(model);close();refreshLanguagePage(page);});
   }
   const editorField=(label,name,value='',type='text',extra='')=>'<label class="field"><span>'+esc(label)+'</span><input type="'+type+'" name="'+name+'" value="'+esc(value)+'" '+extra+'></label>';
   const editorArea=(label,name,value='',rows=4,help='')=>'<label class="field"><span>'+esc(label)+'</span><textarea name="'+name+'" rows="'+rows+'">'+esc(value)+'</textarea>'+(help?'<small>'+esc(help)+'</small>':'')+'</label>';
@@ -839,7 +863,7 @@
     clearInterval(examTimer);examTimer=null;const timer=document.querySelector('[data-exam-timer]');if(timer){let remaining=Number(timer.dataset.seconds)||60;examTimer=setInterval(()=>{remaining--;timer.textContent=Math.max(0,remaining)+'s';if(remaining<=0){clearInterval(examTimer);examTimer=null;const item=currentExamItem();if(item){submitExamResponse(item,'',{skip:true});refreshLanguagePage('language-examine');}}},1000);}
   }
   function bindLanguageLearningPage(page){
-    document.querySelectorAll('[data-language-manage]').forEach(button=>button.onclick=()=>openLanguageManager(button.dataset.languageManage||page));
+    document.querySelectorAll('[data-language-control]').forEach(button=>button.onclick=()=>openLanguageControl(button.dataset.languageControl||page));
     bindSessionNavigation(page);bindReview();bindWriting();bindMediaLearning();bindGrammar();bindVideoAndReading();if(page==='language-examine')bindExam();
   }
 
