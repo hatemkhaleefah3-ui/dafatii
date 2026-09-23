@@ -30,7 +30,7 @@ assert.match(js,/data-user-wave/,'user waveform surface missing');
 assert.match(js,/draggable="true"/,'grammar draggable word chips missing');
 assert.match(js,/data-builder-output/,'sentence builder slots missing');
 assert.match(js,/data-rule-toggle/,'contextual grammar rule tooltip missing');
-assert.match(js,/role-subject|role-verb|role-object/,'part-of-speech styling hooks missing');
+for(const selector of ['.role-subject','.role-verb','.role-object']) assert.ok(css.includes(selector),'part-of-speech styling hook missing '+selector);
 
 assert.match(js,/youtube\.com\/iframe_api/,'YouTube player API integration missing');
 assert.match(js,/getCurrentTime/,'synchronized transcript timing missing');
