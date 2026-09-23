@@ -242,8 +242,7 @@ async function enroll(context, currentActor, identifier) {
   const existing = await context.env.DB.prepare('SELECT role, status FROM course_memberships WHERE course_id = ? AND user_id = ?').bind(course.id, currentActor.id).first();
   if (existing?.status === 'active') return ok({ courseId: course.id, status: 'active', role: existing.role });
   if (existing && ['owner','representer'].includes(existing.role)) throw new HttpError(409, 'MEMBERSHIP_CONFLICT', 'This course role cannot submit a student enrollment.');
-  const languageCourse = String(course.learning_field || '').toLowerCase() === 'languages' || /\blanguage course\b/i.test(String(course.name || ''));
-  const status = course.pricing === 'paid' ? 'payment_pending' : languageCourse || course.join_policy === 'direct' ? 'active' : 'pending';
+  const status = course.pricing === 'paid' ? 'payment_pending' : course.join_policy === 'direct' ? 'active' : 'pending';
   const note = String(input.note || '').trim().normalize('NFC').slice(0, 500), now = Date.now();
   await context.env.DB.prepare(`INSERT INTO course_memberships (course_id, user_id, role, status, application_note, joined_at, created_at, updated_at)
     VALUES (?, ?, 'student', ?, ?, ?, ?, ?)

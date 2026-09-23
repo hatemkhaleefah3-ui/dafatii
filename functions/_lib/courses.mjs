@@ -7,7 +7,7 @@ export const COURSE_CONTENT_KEYS = new Set([
   'dafatii:examSchedule','dafatii:examNotes','dafatii:scheduleDays','dafatii:schedulePeriods',
   'dafatii:examDays','dafatii:examPeriods','dafatii:studentSuite:v1','dafatii:studyRoomState:v1',
   'dafatii:studyRoomWorkspace:v1','dafatii:chatState:v1','dafatii:chatProState:v1',
-  'dafatii:materialFiles:v1','dafatii:language-learning:v1'
+  'dafatii:materialFiles:v1'
 ]);
 
 export const PERMISSIONS = [
@@ -24,6 +24,21 @@ const visibilities = new Set(['public','private']);
 const joinPolicies = new Set(['direct','approval']);
 const difficultyLevels = new Set(['beginner','intermediate','advanced','expert']);
 let courseDiscoverySchemaPromise = null;
+
+async function purgeRetiredCourseProduct(db) {
+  const result = await db.prepare(`SELECT DISTINCT c.id
+    FROM courses c
+    LEFT JOIN course_content_records r ON r.course_id = c.id AND r.deleted = 0
+    WHERE
+      r.record_key IN ('dafatii:language-learning:v1','dafatii:language-content:v1','dafatii:language-authoring:v1')
+      OR (r.record_key = 'dafatii:studentSuite:v1' AND instr(lower(replace(r.value_json, ' ', '')), '"coursetype":"language"') > 0)
+      OR (lower(trim(COALESCE(c.learning_field, ''))) = 'languages' AND lower(c.name) LIKE '% language course' AND c.join_policy = 'direct')`).all();
+  for (const row of result.results || []) {
+    await db.prepare('UPDATE files SET course_id = NULL WHERE course_id = ?').bind(row.id).run();
+    await db.prepare('DELETE FROM courses WHERE id = ?').bind(row.id).run();
+  }
+}
+
 
 export function ensureCourseDiscoverySchema(db) {
   if (courseDiscoverySchemaPromise) return courseDiscoverySchemaPromise;
@@ -42,6 +57,7 @@ export function ensureCourseDiscoverySchema(db) {
     }
     await db.prepare("CREATE INDEX IF NOT EXISTS courses_learning_discovery_idx ON courses(status, visibility, learning_field, difficulty_level, updated_at DESC)").run();
     await db.prepare("CREATE INDEX IF NOT EXISTS courses_academic_match_idx ON courses(status, academic_level, academic_stage, academic_field, updated_at DESC)").run();
+    await purgeRetiredCourseProduct(db);
   })().catch(error => { courseDiscoverySchemaPromise = null; throw error; });
   return courseDiscoverySchemaPromise;
 }
