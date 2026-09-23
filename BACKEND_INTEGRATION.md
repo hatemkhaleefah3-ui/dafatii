@@ -8,7 +8,6 @@ Dafatii uses a local-first browser interface with a real Cloudflare backend. UI 
 |---|---|---|
 | Accounts, sessions, courses, enrollment, roles and permissions | Cloudflare D1 | Relational and authorization data |
 | User-uploaded originals | Owner's private Google Drive | Files, images, video, PDF, Word, Excel, PowerPoint and archives |
-| Imported Language Course hearing audio | Cloudflare R2 (`R2_STORAGE`) | Course-owned pronunciation audio matched from voice ZIP imports without Google OAuth |
 | App-owned manifests and future generated previews/thumbnails | Cloudflare R2 (`R2_STORAGE`) | Durable object storage controlled by Dafatii |
 | API and authorization | Cloudflare Pages Functions | Validates sessions, permissions, uploads, reads and deletion |
 
@@ -22,7 +21,7 @@ flowchart TD
   API --> R2[("R2 app manifests and previews")]
 ```
 
-Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive` for normal new uploads. Language Course hearing audio imported from ZIP uses the private `R2_STORAGE` binding deliberately, so pronunciation imports do not depend on Google Drive OAuth.
+Existing GCS objects remain readable and deletable. Set `STORAGE_PROVIDER=drive` for normal new uploads.
 
 ## Browser contracts and viewers
 
@@ -57,7 +56,7 @@ Drive identifiers are server metadata only. Dafatii stores stable UUID relations
 
 ## Cloudflare configuration
 
-Apply the repository migrations through `migrations/0008_remove_language_course_backend.sql` to the same D1 database, then bind it as `DB` in both Preview and Production. Migration 0008 removes persisted records from the retired language-course authoring backend.
+Apply the repository migrations to the same D1 database, then bind it as `DB` in both Preview and Production.
 
 Create a private R2 bucket such as `dafatii-app-storage` and bind it to the Pages project as `R2_STORAGE`. Do not expose a public bucket URL.
 
