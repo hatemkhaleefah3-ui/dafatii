@@ -43,7 +43,7 @@ assert.ok(api.includes("teacherProfile ? validateTeacherProfileUpload(raw) : val
 assert.ok(api.includes('ADMIN_REQUIRED') && api.includes('TEACHER_IMAGE_TYPES'), 'teacher profile upload path must stay admin-only and image-only');
 assert.ok(backend.includes('imageFileId') && backend.includes('/api/v1/school/teacher-images/'), 'teacher profiles must store a website image route backed by an uploaded file');
 assert.ok(schoolRoute.includes('teacher-images') && schoolRoute.includes('streamDriveFile'), 'website must stream teacher profile pictures from Google Drive');
-for (const marker of ['data-content-add-chapter','data-content-add-lecture','data-content-import','XLSX.read','sheet_to_json','YouTube video link']) {
+for (const marker of ['data-content-add-chapter','data-content-add-lecture','data-content-import','DafatiiVendors.xlsx()','xlsx.read','sheet_to_json','YouTube video link']) {
   assert.ok(admin.includes(marker), `teacher content page missing ${marker}`);
 }
 assert.ok(admin.includes("location.hash=`admin/teachers/${encodeURIComponent(button.dataset.teacherOpen)}`"), 'clicking a teacher card must open the teacher content page');
