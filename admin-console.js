@@ -293,8 +293,9 @@
   }
   function normalizeYoutubeLink(value){const raw=String(value||'').trim();if(!raw)return '';let url;try{url=new URL(raw);}catch{return '';}const host=url.hostname.toLowerCase().replace(/^www\./,'');return url.protocol==='https:'&&(host==='youtu.be'||host==='youtube.com'||host.endsWith('.youtube.com'))?url.href:'';}
   async function importChapterSpreadsheet(file,draft,chapterIndex){
-    if(!file)return;if(!window.XLSX)throw new Error(tx('Excel import is not available yet. Reload the page and try again.','استيراد Excel غير متاح الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
-    const bytes=await file.arrayBuffer(),workbook=window.XLSX.read(bytes,{type:'array'}),sheet=workbook.Sheets[workbook.SheetNames[0]],rows=window.XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,defval:''}),parsed=[];
+    if(!file)return;
+    const xlsx=await window.DafatiiVendors.xlsx();
+    const bytes=await file.arrayBuffer(),workbook=xlsx.read(bytes,{type:'array'}),sheet=workbook.Sheets[workbook.SheetNames[0]],rows=xlsx.utils.sheet_to_json(sheet,{header:1,raw:false,defval:''}),parsed=[];
     rows.forEach((row,index)=>{const name=String(row?.[0]||'').trim(),rawLink=String(row?.[1]||'').trim();if(!name&&!rawLink)return;if(index===0&&/lecture|محاضرة/i.test(name)&&/youtube|video|link|رابط|يوتيوب/i.test(rawLink))return;const link=normalizeYoutubeLink(rawLink);if(!name||!link)throw new Error(tx(`Invalid row ${index+1}. Column A must be the lecture name and column B must be a valid HTTPS YouTube link.`,`الصف ${index+1} غير صالح. العمود A لاسم المحاضرة والعمود B لرابط يوتيوب HTTPS صالح.`));parsed.push({id:crypto.randomUUID(),name,link});});
     if(!parsed.length)throw new Error(tx('The spreadsheet has no lecture rows to import.','لا يحتوي الملف على صفوف محاضرات للاستيراد.'));const chapter=draft.subject.chapters?.[chapterIndex];if(!chapter)return;const combined=[...(chapter.lectures||[]),...parsed],seen=new Set();chapter.lectures=combined.filter(item=>{const key=`${String(item.name).trim().toLowerCase()}\0${String(item.link).trim()}`;if(seen.has(key))return false;seen.add(key);return true;});
   }

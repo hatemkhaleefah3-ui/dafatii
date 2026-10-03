@@ -21,6 +21,16 @@ assert.match(router, /WHERE id = \? AND user_id = \?/);
 assert.match(router, /INSERT OR IGNORE INTO records/);
 assert.match(router, /status = 'available'/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /rel="icon" type="image\/svg\+xml"/);
+assert.match(indexSource(), /vendor-loader\.js\?v=1/, 'the on-demand vendor loader must load before application modules');
+assert.doesNotMatch(indexSource(), /<script[^>]+(?:xlsx|jszip)[^>]*>/i, 'large optional vendors must not block initial rendering');
+const cacheHeaders = fs.readFileSync('_headers', 'utf8');
+assert.match(cacheHeaders, /\/index\.html[\s\S]*Cache-Control: no-cache, no-store, must-revalidate/, 'the application shell must never be served stale');
+assert.match(cacheHeaders, /\/\*\.css[\s\S]*max-age=0, must-revalidate/, 'stylesheets must revalidate so retired design layers cannot survive deployments');
+assert.match(cacheHeaders, /\/\*\.js[\s\S]*max-age=0, must-revalidate/, 'scripts must revalidate so code changes become visible');
+for (const file of ['lecture-media.js','admin-console.js','calendar.js','leader-schedule.js','media-viewer.js','academic.js']) {
+  assert.match(fs.readFileSync(file,'utf8'), /DafatiiVendors\.xlsx\(\)/, `${file} must load the spreadsheet parser on demand`);
+}
+function indexSource(){ return fs.readFileSync('index.html', 'utf8'); }
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-context\.js/);
 assert.match(fs.readFileSync('index.html', 'utf8'), /course-ui\.js/);
 const index = fs.readFileSync('index.html', 'utf8');
