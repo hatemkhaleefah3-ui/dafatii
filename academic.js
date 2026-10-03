@@ -270,7 +270,7 @@
       try{
         let matrix;
         if(/\.csv$/i.test(file.name)) matrix=(await file.text()).split(/\r?\n/).filter(Boolean).map(line=>line.split(',').map(x=>x.trim()));
-        else { const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'}); matrix=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}); }
+        else { const xlsx=await window.DafatiiVendors.xlsx(); const buf=await file.arrayBuffer(); const wb=xlsx.read(buf,{type:'array'}); matrix=xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}); }
         const subject=state.subjects.find(s=>s.id===chosenSubjectId); const exams=allExams();
         matrix.slice(1).forEach(row=>{ const [day,time,name,location='',notes='']=row; if(!day||!time)return; exams.push({id:uid('exam'),subject:String(name||subject.name),subjectId:subject.id,lectureIds:[],day:String(day),time:String(time),location:String(location),notes:String(notes),degree:null}); });
         write(EXAMS_KEY,exams); close(); render();

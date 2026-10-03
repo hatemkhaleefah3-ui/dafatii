@@ -587,10 +587,11 @@
       const rows=Array.isArray(parsed)?parsed:Array.isArray(parsed?.items)?parsed.items:[];
       return rowsToItems(type,rows);
     }
-    if(window.XLSX){
-      const workbook=window.XLSX.read(await file.arrayBuffer(),{type:'array'});
+    if(/^(xlsx?|xlsb|ods)$/.test(extension)){
+      const xlsx=await window.DafatiiVendors.xlsx();
+      const workbook=xlsx.read(await file.arrayBuffer(),{type:'array'});
       const sheet=workbook.Sheets[workbook.SheetNames[0]];
-      return rowsToItems(type,window.XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false}));
+      return rowsToItems(type,xlsx.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false}));
     }
     return rowsToItems(type,parseDelimited(await file.text()));
   }

@@ -39,7 +39,7 @@
           stage.innerHTML = `<div class="video-reader"><video src="${escapeHtml(url)}" controls autoplay playsinline preload="metadata"></video></div>`; setVisible(videoTools(), true);
           stage.querySelector('video').addEventListener('error', () => showError('The video data could not be loaded or this codec is unsupported.'));
         } else if (['text/plain', 'text/csv'].includes(current.contentType)) await renderText(url, current, stage);
-        else if (/spreadsheet|excel/.test(current.contentType) && window.XLSX) await renderSheet(url, stage);
+        else if (/spreadsheet|excel/.test(current.contentType)) await renderSheet(url, stage);
         else stage.innerHTML = genericCard(current);
         renderFilmstrip();
       } catch (error) { showError(error.message); }
@@ -76,9 +76,10 @@
     if (Number(metadata.size) > 2097152) stage.insertAdjacentHTML('afterbegin', '<p class="viewer-notice">Showing the first 2 MB. Download the file to read the rest.</p>');
   }
   async function renderSheet(url, stage) {
+    const xlsx = await window.DafatiiVendors.xlsx();
     const response = await fetch(url); if (!response.ok) throw new Error(`Unable to read spreadsheet (${response.status}).`);
-    const workbook = XLSX.read(await response.arrayBuffer(), { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }).slice(0, 500).map(row => row.slice(0, 60));
+    const workbook = xlsx.read(await response.arrayBuffer(), { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false }).slice(0, 500).map(row => row.slice(0, 60));
     stage.innerHTML = `<div class="sheet-reader"><div class="sheet-name">${escapeHtml(workbook.SheetNames[0] || 'Sheet 1')}</div>${rowsToTable(rows)}</div>`;
   }
   const csvTable = content => `<div class="sheet-reader">${rowsToTable(content.split(/\r?\n/).slice(0, 500).map(line => line.split(',').slice(0, 60)))}</div>`;

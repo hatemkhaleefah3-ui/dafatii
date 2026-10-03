@@ -71,10 +71,10 @@
         const text = await file.text();
         matrix = text.split(/\r?\n/).filter(Boolean).map(line => line.split(',').map(value => value.trim()));
       } else {
-        if(typeof XLSX === 'undefined') throw new Error(t('Excel parser unavailable','محلل Excel غير متاح'));
+        const xlsx = await window.DafatiiVendors.xlsx();
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, {type:'array'});
-        matrix = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1, defval:''});
+        const workbook = xlsx.read(buffer, {type:'array'});
+        matrix = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1, defval:''});
       }
 
       const entries = [];

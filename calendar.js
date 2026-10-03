@@ -610,10 +610,10 @@
         const text = await file.text();
         matrix = text.split(/\r?\n/).filter(Boolean).map(line => line.split(',').map(x=>x.trim()));
       } else {
-        if(typeof XLSX === 'undefined') throw new Error('Excel parser unavailable');
+        const xlsx = await window.DafatiiVendors.xlsx();
         const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, {type:'array'});
-        matrix = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+        const wb = xlsx.read(buf, {type:'array'});
+        matrix = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
       }
       importTimetableMatrix(matrix, kind);
       closeOverlay();
